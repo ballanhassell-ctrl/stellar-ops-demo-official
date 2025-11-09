@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
-  TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck
+  TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
+  Calendar, Send, Printer
 } from 'lucide-react';
 
 const CourtStreetRCM = () => {
@@ -242,6 +243,59 @@ const CourtStreetRCM = () => {
     monthlyTotal: 4
   };
 
+  // EOD Report data
+  const eodData = {
+    reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+    dailyProduction: 8750,
+    dailyProductionGoal: 10000,
+    paymentsCollected: 6825,
+    collectionRate: 78,
+    insurancePayments: 4200,
+    patientPayments: 2625,
+    paymentMethods: {
+      creditCard: 3150,
+      cash: 875,
+      check: 1200,
+      eft: 1600
+    },
+    patientsSeenToday: 24,
+    newPatients: 3,
+    proceduresCompleted: 32,
+    unbilledProcedures: 2,
+    unappliedPayments: 450,
+    failedTransactions: 1,
+    actionItems: {
+      claimsToSubmit: 5,
+      deniedClaimsToResubmit: 2,
+      preAuthsExpiring: 3,
+      accountsNeedingFollowUp: 7,
+      missedAppointments: 4
+    },
+    payments: [
+      { time: '09:15 AM', patient: 'John Smith', amount: 250, type: 'Patient', method: 'Credit Card', procedure: 'Cleaning & Exam' },
+      { time: '10:30 AM', patient: 'Delta Dental', amount: 1200, type: 'Insurance', method: 'EFT', procedure: 'Crown - Claim #12345' },
+      { time: '11:45 AM', patient: 'Sarah Johnson', amount: 150, type: 'Patient', method: 'Cash', procedure: 'X-Rays' },
+      { time: '01:20 PM', patient: 'Aetna', amount: 850, type: 'Insurance', method: 'EFT', procedure: 'Root Canal - Claim #12346' },
+      { time: '02:15 PM', patient: 'Michael Brown', amount: 325, type: 'Patient', method: 'Check', procedure: 'Filling' },
+      { time: '03:30 PM', patient: 'MetLife', amount: 2150, type: 'Insurance', method: 'EFT', procedure: 'Bridge - Claim #12347' },
+      { time: '04:00 PM', patient: 'Emily Davis', amount: 200, type: 'Patient', method: 'Credit Card', procedure: 'Periodontal Treatment' }
+    ],
+    topProcedures: [
+      { name: 'Cleanings', count: 12, revenue: 1800 },
+      { name: 'Fillings', count: 8, revenue: 2400 },
+      { name: 'Crowns', count: 3, revenue: 3600 },
+      { name: 'Root Canals', count: 2, revenue: 1800 },
+      { name: 'X-Rays', count: 7, revenue: 350 }
+    ],
+    monthToDateSummary: {
+      production: 87500,
+      productionGoal: 150000,
+      collected: 71250,
+      collectionRate: 81.4,
+      newPatients: 15
+    }
+  };
+
   // Claims data
   const claimsData = {
     totalActive: 0,
@@ -264,7 +318,8 @@ const CourtStreetRCM = () => {
     { id: 'preauths', name: 'Pre-Auths', icon: FileText },
     { id: 'insurance', name: 'Insurance', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
-    { id: 'checklist', name: 'Checklist', icon: List }
+    { id: 'checklist', name: 'Checklist', icon: List },
+    { id: 'eod-report', name: 'EOD Report', icon: Calendar }
   ];
 
   return (
@@ -1872,6 +1927,400 @@ const CourtStreetRCM = () => {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        ) : currentView === 'eod-report' ? (
+          <div className="space-y-6">
+            {/* EOD Report Header with Action Buttons */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+                    End of Day Report
+                  </h2>
+                  <p className="text-gray-600 text-sm">{eodData.reportDate}</p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Print
+                  </button>
+                  <button
+                    onClick={() => alert('Export functionality would generate a PDF or send via email')}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send Report
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Daily Production */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-700 mb-1">Daily Production</p>
+                    <p className="text-3xl font-bold text-green-900">
+                      ${eodData.dailyProduction.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-green-600 mt-2">
+                      Goal: ${eodData.dailyProductionGoal.toLocaleString()}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-green-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{
+                      width: `${Math.min((eodData.dailyProduction / eodData.dailyProductionGoal) * 100, 100)}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Payments Collected */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-700 mb-1">Payments Collected</p>
+                    <p className="text-3xl font-bold text-blue-900">
+                      ${eodData.paymentsCollected.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-2">
+                      Collection Rate: {eodData.collectionRate}%
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-blue-500" />
+                </div>
+              </div>
+
+              {/* Patients Seen */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-700 mb-1">Patients Seen</p>
+                    <p className="text-3xl font-bold text-purple-900">
+                      {eodData.patientsSeenToday}
+                    </p>
+                    <p className="text-xs text-purple-600 mt-2">
+                      New Patients: {eodData.newPatients}
+                    </p>
+                  </div>
+                  <Users className="w-8 h-8 text-purple-500" />
+                </div>
+              </div>
+
+              {/* Procedures Completed */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-amber-700 mb-1">Procedures</p>
+                    <p className="text-3xl font-bold text-amber-900">
+                      {eodData.proceduresCompleted}
+                    </p>
+                    <p className="text-xs text-amber-600 mt-2">Completed today</p>
+                  </div>
+                  <Activity className="w-8 h-8 text-amber-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Payment Sources */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Payment Sources
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Insurance Payments</span>
+                    <span className="text-lg font-bold text-blue-900">
+                      ${eodData.insurancePayments.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Patient Payments</span>
+                    <span className="text-lg font-bold text-green-900">
+                      ${eodData.patientPayments.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Payment Methods
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Credit Card</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      ${eodData.paymentMethods.creditCard.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">EFT</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      ${eodData.paymentMethods.eft.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Check</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      ${eodData.paymentMethods.check.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Cash</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      ${eodData.paymentMethods.cash.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Today's Payments Detail */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Today's Payments - Detailed View
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 border-b-2 border-gray-200">
+                      <th className="text-left p-3 font-semibold text-gray-700">Time</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Patient/Payer</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Type</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Method</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Procedure</th>
+                      <th className="text-right p-3 font-semibold text-gray-700">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eodData.payments.map((payment, index) => (
+                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="p-3 text-gray-700">{payment.time}</td>
+                        <td className="p-3 font-medium text-gray-900">{payment.patient}</td>
+                        <td className="p-3">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                            payment.type === 'Insurance' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {payment.type}
+                          </span>
+                        </td>
+                        <td className="p-3 text-gray-700">{payment.method}</td>
+                        <td className="p-3 text-gray-600 text-xs">{payment.procedure}</td>
+                        <td className="p-3 text-right font-bold text-gray-900">
+                          ${payment.amount.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-gray-100 border-t-2 border-gray-300">
+                      <td colSpan={5} className="p-3 text-right font-bold text-gray-700">Total:</td>
+                      <td className="p-3 text-right font-bold text-gray-900">
+                        ${eodData.paymentsCollected.toLocaleString()}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            {/* Actionable Insights */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Action Items for Tomorrow
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                  <div className="flex items-center space-x-3">
+                    <AlertCircle className="w-6 h-6 text-red-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Claims to Submit</p>
+                      <p className="text-xs text-gray-500">Due tomorrow</p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-red-900">
+                    {eodData.actionItems.claimsToSubmit}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center space-x-3">
+                    <XCircle className="w-6 h-6 text-orange-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Denied Claims</p>
+                      <p className="text-xs text-gray-500">Need resubmission</p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-orange-900">
+                    {eodData.actionItems.deniedClaimsToResubmit}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex items-center space-x-3">
+                    <Clock className="w-6 h-6 text-yellow-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Pre-Auths Expiring</p>
+                      <p className="text-xs text-gray-500">Within 7 days</p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-900">
+                    {eodData.actionItems.preAuthsExpiring}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center space-x-3">
+                    <Users className="w-6 h-6 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Accounts Follow-Up</p>
+                      <p className="text-xs text-gray-500">Need contact</p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {eodData.actionItems.accountsNeedingFollowUp}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center space-x-3">
+                    <AlertCircle className="w-6 h-6 text-purple-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Missed Appointments</p>
+                      <p className="text-xs text-gray-500">Reschedule needed</p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {eodData.actionItems.missedAppointments}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Unbilled Procedures</p>
+                      <p className="text-xs text-gray-500">To bill</p>
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-green-900">
+                    {eodData.unbilledProcedures}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Procedures */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Top Procedures Today
+              </h3>
+              <div className="space-y-3">
+                {eodData.topProcedures.map((procedure, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-blue-700">{index + 1}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{procedure.name}</p>
+                        <p className="text-xs text-gray-500">{procedure.count} procedures</p>
+                      </div>
+                    </div>
+                    <p className="text-lg font-bold text-gray-900">
+                      ${procedure.revenue.toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Month-to-Date Summary */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Month-to-Date Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">MTD Production</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    ${eodData.monthToDateSummary.production.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Goal: ${eodData.monthToDateSummary.productionGoal.toLocaleString()}
+                  </p>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full"
+                      style={{
+                        width: `${Math.min((eodData.monthToDateSummary.production / eodData.monthToDateSummary.productionGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">MTD Collected</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    ${eodData.monthToDateSummary.collected.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {eodData.monthToDateSummary.collectionRate}% collection rate
+                  </p>
+                </div>
+
+                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">New Patients MTD</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {eodData.monthToDateSummary.newPatients}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">This month</p>
+                </div>
+
+                <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Avg Daily Production</p>
+                  <p className="text-2xl font-bold text-amber-900">
+                    ${Math.round(eodData.monthToDateSummary.production / 10).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Based on 10 days</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Important Notes Section */}
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-lg p-6">
+              <h3 className="text-lg font-bold mb-3 text-amber-900 flex items-center">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                Important Notes
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start">
+                  <span className="text-amber-600 mr-2">•</span>
+                  <span><strong>Unapplied Payments:</strong> ${eodData.unappliedPayments.toLocaleString()} needs to be allocated</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-amber-600 mr-2">•</span>
+                  <span><strong>Failed Transaction:</strong> {eodData.failedTransactions} payment(s) failed - requires follow-up</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-amber-600 mr-2">•</span>
+                  <span><strong>Daily Goal:</strong> {((eodData.dailyProduction / eodData.dailyProductionGoal) * 100).toFixed(1)}% of daily production goal achieved</span>
+                </li>
+              </ul>
             </div>
           </div>
         ) : (
