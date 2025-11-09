@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
-  TrendingUp, Activity
+  TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle
 } from 'lucide-react';
 
 const CourtStreetRCM = () => {
@@ -20,6 +20,18 @@ const CourtStreetRCM = () => {
     activeClaims: 0,
     pendingPayments: 0,
     outstandingAR: 0
+  };
+
+  // Payments data
+  const paymentsData = {
+    todaysPayments: 0,
+    weeklyPayments: 0,
+    monthlyPayments: 0,
+    pendingDeposits: 0,
+    insurancePayments: 0,
+    patientPayments: 0,
+    unappliedCredits: 0,
+    refundsPending: 0
   };
 
   // Claims data
@@ -449,6 +461,161 @@ const CourtStreetRCM = () => {
                       claimsData.arAging.ninetyPlus.amount
                     ).toLocaleString()}
                   </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : currentView === 'payments' ? (
+          <div className="space-y-6">
+            {/* Payments Header */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                Payment Processing & Reconciliation
+              </h2>
+
+              {/* Payment Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Today's Payments */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-700 mb-1">Today's Payments</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        ${paymentsData.todaysPayments.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-green-600 mt-2">Posted today</p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-green-500" />
+                  </div>
+                </div>
+
+                {/* Weekly Payments */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-700 mb-1">Weekly Payments</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        ${paymentsData.weeklyPayments.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">Last 7 days</p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-blue-500" />
+                  </div>
+                </div>
+
+                {/* Monthly Payments */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-700 mb-1">Monthly Payments</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        ${paymentsData.monthlyPayments.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-2">This month</p>
+                    </div>
+                    <Activity className="w-8 h-8 text-purple-500" />
+                  </div>
+                </div>
+
+                {/* Pending Deposits */}
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-yellow-700 mb-1">Pending Deposits</p>
+                      <p className="text-3xl font-bold text-yellow-900">
+                        ${paymentsData.pendingDeposits.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-yellow-600 mt-2">Awaiting deposit</p>
+                    </div>
+                    <Clock className="w-8 h-8 text-yellow-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Payment Sources */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Payment Sources
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <Shield className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Insurance Payments</p>
+                        <p className="text-xs text-gray-500">EOB reconciliation</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-blue-900">
+                      ${paymentsData.insurancePayments.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center space-x-3">
+                      <Users className="w-6 h-6 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Patient Payments</p>
+                        <p className="text-xs text-gray-500">Direct patient collections</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-green-900">
+                      ${paymentsData.patientPayments.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Actions */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Action Items
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center space-x-3">
+                      <CreditCard className="w-5 h-5 text-orange-600" />
+                      <span className="text-sm font-medium text-gray-700">Unapplied Credits</span>
+                    </div>
+                    <span className="text-lg font-bold text-orange-900">
+                      ${paymentsData.unappliedCredits.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center space-x-3">
+                      <ArrowUpCircle className="w-5 h-5 text-red-600" />
+                      <span className="text-sm font-medium text-gray-700">Refunds Pending</span>
+                    </div>
+                    <span className="text-lg font-bold text-red-900">
+                      ${paymentsData.refundsPending.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Payment Activity */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Recent Payment Activity
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 border-b border-gray-200">
+                  <div className="flex items-center space-x-3">
+                    <ArrowDownCircle className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">No recent payments</p>
+                      <p className="text-xs text-gray-500">Awaiting payment data</p>
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-500">--</span>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-600">
+                    Payment activity will appear here as transactions are processed
+                  </p>
                 </div>
               </div>
             </div>
