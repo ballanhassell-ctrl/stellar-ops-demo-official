@@ -1,0 +1,8 @@
+Time,Patient/Payer Name,Amount,Type,Payment Method,Procedure/Notes
+09:15 AM,John Smith,250,Patient,Credit Card,Cleaning & Exam
+10:30 AM,Delta Dental,1200,Insurance,EFT,Crown - Claim #12345
+11:45 AM,Sarah Johnson,150,Patient,Cash,X-Rays
+01:20 PM,Aetna,850,Insurance,EFT,Root Canal - Claim #12346
+02:15 PM,Michael Brown,325,Patient,Check,Filling
+03:30 PM,MetLife,2150,Insurance,EFT,Bridge - Claim #12347
+04:00 PM,Emily Davis,200,Patient,Credit Card,Periodontal Treatment
