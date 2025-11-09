@@ -138,24 +138,36 @@ Cigna         | Connection   | All Set!      | Enrolled   | In
 ---
 
 ### 6. **New-Patient-Tracker-Monthly-Averages.csv** (6-Month History)
-Historical data for the New Patient Tracker showing monthly averages.
+Historical data for the New Patient Tracker showing monthly averages with actual month names.
+
+**New Features:**
+- ✨ **Auto-Generated Month Names**: Months display as actual dates (e.g., "Jan 2025", "Feb 2025")
+- 📊 **Goal Tracking**: Each period shows progress against goals (5 NP's per day minimum)
+- 🎨 **Color-Coded Progress Bars**: Visual indicators show performance (Green ≥100%, Blue 75-99%, Yellow 50-74%, Red <50%)
 
 **Columns:**
-- **Month Label**: Label for the month (e.g., "Month -6", "Month -1")
+- **Month Position**: Position in the 6-month sequence (1 = oldest, 6 = most recent)
 - **New Patient Count**: Number of new patients for that month
-- **Notes**: Description of which month this represents
+- **Notes**: Explanation of which month (system auto-generates actual month names)
+
+**Default Goals (Based on 5 NP's per day):**
+- Per Day: 5 new patients
+- Per Week: 35 new patients
+- Per Month: 150 new patients
+- Quarterly: 450 new patients
 
 **How to use:**
-1. Enter the actual new patient count for each of the past 6 months
-2. Month -6 = 6 months ago, Month -1 = last month
-3. Keep the labels as-is, just update the counts
+1. Enter the actual new patient count for each position (oldest to newest)
+2. The dashboard will automatically label months with actual names (e.g., "Jul 2024", "Aug 2024")
+3. Each month will show progress against the 150/month goal with color-coded indicators
+4. Goals can be customized in Court-Street-Dental-Data-Entry.csv
 
 **Example:**
 ```
-Month Label | New Patient Count | Notes
-Month -6    | 18               | 6 months ago from current date
-Month -5    | 22               | 5 months ago from current date
-Month -1    | 25               | Last month
+Month Position        | New Patient Count | Dashboard Shows
+Position 1 (Oldest)   | 142              | Jul 2024 - 95% of goal (Blue)
+Position 2            | 168              | Aug 2024 - ✓ On track (Green)
+Position 6 (Recent)   | 125              | Dec 2024 - 83% of goal (Blue)
 ```
 
 ---

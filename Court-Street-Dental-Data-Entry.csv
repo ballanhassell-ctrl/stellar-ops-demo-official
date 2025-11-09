@@ -106,15 +106,19 @@ CLAIMS,AR 61-90 Days Count,arAging.sixtyOneToNinety.count,number,0,AR aging 61-9
 CLAIMS,AR 90+ Days Amount,arAging.ninetyPlus.amount,number,0,AR aging 90+ days amount
 CLAIMS,AR 90+ Days Count,arAging.ninetyPlus.count,number,0,AR aging 90+ days count
 NEW PATIENT TRACKER,Per Day,perDay,number,0,New patients seen today
+NEW PATIENT TRACKER,Per Day Goal,perDayGoal,number,5,Daily new patient goal (default: 5)
 NEW PATIENT TRACKER,Per Week,perWeek,number,0,New patients in the last 7 days
+NEW PATIENT TRACKER,Per Week Goal,perWeekGoal,number,35,Weekly new patient goal (default: 35)
 NEW PATIENT TRACKER,Per Month,perMonth,number,0,New patients this month
+NEW PATIENT TRACKER,Per Month Goal,perMonthGoal,number,150,Monthly new patient goal (default: 150)
 NEW PATIENT TRACKER,Quarterly,quarterly,number,0,New patients this quarter
-NEW PATIENT TRACKER,Month -6 Average,monthlyAverages[0].count,number,0,New patient count 6 months ago
-NEW PATIENT TRACKER,Month -5 Average,monthlyAverages[1].count,number,0,New patient count 5 months ago
-NEW PATIENT TRACKER,Month -4 Average,monthlyAverages[2].count,number,0,New patient count 4 months ago
-NEW PATIENT TRACKER,Month -3 Average,monthlyAverages[3].count,number,0,New patient count 3 months ago
-NEW PATIENT TRACKER,Month -2 Average,monthlyAverages[4].count,number,0,New patient count 2 months ago
-NEW PATIENT TRACKER,Month -1 Average,monthlyAverages[5].count,number,0,New patient count last month
+NEW PATIENT TRACKER,Quarterly Goal,quarterlyGoal,number,450,Quarterly new patient goal (default: 450)
+NEW PATIENT TRACKER,6-Month Average Month 1,monthlyAverages[0].count,number,0,New patient count for oldest month (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 2,monthlyAverages[1].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 3,monthlyAverages[2].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 4,monthlyAverages[3].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 5,monthlyAverages[4].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 6,monthlyAverages[5].count,number,0,New patient count for most recent month (auto-labeled with actual month)
 THIRD PARTY FINANCING,Cherry Patients (30 days),cherryPatients,number,0,Number of patients using Cherry financing (past 30 days)
 THIRD PARTY FINANCING,Cherry Amount (30 days),cherryAmount,number,0,Total amount financed through Cherry (past 30 days)
 THIRD PARTY FINANCING,CareCredit Patients (30 days),careCreditPatients,number,0,Number of patients using CareCredit (past 30 days)
