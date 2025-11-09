@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
-  Calendar, Send, Printer, Download, X, Mail
+  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat
 } from 'lucide-react';
 
 const CourtStreetRCM = () => {
@@ -14,8 +14,36 @@ const CourtStreetRCM = () => {
   const [emailRecipients, setEmailRecipients] = useState('');
   const [emailSubject, setEmailSubject] = useState('EOD Report - Court Street Dental');
   const [emailMessage, setEmailMessage] = useState('');
+  const [scheduleEmail, setScheduleEmail] = useState(false);
+  const [scheduleTime, setScheduleTime] = useState('17:00');
+  const [scheduleFrequency, setScheduleFrequency] = useState('daily');
+  const [selectedTemplate, setSelectedTemplate] = useState('full');
 
   const csdGold = '#B8985F';
+
+  // Report templates
+  const reportTemplates = {
+    full: {
+      name: 'Full Report',
+      description: 'Complete EOD report with all sections',
+      includes: ['Daily Summary', 'Payments Detail', 'Action Items', 'Top Procedures', 'MTD Summary', 'Important Notes']
+    },
+    executive: {
+      name: 'Executive Summary',
+      description: 'High-level overview for management',
+      includes: ['Daily Summary', 'Action Items', 'MTD Summary']
+    },
+    financial: {
+      name: 'Financial Focus',
+      description: 'Payment and collection details',
+      includes: ['Daily Summary', 'Payments Detail', 'Payment Methods', 'MTD Summary']
+    },
+    actionItems: {
+      name: 'Action Items Only',
+      description: 'Focus on tasks requiring attention',
+      includes: ['Action Items', 'Important Notes']
+    }
+  };
 
   // Dashboard data
   const dashboardData = {
@@ -377,16 +405,29 @@ const CourtStreetRCM = () => {
       subject: emailSubject,
       message: emailMessage,
       reportDate: selectedDate,
-      reportData: eodData
+      reportData: eodData,
+      template: selectedTemplate,
+      schedule: scheduleEmail ? {
+        enabled: true,
+        time: scheduleTime,
+        frequency: scheduleFrequency
+      } : null
     };
 
     // Simulate API call
     console.log('Sending email with data:', emailData);
 
-    alert(`EOD Report sent successfully to: ${emailRecipients}`);
+    if (scheduleEmail) {
+      const template = reportTemplates[selectedTemplate as keyof typeof reportTemplates];
+      alert(`EOD Report scheduled successfully!\nRecipients: ${emailRecipients}\nFrequency: ${scheduleFrequency} at ${scheduleTime}\nTemplate: ${template.name}`);
+    } else {
+      alert(`EOD Report sent successfully to: ${emailRecipients}`);
+    }
+
     setShowEmailModal(false);
     setEmailRecipients('');
     setEmailMessage('');
+    setScheduleEmail(false);
   };
 
   return (
@@ -403,9 +444,20 @@ const CourtStreetRCM = () => {
                 Powered by Stellar Consults - Revenue Cycle Management Solutions
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500">A Collaborative Solution</p>
-              <p className="text-xs font-medium text-gray-700">Court Street Dental × Stellar Consults</p>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="text-sm font-medium">Task Board</span>
+              </a>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">A Collaborative Solution</p>
+                <p className="text-xs font-medium text-gray-700">Court Street Dental × Stellar Consults</p>
+              </div>
             </div>
           </div>
         </div>
@@ -2478,6 +2530,89 @@ const CourtStreetRCM = () => {
                           placeholder="Add any notes or comments to include with the report..."
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                         />
+                      </div>
+
+                      {/* Report Template Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Report Template
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {Object.entries(reportTemplates).map(([key, template]) => (
+                            <div
+                              key={key}
+                              onClick={() => setSelectedTemplate(key)}
+                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                selectedTemplate === key
+                                  ? 'border-green-500 bg-green-50'
+                                  : 'border-gray-200 hover:border-green-300'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-1">
+                                <h4 className="font-semibold text-sm text-gray-900">{template.name}</h4>
+                                {selectedTemplate === key && (
+                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600">{template.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Schedule Email Option */}
+                      <div className="border-t pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={scheduleEmail}
+                              onChange={(e) => setScheduleEmail(e.target.checked)}
+                              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <Repeat className="w-4 h-4" />
+                              Schedule Automatic Delivery
+                            </span>
+                          </label>
+                        </div>
+
+                        {scheduleEmail && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Frequency
+                              </label>
+                              <select
+                                value={scheduleFrequency}
+                                onChange={(e) => setScheduleFrequency(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                              >
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly (Monday)</option>
+                                <option value="monthly">Monthly (1st of month)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Send Time
+                              </label>
+                              <input
+                                type="time"
+                                value={scheduleTime}
+                                onChange={(e) => setScheduleTime(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <div className="bg-white p-3 rounded border border-blue-300">
+                                <p className="text-xs text-gray-600">
+                                  <strong>Note:</strong> Scheduled reports will be sent automatically {scheduleFrequency} at {scheduleTime} to the specified recipients using the {reportTemplates[selectedTemplate as keyof typeof reportTemplates].name} template.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Report Preview Summary */}
