@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
-  Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle
+  Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
+  TrendingUp, Activity
 } from 'lucide-react';
 
 const CourtStreetRCM = () => {
@@ -9,6 +10,17 @@ const CourtStreetRCM = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const csdGold = '#B8985F';
+
+  // Dashboard data
+  const dashboardData = {
+    monthlyRevenue: 0,
+    monthlyTarget: 50000,
+    collectionRate: 0,
+    activePatients: 0,
+    activeClaims: 0,
+    pendingPayments: 0,
+    outstandingAR: 0
+  };
 
   // Claims data
   const claimsData = {
@@ -84,7 +96,210 @@ const CourtStreetRCM = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {currentView === 'claims' ? (
+        {currentView === 'dashboard' ? (
+          <div className="space-y-6">
+            {/* Dashboard Header */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+                Practice Overview Dashboard
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Real-time insights into your revenue cycle performance
+              </p>
+            </div>
+
+            {/* Key Performance Indicators */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Monthly Revenue */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-700 mb-1">Monthly Revenue</p>
+                    <p className="text-3xl font-bold text-green-900">
+                      ${dashboardData.monthlyRevenue.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-green-600 mt-2">
+                      Target: ${dashboardData.monthlyTarget.toLocaleString()}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+
+              {/* Collection Rate */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-700 mb-1">Collection Rate</p>
+                    <p className="text-3xl font-bold text-blue-900">
+                      {dashboardData.collectionRate}%
+                    </p>
+                    <p className="text-xs text-blue-600 mt-2">Industry avg: 95%</p>
+                  </div>
+                  <Activity className="w-8 h-8 text-blue-500" />
+                </div>
+              </div>
+
+              {/* Active Patients */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-700 mb-1">Active Patients</p>
+                    <p className="text-3xl font-bold text-purple-900">
+                      {dashboardData.activePatients}
+                    </p>
+                    <p className="text-xs text-purple-600 mt-2">This month</p>
+                  </div>
+                  <Users className="w-8 h-8 text-purple-500" />
+                </div>
+              </div>
+
+              {/* Outstanding A/R */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-amber-700 mb-1">Outstanding A/R</p>
+                    <p className="text-3xl font-bold text-amber-900">
+                      ${dashboardData.outstandingAR.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-amber-600 mt-2">Total receivables</p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-amber-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Claims & Payments Overview */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Claims Status */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Claims Status
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="w-5 h-5 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Active Claims</span>
+                    </div>
+                    <span className="text-lg font-bold text-blue-900">
+                      {dashboardData.activeClaims}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="w-5 h-5 text-yellow-600" />
+                      <span className="text-sm font-medium text-gray-700">Pending Claims</span>
+                    </div>
+                    <span className="text-lg font-bold text-yellow-900">
+                      {claimsData.pending}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <XCircle className="w-5 h-5 text-red-600" />
+                      <span className="text-sm font-medium text-gray-700">Denied Claims</span>
+                    </div>
+                    <span className="text-lg font-bold text-red-900">
+                      {claimsData.denied}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <AlertCircle className="w-5 h-5 text-orange-600" />
+                      <span className="text-sm font-medium text-gray-700">Claims &gt;60 Days</span>
+                    </div>
+                    <span className="text-lg font-bold text-orange-900">
+                      {claimsData.overSixtyDays}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Quick Actions
+                </h3>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setCurrentView('claims')}
+                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Review Claims</span>
+                    </div>
+                    <span className="text-xs text-blue-600">→</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('payments')}
+                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <DollarSign className="w-5 h-5 text-green-600" />
+                      <span className="text-sm font-medium text-gray-700">Process Payments</span>
+                    </div>
+                    <span className="text-xs text-green-600">→</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('patients')}
+                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Users className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-medium text-gray-700">Manage Patients</span>
+                    </div>
+                    <span className="text-xs text-purple-600">→</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('scorecard')}
+                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Award className="w-5 h-5 text-amber-600" />
+                      <span className="text-sm font-medium text-gray-700">View Scorecard</span>
+                    </div>
+                    <span className="text-xs text-amber-600">→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* A/R Aging Summary */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                A/R Aging Summary
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm font-medium text-green-700 mb-1">0-30 Days</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    ${claimsData.arAging.zeroToThirty.amount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm font-medium text-yellow-700 mb-1">31-60 Days</p>
+                  <p className="text-2xl font-bold text-yellow-900">
+                    ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-sm font-medium text-orange-700 mb-1">61-90 Days</p>
+                  <p className="text-2xl font-bold text-orange-900">
+                    ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm font-medium text-red-700 mb-1">90+ Days</p>
+                  <p className="text-2xl font-bold text-red-900">
+                    ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : currentView === 'claims' ? (
           <div className="space-y-6">
             {/* Claims Header */}
             <div className="bg-white rounded-lg shadow p-6">
