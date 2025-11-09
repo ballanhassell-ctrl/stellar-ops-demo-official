@@ -2,8 +2,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
-  TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
-  Target, BarChart
+  TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck
 } from 'lucide-react';
 
 const CourtStreetRCM = () => {
@@ -63,12 +62,122 @@ const CourtStreetRCM = () => {
 
   // Insurance data
   const insuranceData = {
-    totalProviders: 0,
-    activePlans: 0,
+    totalProviders: 11,
+    activePlans: 11,
     credentialingPending: 0,
     verificationsPending: 0,
-    topPayerByVolume: "N/A",
-    topPayerByRevenue: "N/A"
+    topPayerByVolume: "Delta Dental",
+    topPayerByRevenue: "Aetna",
+    totalPortals: 11,
+    eftEnrolled: 11,
+    connectionNetwork: 4,
+    directContracts: 6,
+    providers: [
+      {
+        name: 'Aetna',
+        feeSchedule: 'Direct',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'In',
+        drJudge: 'In',
+        drStrachan: 'In'
+      },
+      {
+        name: 'Cigna',
+        feeSchedule: 'Connection',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'In',
+        drJudge: 'In',
+        drStrachan: 'In'
+      },
+      {
+        name: 'Delta Dental Insurance',
+        feeSchedule: 'Direct',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'Out',
+        drJudge: 'Out',
+        drStrachan: 'Out'
+      },
+      {
+        name: 'MetLife',
+        feeSchedule: 'Connection',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'In',
+        drJudge: 'In',
+        drStrachan: 'In'
+      },
+      {
+        name: 'Anthem BCBS',
+        feeSchedule: 'Decare',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'In',
+        drJudge: 'In',
+        drStrachan: 'In'
+      },
+      {
+        name: 'United Healthcare (Optum ID)',
+        feeSchedule: 'Connection',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'Out',
+        drJudge: 'Out',
+        drStrachan: 'Out'
+      },
+      {
+        name: 'Guardian',
+        feeSchedule: 'Connection',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'Out',
+        drJudge: 'Out',
+        drStrachan: 'Out'
+      },
+      {
+        name: 'Humana',
+        feeSchedule: 'Direct',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'In',
+        drJudge: 'In',
+        drStrachan: 'In'
+      },
+      {
+        name: 'Ameritas',
+        feeSchedule: 'Direct',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'In',
+        drJudge: 'In',
+        drStrachan: 'In'
+      },
+      {
+        name: 'Principal',
+        feeSchedule: 'Direct',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'In',
+        drJudge: 'In',
+        drStrachan: 'In'
+      },
+      {
+        name: 'Beam Benefits',
+        feeSchedule: 'Direct',
+        portalStatus: 'All Set!',
+        eftStatus: 'Enrolled',
+        drGajjar: 'Out',
+        drJudge: 'Out',
+        drStrachan: 'Out'
+      }
+    ],
+    networkSummary: {
+      drGajjar: { inNetwork: 7, outNetwork: 4, percentage: 64 },
+      drJudge: { inNetwork: 7, outNetwork: 4, percentage: 64 },
+      drStrachan: { inNetwork: 7, outNetwork: 4, percentage: 64 }
+    }
   };
 
   // Scorecard data
@@ -76,11 +185,51 @@ const CourtStreetRCM = () => {
     productionGoal: 50000,
     productionActual: 0,
     collectionGoal: 95,
-    collectionActual: 0,
+    collectionActual: 60.7,
     newPatientsGoal: 20,
-    newPatientsActual: 0,
+    newPatientsActual: 7,
     claimApprovalRate: 0,
-    avgDaysToPay: 0
+    avgDaysToPay: 0,
+    // Enhanced metrics
+    avgShowRateDr: 77.5,
+    avgShowRateDrTarget: 90,
+    avgShowRateHyg: 49.3,
+    avgShowRateHygTarget: 85,
+    avgNewPatientsPerWeek: 7,
+    txAcceptance: 52.6,
+    txAcceptanceTarget: 50,
+    avgCollectionRate: 60.7,
+    avgCollectionRateTarget: 95,
+    totalTxPresented: 57425,
+    totalTxAccepted: 51192.2,
+    totalNewPatients: 13,
+    fiveStarReviews: 0,
+    weeklyData: [
+      {
+        week: 1,
+        date: '12/31/2024',
+        showRateDr: 80,
+        showRateHyg: 53,
+        newPts: 6,
+        txPresented: 18470,
+        txAcceptPct: 22,
+        txAccepted: 18470,
+        collectionPct: 33,
+        fiveStars: 0
+      },
+      {
+        week: 2,
+        date: '1/5/2025',
+        showRateDr: 75,
+        showRateHyg: 46,
+        newPts: 7,
+        txPresented: 38955,
+        txAcceptPct: 84,
+        txAccepted: 32722.2,
+        collectionPct: 88,
+        fiveStars: 0
+      }
+    ]
   };
 
   // Checklist data
@@ -1073,60 +1222,196 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
-            {/* Top Payers & Quick Links */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Top Payers */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Top Payers
-                </h3>
-                <div className="space-y-3">
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs text-gray-600 mb-1">By Volume</p>
-                    <p className="text-lg font-bold text-blue-900">
-                      {insuranceData.topPayerByVolume}
-                    </p>
+            {/* EFT Enrollment & Network Status Table */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                EFT Enrollment & Network Status
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 border-b-2 border-gray-200">
+                      <th className="text-left p-3 font-semibold text-gray-700">Insurance</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Fee Schedule</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Portal Status</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">EFT Status</th>
+                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Gajjar</th>
+                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Judge</th>
+                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Strachan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {insuranceData.providers.map((provider, index) => (
+                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="p-3 font-medium text-gray-900">{provider.name}</td>
+                        <td className="p-3">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                            provider.feeSchedule === 'Direct' ? 'bg-blue-100 text-blue-700' :
+                            provider.feeSchedule === 'Connection' ? 'bg-purple-100 text-purple-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {provider.feeSchedule}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className="inline-flex items-center text-green-600 font-medium">
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            {provider.portalStatus}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className="inline-flex items-center text-green-600 font-medium">
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            {provider.eftStatus}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                            provider.drGajjar === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {provider.drGajjar}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                            provider.drJudge === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {provider.drJudge}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                            provider.drStrachan === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {provider.drStrachan}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Fee Schedule Legend */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-bold text-gray-700 mb-3">Fee Schedules:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="font-semibold text-blue-700">Direct</span>
+                    <p className="text-gray-600">- Direct contract with insurance</p>
                   </div>
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-xs text-gray-600 mb-1">By Revenue</p>
-                    <p className="text-lg font-bold text-green-900">
-                      {insuranceData.topPayerByRevenue}
-                    </p>
+                  <div>
+                    <span className="font-semibold text-purple-700">Connection</span>
+                    <p className="text-gray-600">- Via Connection Dental network</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-green-700">Decare</span>
+                    <p className="text-gray-600">- Via Decare Dental network</p>
                   </div>
                 </div>
               </div>
 
-              {/* Insurance Portal Quick Links */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Portal Quick Links
-                </h3>
-                <div className="space-y-2">
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
-                    <p className="text-sm font-medium text-gray-700">Delta Dental Portal</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
-                    <p className="text-sm font-medium text-gray-700">MetLife Portal</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
-                    <p className="text-sm font-medium text-gray-700">Cigna Portal</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
-                    <p className="text-sm font-medium text-gray-700">Aetna Portal</p>
-                  </div>
+              {/* Summary Stats */}
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-900">{insuranceData.totalPortals}</p>
+                  <p className="text-xs text-gray-600 mt-1">Total Portals</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <p className="text-2xl font-bold text-green-900">{insuranceData.eftEnrolled}</p>
+                  <p className="text-xs text-gray-600 mt-1">EFT Enrolled</p>
+                </div>
+                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <p className="text-2xl font-bold text-purple-900">{insuranceData.connectionNetwork}</p>
+                  <p className="text-xs text-gray-600 mt-1">Connection Network</p>
+                </div>
+                <div className="text-center p-3 bg-indigo-50 rounded-lg">
+                  <p className="text-2xl font-bold text-indigo-900">{insuranceData.directContracts}</p>
+                  <p className="text-xs text-gray-600 mt-1">Direct Contracts</p>
                 </div>
               </div>
             </div>
 
-            {/* Insurance Verification Status */}
+            {/* Provider Network Summary */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Eligibility & Benefits Verification
+                Provider Network Summary
               </h3>
-              <div className="p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">
-                  Recent verification requests and results will appear here
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Dr. Gajjar */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-5">
+                  <h4 className="text-lg font-bold text-blue-900 mb-3">Dr. Gajjar</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">In-Network:</span>
+                      <span className="text-lg font-bold text-green-700">
+                        {insuranceData.networkSummary.drGajjar.inNetwork} ({insuranceData.networkSummary.drGajjar.percentage}%)
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">Out-of-Network:</span>
+                      <span className="text-lg font-bold text-red-700">
+                        {insuranceData.networkSummary.drGajjar.outNetwork}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full"
+                        style={{ width: `${insuranceData.networkSummary.drGajjar.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dr. Judge */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-5">
+                  <h4 className="text-lg font-bold text-purple-900 mb-3">Dr. Judge</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">In-Network:</span>
+                      <span className="text-lg font-bold text-green-700">
+                        {insuranceData.networkSummary.drJudge.inNetwork} ({insuranceData.networkSummary.drJudge.percentage}%)
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">Out-of-Network:</span>
+                      <span className="text-lg font-bold text-red-700">
+                        {insuranceData.networkSummary.drJudge.outNetwork}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full"
+                        style={{ width: `${insuranceData.networkSummary.drJudge.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dr. Strachan */}
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-200 rounded-lg p-5">
+                  <h4 className="text-lg font-bold text-teal-900 mb-3">Dr. Strachan</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">In-Network:</span>
+                      <span className="text-lg font-bold text-green-700">
+                        {insuranceData.networkSummary.drStrachan.inNetwork} ({insuranceData.networkSummary.drStrachan.percentage}%)
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">Out-of-Network:</span>
+                      <span className="text-lg font-bold text-red-700">
+                        {insuranceData.networkSummary.drStrachan.outNetwork}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full"
+                        style={{ width: `${insuranceData.networkSummary.drStrachan.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1142,169 +1427,285 @@ const CourtStreetRCM = () => {
               </p>
             </div>
 
-            {/* Key Metrics vs Goals */}
+            {/* Key Practice Metrics - 4 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Production Goal */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-green-500">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Monthly Production</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      ${scorecardData.productionActual.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Goal: ${scorecardData.productionGoal.toLocaleString()}
-                    </p>
-                  </div>
-                  <Target className="w-6 h-6 text-green-500" />
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                  <div
-                    className="bg-green-500 h-2 rounded-full"
-                    style={{
-                      width: `${Math.min(
-                        (scorecardData.productionActual / scorecardData.productionGoal) * 100,
-                        100
-                      )}%`
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Collection Rate Goal */}
+              {/* Avg Show Rate (Dr) */}
               <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-500">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Collection Rate</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {scorecardData.collectionActual}%
+                    <p className="text-sm font-medium text-gray-600">Avg Show Rate (Dr)</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {scorecardData.avgShowRateDr}%
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Goal: {scorecardData.collectionGoal}%
+                      Target: {scorecardData.avgShowRateDrTarget}%+
                     </p>
                   </div>
-                  <BarChart className="w-6 h-6 text-blue-500" />
+                  <UserCheck className="w-6 h-6 text-blue-500" />
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                   <div
-                    className="bg-blue-500 h-2 rounded-full"
+                    className={`h-2 rounded-full ${scorecardData.avgShowRateDr >= scorecardData.avgShowRateDrTarget ? 'bg-green-500' : 'bg-yellow-500'}`}
                     style={{
-                      width: `${Math.min(
-                        (scorecardData.collectionActual / scorecardData.collectionGoal) * 100,
-                        100
-                      )}%`
+                      width: `${Math.min((scorecardData.avgShowRateDr / scorecardData.avgShowRateDrTarget) * 100, 100)}%`
                     }}
                   ></div>
                 </div>
               </div>
 
-              {/* New Patients Goal */}
+              {/* Avg Show Rate (Hyg) */}
               <div className="bg-white rounded-lg shadow p-5 border-l-4 border-purple-500">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">New Patients</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {scorecardData.newPatientsActual}
+                    <p className="text-sm font-medium text-gray-600">Avg Show Rate (Hyg)</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {scorecardData.avgShowRateHyg}%
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Goal: {scorecardData.newPatientsGoal}
+                      Target: {scorecardData.avgShowRateHygTarget}%+
                     </p>
                   </div>
-                  <Users className="w-6 h-6 text-purple-500" />
+                  <UserCheck className="w-6 h-6 text-purple-500" />
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                   <div
-                    className="bg-purple-500 h-2 rounded-full"
+                    className={`h-2 rounded-full ${scorecardData.avgShowRateHyg >= scorecardData.avgShowRateHygTarget ? 'bg-green-500' : 'bg-red-500'}`}
                     style={{
-                      width: `${Math.min(
-                        (scorecardData.newPatientsActual / scorecardData.newPatientsGoal) * 100,
-                        100
-                      )}%`
+                      width: `${Math.min((scorecardData.avgShowRateHyg / scorecardData.avgShowRateHygTarget) * 100, 100)}%`
                     }}
                   ></div>
                 </div>
               </div>
 
-              {/* Claim Approval Rate */}
+              {/* Avg New Patients */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-green-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Avg New Patients</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {scorecardData.avgNewPatientsPerWeek}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">per week</p>
+                  </div>
+                  <Users className="w-6 h-6 text-green-500" />
+                </div>
+              </div>
+
+              {/* TX Acceptance */}
               <div className="bg-white rounded-lg shadow p-5 border-l-4 border-amber-500">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Claim Approval</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {scorecardData.claimApprovalRate}%
+                    <p className="text-sm font-medium text-gray-600">TX Acceptance</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {scorecardData.txAcceptance}%
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Industry avg: 85%</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Target: {scorecardData.txAcceptanceTarget}%+
+                    </p>
                   </div>
                   <CheckCircle className="w-6 h-6 text-amber-500" />
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                   <div
-                    className="bg-amber-500 h-2 rounded-full"
-                    style={{ width: `${Math.min(scorecardData.claimApprovalRate, 100)}%` }}
+                    className={`h-2 rounded-full ${scorecardData.txAcceptance >= scorecardData.txAcceptanceTarget ? 'bg-green-500' : 'bg-yellow-500'}`}
+                    style={{
+                      width: `${Math.min((scorecardData.txAcceptance / scorecardData.txAcceptanceTarget) * 100, 100)}%`
+                    }}
                   ></div>
                 </div>
               </div>
             </div>
 
-            {/* Performance Indicators */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Revenue Cycle Metrics */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Revenue Cycle Performance
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Avg Days to Payment</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      {scorecardData.avgDaysToPay} days
-                    </span>
+            {/* Second Row - More Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Avg Collection Rate */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-600">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Avg Collection Rate</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {scorecardData.avgCollectionRate}%
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Target: {scorecardData.avgCollectionRateTarget}%+
+                    </p>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">First-Pass Resolution</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      {scorecardData.claimApprovalRate}%
-                    </span>
-                  </div>
+                  <DollarSign className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div
+                    className={`h-2 rounded-full ${scorecardData.avgCollectionRate >= scorecardData.avgCollectionRateTarget ? 'bg-green-500' : 'bg-red-500'}`}
+                    style={{
+                      width: `${Math.min((scorecardData.avgCollectionRate / scorecardData.avgCollectionRateTarget) * 100, 100)}%`
+                    }}
+                  ></div>
                 </div>
               </div>
 
-              {/* Monthly Trends */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Monthly Trends
-                </h3>
-                <div className="p-4 bg-gray-50 rounded-lg text-center">
-                  <p className="text-sm text-gray-600">
-                    Historical trend data and charts will appear here
+              {/* Total TX Presented */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-indigo-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total TX Presented</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      ${scorecardData.totalTxPresented.toLocaleString()}
+                    </p>
+                  </div>
+                  <FileText className="w-6 h-6 text-indigo-500" />
+                </div>
+              </div>
+
+              {/* Total TX Accepted */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-teal-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total TX Accepted</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      ${scorecardData.totalTxAccepted.toLocaleString()}
+                    </p>
+                  </div>
+                  <CheckCircle className="w-6 h-6 text-teal-500" />
+                </div>
+              </div>
+
+              {/* Total New Patients & 5★ Reviews */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-pink-500">
+                <div className="mb-3">
+                  <p className="text-sm font-medium text-gray-600">Total New Patients</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {scorecardData.totalNewPatients}
+                  </p>
+                </div>
+                <div className="border-t pt-2">
+                  <p className="text-sm font-medium text-gray-600">5★ Reviews</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {scorecardData.fiveStarReviews}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Goal Setting */}
+            {/* Weekly Data Table */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Performance Summary
+                Weekly Performance Data
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                  <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-gray-700">On Track</p>
-                  <p className="text-2xl font-bold text-green-900">0</p>
-                  <p className="text-xs text-gray-500 mt-1">Goals met</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 border-b-2 border-gray-200">
+                      <th className="text-left p-3 font-semibold text-gray-700">Week</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Date</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Show Rate Dr</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Show Rate Hyg</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">New Pts</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">TX Presented</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">TX Accept %</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">TX Accepted</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Collection %</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">5★</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scorecardData.weeklyData.map((week) => (
+                      <tr key={week.week} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="p-3 font-medium text-gray-900">{week.week}</td>
+                        <td className="p-3 text-gray-700">{week.date}</td>
+                        <td className="p-3">
+                          <span className={`font-semibold ${week.showRateDr >= 90 ? 'text-green-600' : week.showRateDr >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {week.showRateDr}%
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className={`font-semibold ${week.showRateHyg >= 85 ? 'text-green-600' : week.showRateHyg >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {week.showRateHyg}%
+                          </span>
+                        </td>
+                        <td className="p-3 font-medium text-gray-900">{week.newPts}</td>
+                        <td className="p-3 font-medium text-gray-900">${week.txPresented.toLocaleString()}</td>
+                        <td className="p-3">
+                          <span className={`font-semibold ${week.txAcceptPct >= 50 ? 'text-green-600' : 'text-yellow-600'}`}>
+                            {week.txAcceptPct}%
+                          </span>
+                        </td>
+                        <td className="p-3 font-medium text-gray-900">${week.txAccepted.toLocaleString()}</td>
+                        <td className="p-3">
+                          <span className={`font-semibold ${week.collectionPct >= 95 ? 'text-green-600' : week.collectionPct >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {week.collectionPct}%
+                          </span>
+                        </td>
+                        <td className="p-3 font-medium text-gray-900">{week.fiveStars}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Weekly Trends Visualization */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Weekly Trends
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Show Rates Trends */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-md font-semibold mb-3 text-gray-700">Show Rates</h4>
+                  <div className="space-y-3">
+                    {scorecardData.weeklyData.map((week) => (
+                      <div key={`show-${week.week}`}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">Week {week.week}</span>
+                          <span className="text-gray-700 font-medium">Dr: {week.showRateDr}% | Hyg: {week.showRateHyg}%</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${week.showRateDr >= 90 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                style={{ width: `${week.showRateDr}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Dr</p>
+                          </div>
+                          <div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${week.showRateHyg >= 85 ? 'bg-green-500' : 'bg-purple-500'}`}
+                                style={{ width: `${week.showRateHyg}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Hyg</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <TrendingUp className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-gray-700">Needs Attention</p>
-                  <p className="text-2xl font-bold text-yellow-900">0</p>
-                  <p className="text-xs text-gray-500 mt-1">Below target</p>
-                </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-                  <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-gray-700">Critical</p>
-                  <p className="text-2xl font-bold text-red-900">0</p>
-                  <p className="text-xs text-gray-500 mt-1">Urgent action needed</p>
+
+                {/* Treatment Acceptance Trends */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-md font-semibold mb-3 text-gray-700">Treatment Acceptance</h4>
+                  <div className="space-y-3">
+                    {scorecardData.weeklyData.map((week) => (
+                      <div key={`tx-${week.week}`}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">Week {week.week}</span>
+                          <span className="text-gray-700 font-medium">{week.txAcceptPct}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-4">
+                          <div
+                            className={`h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                              week.txAcceptPct >= 70 ? 'bg-green-500' : week.txAcceptPct >= 50 ? 'bg-blue-500' : 'bg-yellow-500'
+                            }`}
+                            style={{ width: `${week.txAcceptPct}%` }}
+                          >
+                            {week.txAcceptPct}%
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1506,31 +1907,43 @@ const CourtStreetRCM = () => {
           </div>
         )}
 
-        {/* Feature Cards Grid */}
+        {/* Feature Cards Grid - Clickable Navigation */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg">
+          <button
+            onClick={() => setCurrentView('dashboard')}
+            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer text-left"
+          >
             <LayoutDashboard className="w-8 h-8 mb-2" />
             <h3 className="font-semibold mb-1">Dashboard</h3>
             <p className="text-sm text-blue-100">KPIs & Analytics</p>
-          </div>
+          </button>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg">
+          <button
+            onClick={() => setCurrentView('claims')}
+            className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer text-left"
+          >
             <FileText className="w-8 h-8 mb-2" />
             <h3 className="font-semibold mb-1">Claims</h3>
             <p className="text-sm text-green-100">Track & Manage</p>
-          </div>
+          </button>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-6 text-white shadow-lg">
+          <button
+            onClick={() => setCurrentView('payments')}
+            className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer text-left"
+          >
             <DollarSign className="w-8 h-8 mb-2" />
             <h3 className="font-semibold mb-1">Payments</h3>
             <p className="text-sm text-purple-100">Process & Record</p>
-          </div>
+          </button>
 
-          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-6 text-white shadow-lg">
+          <button
+            onClick={() => setCurrentView('patients')}
+            className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer text-left"
+          >
             <Users className="w-8 h-8 mb-2" />
             <h3 className="font-semibold mb-1">Patients</h3>
             <p className="text-sm text-amber-100">A/R Management</p>
-          </div>
+          </button>
         </div>
       </div>
     </div>
