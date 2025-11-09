@@ -385,20 +385,29 @@ const CourtStreetRCM = () => {
     }
   };
 
+  // Helper function to get last 6 months
+  const getLastSixMonths = () => {
+    const months = [];
+    const today = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      months.push({ month: monthName, count: 0 });
+    }
+    return months;
+  };
+
   // New Patient Tracker data
   const newPatientTrackerData = {
     perDay: 0,
+    perDayGoal: 5,
     perWeek: 0,
+    perWeekGoal: 35, // 5 per day × 7 days
     perMonth: 0,
+    perMonthGoal: 150, // 5 per day × 30 days
     quarterly: 0,
-    monthlyAverages: [
-      { month: 'Month -6', count: 0 },
-      { month: 'Month -5', count: 0 },
-      { month: 'Month -4', count: 0 },
-      { month: 'Month -3', count: 0 },
-      { month: 'Month -2', count: 0 },
-      { month: 'Month -1', count: 0 }
-    ]
+    quarterlyGoal: 450, // 5 per day × 90 days
+    monthlyAverages: getLastSixMonths()
   };
 
   // Third Party Financing data
@@ -771,52 +780,165 @@ const CourtStreetRCM = () => {
 
             {/* New Patient Tracker */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+              <h3 className="text-lg font-bold mb-6" style={{ color: csdGold }}>
                 New Patient Tracker
               </h3>
 
               {/* Current Period Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm font-medium text-blue-700 mb-1">Per Day</p>
-                  <p className="text-3xl font-bold text-blue-900">
-                    {newPatientTrackerData.perDay}
-                  </p>
-                  <p className="text-xs text-blue-600 mt-1">Today</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {/* Per Day */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Per Day</p>
+                      <p className="text-xs text-blue-600 mt-0.5">Today</p>
+                    </div>
+                    <Users className="w-6 h-6 text-blue-500" />
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <p className="text-4xl font-bold text-blue-900">
+                      {newPatientTrackerData.perDay}
+                    </p>
+                    <p className="text-sm text-blue-600">/ {newPatientTrackerData.perDayGoal}</p>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.perDay >= newPatientTrackerData.perDayGoal ? 'bg-green-500' : 'bg-blue-500'}`}
+                      style={{
+                        width: `${Math.min((newPatientTrackerData.perDay / newPatientTrackerData.perDayGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-blue-700 font-medium">Goal: {newPatientTrackerData.perDayGoal} per day</p>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm font-medium text-green-700 mb-1">Per Week</p>
-                  <p className="text-3xl font-bold text-green-900">
-                    {newPatientTrackerData.perWeek}
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">Last 7 days</p>
+
+                {/* Per Week */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Per Week</p>
+                      <p className="text-xs text-green-600 mt-0.5">Last 7 days</p>
+                    </div>
+                    <Users className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <p className="text-4xl font-bold text-green-900">
+                      {newPatientTrackerData.perWeek}
+                    </p>
+                    <p className="text-sm text-green-600">/ {newPatientTrackerData.perWeekGoal}</p>
+                  </div>
+                  <div className="w-full bg-green-200 rounded-full h-2 mb-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.perWeek >= newPatientTrackerData.perWeekGoal ? 'bg-green-500' : 'bg-green-400'}`}
+                      style={{
+                        width: `${Math.min((newPatientTrackerData.perWeek / newPatientTrackerData.perWeekGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-green-700 font-medium">Goal: {newPatientTrackerData.perWeekGoal} per week</p>
                 </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <p className="text-sm font-medium text-purple-700 mb-1">Per Month</p>
-                  <p className="text-3xl font-bold text-purple-900">
-                    {newPatientTrackerData.perMonth}
-                  </p>
-                  <p className="text-xs text-purple-600 mt-1">This month</p>
+
+                {/* Per Month */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Per Month</p>
+                      <p className="text-xs text-purple-600 mt-0.5">This month</p>
+                    </div>
+                    <Users className="w-6 h-6 text-purple-500" />
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <p className="text-4xl font-bold text-purple-900">
+                      {newPatientTrackerData.perMonth}
+                    </p>
+                    <p className="text-sm text-purple-600">/ {newPatientTrackerData.perMonthGoal}</p>
+                  </div>
+                  <div className="w-full bg-purple-200 rounded-full h-2 mb-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.perMonth >= newPatientTrackerData.perMonthGoal ? 'bg-green-500' : 'bg-purple-500'}`}
+                      style={{
+                        width: `${Math.min((newPatientTrackerData.perMonth / newPatientTrackerData.perMonthGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-purple-700 font-medium">Goal: {newPatientTrackerData.perMonthGoal} per month</p>
                 </div>
-                <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-sm font-medium text-amber-700 mb-1">Quarterly</p>
-                  <p className="text-3xl font-bold text-amber-900">
-                    {newPatientTrackerData.quarterly}
-                  </p>
-                  <p className="text-xs text-amber-600 mt-1">This quarter</p>
+
+                {/* Quarterly */}
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Quarterly</p>
+                      <p className="text-xs text-amber-600 mt-0.5">This quarter</p>
+                    </div>
+                    <Users className="w-6 h-6 text-amber-500" />
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <p className="text-4xl font-bold text-amber-900">
+                      {newPatientTrackerData.quarterly}
+                    </p>
+                    <p className="text-sm text-amber-600">/ {newPatientTrackerData.quarterlyGoal}</p>
+                  </div>
+                  <div className="w-full bg-amber-200 rounded-full h-2 mb-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-green-500' : 'bg-amber-500'}`}
+                      style={{
+                        width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-amber-700 font-medium">Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
                 </div>
               </div>
 
-              {/* 6-Month Averages */}
+              {/* 6-Month Trend */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Averages - Past 6 Months</h4>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                  {newPatientTrackerData.monthlyAverages.map((monthData, index) => (
-                    <div key={index} className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-xs font-medium text-gray-600 mb-1">{monthData.month}</p>
-                      <p className="text-xl font-bold text-gray-900">{monthData.count}</p>
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">6-Month Trend</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {newPatientTrackerData.monthlyAverages.map((monthData, index) => {
+                    const goalPerMonth = newPatientTrackerData.perMonthGoal;
+                    const percentage = goalPerMonth > 0 ? (monthData.count / goalPerMonth) * 100 : 0;
+                    const isOnTrack = monthData.count >= goalPerMonth;
+
+                    return (
+                      <div key={index} className="bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 rounded-lg p-4 hover:shadow-md transition-all">
+                        <p className="text-xs font-semibold text-slate-600 mb-2 truncate">{monthData.month}</p>
+                        <p className="text-3xl font-bold text-slate-900 mb-2">{monthData.count}</p>
+                        <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2">
+                          <div
+                            className={`h-1.5 rounded-full transition-all ${isOnTrack ? 'bg-green-500' : percentage >= 75 ? 'bg-blue-500' : percentage >= 50 ? 'bg-yellow-500' : 'bg-red-400'}`}
+                            style={{
+                              width: `${Math.min(percentage, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-slate-600">
+                          {percentage >= 100 ? '✓ On track' : `${percentage.toFixed(0)}% of goal`}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-xs text-slate-600">≥100%</span>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-xs text-slate-600">75-99%</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span className="text-xs text-slate-600">50-74%</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                      <span className="text-xs text-slate-600">&lt;50%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">Monthly Goal: {newPatientTrackerData.perMonthGoal} NP's</p>
                 </div>
               </div>
             </div>
