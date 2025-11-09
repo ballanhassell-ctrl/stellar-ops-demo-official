@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
-  TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck
+  TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
+  Target, BarChart
 } from 'lucide-react';
 
 const CourtStreetRCM = () => {
@@ -68,6 +69,28 @@ const CourtStreetRCM = () => {
     verificationsPending: 0,
     topPayerByVolume: "N/A",
     topPayerByRevenue: "N/A"
+  };
+
+  // Scorecard data
+  const scorecardData = {
+    productionGoal: 50000,
+    productionActual: 0,
+    collectionGoal: 95,
+    collectionActual: 0,
+    newPatientsGoal: 20,
+    newPatientsActual: 0,
+    claimApprovalRate: 0,
+    avgDaysToPay: 0
+  };
+
+  // Checklist data
+  const checklistData = {
+    dailyCompleted: 0,
+    dailyTotal: 8,
+    weeklyCompleted: 0,
+    weeklyTotal: 5,
+    monthlyCompleted: 0,
+    monthlyTotal: 4
   };
 
   // Claims data
@@ -1104,6 +1127,349 @@ const CourtStreetRCM = () => {
                 <p className="text-sm text-gray-600">
                   Recent verification requests and results will appear here
                 </p>
+              </div>
+            </div>
+          </div>
+        ) : currentView === 'scorecard' ? (
+          <div className="space-y-6">
+            {/* Scorecard Header */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+                Practice Scorecard Metrics
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Track your practice performance against goals
+              </p>
+            </div>
+
+            {/* Key Metrics vs Goals */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Production Goal */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-green-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Monthly Production</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      ${scorecardData.productionActual.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Goal: ${scorecardData.productionGoal.toLocaleString()}
+                    </p>
+                  </div>
+                  <Target className="w-6 h-6 text-green-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{
+                      width: `${Math.min(
+                        (scorecardData.productionActual / scorecardData.productionGoal) * 100,
+                        100
+                      )}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Collection Rate Goal */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Collection Rate</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {scorecardData.collectionActual}%
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Goal: {scorecardData.collectionGoal}%
+                    </p>
+                  </div>
+                  <BarChart className="w-6 h-6 text-blue-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
+                    style={{
+                      width: `${Math.min(
+                        (scorecardData.collectionActual / scorecardData.collectionGoal) * 100,
+                        100
+                      )}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* New Patients Goal */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-purple-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">New Patients</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {scorecardData.newPatientsActual}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Goal: {scorecardData.newPatientsGoal}
+                    </p>
+                  </div>
+                  <Users className="w-6 h-6 text-purple-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div
+                    className="bg-purple-500 h-2 rounded-full"
+                    style={{
+                      width: `${Math.min(
+                        (scorecardData.newPatientsActual / scorecardData.newPatientsGoal) * 100,
+                        100
+                      )}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Claim Approval Rate */}
+              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-amber-500">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Claim Approval</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {scorecardData.claimApprovalRate}%
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Industry avg: 85%</p>
+                  </div>
+                  <CheckCircle className="w-6 h-6 text-amber-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div
+                    className="bg-amber-500 h-2 rounded-full"
+                    style={{ width: `${Math.min(scorecardData.claimApprovalRate, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Indicators */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Revenue Cycle Metrics */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Revenue Cycle Performance
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Avg Days to Payment</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {scorecardData.avgDaysToPay} days
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">First-Pass Resolution</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {scorecardData.claimApprovalRate}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Monthly Trends */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Monthly Trends
+                </h3>
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-600">
+                    Historical trend data and charts will appear here
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Goal Setting */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Performance Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                  <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700">On Track</p>
+                  <p className="text-2xl font-bold text-green-900">0</p>
+                  <p className="text-xs text-gray-500 mt-1">Goals met</p>
+                </div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <TrendingUp className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700">Needs Attention</p>
+                  <p className="text-2xl font-bold text-yellow-900">0</p>
+                  <p className="text-xs text-gray-500 mt-1">Below target</p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                  <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700">Critical</p>
+                  <p className="text-2xl font-bold text-red-900">0</p>
+                  <p className="text-xs text-gray-500 mt-1">Urgent action needed</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : currentView === 'checklist' ? (
+          <div className="space-y-6">
+            {/* Checklist Header */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+                Daily, Weekly & Monthly Checklists
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Stay on track with systematic RCM task management
+              </p>
+            </div>
+
+            {/* Checklist Progress Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Daily Tasks */}
+              <div className="bg-white rounded-lg shadow p-5 border-t-4 border-blue-500">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Daily Tasks</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {checklistData.dailyCompleted}/{checklistData.dailyTotal}
+                    </p>
+                  </div>
+                  <List className="w-8 h-8 text-blue-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
+                    style={{
+                      width: `${(checklistData.dailyCompleted / checklistData.dailyTotal) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {checklistData.dailyTotal - checklistData.dailyCompleted} remaining
+                </p>
+              </div>
+
+              {/* Weekly Tasks */}
+              <div className="bg-white rounded-lg shadow p-5 border-t-4 border-green-500">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Weekly Tasks</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {checklistData.weeklyCompleted}/{checklistData.weeklyTotal}
+                    </p>
+                  </div>
+                  <ClipboardCheck className="w-8 h-8 text-green-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{
+                      width: `${(checklistData.weeklyCompleted / checklistData.weeklyTotal) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {checklistData.weeklyTotal - checklistData.weeklyCompleted} remaining
+                </p>
+              </div>
+
+              {/* Monthly Tasks */}
+              <div className="bg-white rounded-lg shadow p-5 border-t-4 border-purple-500">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Monthly Tasks</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {checklistData.monthlyCompleted}/{checklistData.monthlyTotal}
+                    </p>
+                  </div>
+                  <Award className="w-8 h-8 text-purple-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-purple-500 h-2 rounded-full"
+                    style={{
+                      width: `${(checklistData.monthlyCompleted / checklistData.monthlyTotal) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {checklistData.monthlyTotal - checklistData.monthlyCompleted} remaining
+                </p>
+              </div>
+            </div>
+
+            {/* Daily Checklist */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Daily RCM Tasks
+              </h3>
+              <div className="space-y-2">
+                {[
+                  'Review and post payments from previous day',
+                  'Submit claims for completed procedures',
+                  'Follow up on pending pre-authorizations',
+                  'Verify insurance for scheduled appointments',
+                  'Process patient payment plans',
+                  'Review denied claims and submit appeals',
+                  'Update A/R aging report',
+                  'Reconcile daily deposits'
+                ].map((task, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                  >
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
+                    <span className="text-sm text-gray-700">{task}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Weekly & Monthly Checklists */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weekly Tasks */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Weekly RCM Tasks
+                </h3>
+                <div className="space-y-2">
+                  {[
+                    'Review A/R aging by insurance carrier',
+                    'Follow up on claims >30 days',
+                    'Update pre-authorization expiration tracking',
+                    'Review production and collection metrics',
+                    'Reconcile insurance payments vs. EOBs'
+                  ].map((task, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                    >
+                      <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
+                      <span className="text-sm text-gray-700">{task}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Monthly Tasks */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Monthly RCM Tasks
+                </h3>
+                <div className="space-y-2">
+                  {[
+                    'Complete monthly financial close',
+                    'Review practice scorecard metrics',
+                    'Analyze collection rate trends',
+                    'Update fee schedules and contracts'
+                  ].map((task, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                    >
+                      <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
+                      <span className="text-sm text-gray-700">{task}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
