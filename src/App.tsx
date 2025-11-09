@@ -3,12 +3,17 @@ import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
-  Calendar, Send, Printer
+  Calendar, Send, Printer, Download, X, Mail
 } from 'lucide-react';
 
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState('');
+  const [emailSubject, setEmailSubject] = useState('EOD Report - Court Street Dental');
+  const [emailMessage, setEmailMessage] = useState('');
 
   const csdGold = '#B8985F';
 
@@ -321,6 +326,68 @@ const CourtStreetRCM = () => {
     { id: 'checklist', name: 'Checklist', icon: List },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar }
   ];
+
+  // Helper function to export PDF
+  const exportToPDF = () => {
+    // In a real implementation, this would use a library like jsPDF or html2pdf
+    // For now, we'll use the browser's print-to-PDF functionality
+    const printContent = document.getElementById('eod-report-content');
+    if (printContent) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>EOD Report - ${selectedDate}</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f3f4f6; }
+                .header { color: #B8985F; font-size: 24px; margin-bottom: 10px; }
+                .section { margin: 20px 0; }
+                .metric { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+              </style>
+            </head>
+            <body>
+              ${printContent.innerHTML}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      }
+    }
+  };
+
+  // Helper function to send email
+  const handleSendEmail = () => {
+    // In a real implementation, this would call an API endpoint to send the email
+    // For now, we'll show a success message
+    if (!emailRecipients) {
+      alert('Please enter at least one email recipient');
+      return;
+    }
+
+    const emailData = {
+      to: emailRecipients.split(',').map(email => email.trim()),
+      subject: emailSubject,
+      message: emailMessage,
+      reportDate: selectedDate,
+      reportData: eodData
+    };
+
+    // Simulate API call
+    console.log('Sending email with data:', emailData);
+
+    alert(`EOD Report sent successfully to: ${emailRecipients}`);
+    setShowEmailModal(false);
+    setEmailRecipients('');
+    setEmailMessage('');
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -1931,34 +1998,54 @@ const CourtStreetRCM = () => {
           </div>
         ) : currentView === 'eod-report' ? (
           <div className="space-y-6">
-            {/* EOD Report Header with Action Buttons */}
+            {/* EOD Report Header with Date Picker and Action Buttons */}
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div className="flex-1">
                   <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
                     End of Day Report
                   </h2>
-                  <p className="text-gray-600 text-sm">{eodData.reportDate}</p>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <span className="text-gray-600 text-sm">
+                      {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   <button
                     onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all shadow-md"
                   >
                     <Printer className="w-4 h-4" />
                     Print
                   </button>
                   <button
-                    onClick={() => alert('Export functionality would generate a PDF or send via email')}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+                    onClick={exportToPDF}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all shadow-md"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export PDF
+                  </button>
+                  <button
+                    onClick={() => setShowEmailModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-md"
                   >
                     <Send className="w-4 h-4" />
-                    Send Report
+                    Email Report
                   </button>
                 </div>
               </div>
             </div>
 
+            {/* Wrap the entire report in a div with id for PDF export */}
+            <div id="eod-report-content">
             {/* Daily Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Daily Production */}
@@ -2322,6 +2409,127 @@ const CourtStreetRCM = () => {
                 </li>
               </ul>
             </div>
+            </div>
+            {/* End of eod-report-content div */}
+
+            {/* Email Modal */}
+            {showEmailModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <Mail className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">Email EOD Report</h3>
+                          <p className="text-sm text-gray-500">Send report for {new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowEmailModal(false)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+
+                    {/* Email Form */}
+                    <div className="space-y-4">
+                      {/* Recipients */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Recipients <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={emailRecipients}
+                          onChange={(e) => setEmailRecipients(e.target.value)}
+                          placeholder="email@example.com, another@example.com"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
+                      </div>
+
+                      {/* Subject */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Subject
+                        </label>
+                        <input
+                          type="text"
+                          value={emailSubject}
+                          onChange={(e) => setEmailSubject(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Message */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Additional Message (Optional)
+                        </label>
+                        <textarea
+                          value={emailMessage}
+                          onChange={(e) => setEmailMessage(e.target.value)}
+                          rows={4}
+                          placeholder="Add any notes or comments to include with the report..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                        />
+                      </div>
+
+                      {/* Report Preview Summary */}
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Report Summary</h4>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500">Daily Production</p>
+                            <p className="font-bold text-gray-900">${eodData.dailyProduction.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Payments Collected</p>
+                            <p className="font-bold text-gray-900">${eodData.paymentsCollected.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Patients Seen</p>
+                            <p className="font-bold text-gray-900">{eodData.patientsSeenToday}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Action Items</p>
+                            <p className="font-bold text-gray-900">
+                              {eodData.actionItems.claimsToSubmit +
+                               eodData.actionItems.deniedClaimsToResubmit +
+                               eodData.actionItems.preAuthsExpiring +
+                               eodData.actionItems.accountsNeedingFollowUp +
+                               eodData.actionItems.missedAppointments}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Modal Actions */}
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={() => setShowEmailModal(false)}
+                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSendEmail}
+                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-medium shadow-md flex items-center justify-center gap-2"
+                      >
+                        <Send className="w-4 h-4" />
+                        Send Report
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow p-6">
