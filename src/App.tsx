@@ -267,6 +267,47 @@ const CourtStreetRCM = () => {
     ]
   };
 
+  // Advanced Scorecard Metrics
+  const advancedMetrics = {
+    // Financial Metrics
+    cac: 0, // Customer Acquisition Cost
+    grossProfitMargin: 0, // Gross Profit Margin %
+    operatingProfitMargin: 0, // Operating Profit Margin %
+    cashFlow: 0, // Cash Flow amount
+    revenueGrowthRate: 0, // Revenue Growth Rate %
+
+    // COGS Components
+    cogs: {
+      dentalSupplies: 0,
+      labFees: 0,
+      associateDoctorExpense: 0,
+      hygienePayroll: 0,
+      assistantPayroll: 0,
+      totalCOGS: 0
+    },
+
+    operatingCosts: 0, // Total Operating Costs
+
+    // Customer Metrics
+    churnedPatientsPerMonth: 0,
+    churnRate: 0, // Churn Rate %
+    patientLifeCycleMonths: 0, // Patient Life Cycle in Months
+    patientLifeCycleYears: 0, // Patient Life Cycle in Years
+    activePtsFirstOfPriorMonth: 0,
+
+    // Revenue Metrics
+    averageRevenuePerClient: 0, // ARPC
+    ltv: 0, // Lifetime Value (ARPC x Avg Retention Period)
+    avgRetentionPeriod: 0, // Average Retention Period in months
+
+    // Satisfaction Metrics
+    nps: 0, // Net Promoter Score
+    enps: 0, // Employee Net Promoter Score
+
+    // Employee Metrics
+    employeeUtilizationRate: 0 // Employee Utilization Rate %
+  };
+
   // Checklist data
   const checklistData = {
     dailyCompleted: 0,
@@ -1765,6 +1806,209 @@ const CourtStreetRCM = () => {
               <p className="text-gray-600 text-sm">
                 Track your practice performance against goals
               </p>
+            </div>
+
+            {/* Advanced Business Metrics */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
+                Advanced Business Metrics
+              </h3>
+
+              {/* Financial Performance */}
+              <div className="mb-8">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Financial Performance</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-emerald-700 mb-1">CAC</p>
+                    <p className="text-2xl font-bold text-emerald-900">
+                      ${advancedMetrics.cac.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-emerald-600 mt-1">Customer Acquisition Cost</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-blue-700 mb-1">Gross Profit Margin</p>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {advancedMetrics.grossProfitMargin}%
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">Profitability ratio</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-indigo-700 mb-1">Operating Profit Margin</p>
+                    <p className="text-2xl font-bold text-indigo-900">
+                      {advancedMetrics.operatingProfitMargin}%
+                    </p>
+                    <p className="text-xs text-indigo-600 mt-1">Operational efficiency</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-teal-700 mb-1">Cash Flow</p>
+                    <p className="text-2xl font-bold text-teal-900">
+                      ${advancedMetrics.cashFlow.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-teal-600 mt-1">Current period</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-cyan-700 mb-1">Revenue Growth Rate</p>
+                    <p className="text-2xl font-bold text-cyan-900">
+                      {advancedMetrics.revenueGrowthRate}%
+                    </p>
+                    <p className="text-xs text-cyan-600 mt-1">Year over year</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* COGS Breakdown */}
+              <div className="mb-8">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Cost of Goods Sold (COGS)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-orange-700 mb-1">Dental Supplies</p>
+                    <p className="text-2xl font-bold text-orange-900">
+                      ${advancedMetrics.cogs.dentalSupplies.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-amber-700 mb-1">Lab Fees</p>
+                    <p className="text-2xl font-bold text-amber-900">
+                      ${advancedMetrics.cogs.labFees.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-yellow-700 mb-1">Associate Doctor Expense</p>
+                    <p className="text-2xl font-bold text-yellow-900">
+                      ${advancedMetrics.cogs.associateDoctorExpense.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-lime-50 to-lime-100 border-2 border-lime-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-lime-700 mb-1">Hygiene Payroll</p>
+                    <p className="text-2xl font-bold text-lime-900">
+                      ${advancedMetrics.cogs.hygienePayroll.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-green-700 mb-1">Assistant Payroll</p>
+                    <p className="text-2xl font-bold text-green-900">
+                      ${advancedMetrics.cogs.assistantPayroll.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-400 rounded-lg p-4">
+                    <p className="text-xs font-medium text-emerald-700 mb-1 font-semibold">Total COGS</p>
+                    <p className="text-2xl font-bold text-emerald-900">
+                      ${advancedMetrics.cogs.totalCOGS.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="bg-gradient-to-br from-rose-50 to-rose-100 border-2 border-rose-300 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-rose-700 mb-1">Operating Costs</p>
+                        <p className="text-xs text-rose-600">Total operational expenses</p>
+                      </div>
+                      <p className="text-3xl font-bold text-rose-900">
+                        ${advancedMetrics.operatingCosts.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Patient Lifecycle & Churn Metrics */}
+              <div className="mb-8">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Patient Lifecycle & Retention</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-purple-700 mb-1">Churned Patients</p>
+                    <p className="text-2xl font-bold text-purple-900">
+                      {advancedMetrics.churnedPatientsPerMonth}
+                    </p>
+                    <p className="text-xs text-purple-600 mt-1">Per month</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 border-2 border-fuchsia-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-fuchsia-700 mb-1">Churn Rate</p>
+                    <p className="text-2xl font-bold text-fuchsia-900">
+                      {advancedMetrics.churnRate}%
+                    </p>
+                    <p className="text-xs text-fuchsia-600 mt-1">Monthly rate</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-pink-700 mb-1">Patient Lifecycle</p>
+                    <p className="text-xl font-bold text-pink-900">
+                      {advancedMetrics.patientLifeCycleMonths}m / {advancedMetrics.patientLifeCycleYears}y
+                    </p>
+                    <p className="text-xs text-pink-600 mt-1">Average duration</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-violet-50 to-violet-100 border-2 border-violet-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-violet-700 mb-1">Active Pts (Prior Month)</p>
+                    <p className="text-2xl font-bold text-violet-900">
+                      {advancedMetrics.activePtsFirstOfPriorMonth}
+                    </p>
+                    <p className="text-xs text-violet-600 mt-1">Beginning of last month</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-indigo-700 mb-1">Avg Retention Period</p>
+                    <p className="text-2xl font-bold text-indigo-900">
+                      {advancedMetrics.avgRetentionPeriod}
+                    </p>
+                    <p className="text-xs text-indigo-600 mt-1">Months</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Revenue & Value Metrics */}
+              <div className="mb-8">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Revenue & Customer Value</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-sky-700 mb-1">Average Revenue Per Client</p>
+                    <p className="text-2xl font-bold text-sky-900">
+                      ${advancedMetrics.averageRevenuePerClient.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-sky-600 mt-1">ARPC</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-400 rounded-lg p-4">
+                    <p className="text-xs font-medium text-blue-700 mb-1 font-semibold">Lifetime Value (LTV)</p>
+                    <p className="text-3xl font-bold text-blue-900">
+                      ${advancedMetrics.ltv.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">ARPC × Avg Retention Period</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-cyan-700 mb-1">LTV:CAC Ratio</p>
+                    <p className="text-2xl font-bold text-cyan-900">
+                      {advancedMetrics.cac > 0 ? (advancedMetrics.ltv / advancedMetrics.cac).toFixed(2) : '0.00'}:1
+                    </p>
+                    <p className="text-xs text-cyan-600 mt-1">Customer value efficiency</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Satisfaction & Employee Metrics */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Satisfaction & Employee Performance</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-green-700 mb-1">Net Promoter Score</p>
+                    <p className="text-3xl font-bold text-green-900">
+                      {advancedMetrics.nps}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">Patient satisfaction</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-teal-700 mb-1">Employee NPS (eNPS)</p>
+                    <p className="text-3xl font-bold text-teal-900">
+                      {advancedMetrics.enps}
+                    </p>
+                    <p className="text-xs text-teal-600 mt-1">Employee satisfaction</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300 rounded-lg p-4">
+                    <p className="text-xs font-medium text-emerald-700 mb-1">Employee Utilization Rate</p>
+                    <p className="text-3xl font-bold text-emerald-900">
+                      {advancedMetrics.employeeUtilizationRate}%
+                    </p>
+                    <p className="text-xs text-emerald-600 mt-1">Productivity metric</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Key Practice Metrics - 4 columns */}
