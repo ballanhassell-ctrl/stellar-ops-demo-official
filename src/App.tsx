@@ -18,6 +18,7 @@ const CourtStreetRCM = () => {
   const [scheduleTime, setScheduleTime] = useState('17:00');
   const [scheduleFrequency, setScheduleFrequency] = useState('daily');
   const [selectedTemplate, setSelectedTemplate] = useState('full');
+  const [providerProductionDate, setProviderProductionDate] = useState(new Date().toISOString().split('T')[0]);
 
   const csdGold = '#B8985F';
 
@@ -341,6 +342,40 @@ const CourtStreetRCM = () => {
       sixtyOneToNinety: { amount: 0, count: 0 },
       ninetyPlus: { amount: 0, count: 0 }
     }
+  };
+
+  // New Patient Tracker data
+  const newPatientTrackerData = {
+    perDay: 0,
+    perWeek: 0,
+    perMonth: 0,
+    quarterly: 0,
+    monthlyAverages: [
+      { month: 'Month -6', count: 0 },
+      { month: 'Month -5', count: 0 },
+      { month: 'Month -4', count: 0 },
+      { month: 'Month -3', count: 0 },
+      { month: 'Month -2', count: 0 },
+      { month: 'Month -1', count: 0 }
+    ]
+  };
+
+  // Third Party Financing data
+  const thirdPartyFinancingData = {
+    cherryPatients: 0,
+    careCreditPatients: 0,
+    cherryAmount: 0,
+    careCreditAmount: 0,
+    totalPatients: 0,
+    totalAmount: 0
+  };
+
+  // Daily Production by Provider data
+  const dailyProductionByProvider = {
+    drGajjar: 0,
+    drJudge: 0,
+    drStrachan: 0,
+    total: 0
   };
 
   const navigation = [
@@ -692,6 +727,58 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
+
+            {/* New Patient Tracker */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                New Patient Tracker
+              </h3>
+
+              {/* Current Period Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-700 mb-1">Per Day</p>
+                  <p className="text-3xl font-bold text-blue-900">
+                    {newPatientTrackerData.perDay}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">Today</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm font-medium text-green-700 mb-1">Per Week</p>
+                  <p className="text-3xl font-bold text-green-900">
+                    {newPatientTrackerData.perWeek}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">Last 7 days</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-sm font-medium text-purple-700 mb-1">Per Month</p>
+                  <p className="text-3xl font-bold text-purple-900">
+                    {newPatientTrackerData.perMonth}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">This month</p>
+                </div>
+                <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm font-medium text-amber-700 mb-1">Quarterly</p>
+                  <p className="text-3xl font-bold text-amber-900">
+                    {newPatientTrackerData.quarterly}
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">This quarter</p>
+                </div>
+              </div>
+
+              {/* 6-Month Averages */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Averages - Past 6 Months</h4>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {newPatientTrackerData.monthlyAverages.map((monthData, index) => (
+                    <div key={index} className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-xs font-medium text-gray-600 mb-1">{monthData.month}</p>
+                      <p className="text-xl font-bold text-gray-900">{monthData.count}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         ) : currentView === 'claims' ? (
           <div className="space-y-6">
@@ -998,6 +1085,85 @@ const CourtStreetRCM = () => {
                   <p className="text-sm text-gray-600">
                     Payment activity will appear here as transactions are processed
                   </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Third Party Financing */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Third Party Financing
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">Past 30 Days</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Cherry Financing */}
+                <div className="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-300 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-pink-900 mb-1">Cherry</h4>
+                      <p className="text-xs text-pink-700">Financing Platform</p>
+                    </div>
+                    <CreditCard className="w-8 h-8 text-pink-600" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-pink-700">Patients Financed</span>
+                      <span className="text-2xl font-bold text-pink-900">
+                        {thirdPartyFinancingData.cherryPatients}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-pink-200">
+                      <span className="text-sm font-medium text-pink-700">Total Amount</span>
+                      <span className="text-xl font-bold text-pink-900">
+                        ${thirdPartyFinancingData.cherryAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CareCredit Financing */}
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-teal-900 mb-1">CareCredit</h4>
+                      <p className="text-xs text-teal-700">Financing Platform</p>
+                    </div>
+                    <CreditCard className="w-8 h-8 text-teal-600" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-teal-700">Patients Financed</span>
+                      <span className="text-2xl font-bold text-teal-900">
+                        {thirdPartyFinancingData.careCreditPatients}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-teal-200">
+                      <span className="text-sm font-medium text-teal-700">Total Amount</span>
+                      <span className="text-xl font-bold text-teal-900">
+                        ${thirdPartyFinancingData.careCreditAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Combined Summary */}
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-6">
+                <h4 className="text-sm font-semibold text-indigo-900 mb-4">Combined Financing Summary</h4>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-indigo-700 mb-1">Total Patients</p>
+                    <p className="text-3xl font-bold text-indigo-900">
+                      {thirdPartyFinancingData.totalPatients}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-indigo-700 mb-1">Total Financed</p>
+                    <p className="text-3xl font-bold text-indigo-900">
+                      ${thirdPartyFinancingData.totalAmount.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1880,6 +2046,86 @@ const CourtStreetRCM = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Production by Provider */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Daily Production by Provider
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-gray-500" />
+                  <input
+                    type="date"
+                    value={providerProductionDate}
+                    onChange={(e) => setProviderProductionDate(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-6">
+                Production for {new Date(providerProductionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Dr. Gajjar */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-blue-900 mb-1">Dr. Gajjar</h4>
+                      <p className="text-xs text-blue-700">Provider</p>
+                    </div>
+                    <DollarSign className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-blue-900">
+                    ${dailyProductionByProvider.drGajjar.toLocaleString()}
+                  </p>
+                </div>
+
+                {/* Dr. Judge */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-green-900 mb-1">Dr. Judge</h4>
+                      <p className="text-xs text-green-700">Provider</p>
+                    </div>
+                    <DollarSign className="w-6 h-6 text-green-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-green-900">
+                    ${dailyProductionByProvider.drJudge.toLocaleString()}
+                  </p>
+                </div>
+
+                {/* Dr. Strachan */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-purple-900 mb-1">Dr. Strachan</h4>
+                      <p className="text-xs text-purple-700">Provider</p>
+                    </div>
+                    <DollarSign className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-purple-900">
+                    ${dailyProductionByProvider.drStrachan.toLocaleString()}
+                  </p>
+                </div>
+
+                {/* Total Production */}
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-400 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-amber-900 mb-1">Total</h4>
+                      <p className="text-xs text-amber-700">Combined</p>
+                    </div>
+                    <TrendingUp className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-amber-900">
+                    ${dailyProductionByProvider.total.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>

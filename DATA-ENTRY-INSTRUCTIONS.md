@@ -137,6 +137,29 @@ Cigna         | Connection   | All Set!      | Enrolled   | In
 
 ---
 
+### 6. **New-Patient-Tracker-Monthly-Averages.csv** (6-Month History)
+Historical data for the New Patient Tracker showing monthly averages.
+
+**Columns:**
+- **Month Label**: Label for the month (e.g., "Month -6", "Month -1")
+- **New Patient Count**: Number of new patients for that month
+- **Notes**: Description of which month this represents
+
+**How to use:**
+1. Enter the actual new patient count for each of the past 6 months
+2. Month -6 = 6 months ago, Month -1 = last month
+3. Keep the labels as-is, just update the counts
+
+**Example:**
+```
+Month Label | New Patient Count | Notes
+Month -6    | 18               | 6 months ago from current date
+Month -5    | 22               | 5 months ago from current date
+Month -1    | 25               | Last month
+```
+
+---
+
 ## 🔄 Workflow: From Spreadsheets to Dashboard
 
 ### Step 1: Fill Out Your Data
@@ -146,7 +169,7 @@ Cigna         | Connection   | All Set!      | Enrolled   | In
 4. Save all files
 
 ### Step 2: Send Back to Developer
-1. Gather all 5 CSV files
+1. Gather all 6 CSV files
 2. Send them back in a single message
 3. Specify if this is:
    - **Initial data load**: First time populating the dashboard
@@ -216,6 +239,10 @@ The developer will:
 | Weekly performance trends | Scorecard-Weekly-Data.csv |
 | Insurance provider info | Insurance-Providers.csv |
 | Claims and AR data | Court-Street-Dental-Data-Entry.csv |
+| New patient tracking (daily/weekly/monthly/quarterly) | Court-Street-Dental-Data-Entry.csv |
+| New patient 6-month history | New-Patient-Tracker-Monthly-Averages.csv |
+| Third party financing (Cherry/CareCredit) | Court-Street-Dental-Data-Entry.csv |
+| Daily production by provider | Court-Street-Dental-Data-Entry.csv |
 
 ---
 
@@ -232,10 +259,22 @@ If you're unsure about:
 
 For ongoing dashboard maintenance:
 
-**Daily**: Update EOD-Daily-Payments.csv with new transactions
-**Weekly**: Add new row to Scorecard-Weekly-Data.csv
-**Monthly**: Update all main metrics in Court-Street-Dental-Data-Entry.csv
-**As Needed**: Update Insurance-Providers.csv when providers change
+**Daily**:
+- Update EOD-Daily-Payments.csv with new transactions
+- Update New Patient Tracker (per day) in Court-Street-Dental-Data-Entry.csv
+- Update Daily Production by Provider in Court-Street-Dental-Data-Entry.csv
+
+**Weekly**:
+- Add new row to Scorecard-Weekly-Data.csv
+- Update New Patient Tracker (per week) in Court-Street-Dental-Data-Entry.csv
+
+**Monthly**:
+- Update all main metrics in Court-Street-Dental-Data-Entry.csv
+- Update New Patient Tracker monthly averages in New-Patient-Tracker-Monthly-Averages.csv
+- Update Third Party Financing data (30-day rolling) in Court-Street-Dental-Data-Entry.csv
+
+**As Needed**:
+- Update Insurance-Providers.csv when providers change
 
 ---
 
