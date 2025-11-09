@@ -125,3 +125,26 @@ DAILY PRODUCTION BY PROVIDER,Dr. Gajjar Production,drGajjar,number,0,Daily produ
 DAILY PRODUCTION BY PROVIDER,Dr. Judge Production,drJudge,number,0,Daily production for Dr. Judge (use date selector)
 DAILY PRODUCTION BY PROVIDER,Dr. Strachan Production,drStrachan,number,0,Daily production for Dr. Strachan (use date selector)
 DAILY PRODUCTION BY PROVIDER,Total Production,total,number,0,Combined daily production for all providers
+ADVANCED METRICS - FINANCIAL,Customer Acquisition Cost (CAC),cac,number,0,Cost to acquire a new patient
+ADVANCED METRICS - FINANCIAL,Gross Profit Margin %,grossProfitMargin,number,0,Gross profit as percentage of revenue
+ADVANCED METRICS - FINANCIAL,Operating Profit Margin %,operatingProfitMargin,number,0,Operating profit as percentage of revenue
+ADVANCED METRICS - FINANCIAL,Cash Flow,cashFlow,number,0,Current period cash flow
+ADVANCED METRICS - FINANCIAL,Revenue Growth Rate %,revenueGrowthRate,number,0,Year over year revenue growth percentage
+ADVANCED METRICS - COGS,Dental Supplies,cogs.dentalSupplies,number,0,Cost of dental supplies
+ADVANCED METRICS - COGS,Lab Fees,cogs.labFees,number,0,Laboratory fees
+ADVANCED METRICS - COGS,Associate Doctor Expense,cogs.associateDoctorExpense,number,0,Associate doctor compensation
+ADVANCED METRICS - COGS,Hygiene Payroll,cogs.hygienePayroll,number,0,Hygienist payroll costs
+ADVANCED METRICS - COGS,Assistant Payroll,cogs.assistantPayroll,number,0,Dental assistant payroll costs
+ADVANCED METRICS - COGS,Total COGS,cogs.totalCOGS,number,0,Total cost of goods sold
+ADVANCED METRICS - COGS,Operating Costs,operatingCosts,number,0,Total operating expenses
+ADVANCED METRICS - PATIENT LIFECYCLE,Churned Patients Per Month,churnedPatientsPerMonth,number,0,Number of patients lost per month
+ADVANCED METRICS - PATIENT LIFECYCLE,Churn Rate %,churnRate,number,0,Patient churn rate percentage
+ADVANCED METRICS - PATIENT LIFECYCLE,Patient Lifecycle (Months),patientLifeCycleMonths,number,0,Average patient lifecycle in months
+ADVANCED METRICS - PATIENT LIFECYCLE,Patient Lifecycle (Years),patientLifeCycleYears,number,0,Average patient lifecycle in years
+ADVANCED METRICS - PATIENT LIFECYCLE,Active Pts 1st of Prior Month,activePtsFirstOfPriorMonth,number,0,Active patients at beginning of last month
+ADVANCED METRICS - PATIENT LIFECYCLE,Avg Retention Period (Months),avgRetentionPeriod,number,0,Average patient retention period in months
+ADVANCED METRICS - REVENUE,Average Revenue Per Client (ARPC),averageRevenuePerClient,number,0,Average revenue per patient
+ADVANCED METRICS - REVENUE,Lifetime Value (LTV),ltv,number,0,Patient lifetime value (ARPC x Avg Retention Period)
+ADVANCED METRICS - SATISFACTION,Net Promoter Score (NPS),nps,number,0,Patient satisfaction score (-100 to 100)
+ADVANCED METRICS - SATISFACTION,Employee NPS (eNPS),enps,number,0,Employee satisfaction score (-100 to 100)
+ADVANCED METRICS - EMPLOYEE,Employee Utilization Rate %,employeeUtilizationRate,number,0,Employee productivity percentage

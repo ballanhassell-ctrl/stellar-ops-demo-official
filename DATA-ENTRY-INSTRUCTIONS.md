@@ -243,6 +243,10 @@ The developer will:
 | New patient 6-month history | New-Patient-Tracker-Monthly-Averages.csv |
 | Third party financing (Cherry/CareCredit) | Court-Street-Dental-Data-Entry.csv |
 | Daily production by provider | Court-Street-Dental-Data-Entry.csv |
+| Advanced business metrics (CAC, LTV, margins, etc.) | Court-Street-Dental-Data-Entry.csv |
+| COGS breakdown (supplies, payroll, etc.) | Court-Street-Dental-Data-Entry.csv |
+| Patient lifecycle & churn metrics | Court-Street-Dental-Data-Entry.csv |
+| NPS and employee metrics | Court-Street-Dental-Data-Entry.csv |
 
 ---
 
@@ -272,6 +276,11 @@ For ongoing dashboard maintenance:
 - Update all main metrics in Court-Street-Dental-Data-Entry.csv
 - Update New Patient Tracker monthly averages in New-Patient-Tracker-Monthly-Averages.csv
 - Update Third Party Financing data (30-day rolling) in Court-Street-Dental-Data-Entry.csv
+- Update Advanced Metrics (COGS, patient lifecycle, churn, NPS, etc.) in Court-Street-Dental-Data-Entry.csv
+
+**Quarterly**:
+- Review and update financial metrics (CAC, LTV, profit margins, cash flow)
+- Update employee utilization and eNPS scores
 
 **As Needed**:
 - Update Insurance-Providers.csv when providers change
