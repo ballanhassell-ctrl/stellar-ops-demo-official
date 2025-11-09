@@ -60,6 +60,16 @@ const CourtStreetRCM = () => {
     expiringThisMonth: 0
   };
 
+  // Insurance data
+  const insuranceData = {
+    totalProviders: 0,
+    activePlans: 0,
+    credentialingPending: 0,
+    verificationsPending: 0,
+    topPayerByVolume: "N/A",
+    topPayerByRevenue: "N/A"
+  };
+
   // Claims data
   const claimsData = {
     totalActive: 0,
@@ -968,6 +978,131 @@ const CourtStreetRCM = () => {
               <div className="p-4 bg-gray-50 rounded-lg text-center">
                 <p className="text-sm text-gray-600">
                   Recent pre-auth submissions and decisions will appear here
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : currentView === 'insurance' ? (
+          <div className="space-y-6">
+            {/* Insurance Header */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                Insurance Portal Integration
+              </h2>
+
+              {/* Insurance Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Total Insurance Providers */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-700 mb-1">Total Providers</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        {insuranceData.totalProviders}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">In network</p>
+                    </div>
+                    <Shield className="w-8 h-8 text-blue-500" />
+                  </div>
+                </div>
+
+                {/* Active Plans */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-700 mb-1">Active Plans</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        {insuranceData.activePlans}
+                      </p>
+                      <p className="text-xs text-green-600 mt-2">Contracted plans</p>
+                    </div>
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </div>
+                </div>
+
+                {/* Credentialing Pending */}
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-yellow-700 mb-1">Credentialing</p>
+                      <p className="text-3xl font-bold text-yellow-900">
+                        {insuranceData.credentialingPending}
+                      </p>
+                      <p className="text-xs text-yellow-600 mt-2">Pending approval</p>
+                    </div>
+                    <Clock className="w-8 h-8 text-yellow-500" />
+                  </div>
+                </div>
+
+                {/* Verifications Pending */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-700 mb-1">Verifications</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        {insuranceData.verificationsPending}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-2">Need verification</p>
+                    </div>
+                    <AlertCircle className="w-8 h-8 text-purple-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Payers & Quick Links */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top Payers */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Top Payers
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs text-gray-600 mb-1">By Volume</p>
+                    <p className="text-lg font-bold text-blue-900">
+                      {insuranceData.topPayerByVolume}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-xs text-gray-600 mb-1">By Revenue</p>
+                    <p className="text-lg font-bold text-green-900">
+                      {insuranceData.topPayerByRevenue}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Insurance Portal Quick Links */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Portal Quick Links
+                </h3>
+                <div className="space-y-2">
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
+                    <p className="text-sm font-medium text-gray-700">Delta Dental Portal</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
+                    <p className="text-sm font-medium text-gray-700">MetLife Portal</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
+                    <p className="text-sm font-medium text-gray-700">Cigna Portal</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer">
+                    <p className="text-sm font-medium text-gray-700">Aetna Portal</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Insurance Verification Status */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Eligibility & Benefits Verification
+              </h3>
+              <div className="p-4 bg-gray-50 rounded-lg text-center">
+                <p className="text-sm text-gray-600">
+                  Recent verification requests and results will appear here
                 </p>
               </div>
             </div>
