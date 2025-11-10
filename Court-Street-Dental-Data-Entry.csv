@@ -73,10 +73,14 @@ EOD REPORT,Payments Collected,paymentsCollected,number,6825,Total payments colle
 EOD REPORT,Collection Rate %,collectionRate,number,78,Collection rate percentage
 EOD REPORT,Insurance Payments,insurancePayments,number,4200,Insurance payments today
 EOD REPORT,Patient Payments,patientPayments,number,2625,Patient payments today
-EOD REPORT,Payment Method - Credit Card,paymentMethods.creditCard,number,3150,Credit card payments
-EOD REPORT,Payment Method - Cash,paymentMethods.cash,number,875,Cash payments
-EOD REPORT,Payment Method - Check,paymentMethods.check,number,1200,Check payments
-EOD REPORT,Payment Method - EFT,paymentMethods.eft,number,1600,EFT/ACH payments
+EOD REPORT,Payment Method - Visa,paymentMethods.visa,number,0,Visa card payments
+EOD REPORT,Payment Method - MasterCard,paymentMethods.mastercard,number,0,MasterCard payments
+EOD REPORT,Payment Method - American Express,paymentMethods.americanExpress,number,0,American Express payments
+EOD REPORT,Payment Method - Discover,paymentMethods.discover,number,0,Discover card payments
+EOD REPORT,Payment Method - Insurance Checks,paymentMethods.insuranceCheck,number,0,Check payments from insurance companies
+EOD REPORT,Payment Method - Other Checks,paymentMethods.otherCheck,number,0,Check payments from patients/other sources
+EOD REPORT,Payment Method - Cash,paymentMethods.cash,number,0,Cash payments
+EOD REPORT,Payment Method - EFT,paymentMethods.eft,number,0,EFT/ACH payments
 EOD REPORT,Patients Seen Today,patientsSeenToday,number,24,Number of patients seen
 EOD REPORT,New Patients,newPatients,number,3,New patients seen today
 EOD REPORT,Procedures Completed,proceduresCompleted,number,32,Total procedures completed

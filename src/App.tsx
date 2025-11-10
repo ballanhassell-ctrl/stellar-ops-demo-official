@@ -328,10 +328,14 @@ const CourtStreetRCM = () => {
     insurancePayments: 4200,
     patientPayments: 2625,
     paymentMethods: {
-      creditCard: 3150,
-      cash: 875,
-      check: 1200,
-      eft: 1600
+      visa: 0,
+      mastercard: 0,
+      americanExpress: 0,
+      discover: 0,
+      insuranceCheck: 0,
+      otherCheck: 0,
+      cash: 0,
+      eft: 0
     },
     patientsSeenToday: 24,
     newPatients: 3,
@@ -2811,30 +2815,73 @@ const CourtStreetRCM = () => {
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Payment Methods
                 </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Credit Card</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      ${eodData.paymentMethods.creditCard.toLocaleString()}
-                    </span>
+
+                {/* Credit Card Types */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Credit Cards</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      <span className="text-sm font-medium text-blue-700">Visa</span>
+                      <span className="text-lg font-bold text-blue-900">
+                        ${eodData.paymentMethods.visa.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+                      <span className="text-sm font-medium text-orange-700">MasterCard</span>
+                      <span className="text-lg font-bold text-orange-900">
+                        ${eodData.paymentMethods.mastercard.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg border border-teal-200">
+                      <span className="text-sm font-medium text-teal-700">American Express</span>
+                      <span className="text-lg font-bold text-teal-900">
+                        ${eodData.paymentMethods.americanExpress.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg border border-amber-200">
+                      <span className="text-sm font-medium text-amber-700">Discover</span>
+                      <span className="text-lg font-bold text-amber-900">
+                        ${eodData.paymentMethods.discover.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">EFT</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      ${eodData.paymentMethods.eft.toLocaleString()}
-                    </span>
+                </div>
+
+                {/* Check Payments */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Check Payments</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+                      <span className="text-sm font-medium text-purple-700">Insurance Checks</span>
+                      <span className="text-lg font-bold text-purple-900">
+                        ${eodData.paymentMethods.insuranceCheck.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg border border-indigo-200">
+                      <span className="text-sm font-medium text-indigo-700">Other Checks</span>
+                      <span className="text-lg font-bold text-indigo-900">
+                        ${eodData.paymentMethods.otherCheck.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Check</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      ${eodData.paymentMethods.check.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Cash</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      ${eodData.paymentMethods.cash.toLocaleString()}
-                    </span>
+                </div>
+
+                {/* Other Payment Methods */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Other Methods</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+                      <span className="text-sm font-medium text-green-700">Cash</span>
+                      <span className="text-lg font-bold text-green-900">
+                        ${eodData.paymentMethods.cash.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg border border-slate-200">
+                      <span className="text-sm font-medium text-slate-700">EFT</span>
+                      <span className="text-lg font-bold text-slate-900">
+                        ${eodData.paymentMethods.eft.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -39,20 +39,30 @@ Individual payment transactions for the EOD (End of Day) Report.
 - **Patient/Payer Name**: Name of patient or insurance company
 - **Amount**: Payment amount
 - **Type**: Either "Patient" or "Insurance"
-- **Payment Method**: Credit Card, Cash, Check, or EFT
+- **Payment Method**: Specific payment method (see options below)
 - **Procedure/Notes**: What the payment was for
+
+**Payment Method Options:**
+- **Credit Cards**: Visa, MasterCard, American Express, Discover
+- **Checks**: Insurance Check, Other Check
+- **Other**: Cash, EFT
 
 **How to use:**
 1. Add a new row for each payment received
 2. Keep entries in chronological order by time
 3. Make sure Type is exactly "Patient" or "Insurance"
-4. Make sure Payment Method is exactly one of: Credit Card, Cash, Check, or EFT
+4. Make sure Payment Method matches one of the specific options listed above
+5. Use "Insurance Check" for checks from insurance companies
+6. Use "Other Check" for checks from patients or other sources
 
 **Example:**
 ```
-Time      | Patient/Payer Name | Amount | Type      | Payment Method | Procedure/Notes
-09:15 AM  | John Smith         | 250    | Patient   | Credit Card    | Cleaning & Exam
-10:30 AM  | Delta Dental       | 1200   | Insurance | EFT            | Crown - Claim #12345
+Time      | Patient/Payer Name | Amount | Type      | Payment Method    | Procedure/Notes
+09:15 AM  | John Smith         | 250    | Patient   | Visa              | Cleaning & Exam
+10:30 AM  | Delta Dental       | 1200   | Insurance | EFT               | Crown - Claim #12345
+01:20 PM  | Aetna              | 850    | Insurance | Insurance Check   | Root Canal - Claim #12346
+02:15 PM  | Michael Brown      | 325    | Patient   | Other Check       | Filling
+04:00 PM  | Emily Davis        | 200    | Patient   | MasterCard        | Periodontal Treatment
 ```
 
 ---
