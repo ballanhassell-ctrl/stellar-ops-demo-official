@@ -19,13 +19,19 @@ The dashboard now uses a **BAM (Business Activity Metric) Cycle** system instead
 - ✅ **Next Cycle Preview**: Automatically displays next cycle dates
 - ✅ **Progress Bar**: Visual indicator of revenue vs. BAM target goal
 
-### Major Holidays Excluded (2025):
+### Office Closure Days Excluded (2025):
 - New Year's Day (Jan 1)
 - Memorial Day (May 26)
 - Independence Day (Jul 4)
 - Labor Day (Sep 1)
 - Thanksgiving (Nov 27)
+- Day After Thanksgiving (Nov 28)
+- Christmas Eve (Dec 24)
 - Christmas (Dec 25)
+- Day After Christmas (Dec 26)
+- Office Closure (Dec 29)
+- Office Closure (Dec 30)
+- New Year's Eve (Dec 31)
 
 ### Dashboard Display:
 The main Dashboard card shows:
