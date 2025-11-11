@@ -239,14 +239,15 @@ const CourtStreetRCM = () => {
 
   // Historical BAM Cycle Data (for trend graph)
   const historicalBAMData = [
-    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 17', revenue: 202259.69, goal: 224548 }, // Previous cycle (Sept 23 - Oct 17, 2025)
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 214933.97, goal: 224548 }, // Current cycle (Oct 18 - Nov 13, 2025)
+    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 17', revenue: 202259.69, goal: 241389 }, // Previous cycle (Sept 23 - Oct 17, 2025)
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 214933.97, goal: 241389 }, // Current cycle (Oct 18 - Nov 13, 2025)
   ];
 
   // Dashboard data
   const dashboardData = {
     bamCurrentRevenue: 214933.97, // Current revenue in this BAM cycle
-    bamTargetGoal: 224548, // BAM Target Goal (configurable)
+    bamTargetGoal: 241389, // BAM Target Goal (configurable)
+    practiceGoal: 300000, // Practice Goal (overall target)
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
     bamDaysRemaining: bamCycle.daysRemaining,
@@ -524,7 +525,7 @@ const CourtStreetRCM = () => {
   const eodData = {
     reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
     dailyProduction: 22330.27,
-    dailyProductionGoal: 12500,
+    dailyProductionGoal: 19991,
     paymentsCollected: 13741.66,
     collectionRate: 62,
     insurancePayments: 0,
@@ -873,6 +874,9 @@ const CourtStreetRCM = () => {
                     </p>
                     <p className={`text-xs mt-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
                       BAM Target: ${dashboardData.bamTargetGoal.toLocaleString()}
+                    </p>
+                    <p className={`text-xs ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>
+                      Practice Goal: ${dashboardData.practiceGoal.toLocaleString()}
                     </p>
                   </div>
                   <div className={`w-full rounded-full h-2 mb-3 ${isDayMode ? 'bg-green-200' : 'bg-green-950'}`}>
