@@ -150,6 +150,7 @@ const CourtStreetRCM = () => {
   const [scheduleFrequency, setScheduleFrequency] = useState('daily');
   const [selectedTemplate, setSelectedTemplate] = useState('full');
   const [providerProductionDate, setProviderProductionDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showBAMModal, setShowBAMModal] = useState(false);
 
   const csdGold = '#B8985F';
 
@@ -180,6 +181,14 @@ const CourtStreetRCM = () => {
   // BAM Cycle Configuration & Calculation
   const bamCycleReferenceStart = new Date('2025-10-20'); // First known BAM cycle start date
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
+
+  // Historical BAM Cycle Data (for trend graph)
+  const historicalBAMData = [
+    { cycle: 'Cycle 1', startDate: 'Aug 20', endDate: 'Sep 13', revenue: 52000, goal: 56137 },
+    { cycle: 'Cycle 2', startDate: 'Sep 16', endDate: 'Oct 10', revenue: 54500, goal: 56137 },
+    { cycle: 'Cycle 3', startDate: 'Oct 20', endDate: 'Nov 13', revenue: 48000, goal: 56137 }, // Previous cycle
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 0, goal: 56137 }, // Current cycle
+  ];
 
   // Dashboard data
   const dashboardData = {
@@ -2665,6 +2674,67 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
+
+            {/* BAM Cycle Metrics */}
+            <div
+              className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-300"
+              onClick={() => setShowBAMModal(true)}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  BAM Cycle Metrics
+                </h3>
+                <div className="bg-green-100 rounded-full p-2">
+                  <TrendingUp className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">Click to view detailed BAM cycle analysis</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Current Cycle */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">Current Cycle</p>
+                  <p className="text-sm text-green-600 mb-2">
+                    {dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                  <p className="text-2xl font-bold text-green-900">
+                    ${dashboardData.bamCurrentRevenue.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-green-700 mt-1">
+                    Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
+                  </p>
+                  <div className="w-full bg-green-200 rounded-full h-1.5 mt-2">
+                    <div
+                      className="bg-green-600 h-1.5 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Days Remaining */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Days Remaining</p>
+                  <p className="text-4xl font-bold text-blue-900 mt-4">
+                    {dashboardData.bamDaysRemaining}
+                  </p>
+                  <p className="text-xs text-blue-700 mt-1">Business days left</p>
+                </div>
+
+                {/* Next Cycle */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-2">Next Cycle</p>
+                  <p className="text-sm text-purple-600 mt-4">
+                    {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-purple-700 mt-2">
+                    19 business days
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : currentView === 'checklist' ? (
           <div className="space-y-6">
@@ -2953,8 +3023,61 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
+            {/* BAM Cycle Summary */}
+            <div className="bg-white rounded-lg shadow p-6 mt-6">
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                BAM Cycle Overview
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Current Cycle */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">Current Cycle</p>
+                  <p className="text-sm text-green-600 mb-2">
+                    {dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                  <p className="text-2xl font-bold text-green-900 mb-1">
+                    ${dashboardData.bamCurrentRevenue.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-green-700 mb-2">
+                    Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
+                  </p>
+                  <div className="w-full bg-green-200 rounded-full h-1.5">
+                    <div
+                      className="bg-green-600 h-1.5 rounded-full"
+                      style={{
+                        width: `${Math.min((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-green-600 mt-1">
+                    {((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100).toFixed(1)}% of goal
+                  </p>
+                </div>
+
+                {/* Days Remaining */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Days Remaining</p>
+                  <p className="text-4xl font-bold text-blue-900 mt-6 mb-2">
+                    {dashboardData.bamDaysRemaining}
+                  </p>
+                  <p className="text-xs text-blue-700">Business days left in current cycle</p>
+                </div>
+
+                {/* Next Cycle */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-2">Next Cycle</p>
+                  <p className="text-sm text-purple-600 mt-4 mb-2">
+                    {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-purple-700">
+                    19 business days | Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Payment Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
               {/* Payment Sources */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
@@ -3054,7 +3177,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Today's Payments Detail */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6 mt-6">
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Today's Payments - Detailed View
               </h3>
@@ -3103,7 +3226,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Actionable Insights */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6 mt-6">
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Action Items for Tomorrow
               </h3>
@@ -3562,6 +3685,219 @@ const CourtStreetRCM = () => {
             <p className="text-sm text-amber-100">A/R Management</p>
           </button>
         </div>
+
+        {/* BAM Cycle Modal */}
+        {showBAMModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900">BAM Cycle Analysis</h3>
+                      <p className="text-sm text-gray-500">Business Activity Metric - 19 Business Day Cycles</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowBAMModal(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Cycle Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {/* Previous Cycle */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300 rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Previous Cycle</h4>
+                      <Activity className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {historicalBAMData[historicalBAMData.length - 2]?.startDate} - {historicalBAMData[historicalBAMData.length - 2]?.endDate}
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900 mb-2">
+                      ${historicalBAMData[historicalBAMData.length - 2]?.revenue.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-600 mb-3">
+                      Goal: ${historicalBAMData[historicalBAMData.length - 2]?.goal.toLocaleString()}
+                    </p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${
+                          (historicalBAMData[historicalBAMData.length - 2]?.revenue / historicalBAMData[historicalBAMData.length - 2]?.goal) >= 1
+                            ? 'bg-green-600'
+                            : (historicalBAMData[historicalBAMData.length - 2]?.revenue / historicalBAMData[historicalBAMData.length - 2]?.goal) >= 0.9
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${Math.min((historicalBAMData[historicalBAMData.length - 2]?.revenue / historicalBAMData[historicalBAMData.length - 2]?.goal) * 100, 100)}%`
+                        }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      {((historicalBAMData[historicalBAMData.length - 2]?.revenue / historicalBAMData[historicalBAMData.length - 2]?.goal) * 100).toFixed(1)}% of goal
+                    </p>
+                  </div>
+
+                  {/* Current Cycle */}
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-400 rounded-lg p-6 shadow-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-bold text-green-700 uppercase tracking-wide">Current Cycle</h4>
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                    </div>
+                    <p className="text-sm text-green-700 mb-3">
+                      {dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className="text-3xl font-bold text-green-900 mb-2">
+                      ${dashboardData.bamCurrentRevenue.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-green-700 mb-3">
+                      Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
+                    </p>
+                    <div className="w-full bg-green-200 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100, 100)}%`
+                        }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-green-700 mt-2">
+                      {((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100).toFixed(1)}% of goal
+                    </p>
+                    <div className="mt-4 pt-4 border-t border-green-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-green-700">Days Remaining:</span>
+                        <span className="text-2xl font-bold text-green-900">{dashboardData.bamDaysRemaining}</span>
+                      </div>
+                      <p className="text-xs text-green-600 mt-1">Business days left in cycle</p>
+                    </div>
+                  </div>
+
+                  {/* Next Cycle */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-bold text-blue-700 uppercase tracking-wide">Next Cycle</h4>
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="text-sm text-blue-700 mb-3">
+                      {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className="text-xl font-bold text-blue-900 mb-2">
+                      19 Business Days
+                    </p>
+                    <p className="text-xs text-blue-600 mb-3">
+                      Target Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
+                    </p>
+                    <div className="mt-4 pt-4 border-t border-blue-200">
+                      <p className="text-xs text-blue-700">
+                        <strong>Note:</strong> Excludes weekends and office closure days
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trend Graph */}
+                <div className="bg-gray-50 rounded-lg p-6 border-2 border-gray-200">
+                  <h4 className="text-lg font-bold text-gray-900 mb-6">BAM Cycle Revenue Trend</h4>
+                  <div className="relative">
+                    {/* Graph Area */}
+                    <div className="flex items-end justify-between gap-4 h-64">
+                      {historicalBAMData.map((cycle, index) => {
+                        const percentage = (cycle.revenue / cycle.goal) * 100;
+                        const isCurrentCycle = index === historicalBAMData.length - 1;
+                        return (
+                          <div key={index} className="flex-1 flex flex-col items-center">
+                            {/* Bar */}
+                            <div className="w-full flex flex-col items-center justify-end" style={{ height: '200px' }}>
+                              <div className="text-xs font-bold text-gray-700 mb-2">
+                                ${(cycle.revenue / 1000).toFixed(0)}K
+                              </div>
+                              <div
+                                className={`w-full rounded-t-lg transition-all ${
+                                  isCurrentCycle
+                                    ? 'bg-gradient-to-t from-green-400 to-green-500'
+                                    : percentage >= 100
+                                    ? 'bg-gradient-to-t from-green-300 to-green-400'
+                                    : percentage >= 90
+                                    ? 'bg-gradient-to-t from-yellow-300 to-yellow-400'
+                                    : 'bg-gradient-to-t from-red-300 to-red-400'
+                                } ${isCurrentCycle ? 'border-2 border-green-600' : ''}`}
+                                style={{ height: `${Math.max(percentage, 10)}%` }}
+                              ></div>
+                            </div>
+                            {/* Label */}
+                            <div className="mt-3 text-center">
+                              <p className={`text-xs font-semibold ${isCurrentCycle ? 'text-green-700' : 'text-gray-700'}`}>
+                                {cycle.cycle}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {cycle.startDate} - {cycle.endDate}
+                              </p>
+                              <p className={`text-xs mt-1 font-medium ${
+                                percentage >= 100 ? 'text-green-600' : percentage >= 90 ? 'text-yellow-600' : 'text-red-600'
+                              }`}>
+                                {percentage.toFixed(0)}%
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Goal Line */}
+                    <div className="absolute top-0 left-0 right-0" style={{ top: '0px' }}>
+                      <div className="border-t-2 border-dashed border-gray-400 relative">
+                        <span className="absolute -top-3 right-0 text-xs font-semibold text-gray-600 bg-gray-50 px-2">
+                          Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Insights */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h5 className="text-sm font-bold text-blue-900 mb-2">Cycle Performance</h5>
+                    <p className="text-xs text-blue-700">
+                      Track your performance across 19-business-day cycles to identify trends and opportunities.
+                    </p>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h5 className="text-sm font-bold text-green-900 mb-2">Goal Tracking</h5>
+                    <p className="text-xs text-green-700">
+                      Each cycle has a target goal of ${dashboardData.bamTargetGoal.toLocaleString()} to maintain consistent revenue.
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h5 className="text-sm font-bold text-purple-900 mb-2">Business Days Only</h5>
+                    <p className="text-xs text-purple-700">
+                      Cycles exclude weekends and office closure days for accurate business performance metrics.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Close Button */}
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowBAMModal(false)}
+                    className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-medium shadow-md"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
