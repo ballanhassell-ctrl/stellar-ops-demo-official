@@ -210,60 +210,60 @@ const CourtStreetRCM = () => {
 
   // Historical BAM Cycle Data (for trend graph)
   const historicalBAMData = [
-    { cycle: 'Cycle 1', startDate: 'Aug 20', endDate: 'Sep 13', revenue: 52000, goal: 56137 },
-    { cycle: 'Cycle 2', startDate: 'Sep 16', endDate: 'Oct 10', revenue: 54500, goal: 56137 },
-    { cycle: 'Cycle 3', startDate: 'Oct 20', endDate: 'Nov 13', revenue: 48000, goal: 56137 }, // Previous cycle
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 0, goal: 56137 }, // Current cycle
+    { cycle: 'Cycle 1', startDate: 'Aug 20', endDate: 'Sep 13', revenue: 52000, goal: 224548 },
+    { cycle: 'Cycle 2', startDate: 'Sep 16', endDate: 'Oct 10', revenue: 54500, goal: 224548 },
+    { cycle: 'Cycle 3', startDate: 'Oct 20', endDate: 'Nov 13', revenue: 48000, goal: 224548 }, // Previous cycle
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 0, goal: 224548 }, // Current cycle
   ];
 
   // Dashboard data
   const dashboardData = {
-    bamCurrentRevenue: 0, // Current revenue in this BAM cycle
-    bamTargetGoal: 56137, // BAM Target Goal (configurable)
+    bamCurrentRevenue: 183133.37, // Current revenue in this BAM cycle
+    bamTargetGoal: 224548, // BAM Target Goal (configurable)
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
     bamDaysRemaining: bamCycle.daysRemaining,
     bamNextCycleStart: bamCycle.nextCycleStart,
     bamNextCycleEnd: bamCycle.nextCycleEnd,
-    collectionRate: 0,
-    activePatients: 0,
-    activeClaims: 0,
+    collectionRate: 44,
+    activePatients: 1942,
+    activeClaims: 283,
     pendingPayments: 0,
-    outstandingAR: 0
+    outstandingAR: 223939.19
   };
 
   // Payments data
   const paymentsData = {
     todaysPayments: 0,
-    weeklyPayments: 0,
-    monthlyPayments: 0,
+    weeklyPayments: 13741.66,
+    monthlyPayments: 79569.47,
     pendingDeposits: 0,
-    insurancePayments: 0,
-    patientPayments: 0,
-    unappliedCredits: 0,
+    insurancePayments: 26198.07,
+    patientPayments: 50401.61,
+    unappliedCredits: 2969.79,
     refundsPending: 0
   };
 
   // Patients data
   const patientsData = {
     totalPatients: 0,
-    activePatients: 0,
-    patientsWithBalance: 0,
-    totalPatientAR: 0,
+    activePatients: 1942,
+    patientsWithBalance: 1128,
+    totalPatientAR: 378548.69,
     patientARAging: {
-      zeroToThirty: 0,
-      thirtyOneToSixty: 0,
-      sixtyOneToNinety: 0,
-      ninetyPlus: 0
+      zeroToThirty: 128505.17,
+      thirtyOneToSixty: 51944.66,
+      sixtyOneToNinety: 34749.81,
+      ninetyPlus: 264828.75
     },
     paymentPlans: 0,
-    pastDueAccounts: 0
+    pastDueAccounts: 1128
   };
 
   // Pre-Auths data
   const preAuthsData = {
-    totalPreAuths: 0,
-    pending: 0,
+    totalPreAuths: 60,
+    pending: 60,
     approved: 0,
     denied: 0,
     expiringSoon: 0,
@@ -392,13 +392,13 @@ const CourtStreetRCM = () => {
 
   // Scorecard data
   const scorecardData = {
-    productionGoal: 50000,
-    productionActual: 0,
-    collectionGoal: 95,
-    collectionActual: 60.7,
-    newPatientsGoal: 20,
-    newPatientsActual: 7,
-    claimApprovalRate: 0,
+    productionGoal: 250000,
+    productionActual: 182905.83,
+    collectionGoal: 98,
+    collectionActual: 44,
+    newPatientsGoal: 30,
+    newPatientsActual: 14,
+    claimApprovalRate: 90,
     avgDaysToPay: 0,
     // Enhanced metrics
     avgShowRateDr: 77.5,
@@ -408,12 +408,12 @@ const CourtStreetRCM = () => {
     avgNewPatientsPerWeek: 7,
     txAcceptance: 52.6,
     txAcceptanceTarget: 50,
-    avgCollectionRate: 60.7,
-    avgCollectionRateTarget: 95,
-    totalTxPresented: 57425,
-    totalTxAccepted: 51192.2,
-    totalNewPatients: 13,
-    fiveStarReviews: 0,
+    avgCollectionRate: 59,
+    avgCollectionRateTarget: 100,
+    totalTxPresented: 144558.59,
+    totalTxAccepted: 60173.10,
+    totalNewPatients: 14,
+    fiveStarReviews: 36,
     weeklyData: [
       {
         week: 1,
@@ -465,7 +465,7 @@ const CourtStreetRCM = () => {
 
     // Customer Metrics
     churnedPatientsPerMonth: 0,
-    churnRate: 0, // Churn Rate %
+    churnRate: 13.2, // Churn Rate %
     patientLifeCycleMonths: 0, // Patient Life Cycle in Months
     patientLifeCycleYears: 0, // Patient Life Cycle in Years
     activePtsFirstOfPriorMonth: 0,
@@ -476,7 +476,7 @@ const CourtStreetRCM = () => {
     avgRetentionPeriod: 0, // Average Retention Period in months
 
     // Satisfaction Metrics
-    nps: 0, // Net Promoter Score
+    nps: 99, // Net Promoter Score
     enps: 0, // Employee Net Promoter Score
 
     // Employee Metrics
@@ -496,21 +496,21 @@ const CourtStreetRCM = () => {
   // EOD Report data
   const eodData = {
     reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-    dailyProduction: 8750,
+    dailyProduction: 5750,
     dailyProductionGoal: 10000,
-    paymentsCollected: 6825,
-    collectionRate: 78,
+    paymentsCollected: 5750,
+    collectionRate: 100,
     insurancePayments: 4200,
-    patientPayments: 2625,
+    patientPayments: 1550,
     paymentMethods: {
-      visa: 0,
-      mastercard: 0,
-      americanExpress: 0,
-      discover: 0,
-      insuranceCheck: 0,
-      otherCheck: 0,
-      cash: 0,
-      eft: 0
+      visa: 250,
+      mastercard: 200,
+      americanExpress: 450,
+      discover: 175,
+      insuranceCheck: 850,
+      otherCheck: 325,
+      cash: 150,
+      eft: 3350
     },
     patientsSeenToday: 24,
     newPatients: 3,
@@ -526,13 +526,15 @@ const CourtStreetRCM = () => {
       missedAppointments: 4
     },
     payments: [
-      { time: '09:15 AM', patient: 'John Smith', amount: 250, type: 'Patient', method: 'Credit Card', procedure: 'Cleaning & Exam' },
+      { time: '09:15 AM', patient: 'John Smith', amount: 250, type: 'Patient', method: 'Visa', procedure: 'Cleaning & Exam' },
       { time: '10:30 AM', patient: 'Delta Dental', amount: 1200, type: 'Insurance', method: 'EFT', procedure: 'Crown - Claim #12345' },
       { time: '11:45 AM', patient: 'Sarah Johnson', amount: 150, type: 'Patient', method: 'Cash', procedure: 'X-Rays' },
-      { time: '01:20 PM', patient: 'Aetna', amount: 850, type: 'Insurance', method: 'EFT', procedure: 'Root Canal - Claim #12346' },
-      { time: '02:15 PM', patient: 'Michael Brown', amount: 325, type: 'Patient', method: 'Check', procedure: 'Filling' },
+      { time: '01:20 PM', patient: 'Aetna', amount: 850, type: 'Insurance', method: 'Insurance Check', procedure: 'Root Canal - Claim #12346' },
+      { time: '02:15 PM', patient: 'Michael Brown', amount: 325, type: 'Patient', method: 'Other Check', procedure: 'Filling' },
       { time: '03:30 PM', patient: 'MetLife', amount: 2150, type: 'Insurance', method: 'EFT', procedure: 'Bridge - Claim #12347' },
-      { time: '04:00 PM', patient: 'Emily Davis', amount: 200, type: 'Patient', method: 'Credit Card', procedure: 'Periodontal Treatment' }
+      { time: '04:00 PM', patient: 'Emily Davis', amount: 200, type: 'Patient', method: 'MasterCard', procedure: 'Periodontal Treatment' },
+      { time: '04:30 PM', patient: 'Jane Wilson', amount: 450, type: 'Patient', method: 'American Express', procedure: 'Whitening Treatment' },
+      { time: '05:00 PM', patient: 'Bob Anderson', amount: 175, type: 'Patient', method: 'Discover', procedure: 'Consultation' }
     ],
     topProcedures: [
       { name: 'Cleanings', count: 12, revenue: 1800 },
@@ -552,15 +554,15 @@ const CourtStreetRCM = () => {
 
   // Claims data
   const claimsData = {
-    totalActive: 0,
-    pending: 0,
+    totalActive: 283,
+    pending: 201,
     denied: 0,
-    overSixtyDays: 0,
+    overSixtyDays: 51,
     arAging: {
-      zeroToThirty: { amount: 0, count: 0 },
-      thirtyOneToSixty: { amount: 0, count: 0 },
-      sixtyOneToNinety: { amount: 0, count: 0 },
-      ninetyPlus: { amount: 0, count: 0 }
+      zeroToThirty: { amount: 149062.80, count: 201 },
+      thirtyOneToSixty: { amount: 21642.99, count: 31 },
+      sixtyOneToNinety: { amount: 20201.52, count: 19 },
+      ninetyPlus: { amount: 33031.88, count: 32 }
     }
   };
 
@@ -578,42 +580,49 @@ const CourtStreetRCM = () => {
 
   // New Patient Tracker data
   const newPatientTrackerData = {
-    perDay: 0,
-    perDayGoal: 5,
-    perWeek: 0,
-    perWeekGoal: 35, // 5 per day × 7 days
-    perMonth: 0,
-    perMonthGoal: 150, // 5 per day × 30 days
-    quarterly: 0,
-    quarterlyGoal: 450, // 5 per day × 90 days
-    monthlyAverages: getLastSixMonths()
+    perDay: 4,
+    perDayGoal: 2,
+    perWeek: 14,
+    perWeekGoal: 10,
+    perMonth: 14,
+    perMonthGoal: 40,
+    quarterly: 43,
+    quarterlyGoal: 120,
+    monthlyAverages: [
+      { month: getLastSixMonths()[0].month, count: 33 },
+      { month: getLastSixMonths()[1].month, count: 22 },
+      { month: getLastSixMonths()[2].month, count: 22 },
+      { month: getLastSixMonths()[3].month, count: 26 },
+      { month: getLastSixMonths()[4].month, count: 29 },
+      { month: getLastSixMonths()[5].month, count: 14 }
+    ]
   };
 
   // Third Party Financing data
   const thirdPartyFinancingData = {
-    cherryPatients: 0,
-    careCreditPatients: 0,
-    cherryAmount: 0,
-    careCreditAmount: 0,
-    totalPatients: 0,
-    totalAmount: 0
+    cherryPatients: 2,
+    careCreditPatients: 3,
+    cherryAmount: 8898.80,
+    careCreditAmount: 4052.40,
+    totalPatients: 5,
+    totalAmount: 12951.20
   };
 
   // Daily Production by Provider data
   const dailyProductionByProvider = {
     // Doctors
-    drGajjar: 0,
-    drJudge: 0,
-    drStrachan: 0,
-    doctorTotal: 0,
+    drGajjar: 7690,
+    drJudge: 11795,
+    drStrachan: 1150,
+    doctorTotal: 20635,
     // Hygienists
-    farah: 0,
-    olga: 0,
+    farah: 596.28,
+    olga: 1098.99,
     jissel: 0,
     tempHyg: 0,
-    hygienistTotal: 0,
+    hygienistTotal: 1695.27,
     // Combined
-    combinedTotal: 0
+    combinedTotal: 22330.27
   };
 
   const navigation = [

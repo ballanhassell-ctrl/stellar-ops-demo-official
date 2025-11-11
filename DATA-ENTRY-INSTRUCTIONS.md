@@ -72,7 +72,7 @@ The dashboard now uses a **BAM (Business Activity Metric) Cycle** system instead
 ### Dashboard Display:
 The main Dashboard card shows:
 - **BAM Current Revenue**: Your actual revenue in the current cycle
-- **BAM Target Goal**: The goal amount (e.g., $56,137)
+- **BAM Target Goal**: The goal amount (e.g., $224,548)
 - **Current Cycle Dates**: Start and end dates
 - **Days Remaining**: Business days left in current cycle
 - **Next Cycle Dates**: When the next cycle begins and ends
@@ -80,7 +80,7 @@ The main Dashboard card shows:
 ### Data Entry:
 Only two fields need manual entry:
 1. **BAM Current Revenue** - Update this as revenue comes in during the cycle
-2. **BAM Target Goal** - Set your target for each cycle (default: $56,137)
+2. **BAM Target Goal** - Set your target for each cycle (default: $224,548)
 
 Everything else (dates, days remaining, cycle calculations) is **automatic**!
 
