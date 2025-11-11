@@ -1069,10 +1069,10 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
-            {/* A/R Aging Summary */}
+            {/* Insurance A/R Aging Summary */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                A/R Aging Summary
+                Insurance A/R Aging Summary
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/30 border-green-700'}`}>
