@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 
 // BAM Cycle Helper Functions
-const majorHolidays2025 = [
+const officeClosureDays = [
+  // 2025 Office Closure Days
   new Date('2025-01-01'), // New Year's Day
   new Date('2025-05-26'), // Memorial Day
   new Date('2025-07-04'), // Independence Day
@@ -20,6 +21,20 @@ const majorHolidays2025 = [
   new Date('2025-12-29'), // Office Closure
   new Date('2025-12-30'), // Office Closure
   new Date('2025-12-31'), // New Year's Eve
+
+  // 2026 Office Closure Days
+  new Date('2026-01-01'), // New Year's Day
+  new Date('2026-05-25'), // Memorial Day
+  new Date('2026-07-04'), // Independence Day (falls on Saturday)
+  new Date('2026-09-07'), // Labor Day
+  new Date('2026-11-26'), // Thanksgiving
+  new Date('2026-11-27'), // Day After Thanksgiving
+  new Date('2026-12-24'), // Christmas Eve
+  new Date('2026-12-25'), // Christmas
+  new Date('2026-12-26'), // Day After Christmas (falls on Saturday)
+  new Date('2026-12-29'), // Office Closure
+  new Date('2026-12-30'), // Office Closure
+  new Date('2026-12-31'), // New Year's Eve
 ];
 
 const isWeekend = (date: Date) => {
@@ -29,7 +44,7 @@ const isWeekend = (date: Date) => {
 
 const isHoliday = (date: Date) => {
   const dateStr = date.toISOString().split('T')[0];
-  return majorHolidays2025.some(holiday => holiday.toISOString().split('T')[0] === dateStr);
+  return officeClosureDays.some(holiday => holiday.toISOString().split('T')[0] === dateStr);
 };
 
 const isBusinessDay = (date: Date) => {
@@ -163,7 +178,7 @@ const CourtStreetRCM = () => {
   };
 
   // BAM Cycle Configuration & Calculation
-  const bamCycleReferenceStart = new Date('2024-10-20'); // First known BAM cycle start date
+  const bamCycleReferenceStart = new Date('2025-10-20'); // First known BAM cycle start date
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
 
   // Dashboard data
