@@ -210,16 +210,16 @@ const CourtStreetRCM = () => {
 
   // Historical BAM Cycle Data (for trend graph)
   const historicalBAMData = [
-    { cycle: 'Cycle 1', startDate: 'Aug 20', endDate: 'Sep 13', revenue: 52000, goal: 56137 },
-    { cycle: 'Cycle 2', startDate: 'Sep 16', endDate: 'Oct 10', revenue: 54500, goal: 56137 },
-    { cycle: 'Cycle 3', startDate: 'Oct 20', endDate: 'Nov 13', revenue: 48000, goal: 56137 }, // Previous cycle
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 0, goal: 56137 }, // Current cycle
+    { cycle: 'Cycle 1', startDate: 'Aug 20', endDate: 'Sep 13', revenue: 52000, goal: 224548 },
+    { cycle: 'Cycle 2', startDate: 'Sep 16', endDate: 'Oct 10', revenue: 54500, goal: 224548 },
+    { cycle: 'Cycle 3', startDate: 'Oct 20', endDate: 'Nov 13', revenue: 48000, goal: 224548 }, // Previous cycle
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 0, goal: 224548 }, // Current cycle
   ];
 
   // Dashboard data
   const dashboardData = {
     bamCurrentRevenue: 0, // Current revenue in this BAM cycle
-    bamTargetGoal: 56137, // BAM Target Goal (configurable)
+    bamTargetGoal: 224548, // BAM Target Goal (configurable)
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
     bamDaysRemaining: bamCycle.daysRemaining,

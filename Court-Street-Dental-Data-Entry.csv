@@ -1,6 +1,6 @@
 Section,Field Name,Field Key,Data Type,Current Value,Description/Notes
 DASHBOARD,BAM Current Revenue,bamCurrentRevenue,number,0,Current revenue in this BAM cycle (19 business days)
-DASHBOARD,BAM Target Goal,bamTargetGoal,number,56137,BAM cycle revenue target goal
+DASHBOARD,BAM Target Goal,bamTargetGoal,number,224548,BAM cycle revenue target goal
 DASHBOARD,Collection Rate,collectionRate,number,0,Percentage of collections (0-100)
 DASHBOARD,Active Patients,activePatients,number,0,Number of active patients
 DASHBOARD,Active Claims,activeClaims,number,0,Number of currently active insurance claims
