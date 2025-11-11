@@ -7,70 +7,17 @@ import {
 } from 'lucide-react';
 
 // BAM Cycle Helper Functions
-const officeClosureDays = [
-  // 2025 Office Closure Days
-  new Date('2025-01-01'), // New Year's Day
-  new Date('2025-05-26'), // Memorial Day
-  new Date('2025-07-04'), // Independence Day
-  new Date('2025-09-01'), // Labor Day
-  new Date('2025-11-27'), // Thanksgiving
-  new Date('2025-11-28'), // Day After Thanksgiving
-  new Date('2025-12-24'), // Christmas Eve
-  new Date('2025-12-25'), // Christmas
-  new Date('2025-12-26'), // Day After Christmas
-  new Date('2025-12-29'), // Office Closure
-  new Date('2025-12-30'), // Office Closure
-  new Date('2025-12-31'), // New Year's Eve
-
-  // 2026 Office Closure Days
-  new Date('2026-01-01'), // New Year's Day
-  new Date('2026-05-25'), // Memorial Day
-  new Date('2026-07-04'), // Independence Day (falls on Saturday)
-  new Date('2026-09-07'), // Labor Day
-  new Date('2026-11-26'), // Thanksgiving
-  new Date('2026-11-27'), // Day After Thanksgiving
-  new Date('2026-12-24'), // Christmas Eve
-  new Date('2026-12-25'), // Christmas
-  new Date('2026-12-26'), // Day After Christmas (falls on Saturday)
-  new Date('2026-12-29'), // Office Closure
-  new Date('2026-12-30'), // Office Closure
-  new Date('2026-12-31'), // New Year's Eve
-];
-
 const isWeekend = (date: Date) => {
   const day = date.getDay();
   return day === 0 || day === 6; // Sunday or Saturday
 };
 
-const isHoliday = (date: Date) => {
-  const dateStr = date.toISOString().split('T')[0];
-  return officeClosureDays.some(holiday => holiday.toISOString().split('T')[0] === dateStr);
-};
-
-const isBusinessDay = (date: Date) => {
-  return !isWeekend(date) && !isHoliday(date);
-};
-
-// BAM-specific business day check (excludes weekends but NOT Thanksgiving)
+// BAM-specific business day check (excludes weekends but NOT holidays like Thanksgiving)
 const isBAMBusinessDay = (date: Date) => {
   return !isWeekend(date);
 };
 
-const addBusinessDays = (startDate: Date, numDays: number) => {
-  let currentDate = new Date(startDate);
-  let daysAdded = 0;
-
-  while (daysAdded < numDays) {
-    currentDate.setDate(currentDate.getDate() + 1);
-    if (isBusinessDay(currentDate)) {
-      daysAdded++;
-    }
-  }
-
-  return currentDate;
-};
-
-// BAM-specific business day addition (excludes weekends but NOT Thanksgiving)
+// BAM-specific business day addition (excludes weekends but NOT holidays)
 const addBAMBusinessDays = (startDate: Date, numDays: number) => {
   let currentDate = new Date(startDate);
   let daysAdded = 0;
@@ -85,21 +32,7 @@ const addBAMBusinessDays = (startDate: Date, numDays: number) => {
   return currentDate;
 };
 
-const getBusinessDaysBetween = (startDate: Date, endDate: Date) => {
-  let count = 0;
-  let currentDate = new Date(startDate);
-
-  while (currentDate <= endDate) {
-    if (isBusinessDay(currentDate)) {
-      count++;
-    }
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-
-  return count;
-};
-
-// BAM-specific business days between (excludes weekends but NOT Thanksgiving)
+// BAM-specific business days between (excludes weekends but NOT holidays)
 const getBAMBusinessDaysBetween = (startDate: Date, endDate: Date) => {
   let count = 0;
   let currentDate = new Date(startDate);
