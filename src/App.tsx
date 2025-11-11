@@ -79,6 +79,32 @@ const getBusinessDaysBetween = (startDate: Date, endDate: Date) => {
   return count;
 };
 
+// Patient Name Masking Function (HIPAA Protection)
+const maskPatientName = (name: string, type: string) => {
+  // If it's an insurance payment, show full company name
+  if (type === 'Insurance') {
+    return name;
+  }
+
+  // For patient payments, mask to initials only
+  const nameParts = name.trim().split(' ');
+
+  if (nameParts.length === 0) {
+    return 'N/A';
+  }
+
+  if (nameParts.length === 1) {
+    // Only one name provided, show first initial
+    return `${nameParts[0].charAt(0).toUpperCase()}.`;
+  }
+
+  // Get first initial of first name and first initial of last name
+  const firstInitial = nameParts[0].charAt(0).toUpperCase();
+  const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
+
+  return `${firstInitial}. ${lastInitial}.`;
+};
+
 const calculateBAMCycle = (referenceStartDate: Date) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -3197,7 +3223,7 @@ const CourtStreetRCM = () => {
                     {eodData.payments.map((payment, index) => (
                       <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="p-3 text-gray-700">{payment.time}</td>
-                        <td className="p-3 font-medium text-gray-900">{payment.patient}</td>
+                        <td className="p-3 font-medium text-gray-900">{maskPatientName(payment.patient, payment.type)}</td>
                         <td className="p-3">
                           <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
                             payment.type === 'Insurance' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
