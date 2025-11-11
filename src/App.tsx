@@ -3,61 +3,28 @@ import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
-  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat
+  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon
 } from 'lucide-react';
 
 // BAM Cycle Helper Functions
-const officeClosureDays = [
-  // 2025 Office Closure Days
-  new Date('2025-01-01'), // New Year's Day
-  new Date('2025-05-26'), // Memorial Day
-  new Date('2025-07-04'), // Independence Day
-  new Date('2025-09-01'), // Labor Day
-  new Date('2025-11-27'), // Thanksgiving
-  new Date('2025-11-28'), // Day After Thanksgiving
-  new Date('2025-12-24'), // Christmas Eve
-  new Date('2025-12-25'), // Christmas
-  new Date('2025-12-26'), // Day After Christmas
-  new Date('2025-12-29'), // Office Closure
-  new Date('2025-12-30'), // Office Closure
-  new Date('2025-12-31'), // New Year's Eve
-
-  // 2026 Office Closure Days
-  new Date('2026-01-01'), // New Year's Day
-  new Date('2026-05-25'), // Memorial Day
-  new Date('2026-07-04'), // Independence Day (falls on Saturday)
-  new Date('2026-09-07'), // Labor Day
-  new Date('2026-11-26'), // Thanksgiving
-  new Date('2026-11-27'), // Day After Thanksgiving
-  new Date('2026-12-24'), // Christmas Eve
-  new Date('2026-12-25'), // Christmas
-  new Date('2026-12-26'), // Day After Christmas (falls on Saturday)
-  new Date('2026-12-29'), // Office Closure
-  new Date('2026-12-30'), // Office Closure
-  new Date('2026-12-31'), // New Year's Eve
-];
-
 const isWeekend = (date: Date) => {
   const day = date.getDay();
   return day === 0 || day === 6; // Sunday or Saturday
 };
 
-const isHoliday = (date: Date) => {
-  const dateStr = date.toISOString().split('T')[0];
-  return officeClosureDays.some(holiday => holiday.toISOString().split('T')[0] === dateStr);
+// BAM-specific business day check (excludes weekends but NOT holidays like Thanksgiving)
+const isBAMBusinessDay = (date: Date) => {
+  return !isWeekend(date);
 };
 
-const isBusinessDay = (date: Date) => {
-  return !isWeekend(date) && !isHoliday(date);
-};
-
-const addBusinessDays = (startDate: Date, numDays: number) => {
+// BAM-specific business day addition (excludes weekends but NOT holidays)
+const addBAMBusinessDays = (startDate: Date, numDays: number) => {
   let currentDate = new Date(startDate);
   let daysAdded = 0;
 
   while (daysAdded < numDays) {
     currentDate.setDate(currentDate.getDate() + 1);
-    if (isBusinessDay(currentDate)) {
+    if (isBAMBusinessDay(currentDate)) {
       daysAdded++;
     }
   }
@@ -65,12 +32,13 @@ const addBusinessDays = (startDate: Date, numDays: number) => {
   return currentDate;
 };
 
-const getBusinessDaysBetween = (startDate: Date, endDate: Date) => {
+// BAM-specific business days between (excludes weekends but NOT holidays)
+const getBAMBusinessDaysBetween = (startDate: Date, endDate: Date) => {
   let count = 0;
   let currentDate = new Date(startDate);
 
   while (currentDate <= endDate) {
-    if (isBusinessDay(currentDate)) {
+    if (isBAMBusinessDay(currentDate)) {
       count++;
     }
     currentDate.setDate(currentDate.getDate() + 1);
@@ -114,17 +82,17 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
 
   // Find the current cycle by iterating forward
   while (cycleStart < today) {
-    const cycleEnd = addBusinessDays(cycleStart, 18); // 19 days total (0-18)
+    const cycleEnd = addBAMBusinessDays(cycleStart, 18); // 19 days total (0-18)
 
     if (today >= cycleStart && today <= cycleEnd) {
       // Found current cycle
-      const businessDaysRemaining = getBusinessDaysBetween(today, cycleEnd);
+      const businessDaysRemaining = getBAMBusinessDaysBetween(today, cycleEnd);
       const nextCycleStart = new Date(cycleEnd);
       nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-      while (!isBusinessDay(nextCycleStart)) {
+      while (!isBAMBusinessDay(nextCycleStart)) {
         nextCycleStart.setDate(nextCycleStart.getDate() + 1);
       }
-      const nextCycleEnd = addBusinessDays(nextCycleStart, 18);
+      const nextCycleEnd = addBAMBusinessDays(nextCycleStart, 18);
 
       return {
         currentCycleStart: cycleStart,
@@ -138,21 +106,21 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
     // Move to next cycle
     cycleStart = new Date(cycleEnd);
     cycleStart.setDate(cycleStart.getDate() + 1);
-    while (!isBusinessDay(cycleStart)) {
+    while (!isBAMBusinessDay(cycleStart)) {
       cycleStart.setDate(cycleStart.getDate() + 1);
     }
   }
 
   // If we're before the reference date, calculate backwards
   cycleStart = new Date(referenceStartDate);
-  const cycleEnd = addBusinessDays(cycleStart, 18);
-  const businessDaysRemaining = getBusinessDaysBetween(today, cycleEnd);
+  const cycleEnd = addBAMBusinessDays(cycleStart, 18);
+  const businessDaysRemaining = getBAMBusinessDaysBetween(today, cycleEnd);
   const nextCycleStart = new Date(cycleEnd);
   nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-  while (!isBusinessDay(nextCycleStart)) {
+  while (!isBAMBusinessDay(nextCycleStart)) {
     nextCycleStart.setDate(nextCycleStart.getDate() + 1);
   }
-  const nextCycleEnd = addBusinessDays(nextCycleStart, 18);
+  const nextCycleEnd = addBAMBusinessDays(nextCycleStart, 18);
 
   return {
     currentCycleStart: cycleStart,
@@ -177,8 +145,17 @@ const CourtStreetRCM = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('full');
   const [providerProductionDate, setProviderProductionDate] = useState(new Date().toISOString().split('T')[0]);
   const [showBAMModal, setShowBAMModal] = useState(false);
+  const [isDayMode, setIsDayMode] = useState(true);
 
   const csdGold = '#B8985F';
+
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
   // Report templates
   const reportTemplates = {
@@ -495,7 +472,7 @@ const CourtStreetRCM = () => {
   const eodData = {
     reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
     dailyProduction: 22330.27,
-    dailyProductionGoal: 10000,
+    dailyProductionGoal: 12500,
     paymentsCollected: 13741.66,
     collectionRate: 62,
     insurancePayments: 0,
@@ -553,7 +530,7 @@ const CourtStreetRCM = () => {
       { name: 'X-Rays', count: 16, revenue: 1460 }
     ],
     monthToDateSummary: {
-      production: 87500,
+      production: 99778.08,
       productionGoal: 250000,
       collected: 71250,
       collectionRate: 81.4,
@@ -784,38 +761,69 @@ const CourtStreetRCM = () => {
         {currentView === 'dashboard' ? (
           <div className="space-y-6">
             {/* Dashboard Header */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
-                Practice Overview Dashboard
-              </h2>
-              <p className="text-gray-600 text-sm">
-                Real-time insights into your revenue cycle performance
-              </p>
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    {getGreeting()}, Team! 👋
+                  </h2>
+                  <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
+                    Practice Overview Dashboard
+                  </h3>
+                  <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                    Real-time insights into your revenue cycle performance
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsDayMode(!isDayMode)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                    isDayMode
+                      ? 'bg-gray-800 text-white hover:bg-gray-700'
+                      : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
+                  }`}
+                >
+                  {isDayMode ? (
+                    <>
+                      <Moon className="w-5 h-5" />
+                      Night Mode
+                    </>
+                  ) : (
+                    <>
+                      <Sun className="w-5 h-5" />
+                      Day Mode
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* BAM Cycle Revenue */}
-              <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
+                isDayMode
+                  ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300'
+                  : 'bg-gradient-to-br from-green-900 to-green-800 border-2 border-green-600'
+              }`}>
                 <div className="flex flex-col">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">BAM Cycle Revenue</p>
-                      <p className="text-xs text-green-600">
+                      <p className={`text-xs font-semibold uppercase tracking-wide ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>BAM Cycle Revenue</p>
+                      <p className={`text-xs ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>
                         {dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
-                    <TrendingUp className="w-6 h-6 text-green-500" />
+                    <TrendingUp className={`w-6 h-6 ${isDayMode ? 'text-green-500' : 'text-green-300'}`} />
                   </div>
                   <div className="mb-2">
-                    <p className="text-3xl font-bold text-green-900">
+                    <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-100'}`}>
                       ${dashboardData.bamCurrentRevenue.toLocaleString()}
                     </p>
-                    <p className="text-xs text-green-700 mt-1">
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
                       BAM Target: ${dashboardData.bamTargetGoal.toLocaleString()}
                     </p>
                   </div>
-                  <div className="w-full bg-green-200 rounded-full h-2 mb-3">
+                  <div className={`w-full rounded-full h-2 mb-3 ${isDayMode ? 'bg-green-200' : 'bg-green-950'}`}>
                     <div
                       className={`h-2 rounded-full transition-all ${dashboardData.bamCurrentRevenue >= dashboardData.bamTargetGoal ? 'bg-green-600' : 'bg-green-500'}`}
                       style={{
@@ -823,13 +831,13 @@ const CourtStreetRCM = () => {
                       }}
                     ></div>
                   </div>
-                  <div className="border-t border-green-200 pt-2">
+                  <div className={`border-t pt-2 ${isDayMode ? 'border-green-200' : 'border-green-700'}`}>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-green-700 font-medium">Days Remaining:</span>
-                      <span className="text-green-900 font-bold">{dashboardData.bamDaysRemaining} business days</span>
+                      <span className={`font-medium ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>Days Remaining:</span>
+                      <span className={`font-bold ${isDayMode ? 'text-green-900' : 'text-green-100'}`}>{dashboardData.bamDaysRemaining} business days</span>
                     </div>
                     <div className="mt-1">
-                      <p className="text-xs text-green-600">
+                      <p className={`text-xs ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>
                         Next Cycle: {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
@@ -838,44 +846,56 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Collection Rate */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
+              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
+                isDayMode
+                  ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300'
+                  : 'bg-gradient-to-br from-blue-900 to-blue-800 border-2 border-blue-600'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-700 mb-1">Collection Rate</p>
-                    <p className="text-3xl font-bold text-blue-900">
+                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-300'}`}>Collection Rate</p>
+                    <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-100'}`}>
                       {dashboardData.collectionRate}%
                     </p>
-                    <p className="text-xs text-blue-600 mt-2">Industry avg: 95%</p>
+                    <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>Industry avg: 95%</p>
                   </div>
-                  <Activity className="w-8 h-8 text-blue-500" />
+                  <Activity className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-300'}`} />
                 </div>
               </div>
 
               {/* Active Patients */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
+              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
+                isDayMode
+                  ? 'bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300'
+                  : 'bg-gradient-to-br from-purple-900 to-purple-800 border-2 border-purple-600'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-purple-700 mb-1">Active Patients</p>
-                    <p className="text-3xl font-bold text-purple-900">
+                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>Active Patients</p>
+                    <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-100'}`}>
                       {dashboardData.activePatients}
                     </p>
-                    <p className="text-xs text-purple-600 mt-2">This month</p>
+                    <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>This month</p>
                   </div>
-                  <Users className="w-8 h-8 text-purple-500" />
+                  <Users className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-300'}`} />
                 </div>
               </div>
 
               {/* Outstanding A/R */}
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-5 hover:shadow-lg transition-all">
+              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
+                isDayMode
+                  ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300'
+                  : 'bg-gradient-to-br from-amber-900 to-amber-800 border-2 border-amber-600'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-amber-700 mb-1">Outstanding A/R</p>
-                    <p className="text-3xl font-bold text-amber-900">
+                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Outstanding A/R</p>
+                    <p className={`text-3xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
                       ${dashboardData.outstandingAR.toLocaleString()}
                     </p>
-                    <p className="text-xs text-amber-600 mt-2">Total receivables</p>
+                    <p className={`text-xs mt-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Total receivables</p>
                   </div>
-                  <DollarSign className="w-8 h-8 text-amber-500" />
+                  <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-amber-500' : 'text-amber-300'}`} />
                 </div>
               </div>
             </div>
