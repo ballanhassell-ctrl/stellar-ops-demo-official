@@ -132,7 +132,13 @@ THIRD PARTY FINANCING,Total Amount (30 days),totalAmount,number,0,Combined amoun
 DAILY PRODUCTION BY PROVIDER,Dr. Gajjar Production,drGajjar,number,0,Daily production for Dr. Gajjar (use date selector)
 DAILY PRODUCTION BY PROVIDER,Dr. Judge Production,drJudge,number,0,Daily production for Dr. Judge (use date selector)
 DAILY PRODUCTION BY PROVIDER,Dr. Strachan Production,drStrachan,number,0,Daily production for Dr. Strachan (use date selector)
-DAILY PRODUCTION BY PROVIDER,Total Production,total,number,0,Combined daily production for all providers
+DAILY PRODUCTION BY PROVIDER,Doctor Total,doctorTotal,number,0,Total daily production for all doctors
+DAILY PRODUCTION BY PROVIDER,Farah Production,farah,number,0,Daily production for Farah (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Olga Production,olga,number,0,Daily production for Olga (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Jissel Production,jissel,number,0,Daily production for Jissel (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Temp HYG Production,tempHyg,number,0,Daily production for Temp HYG (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Hygienist Total,hygienistTotal,number,0,Total daily production for all hygienists
+DAILY PRODUCTION BY PROVIDER,Combined Total,combinedTotal,number,0,Combined daily production for all providers (doctors + hygienists)
 ADVANCED METRICS - FINANCIAL,Customer Acquisition Cost (CAC),cac,number,0,Cost to acquire a new patient
 ADVANCED METRICS - FINANCIAL,Gross Profit Margin %,grossProfitMargin,number,0,Gross profit as percentage of revenue
 ADVANCED METRICS - FINANCIAL,Operating Profit Margin %,operatingProfitMargin,number,0,Operating profit as percentage of revenue

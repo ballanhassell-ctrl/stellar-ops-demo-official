@@ -601,10 +601,19 @@ const CourtStreetRCM = () => {
 
   // Daily Production by Provider data
   const dailyProductionByProvider = {
+    // Doctors
     drGajjar: 0,
     drJudge: 0,
     drStrachan: 0,
-    total: 0
+    doctorTotal: 0,
+    // Hygienists
+    farah: 0,
+    olga: 0,
+    jissel: 0,
+    tempHyg: 0,
+    hygienistTotal: 0,
+    // Combined
+    combinedTotal: 0
   };
 
   const navigation = [
@@ -2642,60 +2651,156 @@ const CourtStreetRCM = () => {
                 Production for {new Date(providerProductionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Dr. Gajjar */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="text-sm font-semibold text-blue-900 mb-1">Dr. Gajjar</h4>
-                      <p className="text-xs text-blue-700">Provider</p>
+              {/* Doctors Row */}
+              <div className="mb-6">
+                <h4 className="text-md font-bold text-gray-700 mb-3">Doctors</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Dr. Gajjar */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-900 mb-1">Dr. Gajjar</h4>
+                        <p className="text-xs text-blue-700">Provider</p>
+                      </div>
+                      <DollarSign className="w-6 h-6 text-blue-600" />
                     </div>
-                    <DollarSign className="w-6 h-6 text-blue-600" />
+                    <p className="text-3xl font-bold text-blue-900">
+                      ${dailyProductionByProvider.drGajjar.toLocaleString()}
+                    </p>
                   </div>
-                  <p className="text-3xl font-bold text-blue-900">
-                    ${dailyProductionByProvider.drGajjar.toLocaleString()}
-                  </p>
-                </div>
 
-                {/* Dr. Judge */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="text-sm font-semibold text-green-900 mb-1">Dr. Judge</h4>
-                      <p className="text-xs text-green-700">Provider</p>
+                  {/* Dr. Judge */}
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-green-900 mb-1">Dr. Judge</h4>
+                        <p className="text-xs text-green-700">Provider</p>
+                      </div>
+                      <DollarSign className="w-6 h-6 text-green-600" />
                     </div>
-                    <DollarSign className="w-6 h-6 text-green-600" />
+                    <p className="text-3xl font-bold text-green-900">
+                      ${dailyProductionByProvider.drJudge.toLocaleString()}
+                    </p>
                   </div>
-                  <p className="text-3xl font-bold text-green-900">
-                    ${dailyProductionByProvider.drJudge.toLocaleString()}
-                  </p>
-                </div>
 
-                {/* Dr. Strachan */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="text-sm font-semibold text-purple-900 mb-1">Dr. Strachan</h4>
-                      <p className="text-xs text-purple-700">Provider</p>
+                  {/* Dr. Strachan */}
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-purple-900 mb-1">Dr. Strachan</h4>
+                        <p className="text-xs text-purple-700">Provider</p>
+                      </div>
+                      <DollarSign className="w-6 h-6 text-purple-600" />
                     </div>
-                    <DollarSign className="w-6 h-6 text-purple-600" />
+                    <p className="text-3xl font-bold text-purple-900">
+                      ${dailyProductionByProvider.drStrachan.toLocaleString()}
+                    </p>
                   </div>
-                  <p className="text-3xl font-bold text-purple-900">
-                    ${dailyProductionByProvider.drStrachan.toLocaleString()}
-                  </p>
-                </div>
 
-                {/* Total Production */}
-                <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-400 rounded-lg p-6">
+                  {/* Doctor Total */}
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-400 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-amber-900 mb-1">Doctor Total</h4>
+                        <p className="text-xs text-amber-700">Subtotal</p>
+                      </div>
+                      <TrendingUp className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-amber-900">
+                      ${dailyProductionByProvider.doctorTotal.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hygienists Row */}
+              <div className="mb-6">
+                <h4 className="text-md font-bold text-gray-700 mb-3">Hygienists</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Farah */}
+                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-teal-900 mb-1">Farah</h4>
+                        <p className="text-xs text-teal-700">Hygienist</p>
+                      </div>
+                      <DollarSign className="w-6 h-6 text-teal-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-teal-900">
+                      ${dailyProductionByProvider.farah.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Olga */}
+                  <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-300 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-cyan-900 mb-1">Olga</h4>
+                        <p className="text-xs text-cyan-700">Hygienist</p>
+                      </div>
+                      <DollarSign className="w-6 h-6 text-cyan-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-cyan-900">
+                      ${dailyProductionByProvider.olga.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Jissel */}
+                  <div className="bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-300 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-sky-900 mb-1">Jissel</h4>
+                        <p className="text-xs text-sky-700">Hygienist</p>
+                      </div>
+                      <DollarSign className="w-6 h-6 text-sky-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-sky-900">
+                      ${dailyProductionByProvider.jissel.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Temp HYG */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-indigo-900 mb-1">Temp HYG</h4>
+                        <p className="text-xs text-indigo-700">Hygienist</p>
+                      </div>
+                      <DollarSign className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-indigo-900">
+                      ${dailyProductionByProvider.tempHyg.toLocaleString()}
+                    </p>
+                  </div>
+
+                  {/* Hygienist Total */}
+                  <div className="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-400 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-pink-900 mb-1">Hygienist Total</h4>
+                        <p className="text-xs text-pink-700">Subtotal</p>
+                      </div>
+                      <TrendingUp className="w-6 h-6 text-pink-600" />
+                    </div>
+                    <p className="text-3xl font-bold text-pink-900">
+                      ${dailyProductionByProvider.hygienistTotal.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Combined Total */}
+              <div className="flex justify-center">
+                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-500 rounded-lg p-6 shadow-lg w-full max-w-md">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h4 className="text-sm font-semibold text-amber-900 mb-1">Total</h4>
-                      <p className="text-xs text-amber-700">Combined</p>
+                      <h4 className="text-md font-bold text-emerald-900 mb-1">Combined Total</h4>
+                      <p className="text-sm text-emerald-700">All Providers</p>
                     </div>
-                    <TrendingUp className="w-6 h-6 text-amber-600" />
+                    <TrendingUp className="w-8 h-8 text-emerald-600" />
                   </div>
-                  <p className="text-3xl font-bold text-amber-900">
-                    ${dailyProductionByProvider.total.toLocaleString()}
+                  <p className="text-4xl font-bold text-emerald-900">
+                    ${dailyProductionByProvider.combinedTotal.toLocaleString()}
                   </p>
                 </div>
               </div>
