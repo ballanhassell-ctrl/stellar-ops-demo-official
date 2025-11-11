@@ -74,15 +74,18 @@ const isBAMBusinessDay = (date: Date) => {
   return !isWeekend(date) && !isOfficeClosed(date);
 };
 
-// BAM-specific business day addition (excludes weekends and office closures)
-const addBAMBusinessDays = (startDate: Date, numDays: number) => {
+// Find end date that gives exactly numBusinessDays from start (inclusive)
+const findBAMCycleEndDate = (startDate: Date, numBusinessDays: number) => {
   let currentDate = new Date(startDate);
-  let daysAdded = 0;
+  let businessDayCount = 0;
 
-  while (daysAdded < numDays) {
-    currentDate.setDate(currentDate.getDate() + 1);
+  while (businessDayCount < numBusinessDays) {
     if (isBAMBusinessDay(currentDate)) {
-      daysAdded++;
+      businessDayCount++;
+    }
+
+    if (businessDayCount < numBusinessDays) {
+      currentDate.setDate(currentDate.getDate() + 1);
     }
   }
 
@@ -139,17 +142,15 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
 
   // Find the current cycle by iterating forward
   while (cycleStart < today) {
-    const cycleEnd = addBAMBusinessDays(cycleStart, 18); // 19 days total (0-18)
+    const cycleEnd = findBAMCycleEndDate(cycleStart, 19); // Exactly 19 business days
 
     if (today >= cycleStart && today <= cycleEnd) {
       // Found current cycle
       const businessDaysRemaining = getBAMBusinessDaysBetween(today, cycleEnd);
+      // Next cycle starts the day after current cycle ends (calendar day, not business day)
       const nextCycleStart = new Date(cycleEnd);
       nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-      while (!isBAMBusinessDay(nextCycleStart)) {
-        nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-      }
-      const nextCycleEnd = addBAMBusinessDays(nextCycleStart, 18);
+      const nextCycleEnd = findBAMCycleEndDate(nextCycleStart, 19);
 
       return {
         currentCycleStart: cycleStart,
@@ -160,24 +161,18 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
       };
     }
 
-    // Move to next cycle
+    // Move to next cycle (next calendar day after cycle ends)
     cycleStart = new Date(cycleEnd);
     cycleStart.setDate(cycleStart.getDate() + 1);
-    while (!isBAMBusinessDay(cycleStart)) {
-      cycleStart.setDate(cycleStart.getDate() + 1);
-    }
   }
 
   // If we're before the reference date, calculate backwards
   cycleStart = new Date(referenceStartDate);
-  const cycleEnd = addBAMBusinessDays(cycleStart, 18);
+  const cycleEnd = findBAMCycleEndDate(cycleStart, 19);
   const businessDaysRemaining = getBAMBusinessDaysBetween(today, cycleEnd);
   const nextCycleStart = new Date(cycleEnd);
   nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-  while (!isBAMBusinessDay(nextCycleStart)) {
-    nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-  }
-  const nextCycleEnd = addBAMBusinessDays(nextCycleStart, 18);
+  const nextCycleEnd = findBAMCycleEndDate(nextCycleStart, 19);
 
   return {
     currentCycleStart: cycleStart,
@@ -239,19 +234,20 @@ const CourtStreetRCM = () => {
   };
 
   // BAM Cycle Configuration & Calculation
-  const bamCycleReferenceStart = new Date('2025-09-22'); // BAM cycle reference start date (Sept 22, 2025)
+  const bamCycleReferenceStart = new Date('2025-09-23'); // BAM cycle reference start date (Sept 23, 2025)
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
 
   // Historical BAM Cycle Data (for trend graph)
   const historicalBAMData = [
-    { cycle: 'Previous', startDate: 'Sep 22', endDate: 'Oct 16', revenue: 202259.69, goal: 224548 }, // Previous cycle (Sept 22 - Oct 16, 2025)
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 214933.97, goal: 224548 }, // Current cycle (Oct 17 - Nov 12, 2025)
+    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 17', revenue: 202259.69, goal: 241389 }, // Previous cycle (Sept 23 - Oct 17, 2025)
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 214933.97, goal: 241389 }, // Current cycle (Oct 18 - Nov 13, 2025)
   ];
 
   // Dashboard data
   const dashboardData = {
     bamCurrentRevenue: 214933.97, // Current revenue in this BAM cycle
-    bamTargetGoal: 224548, // BAM Target Goal (configurable)
+    bamTargetGoal: 241389, // BAM Target Goal (configurable)
+    practiceGoal: 300000, // Practice Goal (overall target)
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
     bamDaysRemaining: bamCycle.daysRemaining,
@@ -529,7 +525,7 @@ const CourtStreetRCM = () => {
   const eodData = {
     reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
     dailyProduction: 22330.27,
-    dailyProductionGoal: 12500,
+    dailyProductionGoal: 19991,
     paymentsCollected: 13741.66,
     collectionRate: 62,
     insurancePayments: 0,
@@ -878,6 +874,9 @@ const CourtStreetRCM = () => {
                     </p>
                     <p className={`text-xs mt-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
                       BAM Target: ${dashboardData.bamTargetGoal.toLocaleString()}
+                    </p>
+                    <p className={`text-xs ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>
+                      Practice Goal: ${dashboardData.practiceGoal.toLocaleString()}
                     </p>
                   </div>
                   <div className={`w-full rounded-full h-2 mb-3 ${isDayMode ? 'bg-green-200' : 'bg-green-950'}`}>

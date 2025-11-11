@@ -1,6 +1,6 @@
 Section,Field Name,Field Key,Data Type,Current Value,Description/Notes
 DASHBOARD,BAM Current Revenue,bamCurrentRevenue,number,0,Current revenue in this BAM cycle (19 business days)
-DASHBOARD,BAM Target Goal,bamTargetGoal,number,224548,BAM cycle revenue target goal
+DASHBOARD,BAM Target Goal,bamTargetGoal,number,241389,BAM cycle revenue target goal
 DASHBOARD,Collection Rate,collectionRate,number,0,Percentage of collections (0-100)
 DASHBOARD,Active Patients,activePatients,number,0,Number of active patients
 DASHBOARD,Active Claims,activeClaims,number,0,Number of currently active insurance claims
@@ -68,7 +68,7 @@ CHECKLIST,Weekly Total,weeklyTotal,number,5,Total weekly tasks
 CHECKLIST,Monthly Completed,monthlyCompleted,number,0,Number of monthly tasks completed
 CHECKLIST,Monthly Total,monthlyTotal,number,4,Total monthly tasks
 EOD REPORT,Daily Production,dailyProduction,number,8750,Production for the day
-EOD REPORT,Daily Production Goal,dailyProductionGoal,number,10000,Daily production goal
+EOD REPORT,Daily Production Goal,dailyProductionGoal,number,19991,Daily production goal
 EOD REPORT,Payments Collected,paymentsCollected,number,6825,Total payments collected today
 EOD REPORT,Collection Rate %,collectionRate,number,78,Collection rate percentage
 EOD REPORT,Insurance Payments,insurancePayments,number,4200,Insurance payments today
