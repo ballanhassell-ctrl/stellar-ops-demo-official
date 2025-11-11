@@ -513,11 +513,11 @@ const CourtStreetRCM = () => {
     patientsSeenToday: 26,
     newPatients: 4,
     proceduresCompleted: 68,
-    unbilledProcedures: 0,
+    unbilledProcedures: 33,
     unappliedPayments: 1369.25,
     failedTransactions: 0,
     actionItems: {
-      claimsToSubmit: 0,
+      claimsToSubmit: 12,
       deniedClaimsToResubmit: 0,
       preAuthsExpiring: 0,
       accountsNeedingFollowUp: 0,
@@ -554,7 +554,7 @@ const CourtStreetRCM = () => {
     ],
     monthToDateSummary: {
       production: 87500,
-      productionGoal: 150000,
+      productionGoal: 250000,
       collected: 71250,
       collectionRate: 81.4,
       newPatients: 15
