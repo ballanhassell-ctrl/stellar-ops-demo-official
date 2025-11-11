@@ -205,18 +205,18 @@ const CourtStreetRCM = () => {
   };
 
   // BAM Cycle Configuration & Calculation
-  const bamCycleReferenceStart = new Date('2025-09-23'); // BAM cycle reference start date (Sept 23, 2025)
+  const bamCycleReferenceStart = new Date('2025-09-22'); // BAM cycle reference start date (Sept 22, 2025)
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
 
   // Historical BAM Cycle Data (for trend graph)
   const historicalBAMData = [
-    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 19', revenue: 190297.89, goal: 224548 }, // Previous cycle (Sept 23 - Oct 19, 2025)
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 183133.37, goal: 224548 }, // Current cycle (Oct 20 - Nov 14, 2025)
+    { cycle: 'Previous', startDate: 'Sep 22', endDate: 'Oct 16', revenue: 202259.69, goal: 224548 }, // Previous cycle (Sept 22 - Oct 16, 2025)
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 214933.97, goal: 224548 }, // Current cycle (Oct 17 - Nov 12, 2025)
   ];
 
   // Dashboard data
   const dashboardData = {
-    bamCurrentRevenue: 183133.37, // Current revenue in this BAM cycle
+    bamCurrentRevenue: 214933.97, // Current revenue in this BAM cycle
     bamTargetGoal: 224548, // BAM Target Goal (configurable)
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
