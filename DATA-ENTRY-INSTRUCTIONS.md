@@ -3,6 +3,30 @@
 ## Overview
 This guide explains how to use the data entry spreadsheets to populate your RCM Dashboard with real data.
 
+## 🔒 Patient Data Protection (HIPAA Compliance)
+
+The dashboard automatically protects patient privacy by masking patient names in all displays.
+
+### How Patient Names Are Protected:
+- **Patient Names**: Automatically masked to show only initials
+  - Example: "John Smith" displays as "J. S."
+  - Example: "Sarah Johnson" displays as "S. J."
+- **Insurance Companies**: Full names displayed (e.g., "Delta Dental", "Aetna")
+- **Automatic Detection**: System automatically identifies patient vs. insurance payments
+
+### Where Masking Applies:
+- ✅ **EOD Report** - Today's Payments Detail table
+- ✅ **All Exports** - PDF and printed reports maintain masking
+- ✅ **All Views** - Any display showing patient information
+
+### Data Entry:
+You can enter full patient names in your data entry spreadsheets. The masking happens **automatically** when the data is displayed in the dashboard. This ensures:
+- Data entry remains convenient and complete
+- All displays are HIPAA-compliant
+- Patient privacy is protected in reports and exports
+
+---
+
 ## 🎯 BAM Cycle System
 
 The dashboard now uses a **BAM (Business Activity Metric) Cycle** system instead of traditional monthly tracking.
@@ -113,6 +137,12 @@ Individual payment transactions for the EOD (End of Day) Report.
 4. Make sure Payment Method matches one of the specific options listed above
 5. Use "Insurance Check" for checks from insurance companies
 6. Use "Other Check" for checks from patients or other sources
+
+**Privacy Note:**
+- Enter full patient names in the CSV for your records
+- When displayed in the dashboard, patient names are **automatically masked** to initials (e.g., "John Smith" → "J. S.")
+- Insurance company names remain unmasked (e.g., "Delta Dental" stays "Delta Dental")
+- This protects patient privacy while keeping your data entry convenient
 
 **Example:**
 ```
