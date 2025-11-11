@@ -51,6 +51,11 @@ const isBusinessDay = (date: Date) => {
   return !isWeekend(date) && !isHoliday(date);
 };
 
+// BAM-specific business day check (excludes weekends but NOT Thanksgiving)
+const isBAMBusinessDay = (date: Date) => {
+  return !isWeekend(date);
+};
+
 const addBusinessDays = (startDate: Date, numDays: number) => {
   let currentDate = new Date(startDate);
   let daysAdded = 0;
@@ -65,12 +70,42 @@ const addBusinessDays = (startDate: Date, numDays: number) => {
   return currentDate;
 };
 
+// BAM-specific business day addition (excludes weekends but NOT Thanksgiving)
+const addBAMBusinessDays = (startDate: Date, numDays: number) => {
+  let currentDate = new Date(startDate);
+  let daysAdded = 0;
+
+  while (daysAdded < numDays) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    if (isBAMBusinessDay(currentDate)) {
+      daysAdded++;
+    }
+  }
+
+  return currentDate;
+};
+
 const getBusinessDaysBetween = (startDate: Date, endDate: Date) => {
   let count = 0;
   let currentDate = new Date(startDate);
 
   while (currentDate <= endDate) {
     if (isBusinessDay(currentDate)) {
+      count++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return count;
+};
+
+// BAM-specific business days between (excludes weekends but NOT Thanksgiving)
+const getBAMBusinessDaysBetween = (startDate: Date, endDate: Date) => {
+  let count = 0;
+  let currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    if (isBAMBusinessDay(currentDate)) {
       count++;
     }
     currentDate.setDate(currentDate.getDate() + 1);
@@ -114,17 +149,17 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
 
   // Find the current cycle by iterating forward
   while (cycleStart < today) {
-    const cycleEnd = addBusinessDays(cycleStart, 18); // 19 days total (0-18)
+    const cycleEnd = addBAMBusinessDays(cycleStart, 18); // 19 days total (0-18)
 
     if (today >= cycleStart && today <= cycleEnd) {
       // Found current cycle
-      const businessDaysRemaining = getBusinessDaysBetween(today, cycleEnd);
+      const businessDaysRemaining = getBAMBusinessDaysBetween(today, cycleEnd);
       const nextCycleStart = new Date(cycleEnd);
       nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-      while (!isBusinessDay(nextCycleStart)) {
+      while (!isBAMBusinessDay(nextCycleStart)) {
         nextCycleStart.setDate(nextCycleStart.getDate() + 1);
       }
-      const nextCycleEnd = addBusinessDays(nextCycleStart, 18);
+      const nextCycleEnd = addBAMBusinessDays(nextCycleStart, 18);
 
       return {
         currentCycleStart: cycleStart,
@@ -138,21 +173,21 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
     // Move to next cycle
     cycleStart = new Date(cycleEnd);
     cycleStart.setDate(cycleStart.getDate() + 1);
-    while (!isBusinessDay(cycleStart)) {
+    while (!isBAMBusinessDay(cycleStart)) {
       cycleStart.setDate(cycleStart.getDate() + 1);
     }
   }
 
   // If we're before the reference date, calculate backwards
   cycleStart = new Date(referenceStartDate);
-  const cycleEnd = addBusinessDays(cycleStart, 18);
-  const businessDaysRemaining = getBusinessDaysBetween(today, cycleEnd);
+  const cycleEnd = addBAMBusinessDays(cycleStart, 18);
+  const businessDaysRemaining = getBAMBusinessDaysBetween(today, cycleEnd);
   const nextCycleStart = new Date(cycleEnd);
   nextCycleStart.setDate(nextCycleStart.getDate() + 1);
-  while (!isBusinessDay(nextCycleStart)) {
+  while (!isBAMBusinessDay(nextCycleStart)) {
     nextCycleStart.setDate(nextCycleStart.getDate() + 1);
   }
-  const nextCycleEnd = addBusinessDays(nextCycleStart, 18);
+  const nextCycleEnd = addBAMBusinessDays(nextCycleStart, 18);
 
   return {
     currentCycleStart: cycleStart,
@@ -553,7 +588,7 @@ const CourtStreetRCM = () => {
       { name: 'X-Rays', count: 16, revenue: 1460 }
     ],
     monthToDateSummary: {
-      production: 87500,
+      production: 99778.08,
       productionGoal: 250000,
       collected: 71250,
       collectionRate: 81.4,
