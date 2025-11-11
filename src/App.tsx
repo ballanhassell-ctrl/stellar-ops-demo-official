@@ -699,20 +699,40 @@ const CourtStreetRCM = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className={`min-h-screen ${isDayMode ? 'bg-gray-100' : 'bg-gray-900'}`}>
       {/* Header */}
-      <div className="bg-white shadow">
+      <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} shadow`}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: csdGold }}>
                 Court Street Dental RCM Dashboard
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className={`text-sm mt-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 Powered by Stellar Consults - Revenue Cycle Management Solutions
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsDayMode(!isDayMode)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  isDayMode
+                    ? 'bg-gray-800 text-white hover:bg-gray-700'
+                    : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
+                }`}
+              >
+                {isDayMode ? (
+                  <>
+                    <Moon className="w-5 h-5" />
+                    Night Mode
+                  </>
+                ) : (
+                  <>
+                    <Sun className="w-5 h-5" />
+                    Day Mode
+                  </>
+                )}
+              </button>
               <a
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
@@ -723,8 +743,8 @@ const CourtStreetRCM = () => {
                 <span className="text-sm font-medium">Task Board</span>
               </a>
               <div className="text-right">
-                <p className="text-xs text-gray-500">A Collaborative Solution</p>
-                <p className="text-xs font-medium text-gray-700">Court Street Dental × Stellar Consults</p>
+                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
+                <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Court Street Dental × Stellar Consults</p>
               </div>
             </div>
           </div>
@@ -732,7 +752,7 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className="bg-white shadow mb-6">
+      <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} shadow mb-6`}>
         <div className="max-w-7xl mx-auto px-4">
           <nav className="flex space-x-8 overflow-x-auto">
             {navigation.map((item) => {
@@ -744,7 +764,9 @@ const CourtStreetRCM = () => {
                   className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                     currentView === item.id
                       ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      : isDayMode
+                      ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -762,38 +784,16 @@ const CourtStreetRCM = () => {
           <div className="space-y-6">
             {/* Dashboard Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                    {getGreeting()}, Team! 👋
-                  </h2>
-                  <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
-                    Practice Overview Dashboard
-                  </h3>
-                  <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
-                    Real-time insights into your revenue cycle performance
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsDayMode(!isDayMode)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    isDayMode
-                      ? 'bg-gray-800 text-white hover:bg-gray-700'
-                      : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
-                  }`}
-                >
-                  {isDayMode ? (
-                    <>
-                      <Moon className="w-5 h-5" />
-                      Night Mode
-                    </>
-                  ) : (
-                    <>
-                      <Sun className="w-5 h-5" />
-                      Day Mode
-                    </>
-                  )}
-                </button>
+              <div className="mb-4">
+                <h2 className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                  {getGreeting()}, Team! 👋
+                </h2>
+                <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
+                  Practice Overview Dashboard
+                </h3>
+                <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                  Real-time insights into your revenue cycle performance
+                </p>
               </div>
             </div>
 
@@ -903,44 +903,44 @@ const CourtStreetRCM = () => {
             {/* Claims & Payments Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Claims Status */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Claims Status
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-blue-50' : 'bg-blue-900/30'}`}>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">Active Claims</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Active Claims</span>
                     </div>
-                    <span className="text-lg font-bold text-blue-900">
+                    <span className={`text-lg font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
                       {dashboardData.activeClaims}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-yellow-50' : 'bg-yellow-900/30'}`}>
                     <div className="flex items-center space-x-3">
                       <Clock className="w-5 h-5 text-yellow-600" />
-                      <span className="text-sm font-medium text-gray-700">Pending Claims</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Pending Claims</span>
                     </div>
-                    <span className="text-lg font-bold text-yellow-900">
+                    <span className={`text-lg font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
                       {claimsData.pending}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-red-50' : 'bg-red-900/30'}`}>
                     <div className="flex items-center space-x-3">
                       <XCircle className="w-5 h-5 text-red-600" />
-                      <span className="text-sm font-medium text-gray-700">Denied Claims</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Denied Claims</span>
                     </div>
-                    <span className="text-lg font-bold text-red-900">
+                    <span className={`text-lg font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
                       {claimsData.denied}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-orange-50' : 'bg-orange-900/30'}`}>
                     <div className="flex items-center space-x-3">
                       <AlertCircle className="w-5 h-5 text-orange-600" />
-                      <span className="text-sm font-medium text-gray-700">Claims &gt;60 Days</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Claims &gt;60 Days</span>
                     </div>
-                    <span className="text-lg font-bold text-orange-900">
+                    <span className={`text-lg font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
                       {claimsData.overSixtyDays}
                     </span>
                   </div>
@@ -948,48 +948,64 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => setCurrentView('claims')}
-                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all"
+                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                      isDayMode
+                        ? 'bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200'
+                        : 'bg-gradient-to-r from-blue-900/30 to-blue-800/30 hover:from-blue-800/40 hover:to-blue-700/40'
+                    }`}
                   >
                     <div className="flex items-center space-x-3">
                       <FileText className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">Review Claims</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Review Claims</span>
                     </div>
                     <span className="text-xs text-blue-600">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('payments')}
-                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all"
+                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                      isDayMode
+                        ? 'bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200'
+                        : 'bg-gradient-to-r from-green-900/30 to-green-800/30 hover:from-green-800/40 hover:to-green-700/40'
+                    }`}
                   >
                     <div className="flex items-center space-x-3">
                       <DollarSign className="w-5 h-5 text-green-600" />
-                      <span className="text-sm font-medium text-gray-700">Process Payments</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Process Payments</span>
                     </div>
                     <span className="text-xs text-green-600">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('patients')}
-                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all"
+                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                      isDayMode
+                        ? 'bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200'
+                        : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/40 hover:to-purple-700/40'
+                    }`}
                   >
                     <div className="flex items-center space-x-3">
                       <Users className="w-5 h-5 text-purple-600" />
-                      <span className="text-sm font-medium text-gray-700">Manage Patients</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Manage Patients</span>
                     </div>
                     <span className="text-xs text-purple-600">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('scorecard')}
-                    className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all"
+                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                      isDayMode
+                        ? 'bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200'
+                        : 'bg-gradient-to-r from-amber-900/30 to-amber-800/30 hover:from-amber-800/40 hover:to-amber-700/40'
+                    }`}
                   >
                     <div className="flex items-center space-x-3">
                       <Award className="w-5 h-5 text-amber-600" />
-                      <span className="text-sm font-medium text-gray-700">View Scorecard</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>View Scorecard</span>
                     </div>
                     <span className="text-xs text-amber-600">→</span>
                   </button>
@@ -998,32 +1014,32 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* A/R Aging Summary */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 A/R Aging Summary
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm font-medium text-green-700 mb-1">0-30 Days</p>
-                  <p className="text-2xl font-bold text-green-900">
+                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/30 border-green-700'}`}>
+                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>0-30 Days</p>
+                  <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
                     ${claimsData.arAging.zeroToThirty.amount.toLocaleString()}
                   </p>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <p className="text-sm font-medium text-yellow-700 mb-1">31-60 Days</p>
-                  <p className="text-2xl font-bold text-yellow-900">
+                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-900/30 border-yellow-700'}`}>
+                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>31-60 Days</p>
+                  <p className={`text-2xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
                     ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()}
                   </p>
                 </div>
-                <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm font-medium text-orange-700 mb-1">61-90 Days</p>
-                  <p className="text-2xl font-bold text-orange-900">
+                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-orange-50 border-orange-200' : 'bg-orange-900/30 border-orange-700'}`}>
+                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>61-90 Days</p>
+                  <p className={`text-2xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
                     ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()}
                   </p>
                 </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-                  <p className="text-sm font-medium text-red-700 mb-1">90+ Days</p>
-                  <p className="text-2xl font-bold text-red-900">
+                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-red-50 border-red-200' : 'bg-red-900/30 border-red-700'}`}>
+                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>90+ Days</p>
+                  <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
                     ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
                   </p>
                 </div>
@@ -1031,7 +1047,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* New Patient Tracker */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-6" style={{ color: csdGold }}>
                 New Patient Tracker
               </h3>
@@ -1198,7 +1214,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'claims' ? (
           <div className="space-y-6">
             {/* Claims Header */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
                 Claims Management
               </h2>
@@ -1270,7 +1286,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* AR Aging Analysis */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
                 Insurance A/R Aging Analysis
               </h3>
@@ -1352,7 +1368,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'payments' ? (
           <div className="space-y-6">
             {/* Payments Header */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
                 Payment Processing & Reconciliation
               </h2>
@@ -1420,7 +1436,7 @@ const CourtStreetRCM = () => {
             {/* Payment Breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Payment Sources */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Payment Sources
                 </h3>
@@ -1453,7 +1469,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Payment Actions */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Action Items
                 </h3>
@@ -1481,7 +1497,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Recent Payment Activity */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Recent Payment Activity
               </h3>
@@ -1505,7 +1521,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Third Party Financing */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Third Party Financing
               </h3>
@@ -1586,7 +1602,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'patients' ? (
           <div className="space-y-6">
             {/* Patients Header */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
                 Patient Accounts Receivable Management
               </h2>
@@ -1666,7 +1682,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Patient A/R Aging */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Patient A/R Aging Analysis
               </h3>
@@ -1713,7 +1729,7 @@ const CourtStreetRCM = () => {
             {/* Payment Plans & Collections */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Payment Plans */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Payment Plans
                 </h3>
@@ -1734,7 +1750,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Past Due Accounts */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Collections Status
                 </h3>
@@ -1756,7 +1772,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Recent Patient Activity */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Recent Patient Activity
               </h3>
@@ -1770,7 +1786,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'preauths' ? (
           <div className="space-y-6">
             {/* Pre-Auths Header */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
                 Pre-Authorization Management
               </h2>
@@ -1852,7 +1868,7 @@ const CourtStreetRCM = () => {
             {/* Expiration Tracking */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Expiring Soon */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Expiration Alerts
                 </h3>
@@ -1885,7 +1901,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Pre-Auth Status by Insurance */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Status by Insurance
                 </h3>
@@ -1898,7 +1914,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Recent Pre-Auth Activity */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Recent Pre-Authorization Activity
               </h3>
@@ -1912,7 +1928,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'insurance' ? (
           <div className="space-y-6">
             {/* Insurance Header */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
                 Insurance Portal Integration
               </h2>
@@ -1978,7 +1994,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* EFT Enrollment & Network Status Table */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 EFT Enrollment & Network Status
               </h3>
@@ -2088,7 +2104,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Provider Network Summary */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Provider Network Summary
               </h3>
@@ -2173,7 +2189,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'scorecard' ? (
           <div className="space-y-6">
             {/* Scorecard Header */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
                 Practice Scorecard Metrics
               </h2>
@@ -2183,7 +2199,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Advanced Business Metrics */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
                 Advanced Business Metrics
               </h3>
@@ -2388,7 +2404,7 @@ const CourtStreetRCM = () => {
             {/* Key Practice Metrics - 4 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Avg Show Rate (Dr) */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-500">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-blue-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Show Rate (Dr)</p>
@@ -2412,7 +2428,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Avg Show Rate (Hyg) */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-purple-500">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-purple-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Show Rate (Hyg)</p>
@@ -2436,7 +2452,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Avg New Patients */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-green-500">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-green-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg New Patients</p>
@@ -2450,7 +2466,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* TX Acceptance */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-amber-500">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-amber-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-600">TX Acceptance</p>
@@ -2477,7 +2493,7 @@ const CourtStreetRCM = () => {
             {/* Second Row - More Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Avg Collection Rate */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-600">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-blue-600 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Collection Rate</p>
@@ -2501,7 +2517,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Total TX Presented */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-indigo-500">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-indigo-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total TX Presented</p>
@@ -2514,7 +2530,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Total TX Accepted */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-teal-500">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-teal-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total TX Accepted</p>
@@ -2527,7 +2543,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Total New Patients & 5★ Reviews */}
-              <div className="bg-white rounded-lg shadow p-5 border-l-4 border-pink-500">
+              <div className={`rounded-lg shadow p-5 border-l-4 border-pink-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="mb-3">
                   <p className="text-sm font-medium text-gray-600">Total New Patients</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
@@ -2544,7 +2560,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Weekly Data Table */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Weekly Performance Data
               </h3>
@@ -2601,7 +2617,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Weekly Trends Visualization */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Weekly Trends
               </h3>
@@ -2669,7 +2685,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Daily Production by Provider */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold" style={{ color: csdGold }}>
                   Daily Production by Provider
@@ -2846,19 +2862,19 @@ const CourtStreetRCM = () => {
 
             {/* BAM Cycle Metrics */}
             <div
-              className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-300"
+              className={`rounded-lg shadow p-6 cursor-pointer hover:shadow-xl transition-all border-2 border-transparent hover:border-green-300 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}
               onClick={() => setShowBAMModal(true)}
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold" style={{ color: csdGold }}>
                   BAM Cycle Metrics
                 </h3>
-                <div className="bg-green-100 rounded-full p-2">
+                <div className={`rounded-full p-2 ${isDayMode ? 'bg-green-100' : 'bg-green-900/30'}`}>
                   <TrendingUp className="w-6 h-6 text-green-600" />
                 </div>
               </div>
 
-              <p className="text-sm text-gray-600 mb-4">Click to view detailed BAM cycle analysis</p>
+              <p className={`text-sm mb-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Click to view detailed BAM cycle analysis</p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Current Cycle */}
@@ -2908,7 +2924,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'checklist' ? (
           <div className="space-y-6">
             {/* Checklist Header */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
                 Daily, Weekly & Monthly Checklists
               </h2>
@@ -2920,7 +2936,7 @@ const CourtStreetRCM = () => {
             {/* Checklist Progress Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Daily Tasks */}
-              <div className="bg-white rounded-lg shadow p-5 border-t-4 border-blue-500">
+              <div className={`rounded-lg shadow p-5 border-t-4 border-blue-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Daily Tasks</p>
@@ -2944,7 +2960,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Weekly Tasks */}
-              <div className="bg-white rounded-lg shadow p-5 border-t-4 border-green-500">
+              <div className={`rounded-lg shadow p-5 border-t-4 border-green-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Weekly Tasks</p>
@@ -2968,7 +2984,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Monthly Tasks */}
-              <div className="bg-white rounded-lg shadow p-5 border-t-4 border-purple-500">
+              <div className={`rounded-lg shadow p-5 border-t-4 border-purple-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Monthly Tasks</p>
@@ -2993,7 +3009,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Daily Checklist */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Daily RCM Tasks
               </h3>
@@ -3022,7 +3038,7 @@ const CourtStreetRCM = () => {
             {/* Weekly & Monthly Checklists */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Weekly Tasks */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Weekly RCM Tasks
                 </h3>
@@ -3046,7 +3062,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Monthly Tasks */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Monthly RCM Tasks
                 </h3>
@@ -3072,7 +3088,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'eod-report' ? (
           <div className="space-y-6">
             {/* EOD Report Header with Date Picker and Action Buttons */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
@@ -3193,7 +3209,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* BAM Cycle Summary */}
-            <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <div className={`rounded-lg shadow p-6 mt-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 BAM Cycle Overview
               </h3>
@@ -3248,7 +3264,7 @@ const CourtStreetRCM = () => {
             {/* Payment Breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
               {/* Payment Sources */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Payment Sources
                 </h3>
@@ -3269,7 +3285,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Payment Methods */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                 <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                   Payment Methods
                 </h3>
@@ -3346,7 +3362,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Today's Payments Detail */}
-            <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <div className={`rounded-lg shadow p-6 mt-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Today's Payments - Detailed View
               </h3>
@@ -3395,7 +3411,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Actionable Insights */}
-            <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <div className={`rounded-lg shadow p-6 mt-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Action Items for Tomorrow
               </h3>
@@ -3481,7 +3497,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Top Procedures */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Top Procedures Today
               </h3>
@@ -3506,7 +3522,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Month-to-Date Summary */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Month-to-Date Summary
               </h3>
@@ -3584,22 +3600,22 @@ const CourtStreetRCM = () => {
             {/* Email Modal */}
             {showEmailModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className={`rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="p-6">
                     {/* Modal Header */}
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDayMode ? 'bg-green-100' : 'bg-green-900/30'}`}>
                           <Mail className="w-5 h-5 text-green-600" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900">Email EOD Report</h3>
-                          <p className="text-sm text-gray-500">Send report for {new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                          <h3 className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Email EOD Report</h3>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Send report for {new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                         </div>
                       </div>
                       <button
                         onClick={() => setShowEmailModal(false)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className={`transition-colors ${isDayMode ? 'text-gray-400 hover:text-gray-600' : 'text-gray-500 hover:text-gray-300'}`}
                       >
                         <X className="w-6 h-6" />
                       </button>
@@ -3722,7 +3738,7 @@ const CourtStreetRCM = () => {
                               />
                             </div>
                             <div className="md:col-span-2">
-                              <div className="bg-white p-3 rounded border border-blue-300">
+                              <div className={`p-3 rounded border ${isDayMode ? 'bg-white border-blue-300' : 'bg-gray-700 border-blue-700'}`}>
                                 <p className="text-xs text-gray-600">
                                   <strong>Note:</strong> Scheduled reports will be sent automatically {scheduleFrequency} at {scheduleTime} to the specified recipients using the {reportTemplates[selectedTemplate as keyof typeof reportTemplates].name} template.
                                 </p>
@@ -3784,18 +3800,18 @@ const CourtStreetRCM = () => {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">
+          <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+            <h2 className={`text-xl font-semibold mb-4 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
               {currentView.charAt(0).toUpperCase() + currentView.slice(1)} View
             </h2>
             <div className="space-y-4">
-              <p className="text-gray-600">
+              <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 Welcome to the Court Street Dental RCM Dashboard.
               </p>
-              <p className="text-gray-600">
+              <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 This comprehensive Revenue Cycle Management application includes:
               </p>
-              <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
+              <ul className={`list-disc list-inside space-y-2 ml-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 <li>Claims Management & Tracking</li>
                 <li>Payment Processing & Reconciliation</li>
                 <li>Patient Accounts Receivable</li>
@@ -3858,22 +3874,22 @@ const CourtStreetRCM = () => {
         {/* BAM Cycle Modal */}
         {showBAMModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className={`rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="p-6">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDayMode ? 'bg-green-100' : 'bg-green-900/30'}`}>
                       <TrendingUp className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900">BAM Cycle Analysis</h3>
-                      <p className="text-sm text-gray-500">Business Activity Metric - 19 Business Day Cycles</p>
+                      <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>BAM Cycle Analysis</h3>
+                      <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Business Activity Metric - 19 Business Day Cycles</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowBAMModal(false)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className={`transition-colors ${isDayMode ? 'text-gray-400 hover:text-gray-600' : 'text-gray-500 hover:text-gray-300'}`}
                   >
                     <X className="w-6 h-6" />
                   </button>
