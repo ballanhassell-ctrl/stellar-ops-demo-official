@@ -12,12 +12,69 @@ const isWeekend = (date: Date) => {
   return day === 0 || day === 6; // Sunday or Saturday
 };
 
-// BAM-specific business day check (excludes weekends but NOT holidays like Thanksgiving)
-const isBAMBusinessDay = (date: Date) => {
-  return !isWeekend(date);
+// Office closure days for 2025-2026 (from DATA-ENTRY-INSTRUCTIONS.md)
+const isOfficeClosed = (date: Date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1; // JavaScript months are 0-indexed
+  const day = date.getDate();
+
+  // 2025 Closures
+  if (year === 2025) {
+    // New Year's Day (Jan 1)
+    if (month === 1 && day === 1) return true;
+    // Memorial Day (May 26)
+    if (month === 5 && day === 26) return true;
+    // Independence Day (Jul 4)
+    if (month === 7 && day === 4) return true;
+    // Labor Day (Sep 1)
+    if (month === 9 && day === 1) return true;
+    // Thanksgiving (Nov 27)
+    if (month === 11 && day === 27) return true;
+    // Day After Thanksgiving (Nov 28)
+    if (month === 11 && day === 28) return true;
+    // Christmas Eve (Dec 24)
+    if (month === 12 && day === 24) return true;
+    // Christmas (Dec 25)
+    if (month === 12 && day === 25) return true;
+    // Day After Christmas (Dec 26)
+    if (month === 12 && day === 26) return true;
+    // Office Closure (Dec 29, 30, 31)
+    if (month === 12 && (day === 29 || day === 30 || day === 31)) return true;
+  }
+
+  // 2026 Closures
+  if (year === 2026) {
+    // New Year's Day (Jan 1)
+    if (month === 1 && day === 1) return true;
+    // Memorial Day (May 25)
+    if (month === 5 && day === 25) return true;
+    // Independence Day (Jul 4)
+    if (month === 7 && day === 4) return true;
+    // Labor Day (Sep 7)
+    if (month === 9 && day === 7) return true;
+    // Thanksgiving (Nov 26)
+    if (month === 11 && day === 26) return true;
+    // Day After Thanksgiving (Nov 27)
+    if (month === 11 && day === 27) return true;
+    // Christmas Eve (Dec 24)
+    if (month === 12 && day === 24) return true;
+    // Christmas (Dec 25)
+    if (month === 12 && day === 25) return true;
+    // Day After Christmas (Dec 26)
+    if (month === 12 && day === 26) return true;
+    // Office Closure (Dec 29, 30, 31)
+    if (month === 12 && (day === 29 || day === 30 || day === 31)) return true;
+  }
+
+  return false;
 };
 
-// BAM-specific business day addition (excludes weekends but NOT holidays)
+// BAM-specific business day check (excludes weekends AND office closure days)
+const isBAMBusinessDay = (date: Date) => {
+  return !isWeekend(date) && !isOfficeClosed(date);
+};
+
+// BAM-specific business day addition (excludes weekends and office closures)
 const addBAMBusinessDays = (startDate: Date, numDays: number) => {
   let currentDate = new Date(startDate);
   let daysAdded = 0;
@@ -32,7 +89,7 @@ const addBAMBusinessDays = (startDate: Date, numDays: number) => {
   return currentDate;
 };
 
-// BAM-specific business days between (excludes weekends but NOT holidays)
+// BAM-specific business days between (excludes weekends and office closures)
 const getBAMBusinessDaysBetween = (startDate: Date, endDate: Date) => {
   let count = 0;
   let currentDate = new Date(startDate);

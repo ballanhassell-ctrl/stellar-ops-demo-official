@@ -33,9 +33,12 @@ The dashboard now uses a **BAM (Business Activity Metric) Cycle** system instead
 
 ### What is a BAM Cycle?
 - **Duration**: 19 business days per cycle
-- **Business Days Only**: Excludes weekends and major holidays
+- **Business Days Only**: Excludes weekends and office closure days
 - **Auto-Calculated**: Cycles are automatically calculated based on the current date
-- **Example**: Oct 20th - Nov 13th, 2025 (19 business days)
+- **Examples**:
+  - Cycle 1: Sep 22 - Oct 16, 2025 (19 business days)
+  - Cycle 2: Oct 17 - Nov 12, 2025 (19 business days)
+  - Cycle 3: Nov 13 - Dec 11, 2025 (19 business days, excludes Thanksgiving Nov 27-28)
 
 ### Key Features:
 - ✅ **Automatic Cycle Detection**: System knows which BAM cycle you're in
