@@ -205,15 +205,13 @@ const CourtStreetRCM = () => {
   };
 
   // BAM Cycle Configuration & Calculation
-  const bamCycleReferenceStart = new Date('2025-10-20'); // First known BAM cycle start date
+  const bamCycleReferenceStart = new Date('2025-09-23'); // BAM cycle reference start date (Sept 23, 2025)
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
 
   // Historical BAM Cycle Data (for trend graph)
   const historicalBAMData = [
-    { cycle: 'Cycle 1', startDate: 'Aug 20', endDate: 'Sep 13', revenue: 52000, goal: 224548 },
-    { cycle: 'Cycle 2', startDate: 'Sep 16', endDate: 'Oct 10', revenue: 54500, goal: 224548 },
-    { cycle: 'Cycle 3', startDate: 'Oct 20', endDate: 'Nov 13', revenue: 48000, goal: 224548 }, // Previous cycle
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 0, goal: 224548 }, // Current cycle
+    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 19', revenue: 190297.89, goal: 224548 }, // Previous cycle (Sept 23 - Oct 19, 2025)
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 183133.37, goal: 224548 }, // Current cycle (Oct 20 - Nov 14, 2025)
   ];
 
   // Dashboard data
