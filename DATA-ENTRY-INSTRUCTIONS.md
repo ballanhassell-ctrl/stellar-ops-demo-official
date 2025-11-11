@@ -3,6 +3,47 @@
 ## Overview
 This guide explains how to use the data entry spreadsheets to populate your RCM Dashboard with real data.
 
+## 🎯 BAM Cycle System
+
+The dashboard now uses a **BAM (Business Activity Metric) Cycle** system instead of traditional monthly tracking.
+
+### What is a BAM Cycle?
+- **Duration**: 19 business days per cycle
+- **Business Days Only**: Excludes weekends and major holidays
+- **Auto-Calculated**: Cycles are automatically calculated based on the current date
+- **Example**: Oct 20th - Nov 13th, 2025 (19 business days)
+
+### Key Features:
+- ✅ **Automatic Cycle Detection**: System knows which BAM cycle you're in
+- ✅ **Days Remaining Counter**: Shows business days left in current cycle
+- ✅ **Next Cycle Preview**: Automatically displays next cycle dates
+- ✅ **Progress Bar**: Visual indicator of revenue vs. BAM target goal
+
+### Major Holidays Excluded (2025):
+- New Year's Day (Jan 1)
+- Memorial Day (May 26)
+- Independence Day (Jul 4)
+- Labor Day (Sep 1)
+- Thanksgiving (Nov 27)
+- Christmas (Dec 25)
+
+### Dashboard Display:
+The main Dashboard card shows:
+- **BAM Current Revenue**: Your actual revenue in the current cycle
+- **BAM Target Goal**: The goal amount (e.g., $56,137)
+- **Current Cycle Dates**: Start and end dates
+- **Days Remaining**: Business days left in current cycle
+- **Next Cycle Dates**: When the next cycle begins and ends
+
+### Data Entry:
+Only two fields need manual entry:
+1. **BAM Current Revenue** - Update this as revenue comes in during the cycle
+2. **BAM Target Goal** - Set your target for each cycle (default: $56,137)
+
+Everything else (dates, days remaining, cycle calculations) is **automatic**!
+
+---
+
 ## 📊 Spreadsheet Files
 
 ### 1. **Court-Street-Dental-Data-Entry.csv** (Main Data File)

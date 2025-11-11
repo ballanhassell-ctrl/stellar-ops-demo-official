@@ -6,6 +6,116 @@ import {
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat
 } from 'lucide-react';
 
+// BAM Cycle Helper Functions
+const majorHolidays2025 = [
+  new Date('2025-01-01'), // New Year's Day
+  new Date('2025-05-26'), // Memorial Day
+  new Date('2025-07-04'), // Independence Day
+  new Date('2025-09-01'), // Labor Day
+  new Date('2025-11-27'), // Thanksgiving
+  new Date('2025-12-25'), // Christmas
+];
+
+const isWeekend = (date: Date) => {
+  const day = date.getDay();
+  return day === 0 || day === 6; // Sunday or Saturday
+};
+
+const isHoliday = (date: Date) => {
+  const dateStr = date.toISOString().split('T')[0];
+  return majorHolidays2025.some(holiday => holiday.toISOString().split('T')[0] === dateStr);
+};
+
+const isBusinessDay = (date: Date) => {
+  return !isWeekend(date) && !isHoliday(date);
+};
+
+const addBusinessDays = (startDate: Date, numDays: number) => {
+  let currentDate = new Date(startDate);
+  let daysAdded = 0;
+
+  while (daysAdded < numDays) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    if (isBusinessDay(currentDate)) {
+      daysAdded++;
+    }
+  }
+
+  return currentDate;
+};
+
+const getBusinessDaysBetween = (startDate: Date, endDate: Date) => {
+  let count = 0;
+  let currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    if (isBusinessDay(currentDate)) {
+      count++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return count;
+};
+
+const calculateBAMCycle = (referenceStartDate: Date) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let cycleStart = new Date(referenceStartDate);
+  cycleStart.setHours(0, 0, 0, 0);
+
+  // Find the current cycle by iterating forward
+  while (cycleStart < today) {
+    const cycleEnd = addBusinessDays(cycleStart, 18); // 19 days total (0-18)
+
+    if (today >= cycleStart && today <= cycleEnd) {
+      // Found current cycle
+      const businessDaysRemaining = getBusinessDaysBetween(today, cycleEnd);
+      const nextCycleStart = new Date(cycleEnd);
+      nextCycleStart.setDate(nextCycleStart.getDate() + 1);
+      while (!isBusinessDay(nextCycleStart)) {
+        nextCycleStart.setDate(nextCycleStart.getDate() + 1);
+      }
+      const nextCycleEnd = addBusinessDays(nextCycleStart, 18);
+
+      return {
+        currentCycleStart: cycleStart,
+        currentCycleEnd: cycleEnd,
+        daysRemaining: businessDaysRemaining,
+        nextCycleStart: nextCycleStart,
+        nextCycleEnd: nextCycleEnd
+      };
+    }
+
+    // Move to next cycle
+    cycleStart = new Date(cycleEnd);
+    cycleStart.setDate(cycleStart.getDate() + 1);
+    while (!isBusinessDay(cycleStart)) {
+      cycleStart.setDate(cycleStart.getDate() + 1);
+    }
+  }
+
+  // If we're before the reference date, calculate backwards
+  cycleStart = new Date(referenceStartDate);
+  const cycleEnd = addBusinessDays(cycleStart, 18);
+  const businessDaysRemaining = getBusinessDaysBetween(today, cycleEnd);
+  const nextCycleStart = new Date(cycleEnd);
+  nextCycleStart.setDate(nextCycleStart.getDate() + 1);
+  while (!isBusinessDay(nextCycleStart)) {
+    nextCycleStart.setDate(nextCycleStart.getDate() + 1);
+  }
+  const nextCycleEnd = addBusinessDays(nextCycleStart, 18);
+
+  return {
+    currentCycleStart: cycleStart,
+    currentCycleEnd: cycleEnd,
+    daysRemaining: businessDaysRemaining,
+    nextCycleStart: nextCycleStart,
+    nextCycleEnd: nextCycleEnd
+  };
+};
+
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,10 +156,19 @@ const CourtStreetRCM = () => {
     }
   };
 
+  // BAM Cycle Configuration & Calculation
+  const bamCycleReferenceStart = new Date('2024-10-20'); // First known BAM cycle start date
+  const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
+
   // Dashboard data
   const dashboardData = {
-    monthlyRevenue: 0,
-    monthlyTarget: 50000,
+    bamCurrentRevenue: 0, // Current revenue in this BAM cycle
+    bamTargetGoal: 56137, // BAM Target Goal (configurable)
+    bamCycleStart: bamCycle.currentCycleStart,
+    bamCycleEnd: bamCycle.currentCycleEnd,
+    bamDaysRemaining: bamCycle.daysRemaining,
+    bamNextCycleStart: bamCycle.nextCycleStart,
+    bamNextCycleEnd: bamCycle.nextCycleEnd,
     collectionRate: 0,
     activePatients: 0,
     activeClaims: 0,
@@ -593,19 +712,45 @@ const CourtStreetRCM = () => {
 
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Monthly Revenue */}
+              {/* BAM Cycle Revenue */}
               <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-green-700 mb-1">Monthly Revenue</p>
+                <div className="flex flex-col">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">BAM Cycle Revenue</p>
+                      <p className="text-xs text-green-600">
+                        {dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <TrendingUp className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div className="mb-2">
                     <p className="text-3xl font-bold text-green-900">
-                      ${dashboardData.monthlyRevenue.toLocaleString()}
+                      ${dashboardData.bamCurrentRevenue.toLocaleString()}
                     </p>
-                    <p className="text-xs text-green-600 mt-2">
-                      Target: ${dashboardData.monthlyTarget.toLocaleString()}
+                    <p className="text-xs text-green-700 mt-1">
+                      BAM Target: ${dashboardData.bamTargetGoal.toLocaleString()}
                     </p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-green-500" />
+                  <div className="w-full bg-green-200 rounded-full h-2 mb-3">
+                    <div
+                      className={`h-2 rounded-full transition-all ${dashboardData.bamCurrentRevenue >= dashboardData.bamTargetGoal ? 'bg-green-600' : 'bg-green-500'}`}
+                      style={{
+                        width: `${Math.min((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <div className="border-t border-green-200 pt-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-green-700 font-medium">Days Remaining:</span>
+                      <span className="text-green-900 font-bold">{dashboardData.bamDaysRemaining} business days</span>
+                    </div>
+                    <div className="mt-1">
+                      <p className="text-xs text-green-600">
+                        Next Cycle: {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
