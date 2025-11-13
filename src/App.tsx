@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
@@ -183,6 +183,138 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
   };
 };
 
+/**
+ * DAILY METRICS RESET SYSTEM
+ *
+ * This application automatically resets daily metrics at the beginning of each day
+ * while preserving historical EOD (End of Day) data in localStorage.
+ *
+ * How it works:
+ * 1. Daily metrics (eodData, dailyProductionByProvider) are stored in React state
+ * 2. Data is auto-saved to localStorage whenever it changes
+ * 3. Every minute, the system checks if the date has changed
+ * 4. At midnight, yesterday's data is saved to EOD history and all daily metrics reset to 0
+ * 5. Historical EOD data remains accessible for reporting
+ *
+ * To update daily metrics:
+ * - Use updateEODData({ dailyProduction: 1000, paymentsCollected: 800, ... })
+ * - Use updateDailyProduction({ drGajjar: 500, drJudge: 300, ... })
+ *
+ * To manually save current day:
+ * - Call saveCurrentEODToHistory() from the browser console
+ *
+ * To load historical data:
+ * - Call loadHistoricalEOD('2025-11-12') from the browser console
+ */
+
+// LocalStorage utility functions for data persistence
+const STORAGE_KEYS = {
+  CURRENT_DATE: 'csd_current_date',
+  EOD_HISTORY: 'csd_eod_history',
+  DAILY_DATA: 'csd_daily_data'
+};
+
+const getTodayDateString = () => {
+  return new Date().toISOString().split('T')[0];
+};
+
+const saveEODData = (date: string, data: any) => {
+  try {
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.EOD_HISTORY) || '{}');
+    history[date] = {
+      ...data,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEYS.EOD_HISTORY, JSON.stringify(history));
+  } catch (error) {
+    console.error('Error saving EOD data:', error);
+  }
+};
+
+const getEODData = (date: string) => {
+  try {
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.EOD_HISTORY) || '{}');
+    return history[date] || null;
+  } catch (error) {
+    console.error('Error loading EOD data:', error);
+    return null;
+  }
+};
+
+const saveDailyData = (data: any) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.DAILY_DATA, JSON.stringify(data));
+  } catch (error) {
+    console.error('Error saving daily data:', error);
+  }
+};
+
+const getDailyData = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_DATA) || 'null');
+  } catch (error) {
+    console.error('Error loading daily data:', error);
+    return null;
+  }
+};
+
+// Initial state structures for daily metrics
+const getInitialEODData = () => ({
+  reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+  dailyProduction: 0,
+  dailyProductionGoal: 19991,
+  paymentsCollected: 0,
+  collectionRate: 0,
+  insurancePayments: 0,
+  patientPayments: 0,
+  productionCollectedDifference: 0,
+  paymentMethods: {
+    visa: 0,
+    mastercard: 0,
+    americanExpress: 0,
+    discover: 0,
+    insuranceCheck: 0,
+    otherCheck: 0,
+    cash: 0,
+    eft: 0
+  },
+  patientsSeenToday: 0,
+  newPatients: 0,
+  proceduresCompleted: 0,
+  unbilledProcedures: 0,
+  unappliedPayments: 0,
+  failedTransactions: 0,
+  actionItems: {
+    claimsToSubmit: 0,
+    deniedClaimsToResubmit: 0,
+    preAuthsExpiring: 0,
+    accountsNeedingFollowUp: 0,
+    missedAppointments: 0
+  },
+  payments: [],
+  topProcedures: [],
+  monthToDateSummary: {
+    production: 0,
+    productionGoal: 250000,
+    collected: 0,
+    collectionRate: 0,
+    newPatients: 0
+  }
+});
+
+const getInitialDailyProductionByProvider = () => ({
+  drGajjar: 0,
+  drJudge: 0,
+  drStrachan: 0,
+  doctorTotal: 0,
+  farah: 0,
+  olga: 0,
+  jissel: 0,
+  tempHyg: 0,
+  hygienistTotal: 0,
+  combinedTotal: 0
+});
+
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
@@ -198,6 +330,137 @@ const CourtStreetRCM = () => {
   const [providerProductionDate, setProviderProductionDate] = useState(new Date().toISOString().split('T')[0]);
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
+
+  // Daily metrics state management
+  const [eodData, setEodData] = useState(() => {
+    const savedData = getDailyData();
+    return savedData || getInitialEODData();
+  });
+
+  const [dailyProductionByProvider, setDailyProductionByProvider] = useState(() => {
+    const savedData = getDailyData();
+    return savedData?.dailyProductionByProvider || getInitialDailyProductionByProvider();
+  });
+
+  // Date tracking and daily reset logic
+  useEffect(() => {
+    const checkAndResetDaily = () => {
+      const today = getTodayDateString();
+      const lastSavedDate = localStorage.getItem(STORAGE_KEYS.CURRENT_DATE);
+
+      // If it's a new day, save yesterday's data and reset
+      if (lastSavedDate && lastSavedDate !== today) {
+        // Save yesterday's EOD data to history
+        const yesterdayData = {
+          ...eodData,
+          dailyProductionByProvider
+        };
+        saveEODData(lastSavedDate, yesterdayData);
+
+        // Reset to initial state
+        const newEODData = getInitialEODData();
+        const newProductionData = getInitialDailyProductionByProvider();
+
+        setEodData(newEODData);
+        setDailyProductionByProvider(newProductionData);
+
+        // Save reset data
+        saveDailyData({
+          ...newEODData,
+          dailyProductionByProvider: newProductionData
+        });
+
+        console.log(`Daily reset completed. Data from ${lastSavedDate} saved to history.`);
+      }
+
+      // Update current date
+      localStorage.setItem(STORAGE_KEYS.CURRENT_DATE, today);
+    };
+
+    // Check immediately on mount
+    checkAndResetDaily();
+
+    // Check every minute for date changes
+    const interval = setInterval(checkAndResetDaily, 60000);
+
+    return () => clearInterval(interval);
+  }, [eodData, dailyProductionByProvider]);
+
+  // Auto-save daily data whenever it changes
+  useEffect(() => {
+    const dataToSave = {
+      ...eodData,
+      dailyProductionByProvider
+    };
+    saveDailyData(dataToSave);
+  }, [eodData, dailyProductionByProvider]);
+
+  // Helper functions to update daily metrics
+  const updateEODData = (updates: any) => {
+    setEodData((prev: any) => ({
+      ...prev,
+      ...updates,
+      reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    }));
+  };
+
+  const updateDailyProduction = (providerUpdates: any) => {
+    setDailyProductionByProvider((prev: any) => ({
+      ...prev,
+      ...providerUpdates
+    }));
+  };
+
+  // Function to manually save current day's EOD data to history
+  const saveCurrentEODToHistory = () => {
+    const today = getTodayDateString();
+    const dataToSave = {
+      ...eodData,
+      dailyProductionByProvider
+    };
+    saveEODData(today, dataToSave);
+    console.log(`EOD data for ${today} saved to history.`);
+  };
+
+  // Function to load historical EOD data
+  const loadHistoricalEOD = (date: string) => {
+    const historicalData = getEODData(date);
+    if (historicalData) {
+      setEodData(historicalData);
+      if (historicalData.dailyProductionByProvider) {
+        setDailyProductionByProvider(historicalData.dailyProductionByProvider);
+      }
+      console.log(`Loaded EOD data from ${date}`);
+    } else {
+      console.log(`No EOD data found for ${date}`);
+    }
+  };
+
+  // Expose helper functions to window for console access (useful for testing and manual operations)
+  useEffect(() => {
+    (window as any).csdHelpers = {
+      updateEODData,
+      updateDailyProduction,
+      saveCurrentEODToHistory,
+      loadHistoricalEOD,
+      getCurrentEODData: () => eodData,
+      getCurrentProductionData: () => dailyProductionByProvider,
+      getStorageInfo: () => {
+        console.log('Current Date:', localStorage.getItem(STORAGE_KEYS.CURRENT_DATE));
+        console.log('EOD History:', JSON.parse(localStorage.getItem(STORAGE_KEYS.EOD_HISTORY) || '{}'));
+        console.log('Daily Data:', JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_DATA) || 'null'));
+      },
+      clearAllData: () => {
+        if (confirm('Are you sure you want to clear ALL stored data? This cannot be undone.')) {
+          localStorage.removeItem(STORAGE_KEYS.CURRENT_DATE);
+          localStorage.removeItem(STORAGE_KEYS.EOD_HISTORY);
+          localStorage.removeItem(STORAGE_KEYS.DAILY_DATA);
+          window.location.reload();
+        }
+      }
+    };
+    console.log('CSD Helpers loaded. Access via window.csdHelpers');
+  }, [eodData, dailyProductionByProvider]);
 
   const csdGold = '#B8985F';
 
@@ -521,75 +784,7 @@ const CourtStreetRCM = () => {
     monthlyTotal: 4
   };
 
-  // EOD Report data
-  const eodData = {
-    reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-    dailyProduction: 22330.27,
-    dailyProductionGoal: 19991,
-    paymentsCollected: 13741.66,
-    collectionRate: 62,
-    insurancePayments: 0,
-    patientPayments: 13741.66,
-    paymentMethods: {
-      visa: 3301.85,
-      mastercard: 2438.60,
-      americanExpress: 3922.37,
-      discover: 0,
-      insuranceCheck: 0,
-      otherCheck: 3510.00,
-      cash: 568.84,
-      eft: 0
-    },
-    patientsSeenToday: 26,
-    newPatients: 4,
-    proceduresCompleted: 68,
-    unbilledProcedures: 33,
-    unappliedPayments: 1369.25,
-    failedTransactions: 0,
-    actionItems: {
-      claimsToSubmit: 12,
-      deniedClaimsToResubmit: 0,
-      preAuthsExpiring: 0,
-      accountsNeedingFollowUp: 0,
-      missedAppointments: 3
-    },
-    payments: [
-      { time: '08:45 AM', patient: 'J. B.', amount: 160.00, type: 'Patient', method: 'Cash', procedure: 'Comprehensive Oral Evaluation' },
-      { time: '09:20 AM', patient: 'L. B.', amount: 300.00, type: 'Patient', method: 'Visa', procedure: 'New Patient Exam & X-Rays' },
-      { time: '09:55 AM', patient: 'J. C.', amount: 1041.50, type: 'Patient', method: 'American Express', procedure: 'Multiple Fillings' },
-      { time: '10:15 AM', patient: 'J. C.', amount: 413.50, type: 'Patient', method: 'American Express', procedure: 'Payment - Unearned' },
-      { time: '10:45 AM', patient: 'R. G.', amount: 228.60, type: 'Patient', method: 'Visa', procedure: 'Cleaning & X-Rays' },
-      { time: '11:00 AM', patient: 'R. G.', amount: 100.00, type: 'Patient', method: 'Visa', procedure: 'Payment - Unearned' },
-      { time: '11:30 AM', patient: 'D. G.', amount: 587.00, type: 'Patient', method: 'Visa', procedure: 'Crown & Core Buildup' },
-      { time: '11:45 AM', patient: 'D. G.', amount: 140.75, type: 'Patient', method: 'Visa', procedure: 'Payment - Unearned' },
-      { time: '12:10 PM', patient: 'E. G.', amount: 1675.00, type: 'Patient', method: 'American Express', procedure: 'Surgical Extraction & Bone Graft' },
-      { time: '01:15 PM', patient: 'V. G.', amount: 510.00, type: 'Patient', method: 'American Express', procedure: 'New Patient Cleaning & Exam' },
-      { time: '01:45 PM', patient: 'K. K.', amount: 163.60, type: 'Patient', method: 'MasterCard', procedure: 'Fillings' },
-      { time: '02:20 PM', patient: 'S. K.', amount: 275.00, type: 'Patient', method: 'MasterCard', procedure: 'Cleaning, Exam & X-Rays' },
-      { time: '02:55 PM', patient: 'T. M.', amount: 850.00, type: 'Patient', method: 'Visa', procedure: 'ZOOM Whitening' },
-      { time: '03:10 PM', patient: 'E. R.', amount: 3510.00, type: 'Patient', method: 'Check', procedure: 'Dual Implant Placement' },
-      { time: '03:40 PM', patient: 'D. P.', amount: 74.84, type: 'Patient', method: 'Cash', procedure: 'Fillings' },
-      { time: '04:05 PM', patient: 'M. S.', amount: 282.37, type: 'Patient', method: 'American Express', procedure: 'Cleaning, Exam & X-Rays' },
-      { time: '04:30 PM', patient: 'B. S.', amount: 311.00, type: 'Patient', method: 'Visa', procedure: 'Cleaning & Night Guard' },
-      { time: '04:55 PM', patient: 'E. S.', amount: 679.50, type: 'Patient', method: 'Visa', procedure: 'Fillings & Gingivectomy' },
-      { time: '05:20 PM', patient: 'D. S.', amount: 2000.00, type: 'Patient', method: 'MasterCard', procedure: 'Implant Crowns & Abutments' },
-      { time: '05:40 PM', patient: 'D. S.', amount: 334.00, type: 'Patient', method: 'Cash', procedure: 'Payment - Multiple' }
-    ],
-    topProcedures: [
-      { name: 'Implants & Restorations', count: 8, revenue: 10140 },
-      { name: 'Fillings', count: 10, revenue: 2818 },
-      { name: 'Evaluations & Exams', count: 22, revenue: 1975 },
-      { name: 'Cleanings', count: 13, revenue: 1596 },
-      { name: 'X-Rays', count: 16, revenue: 1460 }
-    ],
-    monthToDateSummary: {
-      production: 99778.08,
-      productionGoal: 250000,
-      collected: 71250,
-      collectionRate: 81.4,
-      newPatients: 15
-    }
-  };
+  // EOD Report data (now managed by state - see above)
 
   // Claims data
   const claimsData = {
@@ -617,9 +812,9 @@ const CourtStreetRCM = () => {
     return months;
   };
 
-  // New Patient Tracker data
+  // New Patient Tracker data (synced with eodData.newPatients for daily value)
   const newPatientTrackerData = {
-    perDay: 4,
+    perDay: eodData.newPatients, // Synced with EOD data
     perDayGoal: 2,
     perWeek: 14,
     perWeekGoal: 10,
@@ -647,22 +842,7 @@ const CourtStreetRCM = () => {
     totalAmount: 12951.20
   };
 
-  // Daily Production by Provider data
-  const dailyProductionByProvider = {
-    // Doctors
-    drGajjar: 7690,
-    drJudge: 11795,
-    drStrachan: 1150,
-    doctorTotal: 20635,
-    // Hygienists
-    farah: 596.28,
-    olga: 1098.99,
-    jissel: 0,
-    tempHyg: 0,
-    hygienistTotal: 1695.27,
-    // Combined
-    combinedTotal: 22330.27
-  };
+  // Daily Production by Provider data (now managed by state - see above)
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
