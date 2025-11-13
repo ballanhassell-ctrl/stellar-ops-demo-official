@@ -396,16 +396,16 @@ const CourtStreetRCM = () => {
   }, [eodData, dailyProductionByProvider]);
 
   // Helper functions to update daily metrics
-  const updateEODData = (updates: Partial<typeof eodData>) => {
-    setEodData(prev => ({
+  const updateEODData = (updates: any) => {
+    setEodData((prev: any) => ({
       ...prev,
       ...updates,
       reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     }));
   };
 
-  const updateDailyProduction = (providerUpdates: Partial<typeof dailyProductionByProvider>) => {
-    setDailyProductionByProvider(prev => ({
+  const updateDailyProduction = (providerUpdates: any) => {
+    setDailyProductionByProvider((prev: any) => ({
       ...prev,
       ...providerUpdates
     }));
