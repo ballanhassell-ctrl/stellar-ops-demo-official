@@ -3615,7 +3615,7 @@ const CourtStreetRCM = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {eodData.payments.map((payment, index) => (
+                    {eodData.payments.map((payment: any, index: number) => (
                       <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="p-3 text-gray-700">{payment.time}</td>
                         <td className="p-3 font-medium text-gray-900">{maskPatientName(payment.patient, payment.type)}</td>
@@ -3738,7 +3738,7 @@ const CourtStreetRCM = () => {
                 Top Procedures Today
               </h3>
               <div className="space-y-3">
-                {eodData.topProcedures.map((procedure, index) => (
+                {eodData.topProcedures.map((procedure: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
