@@ -234,7 +234,7 @@ const CourtStreetRCM = () => {
   };
 
   // BAM Cycle Configuration & Calculation
-  const bamCycleReferenceStart = new Date('2025-09-23'); // BAM cycle reference start date (Sept 23, 2025)
+  const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
 
   // Historical BAM Cycle Data (for trend graph)
