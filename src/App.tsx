@@ -294,11 +294,11 @@ const getInitialEODData = () => ({
   payments: [],
   topProcedures: [],
   monthToDateSummary: {
-    production: 0,
+    production: 182905.83,
     productionGoal: 250000,
-    collected: 0,
-    collectionRate: 0,
-    newPatients: 0
+    collected: 79569.47,
+    collectionRate: 73,
+    newPatients: 14
   }
 });
 
@@ -502,35 +502,35 @@ const CourtStreetRCM = () => {
 
   // Historical BAM Cycle Data (for trend graph)
   const historicalBAMData = [
-    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 17', revenue: 202259.69, goal: 241389 }, // Previous cycle (Sept 23 - Oct 17, 2025)
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 214933.97, goal: 241389 }, // Current cycle (Oct 18 - Nov 13, 2025)
+    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 17', revenue: 202259.69, goal: 224548 }, // Previous cycle (Sept 23 - Oct 17, 2025)
+    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 223235.05, goal: 224548 }, // Current cycle (Oct 18 - Nov 13, 2025)
   ];
 
   // Dashboard data
   const dashboardData = {
-    bamCurrentRevenue: 214933.97, // Current revenue in this BAM cycle
-    bamTargetGoal: 241389, // BAM Target Goal (configurable)
+    bamCurrentRevenue: 223235.05, // Current revenue in this BAM cycle (11/13/2025)
+    bamTargetGoal: 224548, // BAM Target Goal (configurable)
     practiceGoal: 300000, // Practice Goal (overall target)
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
     bamDaysRemaining: bamCycle.daysRemaining,
     bamNextCycleStart: bamCycle.nextCycleStart,
     bamNextCycleEnd: bamCycle.nextCycleEnd,
-    collectionRate: 44,
-    activePatients: 1942,
-    activeClaims: 283,
+    collectionRate: 73,
+    activePatients: 1935,
+    activeClaims: 284,
     pendingPayments: 0,
-    outstandingAR: 223939.19
+    outstandingAR: 186357.25
   };
 
   // Payments data
   const paymentsData = {
-    todaysPayments: 0,
-    weeklyPayments: 13741.66,
-    monthlyPayments: 79569.47,
+    todaysPayments: 0, // Reset daily
+    weeklyPayments: 27589.99,
+    monthlyPayments: 93417.40,
     pendingDeposits: 0,
     insurancePayments: 26198.07,
-    patientPayments: 50401.61,
+    patientPayments: 67219.33,
     unappliedCredits: 2969.79,
     refundsPending: 0
   };
@@ -540,12 +540,12 @@ const CourtStreetRCM = () => {
     totalPatients: 0,
     activePatients: 1942,
     patientsWithBalance: 1128,
-    totalPatientAR: 378548.69,
+    totalPatientAR: 448646.05,
     patientARAging: {
-      zeroToThirty: 128505.17,
-      thirtyOneToSixty: 51944.66,
-      sixtyOneToNinety: 34749.81,
-      ninetyPlus: 264828.75
+      zeroToThirty: 109630.41,
+      thirtyOneToSixty: 46640.77,
+      sixtyOneToNinety: 30086.07,
+      ninetyPlus: 262288.80
     },
     paymentPlans: 0,
     pastDueAccounts: 1128
@@ -553,8 +553,8 @@ const CourtStreetRCM = () => {
 
   // Pre-Auths data
   const preAuthsData = {
-    totalPreAuths: 60,
-    pending: 60,
+    totalPreAuths: 61,
+    pending: 61,
     approved: 0,
     denied: 0,
     expiringSoon: 0,
@@ -683,10 +683,10 @@ const CourtStreetRCM = () => {
 
   // Scorecard data
   const scorecardData = {
-    productionGoal: 250000,
-    productionActual: 182905.83,
+    productionGoal: 300000,
+    productionActual: 127126.53,
     collectionGoal: 98,
-    collectionActual: 44,
+    collectionActual: 73,
     newPatientsGoal: 30,
     newPatientsActual: 14,
     claimApprovalRate: 90,
@@ -699,10 +699,10 @@ const CourtStreetRCM = () => {
     avgNewPatientsPerWeek: 7,
     txAcceptance: 52.6,
     txAcceptanceTarget: 50,
-    avgCollectionRate: 59,
+    avgCollectionRate: 35,
     avgCollectionRateTarget: 100,
-    totalTxPresented: 144558.59,
-    totalTxAccepted: 60173.10,
+    totalTxPresented: 196145.17,
+    totalTxAccepted: 68964.24,
     totalNewPatients: 14,
     fiveStarReviews: 36,
     weeklyData: [
@@ -791,12 +791,12 @@ const CourtStreetRCM = () => {
     totalActive: 283,
     pending: 201,
     denied: 0,
-    overSixtyDays: 51,
+    overSixtyDays: 54,
     arAging: {
-      zeroToThirty: { amount: 149062.80, count: 201 },
-      thirtyOneToSixty: { amount: 21642.99, count: 31 },
-      sixtyOneToNinety: { amount: 20201.52, count: 19 },
-      ninetyPlus: { amount: 33031.88, count: 32 }
+      zeroToThirty: { amount: 143767.80, count: 284 },
+      thirtyOneToSixty: { amount: 21870.99, count: 32 },
+      sixtyOneToNinety: { amount: 22570.01, count: 21 },
+      ninetyPlus: { amount: 35995.39, count: 33 }
     }
   };
 
@@ -816,7 +816,7 @@ const CourtStreetRCM = () => {
   const newPatientTrackerData = {
     perDay: eodData.newPatients, // Synced with EOD data
     perDayGoal: 2,
-    perWeek: 14,
+    perWeek: 7,
     perWeekGoal: 10,
     perMonth: 14,
     perMonthGoal: 40,
