@@ -276,6 +276,8 @@ const getInitialEODData = () => ({
     mastercard: 0,
     americanExpress: 0,
     discover: 0,
+    cherry: 0,
+    careCredit: 0,
     insuranceCheck: 0,
     otherCheck: 0,
     cash: 0,
@@ -3632,6 +3634,25 @@ const CourtStreetRCM = () => {
                       <span className="text-sm font-medium text-amber-700">Discover</span>
                       <span className="text-lg font-bold text-amber-900">
                         ${eodData.paymentMethods.discover.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Patient Financing */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Patient Financing</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200">
+                      <span className="text-sm font-medium text-pink-700">Cherry</span>
+                      <span className="text-lg font-bold text-pink-900">
+                        ${eodData.paymentMethods.cherry.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg border border-rose-200">
+                      <span className="text-sm font-medium text-rose-700">CareCredit</span>
+                      <span className="text-lg font-bold text-rose-900">
+                        ${eodData.paymentMethods.careCredit.toLocaleString()}
                       </span>
                     </div>
                   </div>
