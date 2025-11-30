@@ -254,7 +254,19 @@ const saveDailyData = (data: any) => {
 
 const getDailyData = () => {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_DATA) || 'null');
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_DATA) || 'null');
+
+    // Migrate old data to include new payment methods if missing
+    if (data && data.paymentMethods) {
+      if (data.paymentMethods.cherry === undefined) {
+        data.paymentMethods.cherry = 0;
+      }
+      if (data.paymentMethods.careCredit === undefined) {
+        data.paymentMethods.careCredit = 0;
+      }
+    }
+
+    return data;
   } catch (error) {
     console.error('Error loading daily data:', error);
     return null;
@@ -466,6 +478,25 @@ const CourtStreetRCM = () => {
           localStorage.removeItem(STORAGE_KEYS.EOD_HISTORY);
           localStorage.removeItem(STORAGE_KEYS.DAILY_DATA);
           window.location.reload();
+        }
+      },
+      checkSupabaseConnection: async () => {
+        console.log('🔍 Checking Supabase connection...');
+        console.log('Environment Variables:');
+        console.log('  VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✓ Set' : '✗ Not set');
+        console.log('  VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '✓ Set (first 20 chars): ' + import.meta.env.VITE_SUPABASE_ANON_KEY.substring(0, 20) + '...' : '✗ Not set');
+
+        try {
+          const { getMetricsForDate } = await import('./services/metrics');
+          const today = new Date().toISOString().split('T')[0];
+          console.log(`Fetching metrics for ${today}...`);
+          const metrics = await getMetricsForDate(today);
+          console.log(`✓ Successfully fetched ${metrics.length} metrics from Supabase`);
+          console.log('Sample metrics:', metrics.slice(0, 3));
+          return { success: true, count: metrics.length, sample: metrics.slice(0, 3) };
+        } catch (error) {
+          console.error('✗ Error connecting to Supabase:', error);
+          return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
         }
       }
     };
@@ -3646,13 +3677,13 @@ const CourtStreetRCM = () => {
                     <div className="flex justify-between items-center p-3 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200">
                       <span className="text-sm font-medium text-pink-700">Cherry</span>
                       <span className="text-lg font-bold text-pink-900">
-                        ${eodData.paymentMethods.cherry.toLocaleString()}
+                        ${(eodData.paymentMethods.cherry || 0).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg border border-rose-200">
                       <span className="text-sm font-medium text-rose-700">CareCredit</span>
                       <span className="text-lg font-bold text-rose-900">
-                        ${eodData.paymentMethods.careCredit.toLocaleString()}
+                        ${(eodData.paymentMethods.careCredit || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
