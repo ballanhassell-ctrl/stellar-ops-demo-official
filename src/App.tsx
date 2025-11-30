@@ -335,7 +335,8 @@ const getInitialDailyProductionByProvider = () => ({
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // Unified date state for all dashboard sections
+  const [dashboardDate, setDashboardDate] = useState(new Date().toISOString().split('T')[0]);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState('');
   const [emailSubject, setEmailSubject] = useState('EOD Report - Court Street Dental');
@@ -344,14 +345,12 @@ const CourtStreetRCM = () => {
   const [scheduleTime, setScheduleTime] = useState('17:00');
   const [scheduleFrequency, setScheduleFrequency] = useState('daily');
   const [selectedTemplate, setSelectedTemplate] = useState('full');
-  const [providerProductionDate, setProviderProductionDate] = useState(new Date().toISOString().split('T')[0]);
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
-  const [metricsDate, setMetricsDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Fetch metrics from Supabase
-  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(metricsDate);
+  // Fetch metrics from Supabase using unified date
+  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
 
   // Daily metrics state management
   const [eodData, setEodData] = useState(() => {
@@ -1021,7 +1020,7 @@ const CourtStreetRCM = () => {
         printWindow.document.write(`
           <html>
             <head>
-              <title>EOD Report - ${selectedDate}</title>
+              <title>EOD Report - ${dashboardDate}</title>
               <style>
                 body { font-family: Arial, sans-serif; padding: 20px; }
                 table { width: 100%; border-collapse: collapse; margin: 20px 0; }
@@ -1059,7 +1058,7 @@ const CourtStreetRCM = () => {
       to: emailRecipients.split(',').map(email => email.trim()),
       subject: emailSubject,
       message: emailMessage,
-      reportDate: selectedDate,
+      reportDate: dashboardDate,
       reportData: eodData,
       template: selectedTemplate,
       schedule: scheduleEmail ? {
@@ -1188,8 +1187,8 @@ const CourtStreetRCM = () => {
                   <div className="flex items-center gap-2">
                     <input
                       type="date"
-                      value={metricsDate}
-                      onChange={(e) => setMetricsDate(e.target.value)}
+                      value={dashboardDate}
+                      onChange={(e) => setDashboardDate(e.target.value)}
                       className={`px-3 py-2 rounded border ${
                         isDayMode
                           ? 'bg-white border-gray-300 text-gray-900'
@@ -1232,7 +1231,7 @@ const CourtStreetRCM = () => {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
                       <span>Showing data for: {(() => {
-                        const [year, month, day] = metricsDate.split('-').map(Number);
+                        const [year, month, day] = dashboardDate.split('-').map(Number);
                         return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                       })()}</span>
                     </div>
@@ -3150,8 +3149,8 @@ const CourtStreetRCM = () => {
                   <Calendar className="w-5 h-5 text-gray-500" />
                   <input
                     type="date"
-                    value={providerProductionDate}
-                    onChange={(e) => setProviderProductionDate(e.target.value)}
+                    value={dashboardDate}
+                    onChange={(e) => setDashboardDate(e.target.value)}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -3159,7 +3158,7 @@ const CourtStreetRCM = () => {
 
               <p className="text-sm text-gray-600 mb-6">
                 Production for {(() => {
-                  const [year, month, day] = providerProductionDate.split('-').map(Number);
+                  const [year, month, day] = dashboardDate.split('-').map(Number);
                   return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 })()}
               </p>
@@ -3557,13 +3556,13 @@ const CourtStreetRCM = () => {
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <input
                       type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                      value={dashboardDate}
+                      onChange={(e) => setDashboardDate(e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                     <span className="text-gray-600 text-sm">
                       {(() => {
-                        const [year, month, day] = selectedDate.split('-').map(Number);
+                        const [year, month, day] = dashboardDate.split('-').map(Number);
                         return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                       })()}
                     </span>
@@ -4092,7 +4091,7 @@ const CourtStreetRCM = () => {
                         <div>
                           <h3 className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Email EOD Report</h3>
                           <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Send report for {(() => {
-                            const [year, month, day] = selectedDate.split('-').map(Number);
+                            const [year, month, day] = dashboardDate.split('-').map(Number);
                             return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                           })()}</p>
                         </div>
