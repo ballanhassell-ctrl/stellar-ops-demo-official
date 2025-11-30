@@ -219,6 +219,8 @@ const STORAGE_KEYS = {
   DAILY_DATA: 'csd_daily_data'
 };
 
+// DISABLED: localStorage utility functions (now using Supabase)
+/*
 const getTodayDateString = () => {
   return new Date().toISOString().split('T')[0];
 };
@@ -258,7 +260,6 @@ const getDailyData = () => {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_DATA) || 'null');
 
-    // Migrate old data to include new payment methods if missing
     if (data && data.paymentMethods) {
       if (data.paymentMethods.cherry === undefined) {
         data.paymentMethods.cherry = 0;
@@ -275,7 +276,6 @@ const getDailyData = () => {
   }
 };
 
-// Initial state structures for daily metrics
 const getInitialEODData = () => ({
   reportDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
   dailyProduction: 0,
@@ -333,6 +333,7 @@ const getInitialDailyProductionByProvider = () => ({
   hygienistTotal: 0,
   combinedTotal: 0
 });
+*/
 
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -406,7 +407,9 @@ const CourtStreetRCM = () => {
   }, [eodData, dailyProductionByProvider]);
   */
 
-  // Helper functions to update daily metrics
+  // DISABLED: Helper functions to update daily metrics (now using Supabase)
+  // Data is read-only from Supabase. To edit, update Supabase directly or use CSV import.
+  /*
   const updateEODData = (updates: any) => {
     setEodData((prev: any) => ({
       ...prev,
@@ -422,7 +425,6 @@ const CourtStreetRCM = () => {
     }));
   };
 
-  // Function to manually save current day's EOD data to history
   const saveCurrentEODToHistory = () => {
     const today = getTodayDateString();
     const dataToSave = {
@@ -433,7 +435,6 @@ const CourtStreetRCM = () => {
     console.log(`EOD data for ${today} saved to history.`);
   };
 
-  // Function to load historical EOD data
   const loadHistoricalEOD = (date: string) => {
     const historicalData = getEODData(date);
     if (historicalData) {
@@ -446,16 +447,20 @@ const CourtStreetRCM = () => {
       console.log(`No EOD data found for ${date}`);
     }
   };
+  */
 
   // Expose helper functions to window for console access (useful for testing and manual operations)
   useEffect(() => {
     (window as any).csdHelpers = {
-      updateEODData,
-      updateDailyProduction,
-      saveCurrentEODToHistory,
-      loadHistoricalEOD,
+      // Update functions disabled - data is read-only from Supabase
+      // Use CSV import or Supabase UI to edit data
       getCurrentEODData: () => eodData,
       getCurrentProductionData: () => dailyProductionByProvider,
+      refreshData: () => {
+        refreshMetrics();
+        refreshEOD();
+        refreshProvider();
+      },
       getStorageInfo: () => {
         console.log('Current Date:', localStorage.getItem(STORAGE_KEYS.CURRENT_DATE));
         console.log('EOD History:', JSON.parse(localStorage.getItem(STORAGE_KEYS.EOD_HISTORY) || '{}'));
@@ -957,7 +962,7 @@ const CourtStreetRCM = () => {
 
   // New Patient Tracker data (synced with eodData.newPatients for daily value)
   const newPatientTrackerData = {
-    perDay: eodData.newPatients, // Synced with EOD data
+    perDay: eodData?.newPatients || 0, // Synced with EOD data
     perDayGoal: 2,
     perWeek: 7,
     perWeekGoal: 10,
@@ -1073,6 +1078,55 @@ const CourtStreetRCM = () => {
     setEmailMessage('');
     setScheduleEmail(false);
   };
+
+  // Loading state - wait for all data to load from Supabase
+  if (metricsLoading || eodLoading || providerLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+          <p className="text-lg text-gray-600">Loading dashboard data from Supabase...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (metricsError || eodError || providerError) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Data</h2>
+          <p className="text-gray-600 mb-4">
+            {metricsError || eodError || providerError}
+          </p>
+          <button
+            onClick={() => {
+              refreshMetrics();
+              refreshEOD();
+              refreshProvider();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Null safety guard - ensure data is loaded
+  if (!eodData || !dailyProductionByProvider) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">No data available for selected date</p>
+          <p className="text-sm text-gray-500 mt-2">Try selecting a different date or adding data to Supabase</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${isDayMode ? 'bg-gray-100' : 'bg-gray-900'}`}>
