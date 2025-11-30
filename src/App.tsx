@@ -6,6 +6,8 @@ import {
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw
 } from 'lucide-react';
 import { useMetrics } from './hooks/useMetrics';
+import LifecycleMetrics from './components/LifecycleMetrics';
+import PatientDataUpload from './components/PatientDataUpload';
 
 // BAM Cycle Helper Functions
 const isWeekend = (date: Date) => {
@@ -854,6 +856,7 @@ const CourtStreetRCM = () => {
     { id: 'claims', name: 'Claims', icon: FileText },
     { id: 'payments', name: 'Payments', icon: DollarSign },
     { id: 'patients', name: 'Patients', icon: Users },
+    { id: 'patient-lifecycle', name: 'Patient Lifecycle', icon: TrendingUp },
     { id: 'preauths', name: 'Pre-Auths', icon: FileText },
     { id: 'insurance', name: 'Insurance', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
@@ -3221,6 +3224,14 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
+          </div>
+        ) : currentView === 'patient-lifecycle' ? (
+          <div className="space-y-6">
+            {/* Lifecycle Metrics */}
+            <LifecycleMetrics />
+
+            {/* Data Upload Section */}
+            <PatientDataUpload />
           </div>
         ) : currentView === 'checklist' ? (
           <div className="space-y-6">
