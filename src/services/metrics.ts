@@ -1,25 +1,6 @@
 // src/services/metrics.ts
 import { supabase } from '../lib/supabaseClient';
 
-type SupabaseMetricResponse = {
-  field_key: string;
-  as_of_date: string;
-  value: number;
-  source: string | null;
-  notes: string | null;
-  csd_metric_catalog: {
-    section: string;
-    field_name: string;
-    data_type: string;
-    description_notes: string | null;
-  } | {
-    section: string;
-    field_name: string;
-    data_type: string;
-    description_notes: string | null;
-  }[] | null;
-};
-
 export type MetricWithValue = {
   field_key: string;
   as_of_date: string;
@@ -38,96 +19,62 @@ export async function getMetricsForDate(date: string) {
   console.log('Fetching metrics for date:', date);
 
   try {
-    // Try the query with foreign key join first
-    const { data, error } = await supabase
-      .from('csd_metric_values')
-      .select(
-        `
-        field_key,
-        as_of_date,
-        value,
-        source,
-        notes,
-        csd_metric_catalog (
-          section,
-          field_name,
-          data_type,
-          description_notes
-        )
-      `
-      )
-      .eq('as_of_date', date)
-      .order('field_key', { ascending: true });
+    // Fallback: fetch data separately and join client-side
+    // This approach is more reliable and doesn't depend on foreign key constraints
+    const [valuesResult, catalogResult] = await Promise.all([
+      supabase
+        .from('csd_metric_values')
+        .select('*')
+        .eq('as_of_date', date)
+        .order('field_key', { ascending: true }),
+      supabase
+        .from('csd_metric_catalog')
+        .select('field_key, section, field_name, data_type, description_notes')
+    ]);
 
-    if (error) {
-      console.warn('Foreign key join query failed, trying fallback approach:', error);
-
-      // Fallback: fetch data separately and join client-side
-      const [valuesResult, catalogResult] = await Promise.all([
-        supabase
-          .from('csd_metric_values')
-          .select('field_key, as_of_date, value, source, notes')
-          .eq('as_of_date', date)
-          .order('field_key', { ascending: true }),
-        supabase
-          .from('csd_metric_catalog')
-          .select('field_key, section, field_name, data_type, description_notes')
-      ]);
-
-      if (valuesResult.error) {
-        console.error('Error fetching metric values:', valuesResult.error);
-        throw new Error(`Failed to fetch metrics: ${valuesResult.error.message}`);
-      }
-
-      if (catalogResult.error) {
-        console.error('Error fetching metric catalog:', catalogResult.error);
-        throw new Error(`Failed to fetch metric catalog: ${catalogResult.error.message}`);
-      }
-
-      console.log('Fetched values:', valuesResult.data?.length, 'records');
-      console.log('Fetched catalog:', catalogResult.data?.length, 'entries');
-
-      // Create a lookup map for the catalog
-      const catalogMap = new Map(
-        catalogResult.data?.map(cat => [
-          cat.field_key,
-          {
-            section: cat.section,
-            field_name: cat.field_name,
-            data_type: cat.data_type,
-            description_notes: cat.description_notes
-          }
-        ]) || []
-      );
-
-      // Join the data client-side
-      const joined: MetricWithValue[] = (valuesResult.data || []).map(item => ({
-        ...item,
-        csd_metric_catalog: catalogMap.get(item.field_key) || null
-      }));
-
-      console.log('Client-side joined data:', joined.length, 'records');
-      return joined;
+    if (valuesResult.error) {
+      console.error('Error fetching metric values:', valuesResult.error);
+      throw new Error(`Failed to fetch metrics: ${valuesResult.error.message}`);
     }
 
-    console.log('Foreign key join succeeded. Received data:', data?.length, 'records');
-
-    if (data && data.length > 0) {
-      console.log('Sample record:', data[0]);
-      console.log('csd_metric_catalog type:', typeof data[0]?.csd_metric_catalog);
-      console.log('csd_metric_catalog isArray:', Array.isArray(data[0]?.csd_metric_catalog));
+    if (catalogResult.error) {
+      console.error('Error fetching metric catalog:', catalogResult.error);
+      throw new Error(`Failed to fetch metric catalog: ${catalogResult.error.message}`);
     }
 
-    // Transform Supabase response to our expected format
-    const transformedData: MetricWithValue[] = (data as SupabaseMetricResponse[] || []).map(item => ({
-      ...item,
-      csd_metric_catalog: item.csd_metric_catalog
-        ? (Array.isArray(item.csd_metric_catalog) ? item.csd_metric_catalog[0] : item.csd_metric_catalog)
-        : null
+    console.log('Fetched values:', valuesResult.data?.length, 'records');
+    console.log('Fetched catalog:', catalogResult.data?.length, 'entries');
+
+    if (valuesResult.data && valuesResult.data.length > 0) {
+      console.log('Sample value record:', valuesResult.data[0]);
+      console.log('Available columns:', Object.keys(valuesResult.data[0]));
+    }
+
+    // Create a lookup map for the catalog
+    const catalogMap = new Map(
+      catalogResult.data?.map(cat => [
+        cat.field_key,
+        {
+          section: cat.section,
+          field_name: cat.field_name,
+          data_type: cat.data_type,
+          description_notes: cat.description_notes
+        }
+      ]) || []
+    );
+
+    // Join the data client-side
+    const joined: MetricWithValue[] = (valuesResult.data || []).map(item => ({
+      field_key: item.field_key,
+      as_of_date: item.as_of_date || date,
+      value: item.value || 0,
+      source: item.source || null,
+      notes: item.notes || null,
+      csd_metric_catalog: catalogMap.get(item.field_key) || null
     }));
 
-    console.log('Transformed data:', transformedData.length, 'records');
-    return transformedData;
+    console.log('Client-side joined data:', joined.length, 'records');
+    return joined;
   } catch (err) {
     console.error('Unexpected error in getMetricsForDate:', err);
     throw err;
