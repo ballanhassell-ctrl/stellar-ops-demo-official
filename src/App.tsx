@@ -6,6 +6,8 @@ import {
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload
 } from 'lucide-react';
 import { useMetrics } from './hooks/useMetrics';
+import { useEODMetrics } from './hooks/useEODMetrics';
+import { useProviderMetrics } from './hooks/useProviderMetrics';
 import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 
@@ -349,43 +351,32 @@ const CourtStreetRCM = () => {
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
 
-  // Fetch metrics from Supabase using unified date
+  // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
+  const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
+  const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
 
-  // Daily metrics state management
-  const [eodData, setEodData] = useState(() => {
-    const savedData = getDailyData();
-    return savedData || getInitialEODData();
-  });
-
-  const [dailyProductionByProvider, setDailyProductionByProvider] = useState(() => {
-    const savedData = getDailyData();
-    return savedData?.dailyProductionByProvider || getInitialDailyProductionByProvider();
-  });
-
-  // Date tracking and daily reset logic
+  // DISABLED: Date tracking and daily reset logic (now using Supabase)
+  // All data is stored in Supabase and fetched by date, no need for localStorage resets
+  /*
   useEffect(() => {
     const checkAndResetDaily = () => {
       const today = getTodayDateString();
       const lastSavedDate = localStorage.getItem(STORAGE_KEYS.CURRENT_DATE);
 
-      // If it's a new day, save yesterday's data and reset
       if (lastSavedDate && lastSavedDate !== today) {
-        // Save yesterday's EOD data to history
         const yesterdayData = {
           ...eodData,
           dailyProductionByProvider
         };
         saveEODData(lastSavedDate, yesterdayData);
 
-        // Reset to initial state
         const newEODData = getInitialEODData();
         const newProductionData = getInitialDailyProductionByProvider();
 
         setEodData(newEODData);
         setDailyProductionByProvider(newProductionData);
 
-        // Save reset data
         saveDailyData({
           ...newEODData,
           dailyProductionByProvider: newProductionData
@@ -394,20 +385,18 @@ const CourtStreetRCM = () => {
         console.log(`Daily reset completed. Data from ${lastSavedDate} saved to history.`);
       }
 
-      // Update current date
       localStorage.setItem(STORAGE_KEYS.CURRENT_DATE, today);
     };
 
-    // Check immediately on mount
     checkAndResetDaily();
-
-    // Check every minute for date changes
     const interval = setInterval(checkAndResetDaily, 60000);
-
     return () => clearInterval(interval);
   }, [eodData, dailyProductionByProvider]);
+  */
 
-  // Auto-save daily data whenever it changes
+  // DISABLED: Auto-save daily data (now using Supabase)
+  // Data is automatically fetched from Supabase, no need to save to localStorage
+  /*
   useEffect(() => {
     const dataToSave = {
       ...eodData,
@@ -415,6 +404,7 @@ const CourtStreetRCM = () => {
     };
     saveDailyData(dataToSave);
   }, [eodData, dailyProductionByProvider]);
+  */
 
   // Helper functions to update daily metrics
   const updateEODData = (updates: any) => {
