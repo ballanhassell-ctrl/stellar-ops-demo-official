@@ -39,7 +39,7 @@ SELECT field_key FROM csd_metric_catalog WHERE field_key ~ '[A-Z]';
 ### 3. Insert Sample Data
 ```sql
 -- Example: Insert EOD data for today
-INSERT INTO csd_metric_values (metric_date, field_key, value) VALUES
+INSERT INTO csd_metric_values (as_of_date, field_key, value) VALUES
 ('2025-11-30', 'eod_daily_production', 15000),
 ('2025-11-30', 'eod_payments_collected', 12000),
 ('2025-11-30', 'eod_patients_seen', 45),
@@ -52,7 +52,7 @@ INSERT INTO csd_metric_values (metric_date, field_key, value) VALUES
 ('2025-11-30', 'provider_dr_gajjar', 8000),
 ('2025-11-30', 'provider_dr_judge', 4500),
 ('2025-11-30', 'provider_farah', 2500)
-ON CONFLICT (metric_date, field_key)
+ON CONFLICT (as_of_date, field_key)
 DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
 ```
 
@@ -134,14 +134,14 @@ Used in: **EOD Report > Payment Methods Breakdown**
 ```sql
 -- Validation query
 SELECT
-  metric_date,
+  as_of_date,
   (eod_payment_visa + eod_payment_mastercard + eod_payment_amex +
    eod_payment_discover + eod_payment_cherry + eod_payment_carecredit +
    eod_payment_insurance_check + eod_payment_other_check +
    eod_payment_cash + eod_payment_eft) AS total_from_methods,
   eod_payments_collected
 FROM csd_metric_values
-WHERE metric_date = '2025-11-30';
+WHERE as_of_date = '2025-11-30';
 ```
 
 ---
@@ -453,20 +453,20 @@ SELECT
   mc.data_type
 FROM csd_metric_values mv
 JOIN csd_metric_catalog mc ON mv.field_key = mc.field_key
-WHERE mv.metric_date = '2025-11-30'
+WHERE mv.as_of_date = '2025-11-30'
 ORDER BY mc.section, mc.field_name;
 ```
 
 ### Check Data Completeness
 ```sql
 SELECT
-  metric_date,
+  as_of_date,
   COUNT(*) as fields_filled,
   (SELECT COUNT(*) FROM csd_metric_catalog WHERE is_calculated = FALSE) as total_manual_fields,
   ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM csd_metric_catalog WHERE is_calculated = FALSE), 2) as completion_percentage
 FROM csd_metric_values
-WHERE metric_date = '2025-11-30'
-GROUP BY metric_date;
+WHERE as_of_date = '2025-11-30'
+GROUP BY as_of_date;
 ```
 
 ### List All Calculated Fields
@@ -485,7 +485,7 @@ SELECT
   mc.section
 FROM csd_metric_catalog mc
 LEFT JOIN csd_metric_values mv ON mc.field_key = mv.field_key
-  AND mv.metric_date = '2025-11-30'
+  AND mv.as_of_date = '2025-11-30'
 WHERE mv.id IS NULL
   AND mc.is_calculated = FALSE
   AND mc.section LIKE 'EOD%'
@@ -499,7 +499,7 @@ ORDER BY mc.section, mc.field_name;
 ### Issue: Data not showing in dashboard
 **Solution:**
 1. Verify field_key uses snake_case: `SELECT field_key FROM csd_metric_catalog WHERE field_key ~ '[A-Z]';`
-2. Check data exists for date: `SELECT COUNT(*) FROM csd_metric_values WHERE metric_date = '2025-11-30';`
+2. Check data exists for date: `SELECT COUNT(*) FROM csd_metric_values WHERE as_of_date = '2025-11-30';`
 3. Verify foreign key constraint: `SELECT * FROM csd_metric_values WHERE field_key NOT IN (SELECT field_key FROM csd_metric_catalog);`
 
 ### Issue: Calculated fields showing 0
@@ -508,11 +508,11 @@ Calculated fields are marked with `is_calculated = TRUE` and should be computed 
 
 ### Issue: Duplicate entry errors
 **Solution:**
-The table has a UNIQUE constraint on (metric_date, field_key). Use ON CONFLICT to update:
+The table has a UNIQUE constraint on (as_of_date, field_key). Use ON CONFLICT to update:
 ```sql
-INSERT INTO csd_metric_values (metric_date, field_key, value)
+INSERT INTO csd_metric_values (as_of_date, field_key, value)
 VALUES ('2025-11-30', 'eod_daily_production', 15000)
-ON CONFLICT (metric_date, field_key)
+ON CONFLICT (as_of_date, field_key)
 DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
 ```
 
