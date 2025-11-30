@@ -3,8 +3,9 @@ import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
-  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon
+  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw
 } from 'lucide-react';
+import { useMetrics } from './hooks/useMetrics';
 
 // BAM Cycle Helper Functions
 const isWeekend = (date: Date) => {
@@ -330,6 +331,10 @@ const CourtStreetRCM = () => {
   const [providerProductionDate, setProviderProductionDate] = useState(new Date().toISOString().split('T')[0]);
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
+  const [metricsDate, setMetricsDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Fetch metrics from Supabase
+  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(metricsDate);
 
   // Daily metrics state management
   const [eodData, setEodData] = useState(() => {
@@ -506,59 +511,59 @@ const CourtStreetRCM = () => {
     { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 223235.05, goal: 224548 }, // Current cycle (Oct 18 - Nov 13, 2025)
   ];
 
-  // Dashboard data
+  // Dashboard data - using Supabase data when available, fallback to defaults
   const dashboardData = {
-    bamCurrentRevenue: 223235.05, // Current revenue in this BAM cycle (11/13/2025)
-    bamTargetGoal: 224548, // BAM Target Goal (configurable)
-    practiceGoal: 300000, // Practice Goal (overall target)
+    bamCurrentRevenue: metricsData?.dashboard.bamCurrentRevenue ?? 223235.05,
+    bamTargetGoal: metricsData?.dashboard.bamTargetGoal ?? 224548,
+    practiceGoal: metricsData?.dashboard.practiceGoal ?? 300000,
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
     bamDaysRemaining: bamCycle.daysRemaining,
     bamNextCycleStart: bamCycle.nextCycleStart,
     bamNextCycleEnd: bamCycle.nextCycleEnd,
-    collectionRate: 73,
-    activePatients: 1935,
-    activeClaims: 284,
-    pendingPayments: 0,
-    outstandingAR: 186357.25
+    collectionRate: metricsData?.dashboard.collectionRate ?? 73,
+    activePatients: metricsData?.dashboard.activePatients ?? 1935,
+    activeClaims: metricsData?.dashboard.activeClaims ?? 284,
+    pendingPayments: metricsData?.dashboard.pendingPayments ?? 0,
+    outstandingAR: metricsData?.dashboard.outstandingAR ?? 186357.25
   };
 
-  // Payments data
+  // Payments data - using Supabase data when available, fallback to defaults
   const paymentsData = {
-    todaysPayments: 0, // Reset daily
-    weeklyPayments: 27589.99,
-    monthlyPayments: 93417.40,
-    pendingDeposits: 0,
-    insurancePayments: 26198.07,
-    patientPayments: 67219.33,
-    unappliedCredits: 2969.79,
-    refundsPending: 0
+    todaysPayments: metricsData?.payments.todaysPayments ?? 0,
+    weeklyPayments: metricsData?.payments.weeklyPayments ?? 27589.99,
+    monthlyPayments: metricsData?.payments.monthlyPayments ?? 93417.40,
+    pendingDeposits: metricsData?.payments.pendingDeposits ?? 0,
+    insurancePayments: metricsData?.payments.insurancePayments ?? 26198.07,
+    patientPayments: metricsData?.payments.patientPayments ?? 67219.33,
+    unappliedCredits: metricsData?.payments.unappliedCredits ?? 2969.79,
+    refundsPending: metricsData?.payments.refundsPending ?? 0
   };
 
-  // Patients data
+  // Patients data - using Supabase data when available, fallback to defaults
   const patientsData = {
-    totalPatients: 0,
-    activePatients: 1942,
-    patientsWithBalance: 1128,
-    totalPatientAR: 448646.05,
+    totalPatients: metricsData?.patients.totalPatients ?? 0,
+    activePatients: metricsData?.patients.activePatients ?? 1942,
+    patientsWithBalance: metricsData?.patients.patientsWithBalance ?? 1128,
+    totalPatientAR: metricsData?.patients.totalPatientAR ?? 448646.05,
     patientARAging: {
-      zeroToThirty: 109630.41,
-      thirtyOneToSixty: 46640.77,
-      sixtyOneToNinety: 30086.07,
-      ninetyPlus: 262288.80
+      zeroToThirty: metricsData?.patients.patientARAging.zeroToThirty ?? 109630.41,
+      thirtyOneToSixty: metricsData?.patients.patientARAging.thirtyOneToSixty ?? 46640.77,
+      sixtyOneToNinety: metricsData?.patients.patientARAging.sixtyOneToNinety ?? 30086.07,
+      ninetyPlus: metricsData?.patients.patientARAging.ninetyPlus ?? 262288.80
     },
-    paymentPlans: 0,
-    pastDueAccounts: 1128
+    paymentPlans: metricsData?.patients.paymentPlans ?? 0,
+    pastDueAccounts: metricsData?.patients.pastDueAccounts ?? 1128
   };
 
-  // Pre-Auths data
+  // Pre-Auths data - using Supabase data when available, fallback to defaults
   const preAuthsData = {
-    totalPreAuths: 61,
-    pending: 61,
-    approved: 0,
-    denied: 0,
-    expiringSoon: 0,
-    expiringThisMonth: 0
+    totalPreAuths: metricsData?.preAuths.totalPreAuths ?? 61,
+    pending: metricsData?.preAuths.pending ?? 61,
+    approved: metricsData?.preAuths.approved ?? 0,
+    denied: metricsData?.preAuths.denied ?? 0,
+    expiringSoon: metricsData?.preAuths.expiringSoon ?? 0,
+    expiringThisMonth: metricsData?.preAuths.expiringThisMonth ?? 0
   };
 
   // Insurance data
@@ -1018,15 +1023,69 @@ const CourtStreetRCM = () => {
             {/* Dashboard Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="mb-4">
-                <h2 className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                  {getGreeting()}, Team! 👋
-                </h2>
-                <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
-                  Practice Overview Dashboard
-                </h3>
-                <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
-                  Real-time insights into your revenue cycle performance
-                </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      {getGreeting()}, Team! 👋
+                    </h2>
+                    <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
+                      Practice Overview Dashboard
+                    </h3>
+                    <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                      Real-time insights into your revenue cycle performance
+                    </p>
+                  </div>
+                  {/* Date Selector and Refresh */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={metricsDate}
+                      onChange={(e) => setMetricsDate(e.target.value)}
+                      className={`px-3 py-2 rounded border ${
+                        isDayMode
+                          ? 'bg-white border-gray-300 text-gray-900'
+                          : 'bg-gray-700 border-gray-600 text-white'
+                      }`}
+                    />
+                    <button
+                      onClick={refreshMetrics}
+                      disabled={metricsLoading}
+                      className={`p-2 rounded hover:bg-opacity-80 transition-all ${
+                        isDayMode
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      } ${metricsLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title="Refresh metrics"
+                    >
+                      <RefreshCw className={`w-5 h-5 ${metricsLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+                {/* Loading and Error States */}
+                {metricsLoading && (
+                  <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-blue-50 text-blue-700' : 'bg-blue-900 text-blue-200'}`}>
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Loading metrics data...</span>
+                    </div>
+                  </div>
+                )}
+                {metricsError && (
+                  <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-red-50 text-red-700' : 'bg-red-900 text-red-200'}`}>
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Error loading metrics: {metricsError}</span>
+                    </div>
+                  </div>
+                )}
+                {!metricsLoading && !metricsError && metricsData && (
+                  <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-green-50 text-green-700' : 'bg-green-900 text-green-200'}`}>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Showing data for: {new Date(metricsDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
