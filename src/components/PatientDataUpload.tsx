@@ -1,5 +1,5 @@
 // src/components/PatientDataUpload.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Upload, CheckCircle, AlertCircle, FileText, Users, DollarSign, Calendar } from 'lucide-react';
 import { insertPatients, insertAppointments, insertRevenue, recalculatePatientTotals, calculateLifecycleMetrics, saveLifecycleMetrics } from '../services/patientService';
 import type { Patient, Appointment, PatientRevenue } from '../types/database.types';

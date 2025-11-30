@@ -163,7 +163,6 @@ export async function calculateLifecycleMetrics(): Promise<LifecycleMetrics> {
   const firstOfPriorMonth = new Date();
   firstOfPriorMonth.setMonth(firstOfPriorMonth.getMonth() - 1);
   firstOfPriorMonth.setDate(1);
-  const firstOfPriorMonthStr = firstOfPriorMonth.toISOString().split('T')[0];
 
   const activePatientsBeginningPriorMonth = patients.filter(p => {
     const firstVisit = new Date(p.first_visit_date);

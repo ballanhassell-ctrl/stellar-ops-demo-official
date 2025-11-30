@@ -1,5 +1,5 @@
 // src/components/LifecycleMetrics.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TrendingUp, Users, Clock, DollarSign, Award } from 'lucide-react';
 import { getLatestLifecycleMetrics, calculateLifecycleMetrics, saveLifecycleMetrics } from '../services/patientService';
 import type { LifecycleMetrics as LifecycleMetricsType } from '../types/database.types';
