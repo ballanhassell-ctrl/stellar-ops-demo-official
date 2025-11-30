@@ -12,7 +12,7 @@ type SupabaseMetricResponse = {
     field_name: string;
     data_type: string;
     description_notes: string | null;
-  }[] | null;
+  } | null;
 };
 
 export type MetricWithValue = {
@@ -58,9 +58,7 @@ export async function getMetricsForDate(date: string) {
   // Transform Supabase response to our expected format
   const transformedData: MetricWithValue[] = (data as SupabaseMetricResponse[] || []).map(item => ({
     ...item,
-    csd_metric_catalog: item.csd_metric_catalog && item.csd_metric_catalog.length > 0
-      ? item.csd_metric_catalog[0]
-      : null
+    csd_metric_catalog: item.csd_metric_catalog || null
   }));
 
   return transformedData;
