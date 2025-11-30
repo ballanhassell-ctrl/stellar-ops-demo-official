@@ -995,19 +995,19 @@ const CourtStreetRCM = () => {
       {/* Navigation */}
       <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} shadow mb-6`}>
         <div className="max-w-7xl mx-auto px-4">
-          <nav className="flex space-x-8 overflow-x-auto">
+          <nav className="flex flex-wrap gap-4 py-2">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                  className={`flex items-center space-x-2 py-2 px-4 rounded-lg font-medium text-sm transition-colors whitespace-nowrap ${
                     currentView === item.id
-                      ? 'border-blue-500 text-blue-600'
+                      ? 'bg-blue-500 text-white'
                       : isDayMode
-                      ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
