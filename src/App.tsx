@@ -1082,7 +1082,10 @@ const CourtStreetRCM = () => {
                   <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-green-50 text-green-700' : 'bg-green-900 text-green-200'}`}>
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      <span>Showing data for: {new Date(metricsDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      <span>Showing data for: {(() => {
+                        const [year, month, day] = metricsDate.split('-').map(Number);
+                        return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                      })()}</span>
                     </div>
                   </div>
                 )}
