@@ -3000,7 +3000,10 @@ const CourtStreetRCM = () => {
               </div>
 
               <p className="text-sm text-gray-600 mb-6">
-                Production for {new Date(providerProductionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                Production for {(() => {
+                  const [year, month, day] = providerProductionDate.split('-').map(Number);
+                  return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                })()}
               </p>
 
               {/* Doctors Row */}
@@ -3401,7 +3404,10 @@ const CourtStreetRCM = () => {
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                     <span className="text-gray-600 text-sm">
-                      {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      {(() => {
+                        const [year, month, day] = selectedDate.split('-').map(Number);
+                        return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -3908,7 +3914,10 @@ const CourtStreetRCM = () => {
                         </div>
                         <div>
                           <h3 className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Email EOD Report</h3>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Send report for {new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Send report for {(() => {
+                            const [year, month, day] = selectedDate.split('-').map(Number);
+                            return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                          })()}</p>
                         </div>
                       </div>
                       <button
