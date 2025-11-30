@@ -498,6 +498,46 @@ const CourtStreetRCM = () => {
           console.error('✗ Error connecting to Supabase:', error);
           return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
         }
+      },
+      checkDateData: async (date: string) => {
+        console.log(`🔍 Checking Supabase data for ${date}...`);
+        try {
+          const { getMetricsForDate } = await import('./services/metrics');
+          const metrics = await getMetricsForDate(date);
+
+          if (metrics.length === 0) {
+            console.warn(`⚠️ No data found for ${date}`);
+            return { found: false, count: 0 };
+          }
+
+          console.log(`✓ Found ${metrics.length} metrics for ${date}`);
+          console.log('\n📊 Metrics Summary:');
+
+          // Group by section
+          const bySection: Record<string, any[]> = {};
+          metrics.forEach(m => {
+            const section = m.csd_metric_catalog?.section || 'UNKNOWN';
+            if (!bySection[section]) bySection[section] = [];
+            bySection[section].push({
+              field: m.field_key,
+              value: m.value,
+              name: m.csd_metric_catalog?.field_name || 'Unknown'
+            });
+          });
+
+          Object.keys(bySection).forEach(section => {
+            console.log(`\n  ${section}:`);
+            bySection[section].forEach(m => {
+              console.log(`    • ${m.name} (${m.field}): ${m.value}`);
+            });
+          });
+
+          console.log('\n📋 Full data:', metrics);
+          return { found: true, count: metrics.length, data: metrics, bySection };
+        } catch (error) {
+          console.error('✗ Error fetching data:', error);
+          return { found: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        }
       }
     };
     console.log('CSD Helpers loaded. Access via window.csdHelpers');
