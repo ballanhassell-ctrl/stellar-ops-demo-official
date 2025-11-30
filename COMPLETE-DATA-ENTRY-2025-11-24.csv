@@ -1,0 +1,139 @@
+as_of_date,field_key,value,source,notes,section
+2025-11-24,bam_current_revenue,0,,Current BAM cycle revenue,BAM_CYCLE
+2025-11-24,bam_target_goal,150000,,BAM cycle target,BAM_CYCLE
+2025-11-24,practice_goal,250000,,Monthly practice goal,BAM_CYCLE
+2025-11-24,collection_rate,0,,Collection rate percentage,DASHBOARD_KPI
+2025-11-24,active_patients,0,,Active patient count,DASHBOARD_KPI
+2025-11-24,active_claims,0,,Active claims count,DASHBOARD_KPI
+2025-11-24,pending_payments,0,,Pending payments amount,DASHBOARD_KPI
+2025-11-24,outstanding_ar,0,,Outstanding A/R,DASHBOARD_KPI
+2025-11-24,eod_daily_production,0,,Daily production amount,EOD_REPORT
+2025-11-24,eod_daily_production_goal,19991,,Daily production goal,EOD_REPORT
+2025-11-24,eod_payments_collected,0,,Total payments collected,EOD_REPORT
+2025-11-24,eod_insurance_payments,0,,Insurance payments,EOD_REPORT
+2025-11-24,eod_patient_payments,0,,Patient payments,EOD_REPORT
+2025-11-24,eod_patients_seen,0,,Patients seen today,EOD_REPORT
+2025-11-24,eod_new_patients,0,,New patients today,EOD_REPORT
+2025-11-24,eod_procedures_completed,0,,Procedures completed,EOD_REPORT
+2025-11-24,eod_unbilled_procedures,0,,Unbilled procedures,EOD_REPORT
+2025-11-24,eod_unapplied_payments,0,,Unapplied payments,EOD_REPORT
+2025-11-24,eod_failed_transactions,0,,Failed transactions,EOD_REPORT
+2025-11-24,eod_payment_visa,0,,Visa payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_mastercard,0,,Mastercard payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_amex,0,,American Express payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_discover,0,,Discover payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_cherry,0,,Cherry financing,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_carecredit,0,,CareCredit financing,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_insurance_check,0,,Insurance check payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_other_check,0,,Other check payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_cash,0,,Cash payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_payment_eft,0,,EFT payments,EOD_PAYMENT_METHODS
+2025-11-24,eod_claims_to_submit,0,,Claims ready to submit,EOD_ACTION_ITEMS
+2025-11-24,eod_denied_claims_resubmit,0,,Denied claims to resubmit,EOD_ACTION_ITEMS
+2025-11-24,eod_preauths_expiring,0,,Pre-auths expiring soon,EOD_ACTION_ITEMS
+2025-11-24,eod_accounts_followup,0,,Accounts needing follow-up,EOD_ACTION_ITEMS
+2025-11-24,eod_missed_appointments,0,,Missed appointments,EOD_ACTION_ITEMS
+2025-11-24,eod_mtd_production,0,,Month-to-date production,EOD_MTD
+2025-11-24,eod_mtd_production_goal,250000,,MTD production goal,EOD_MTD
+2025-11-24,eod_mtd_collected,0,,MTD collected,EOD_MTD
+2025-11-24,eod_mtd_new_patients,0,,MTD new patients,EOD_MTD
+2025-11-24,provider_dr_gajjar,0,,Dr. Gajjar production,PROVIDER_PRODUCTION
+2025-11-24,provider_dr_judge,0,,Dr. Judge production,PROVIDER_PRODUCTION
+2025-11-24,provider_dr_strachan,0,,Dr. Strachan production,PROVIDER_PRODUCTION
+2025-11-24,provider_farah,0,,Farah (hygienist) production,PROVIDER_PRODUCTION
+2025-11-24,provider_olga,0,,Olga (hygienist) production,PROVIDER_PRODUCTION
+2025-11-24,provider_jissel,0,,Jissel (hygienist) production,PROVIDER_PRODUCTION
+2025-11-24,provider_temp_hyg,0,,Temp hygienist production,PROVIDER_PRODUCTION
+2025-11-24,todays_payments,0,,Today's payments total,PAYMENTS
+2025-11-24,pending_deposits,0,,Pending deposits,PAYMENTS
+2025-11-24,insurance_payments,0,,Insurance payments,PAYMENTS
+2025-11-24,patient_payments,0,,Patient payments,PAYMENTS
+2025-11-24,unapplied_credits,0,,Unapplied credits,PAYMENTS
+2025-11-24,refunds_pending,0,,Refunds pending,PAYMENTS
+2025-11-24,total_patients,0,,Total patients in system,PATIENTS
+2025-11-24,patients_with_balance,0,,Patients with balance,PATIENTS
+2025-11-24,total_patient_ar,0,,Total patient A/R,PATIENTS
+2025-11-24,payment_plans,0,,Active payment plans,PATIENTS
+2025-11-24,past_due_accounts,0,,Past due accounts,PATIENTS
+2025-11-24,patient_ar_0_30,0,,Patient A/R 0-30 days,PATIENT_AR_AGING
+2025-11-24,patient_ar_31_60,0,,Patient A/R 31-60 days,PATIENT_AR_AGING
+2025-11-24,patient_ar_61_90,0,,Patient A/R 61-90 days,PATIENT_AR_AGING
+2025-11-24,patient_ar_90_plus,0,,Patient A/R 90+ days,PATIENT_AR_AGING
+2025-11-24,total_pre_auths,0,,Total pre-authorizations,PRE_AUTH
+2025-11-24,pre_auths_pending,0,,Pending pre-auths,PRE_AUTH
+2025-11-24,pre_auths_approved,0,,Approved pre-auths,PRE_AUTH
+2025-11-24,pre_auths_denied,0,,Denied pre-auths,PRE_AUTH
+2025-11-24,pre_auths_expiring_soon,0,,Pre-auths expiring soon (7 days),PRE_AUTH
+2025-11-24,pre_auths_expiring_this_month,0,,Pre-auths expiring this month,PRE_AUTH
+2025-11-24,claims_total_active,0,,Total active claims,CLAIMS
+2025-11-24,claims_pending,0,,Pending claims,CLAIMS
+2025-11-24,claims_denied,0,,Denied claims,CLAIMS
+2025-11-24,claims_over_60_days,0,,Claims over 60 days,CLAIMS
+2025-11-24,insurance_ar_0_30_amount,0,,Insurance A/R 0-30 days,INSURANCE_AR_AGING
+2025-11-24,insurance_ar_31_60_amount,0,,Insurance A/R 31-60 days,INSURANCE_AR_AGING
+2025-11-24,insurance_ar_61_90_amount,0,,Insurance A/R 61-90 days,INSURANCE_AR_AGING
+2025-11-24,insurance_ar_90_plus_amount,0,,Insurance A/R 90+ days,INSURANCE_AR_AGING
+2025-11-24,insurance_ar_0_30_count,0,,Claims 0-30 days count,INSURANCE_AR_AGING
+2025-11-24,insurance_ar_31_60_count,0,,Claims 31-60 days count,INSURANCE_AR_AGING
+2025-11-24,insurance_ar_61_90_count,0,,Claims 61-90 days count,INSURANCE_AR_AGING
+2025-11-24,insurance_ar_90_plus_count,0,,Claims 90+ days count,INSURANCE_AR_AGING
+2025-11-24,scorecard_production_goal,250000,,Monthly production goal,SCORECARD
+2025-11-24,scorecard_production_actual,0,,Actual production,SCORECARD
+2025-11-24,scorecard_collection_goal,80,,Collection goal percentage,SCORECARD
+2025-11-24,scorecard_collection_actual,0,,Actual collection rate,SCORECARD
+2025-11-24,scorecard_new_patients_goal,40,,New patients goal,SCORECARD
+2025-11-24,scorecard_new_patients_actual,0,,Actual new patients,SCORECARD
+2025-11-24,scorecard_claim_approval_rate,0,,Claim approval rate,SCORECARD
+2025-11-24,scorecard_avg_days_to_pay,0,,Average days to pay,SCORECARD
+2025-11-24,scorecard_show_rate_dr,0,,Doctor show rate,SCORECARD
+2025-11-24,scorecard_show_rate_dr_target,90,,Doctor show rate target,SCORECARD
+2025-11-24,scorecard_show_rate_hyg,0,,Hygienist show rate,SCORECARD
+2025-11-24,scorecard_show_rate_hyg_target,90,,Hygienist show rate target,SCORECARD
+2025-11-24,scorecard_new_pts_per_week,0,,New patients per week,SCORECARD
+2025-11-24,scorecard_tx_acceptance,0,,Treatment acceptance rate,SCORECARD
+2025-11-24,scorecard_tx_acceptance_target,60,,Treatment acceptance target,SCORECARD
+2025-11-24,scorecard_total_tx_presented,0,,Total treatment presented,SCORECARD
+2025-11-24,scorecard_total_tx_accepted,0,,Total treatment accepted,SCORECARD
+2025-11-24,scorecard_avg_collection_rate,0,,Average collection rate,SCORECARD
+2025-11-24,scorecard_avg_collection_target,80,,Average collection target,SCORECARD
+2025-11-24,scorecard_total_new_patients,0,,Total new patients,SCORECARD
+2025-11-24,scorecard_five_star_reviews,0,,Five star reviews,SCORECARD
+2025-11-24,adv_cac,0,,Customer acquisition cost,ADVANCED_METRICS
+2025-11-24,adv_gross_profit_margin,0,,Gross profit margin %,ADVANCED_METRICS
+2025-11-24,adv_operating_profit_margin,0,,Operating profit margin %,ADVANCED_METRICS
+2025-11-24,adv_cash_flow,0,,Cash flow,ADVANCED_METRICS
+2025-11-24,adv_revenue_growth_rate,0,,Revenue growth rate %,ADVANCED_METRICS
+2025-11-24,adv_cogs_dental_supplies,0,,Dental supplies cost,ADVANCED_METRICS_COGS
+2025-11-24,adv_cogs_lab_fees,0,,Lab fees,ADVANCED_METRICS_COGS
+2025-11-24,adv_cogs_associate_doctor,0,,Associate doctor expense,ADVANCED_METRICS_COGS
+2025-11-24,adv_cogs_hygiene_payroll,0,,Hygiene payroll,ADVANCED_METRICS_COGS
+2025-11-24,adv_cogs_assistant_payroll,0,,Assistant payroll,ADVANCED_METRICS_COGS
+2025-11-24,adv_operating_costs,0,,Operating costs,ADVANCED_METRICS_COGS
+2025-11-24,adv_churned_patients_month,0,,Churned patients per month,ADVANCED_METRICS_LIFECYCLE
+2025-11-24,adv_lifecycle_months,0,,Patient lifecycle (months),ADVANCED_METRICS_LIFECYCLE
+2025-11-24,adv_active_pts_prior_month,0,,Active patients prior month,ADVANCED_METRICS_LIFECYCLE
+2025-11-24,adv_avg_retention_period,0,,Average retention period (months),ADVANCED_METRICS_LIFECYCLE
+2025-11-24,adv_arpc,0,,Average revenue per client,ADVANCED_METRICS_LIFECYCLE
+2025-11-24,adv_nps,0,,Net Promoter Score,ADVANCED_METRICS_SATISFACTION
+2025-11-24,adv_enps,0,,Employee NPS,ADVANCED_METRICS_SATISFACTION
+2025-11-24,adv_employee_utilization,0,,Employee utilization rate %,ADVANCED_METRICS_SATISFACTION
+2025-11-24,new_pts_per_day,0,,New patients per day,NEW_PATIENT_TRACKER
+2025-11-24,new_pts_per_day_goal,2,,Daily new patient goal,NEW_PATIENT_TRACKER
+2025-11-24,new_pts_per_week,0,,New patients per week,NEW_PATIENT_TRACKER
+2025-11-24,new_pts_per_week_goal,10,,Weekly new patient goal,NEW_PATIENT_TRACKER
+2025-11-24,new_pts_per_month,0,,New patients per month,NEW_PATIENT_TRACKER
+2025-11-24,new_pts_per_month_goal,40,,Monthly new patient goal,NEW_PATIENT_TRACKER
+2025-11-24,new_pts_quarterly,0,,New patients quarterly,NEW_PATIENT_TRACKER
+2025-11-24,new_pts_quarterly_goal,120,,Quarterly new patient goal,NEW_PATIENT_TRACKER
+2025-11-24,financing_cherry_patients,0,,Cherry financing patients,THIRD_PARTY_FINANCING
+2025-11-24,financing_cherry_amount,0,,Cherry financing amount,THIRD_PARTY_FINANCING
+2025-11-24,financing_carecredit_patients,0,,CareCredit patients,THIRD_PARTY_FINANCING
+2025-11-24,financing_carecredit_amount,0,,CareCredit amount,THIRD_PARTY_FINANCING
+2025-11-24,insurance_total_providers,0,,Total insurance providers,INSURANCE
+2025-11-24,insurance_active_plans,0,,Active insurance plans,INSURANCE
+2025-11-24,insurance_credentialing_pending,0,,Credentialing pending,INSURANCE
+2025-11-24,insurance_verifications_pending,0,,Verifications pending,INSURANCE
+2025-11-24,insurance_total_portals,0,,Total insurance portals,INSURANCE
+2025-11-24,insurance_eft_enrolled,0,,EFT enrollments,INSURANCE
+2025-11-24,insurance_connection_network,0,,Connection network contracts,INSURANCE
+2025-11-24,insurance_direct_contracts,0,,Direct contracts,INSURANCE
