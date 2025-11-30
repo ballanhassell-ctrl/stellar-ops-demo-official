@@ -26,17 +26,19 @@ CREATE TABLE csd_metric_catalog (
 -- Step 3: Recreate csd_metric_values table
 CREATE TABLE csd_metric_values (
   id BIGSERIAL PRIMARY KEY,
-  metric_date DATE NOT NULL,
+  as_of_date DATE NOT NULL,
   field_key TEXT NOT NULL REFERENCES csd_metric_catalog(field_key) ON DELETE CASCADE,
   value NUMERIC DEFAULT 0,
   text_value TEXT,
+  source TEXT,
+  notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(metric_date, field_key)
+  UNIQUE(as_of_date, field_key)
 );
 
 -- Step 4: Create indexes for performance
-CREATE INDEX idx_metric_values_date ON csd_metric_values(metric_date);
+CREATE INDEX idx_metric_values_date ON csd_metric_values(as_of_date);
 CREATE INDEX idx_metric_values_field_key ON csd_metric_values(field_key);
 CREATE INDEX idx_metric_catalog_section ON csd_metric_catalog(section);
 
