@@ -538,6 +538,79 @@ const CourtStreetRCM = () => {
           console.error('✗ Error fetching data:', error);
           return { found: false, error: error instanceof Error ? error.message : 'Unknown error' };
         }
+      },
+      compareExpectedFields: async (date: string) => {
+        console.log(`🔍 Comparing expected fields vs actual data for ${date}...`);
+
+        // Fields the app expects
+        const expectedFields = {
+          DASHBOARD: ['bam_current_revenue', 'bam_target_goal', 'practice_goal', 'collection_rate', 'active_patients', 'active_claims', 'pending_payments', 'outstanding_ar'],
+          PAYMENTS: ['todays_payments', 'weekly_payments', 'monthly_payments', 'pending_deposits', 'insurance_payments', 'patient_payments', 'unapplied_credits', 'refunds_pending'],
+          PATIENTS: ['total_patients', 'active_patients', 'patients_with_balance', 'total_patient_ar', 'patient_ar_0_30', 'patient_ar_31_60', 'patient_ar_61_90', 'patient_ar_90_plus', 'payment_plans', 'past_due_accounts'],
+          PRE_AUTHS: ['total_pre_auths', 'pre_auths_pending', 'pre_auths_approved', 'pre_auths_denied', 'pre_auths_expiring_soon', 'pre_auths_expiring_this_month'],
+          EOD_REPORT: ['eod_payment_cherry', 'eod_payment_carecredit']
+        };
+
+        try {
+          const { getMetricsForDate } = await import('./services/metrics');
+          const metrics = await getMetricsForDate(date);
+          const foundFields = new Set(metrics.map(m => m.field_key));
+
+          console.log('\n📊 Field Comparison Results:\n');
+
+          let totalExpected = 0;
+          let totalFound = 0;
+          let totalMissing = 0;
+
+          Object.entries(expectedFields).forEach(([section, fields]) => {
+            const missing = fields.filter(f => !foundFields.has(f));
+            const present = fields.filter(f => foundFields.has(f));
+
+            totalExpected += fields.length;
+            totalFound += present.length;
+            totalMissing += missing.length;
+
+            console.log(`  ${section}:`);
+            console.log(`    Expected: ${fields.length} fields`);
+            console.log(`    Found: ${present.length} fields`);
+
+            if (missing.length > 0) {
+              console.log(`    ❌ Missing (${missing.length}):`, missing);
+            } else {
+              console.log(`    ✓ All fields present!`);
+            }
+
+            if (present.length > 0) {
+              console.log(`    ✓ Present (${present.length}):`, present);
+            }
+            console.log('');
+          });
+
+          console.log(`\n📈 Summary:`);
+          console.log(`  Total Expected: ${totalExpected}`);
+          console.log(`  Total Found: ${totalFound}`);
+          console.log(`  Total Missing: ${totalMissing}`);
+          console.log(`  Completion: ${Math.round((totalFound / totalExpected) * 100)}%\n`);
+
+          if (totalMissing > 0) {
+            console.log(`⚠️ You're missing ${totalMissing} fields. Add them to Supabase to see data in dashboard.`);
+            console.log(`📖 See SUPABASE-FIELD-MAPPING.md for the complete field reference.`);
+          } else {
+            console.log(`✓ All expected fields are present!`);
+          }
+
+          return {
+            totalExpected,
+            totalFound,
+            totalMissing,
+            completionPercent: Math.round((totalFound / totalExpected) * 100),
+            expectedFields,
+            foundFields: Array.from(foundFields)
+          };
+        } catch (error) {
+          console.error('✗ Error comparing fields:', error);
+          return { error: error instanceof Error ? error.message : 'Unknown error' };
+        }
       }
     };
     console.log('CSD Helpers loaded. Access via window.csdHelpers');
