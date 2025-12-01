@@ -18,6 +18,7 @@ import { ThirdPartyFinancingModal } from './components/ThirdPartyFinancingModal'
 import { TopProceduresModal } from './components/TopProceduresModal';
 import { generateInsights, Insight } from './services/aiInsights';
 import { getTopProceduresForDate } from './services/topProcedures';
+import { getInsuranceProviders, calculateInsuranceStats, InsuranceProvider } from './services/insuranceProvider';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -565,6 +566,9 @@ const CourtStreetRCM = () => {
   // Top Procedures state
   const [topProcedures, setTopProcedures] = useState<any[]>([]);
 
+  // Insurance Provider state
+  const [insuranceProviders, setInsuranceProviders] = useState<InsuranceProvider[]>([]);
+
   // Patient Management state
   const [claims, _setClaims] = useState<ClaimRecord[]>(sampleClaims);
   const [preAuths, _setPreAuths] = useState<PreAuthRecord[]>(samplePreAuths);
@@ -872,6 +876,15 @@ const CourtStreetRCM = () => {
     fetchTopProcedures();
   }, [dashboardDate]);
 
+  // Fetch insurance providers (only needs to run once on mount)
+  useEffect(() => {
+    const fetchInsuranceProviders = async () => {
+      const providers = await getInsuranceProviders();
+      setInsuranceProviders(providers);
+    };
+    fetchInsuranceProviders();
+  }, []);
+
   // Function to refresh insights
   const handleRefreshInsights = () => {
     setIsRefreshingInsights(true);
@@ -973,124 +986,41 @@ const CourtStreetRCM = () => {
     pastDueAccounts: metricsData?.patients.pastDueAccounts ?? 1128
   };
 
-  // Insurance data
+  // Insurance data - dynamically calculated from Supabase providers
+  const insuranceStats = calculateInsuranceStats(insuranceProviders);
   const insuranceData = {
-    totalProviders: 11,
-    activePlans: 11,
+    totalProviders: insuranceStats.inNetworkProviders, // Show only fully in-network providers (all doctors "In")
+    activePlans: insuranceStats.activePlans,
     credentialingPending: 0,
     verificationsPending: 0,
     topPayerByVolume: "Delta Dental",
     topPayerByRevenue: "Aetna",
-    totalPortals: 11,
-    eftEnrolled: 11,
-    connectionNetwork: 4,
-    directContracts: 6,
-    providers: [
-      {
-        name: 'Aetna',
-        feeSchedule: 'Direct',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'In',
-        drJudge: 'In',
-        drStrachan: 'In'
-      },
-      {
-        name: 'Cigna',
-        feeSchedule: 'Connection',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'In',
-        drJudge: 'In',
-        drStrachan: 'In'
-      },
-      {
-        name: 'Delta Dental Insurance',
-        feeSchedule: 'Direct',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'Out',
-        drJudge: 'Out',
-        drStrachan: 'Out'
-      },
-      {
-        name: 'MetLife',
-        feeSchedule: 'Connection',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'In',
-        drJudge: 'In',
-        drStrachan: 'In'
-      },
-      {
-        name: 'Anthem BCBS',
-        feeSchedule: 'Decare',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'In',
-        drJudge: 'In',
-        drStrachan: 'In'
-      },
-      {
-        name: 'United Healthcare (Optum ID)',
-        feeSchedule: 'Connection',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'Out',
-        drJudge: 'Out',
-        drStrachan: 'Out'
-      },
-      {
-        name: 'Guardian',
-        feeSchedule: 'Connection',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'Out',
-        drJudge: 'Out',
-        drStrachan: 'Out'
-      },
-      {
-        name: 'Humana',
-        feeSchedule: 'Direct',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'In',
-        drJudge: 'In',
-        drStrachan: 'In'
-      },
-      {
-        name: 'Ameritas',
-        feeSchedule: 'Direct',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'In',
-        drJudge: 'In',
-        drStrachan: 'In'
-      },
-      {
-        name: 'Principal',
-        feeSchedule: 'Direct',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'In',
-        drJudge: 'In',
-        drStrachan: 'In'
-      },
-      {
-        name: 'Beam Benefits',
-        feeSchedule: 'Direct',
-        portalStatus: 'All Set!',
-        eftStatus: 'Enrolled',
-        drGajjar: 'Out',
-        drJudge: 'Out',
-        drStrachan: 'Out'
-      }
-    ],
-    networkSummary: {
-      drGajjar: { inNetwork: 7, outNetwork: 4, percentage: 64 },
-      drJudge: { inNetwork: 7, outNetwork: 4, percentage: 64 },
-      drStrachan: { inNetwork: 7, outNetwork: 4, percentage: 64 }
-    }
+    totalPortals: insuranceStats.totalPortals,
+    eftEnrolled: insuranceStats.eftEnrolled,
+    connectionNetwork: insuranceStats.connectionNetwork,
+    directContracts: insuranceStats.directContracts,
+    providers: insuranceProviders.map(p => ({
+      name: p.name,
+      feeSchedule: p.fee_schedule,
+      portalStatus: p.portal_status,
+      eftStatus: p.eft_status,
+      drGajjar: p.dr_gajjar_network,
+      drJudge: p.dr_judge_network,
+      drStrachan: p.dr_strachan_network
+    })),
+    networkSummary: (() => {
+      // Calculate network summary dynamically
+      const gajjarIn = insuranceProviders.filter(p => p.dr_gajjar_network === 'In').length;
+      const judgeIn = insuranceProviders.filter(p => p.dr_judge_network === 'In').length;
+      const strachanIn = insuranceProviders.filter(p => p.dr_strachan_network === 'In').length;
+      const total = insuranceProviders.length;
+
+      return {
+        drGajjar: { inNetwork: gajjarIn, outNetwork: total - gajjarIn, percentage: total > 0 ? Math.round((gajjarIn / total) * 100) : 0 },
+        drJudge: { inNetwork: judgeIn, outNetwork: total - judgeIn, percentage: total > 0 ? Math.round((judgeIn / total) * 100) : 0 },
+        drStrachan: { inNetwork: strachanIn, outNetwork: total - strachanIn, percentage: total > 0 ? Math.round((strachanIn / total) * 100) : 0 }
+      };
+    })()
   };
 
   // Scorecard data
