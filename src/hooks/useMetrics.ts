@@ -69,6 +69,24 @@ interface FinancingMetrics {
   totalAmount: number;
 }
 
+interface AdvancedMetrics {
+  cac: number;
+  cashFlow: number;
+  churnedPatientsMonth: number;
+  cogs: {
+    assistantPayroll: number;
+    associateDoctorExpense: number;
+    dentalSupplies: number;
+    hygienePayroll: number;
+    labFees: number;
+    totalCOGS: number;
+  };
+  grossProfitMargin: number;
+  operatingCosts: number;
+  operatingProfitMargin: number;
+  revenueGrowthRate: number;
+}
+
 export interface MetricsData {
   dashboard: DashboardMetrics;
   payments: PaymentsMetrics;
@@ -76,6 +94,7 @@ export interface MetricsData {
   preAuths: PreAuthsMetrics;
   claims: ClaimsMetrics;
   financing: FinancingMetrics;
+  advanced: AdvancedMetrics;
 }
 
 export const useMetrics = (date: string) => {
@@ -122,6 +141,19 @@ export const useMetrics = (date: string) => {
         'cherry_amount',
         'care_credit_patients',
         'care_credit_amount',
+        // Advanced Business Metrics
+        'adv_cac',
+        'adv_cash_flow',
+        'adv_churned_patients_month',
+        'adv_cogs_assistant_payroll',
+        'adv_cogs_associate_doctor',
+        'adv_cogs_dental_supplies',
+        'adv_cogs_hygiene_payroll',
+        'adv_cogs_lab_fees',
+        'adv_gross_profit_margin',
+        'adv_operating_costs',
+        'adv_operating_profit_margin',
+        'adv_revenue_growth_rate',
       ];
 
       // Fetch latest values for persistent metrics if they're not in the current date's data
@@ -219,6 +251,28 @@ export const useMetrics = (date: string) => {
           careCreditAmount: getMetricValue('care_credit_amount', 0, true),
           totalPatients: getMetricValue('cherry_patients', 0, true) + getMetricValue('care_credit_patients', 0, true),
           totalAmount: getMetricValue('cherry_amount', 0, true) + getMetricValue('care_credit_amount', 0, true),
+        },
+        advanced: {
+          cac: getMetricValue('adv_cac', 0, true),
+          cashFlow: getMetricValue('adv_cash_flow', 0, true),
+          churnedPatientsMonth: getMetricValue('adv_churned_patients_month', 0, true),
+          cogs: {
+            assistantPayroll: getMetricValue('adv_cogs_assistant_payroll', 0, true),
+            associateDoctorExpense: getMetricValue('adv_cogs_associate_doctor', 0, true),
+            dentalSupplies: getMetricValue('adv_cogs_dental_supplies', 0, true),
+            hygienePayroll: getMetricValue('adv_cogs_hygiene_payroll', 0, true),
+            labFees: getMetricValue('adv_cogs_lab_fees', 0, true),
+            totalCOGS:
+              getMetricValue('adv_cogs_assistant_payroll', 0, true) +
+              getMetricValue('adv_cogs_associate_doctor', 0, true) +
+              getMetricValue('adv_cogs_dental_supplies', 0, true) +
+              getMetricValue('adv_cogs_hygiene_payroll', 0, true) +
+              getMetricValue('adv_cogs_lab_fees', 0, true),
+          },
+          grossProfitMargin: getMetricValue('adv_gross_profit_margin', 0, true),
+          operatingCosts: getMetricValue('adv_operating_costs', 0, true),
+          operatingProfitMargin: getMetricValue('adv_operating_profit_margin', 0, true),
+          revenueGrowthRate: getMetricValue('adv_revenue_growth_rate', 0, true),
         },
       };
 
