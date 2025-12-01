@@ -1686,8 +1686,52 @@ const CourtStreetRCM = () => {
               </div>
             </div>
           </div>
-        ) : currentView === 'claims' ? (
+        ) : currentView === 'patient-management' ? (
           <div className="space-y-6">
+            {/* Sub-navigation tabs */}
+            <div className={`rounded-lg shadow p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setPatientManagementView('claims')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'claims'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Claims
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('preauths')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'preauths'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Pre-Auths
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('patients')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'patients'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Patients
+                </button>
+              </div>
+            </div>
+
+            {patientManagementView === 'claims' && (
+              <>
             {/* Claims Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
@@ -1839,7 +1883,9 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
-          </div>
+            </>
+            )}
+
         ) : currentView === 'payments' ? (
           <div className="space-y-6">
             {/* Payments Header */}
@@ -2074,7 +2120,9 @@ const CourtStreetRCM = () => {
               </div>
             </div>
           </div>
-        ) : currentView === 'patients' ? (
+
+            {patientManagementView === 'patients' && (
+              <>
           <div className="space-y-6">
             {/* Patients Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
@@ -2258,7 +2306,11 @@ const CourtStreetRCM = () => {
               </div>
             </div>
           </div>
-        ) : currentView === 'preauths' ? (
+              </>
+            )}
+
+            {patientManagementView === 'preauths' && (
+              <>
           <div className="space-y-6">
             {/* Pre-Auths Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
@@ -2399,6 +2451,9 @@ const CourtStreetRCM = () => {
                 </p>
               </div>
             </div>
+          </div>
+              </>
+            )}
           </div>
         ) : currentView === 'insurance' ? (
           <div className="space-y-6">
