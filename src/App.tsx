@@ -1032,30 +1032,55 @@ const CourtStreetRCM = () => {
     }
   };
 
-  // Scorecard data
+  // Scorecard data - pulls from live data sources
   const scorecardData = {
-    productionGoal: 300000,
-    productionActual: 127126.53,
-    collectionGoal: 98,
-    collectionActual: 73,
-    newPatientsGoal: 30,
-    newPatientsActual: 14,
-    claimApprovalRate: 90,
-    avgDaysToPay: 0,
-    // Enhanced metrics
+    // Production metrics from BAM data
+    productionGoal: metricsData?.dashboard.practiceGoal ?? 300000,
+    productionActual: metricsData?.dashboard.bamCurrentRevenue ?? 0,
+
+    // Collection metrics from dashboard
+    collectionGoal: 98, // Target collection rate percentage
+    collectionActual: metricsData?.dashboard.collectionRate ?? 0,
+
+    // New patients from tracker
+    newPatientsGoal: newPatientTrackerData?.perMonthGoal ?? 30,
+    newPatientsActual: newPatientTrackerData?.perMonth ?? 0,
+
+    // Claim metrics - calculated from claims data
+    claimApprovalRate: (() => {
+      if (!metricsData || !metricsData.claims.totalActive) return 90;
+      const total = metricsData.claims.totalActive;
+      const denied = metricsData.claims.denied || 0;
+      return Math.round(((total - denied) / total) * 100);
+    })(),
+    avgDaysToPay: 0, // Can be added to Supabase csd_metric_values later
+
+    // Enhanced metrics - show rates (defaults until added to Supabase)
     avgShowRateDr: 77.5,
     avgShowRateDrTarget: 90,
     avgShowRateHyg: 49.3,
     avgShowRateHygTarget: 85,
-    avgNewPatientsPerWeek: 7,
+
+    // New patients per week from tracker
+    avgNewPatientsPerWeek: newPatientTrackerData?.perWeek ?? 0,
+
+    // Treatment acceptance (defaults until added to Supabase)
     txAcceptance: 52.6,
     txAcceptanceTarget: 50,
-    avgCollectionRate: 35,
+
+    // Collection rate from dashboard
+    avgCollectionRate: metricsData?.dashboard.collectionRate ?? 0,
     avgCollectionRateTarget: 100,
-    totalTxPresented: 196145.17,
-    totalTxAccepted: 68964.24,
-    totalNewPatients: 14,
-    fiveStarReviews: 36,
+
+    // Treatment totals (defaults until added to Supabase)
+    totalTxPresented: 0,
+    totalTxAccepted: 0,
+
+    // Monthly totals
+    totalNewPatients: newPatientTrackerData?.perMonth ?? 0,
+    fiveStarReviews: 0, // Can be added to Supabase csd_metric_values later
+
+    // Weekly data - defaults until added to Supabase
     weeklyData: [
       {
         week: 1,
@@ -1225,13 +1250,132 @@ const CourtStreetRCM = () => {
             <head>
               <title>EOD Report - ${dashboardDate}</title>
               <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f3f4f6; }
-                .header { color: #B8985F; font-size: 24px; margin-bottom: 10px; }
-                .section { margin: 20px 0; }
-                .metric { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+                @media print {
+                  @page { margin: 0.5in; }
+                  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                }
+
+                body {
+                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                  padding: 20px;
+                  color: #1f2937;
+                  background: white;
+                }
+
+                /* Report Header Styling */
+                .report-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding-bottom: 20px;
+                  margin-bottom: 30px;
+                  border-bottom: 3px solid #B8985F;
+                }
+
+                .report-header > div:first-child {
+                  display: flex;
+                  align-items: center;
+                  gap: 15px;
+                }
+
+                .report-header h1 {
+                  color: #B8985F;
+                  font-size: 28px;
+                  font-weight: bold;
+                  margin: 0;
+                }
+
+                .report-header h2 {
+                  font-size: 20px;
+                  font-weight: 600;
+                  margin: 0;
+                  color: #1f2937;
+                }
+
+                .report-header p {
+                  margin: 5px 0 0 0;
+                  font-size: 14px;
+                  color: #6b7280;
+                }
+
+                /* Logo styling */
+                .report-header > div:first-child > div:first-child {
+                  width: 64px;
+                  height: 64px;
+                  background-color: #B8985F;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                }
+
+                .report-header > div:first-child > div:first-child span {
+                  color: white;
+                  font-size: 24px;
+                  font-weight: bold;
+                }
+
+                table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin: 20px 0;
+                  font-size: 14px;
+                }
+
+                th, td {
+                  border: 1px solid #e5e7eb;
+                  padding: 10px;
+                  text-align: left;
+                }
+
+                th {
+                  background-color: #f9fafb;
+                  font-weight: 600;
+                  color: #374151;
+                }
+
+                .header {
+                  color: #B8985F;
+                  font-size: 20px;
+                  font-weight: 600;
+                  margin: 25px 0 15px 0;
+                }
+
+                .section {
+                  margin: 20px 0;
+                  page-break-inside: avoid;
+                }
+
+                .metric {
+                  display: inline-block;
+                  margin: 10px;
+                  padding: 15px;
+                  border: 2px solid #e5e7eb;
+                  border-radius: 8px;
+                  min-width: 200px;
+                }
+
+                /* Grid layouts for cards */
+                .grid {
+                  display: grid;
+                  gap: 15px;
+                  margin: 20px 0;
+                }
+
+                /* Improve card visibility in print */
+                [class*="bg-gradient"] {
+                  border: 2px solid #e5e7eb;
+                  padding: 15px;
+                  border-radius: 8px;
+                  margin-bottom: 10px;
+                  page-break-inside: avoid;
+                }
+
+                /* Hide certain UI elements in print */
+                button, .no-print {
+                  display: none !important;
+                }
               </style>
             </head>
             <body>
@@ -3490,7 +3634,7 @@ const CourtStreetRCM = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {scorecardData.weeklyData.map((week) => (
+                    {scorecardData.weeklyData.map((week: any) => (
                       <tr key={week.week} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="p-3 font-medium text-gray-900">{week.week}</td>
                         <td className="p-3 text-gray-700">{week.date}</td>
@@ -3535,7 +3679,7 @@ const CourtStreetRCM = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Show Rates</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week) => (
+                    {scorecardData.weeklyData.map((week: any) => (
                       <div key={`show-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
@@ -3570,7 +3714,7 @@ const CourtStreetRCM = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Treatment Acceptance</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week) => (
+                    {scorecardData.weeklyData.map((week: any) => (
                       <div key={`tx-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
@@ -4050,6 +4194,34 @@ const CourtStreetRCM = () => {
 
             {/* Wrap the entire report in a div with id for PDF export */}
             <div id="eod-report-content">
+              {/* Report Header with Logo - prints on export */}
+              <div className="report-header mb-6 pb-4 border-b-2" style={{ borderColor: csdGold }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {/* Logo placeholder - replace src with actual logo path when available */}
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full" style={{ backgroundColor: csdGold }}>
+                      <span className="text-2xl font-bold text-white">SC</span>
+                    </div>
+                    <div>
+                      <h1 className="text-3xl font-bold" style={{ color: csdGold }}>
+                        Stellar Consults
+                      </h1>
+                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                        Dental Revenue Cycle Management
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <h2 className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                      End of Day Report
+                    </h2>
+                    <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {eodData.reportDate}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             {/* Daily Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Daily Production */}
