@@ -16,6 +16,7 @@ import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
 import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
 import { generateInsights, Insight } from './services/aiInsights';
+import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDate } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 
@@ -128,31 +129,6 @@ const getBAMBusinessDaysBetween = (startDate: Date, endDate: Date) => {
   return count;
 };
 
-// Patient Name Masking Function (HIPAA Protection)
-const maskPatientName = (name: string, type: string) => {
-  // If it's an insurance payment, show full company name
-  if (type === 'Insurance') {
-    return name;
-  }
-
-  // For patient payments, mask to initials only
-  const nameParts = name.trim().split(' ');
-
-  if (nameParts.length === 0) {
-    return 'N/A';
-  }
-
-  if (nameParts.length === 1) {
-    // Only one name provided, show first initial
-    return `${nameParts[0].charAt(0).toUpperCase()}.`;
-  }
-
-  // Get first initial of first name and first initial of last name
-  const firstInitial = nameParts[0].charAt(0).toUpperCase();
-  const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
-
-  return `${firstInitial}. ${lastInitial}.`;
-};
 
 const calculateBAMCycle = (referenceStartDate: Date) => {
   const today = new Date();
@@ -560,6 +536,7 @@ const CourtStreetRCM = () => {
   const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
+  const [paymentInsights, setPaymentInsights] = useState<PaymentInsight[]>([]);
 
   // Top Procedures state
   const [topProcedures, setTopProcedures] = useState<any[]>([]);
@@ -864,6 +841,24 @@ const CourtStreetRCM = () => {
       setInsights(newInsights);
     }
   }, [metricsData, newPatientTrackerData]);
+
+  // Generate payment insights whenever payment metrics change
+  useEffect(() => {
+    if (metricsData && eodData) {
+      const newPaymentInsights = generatePaymentInsights(
+        metricsData.payments,
+        {
+          mtdProduction: eodData.monthToDateSummary.production,
+          mtdCollected: eodData.monthToDateSummary.collected,
+          mtdCollectionRate: eodData.monthToDateSummary.collectionRate,
+          paymentsCollected: eodData.paymentsCollected,
+          insurancePayments: eodData.insurancePayments,
+          patientPayments: eodData.patientPayments,
+        }
+      );
+      setPaymentInsights(newPaymentInsights);
+    }
+  }, [metricsData, eodData]);
 
   // Fetch top procedures for the selected date
   useEffect(() => {
@@ -4300,53 +4295,109 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
-            {/* Today's Payments Detail */}
+            {/* Payment Performance Insights */}
             <div className={`rounded-lg shadow p-6 mt-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Today's Payments - Detailed View
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-100 border-b-2 border-gray-200">
-                      <th className="text-left p-3 font-semibold text-gray-700">Time</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Patient/Payer</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Type</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Method</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Procedure</th>
-                      <th className="text-right p-3 font-semibold text-gray-700">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {eodData.payments.map((payment: any, index: number) => (
-                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="p-3 text-gray-700">{payment.time}</td>
-                        <td className="p-3 font-medium text-gray-900">{maskPatientName(payment.patient, payment.type)}</td>
-                        <td className="p-3">
-                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                            payment.type === 'Insurance' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                          }`}>
-                            {payment.type}
-                          </span>
-                        </td>
-                        <td className="p-3 text-gray-700">{payment.method}</td>
-                        <td className="p-3 text-gray-600 text-xs">{payment.procedure}</td>
-                        <td className="p-3 text-right font-bold text-gray-900">
-                          ${payment.amount.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-gray-100 border-t-2 border-gray-300">
-                      <td colSpan={5} className="p-3 text-right font-bold text-gray-700">Total:</td>
-                      <td className="p-3 text-right font-bold text-gray-900">
-                        ${eodData.paymentsCollected.toLocaleString()}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Payment Performance Insights
+                </h3>
+                <span className="text-xs text-gray-500">
+                  {paymentInsights.length} actionable insight{paymentInsights.length !== 1 ? 's' : ''}
+                </span>
               </div>
+
+              {paymentInsights.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {paymentInsights.map((insight) => {
+                    // Map icon names to icon components
+                    const IconComponent = {
+                      'TrendingUp': TrendingUp,
+                      'TrendingDown': TrendingUp,
+                      'AlertCircle': AlertCircle,
+                      'CheckCircle': CheckCircle,
+                      'XCircle': XCircle,
+                      'Activity': Activity,
+                      'Shield': Shield,
+                      'Users': Users,
+                      'Clock': Clock,
+                      'DollarSign': DollarSign,
+                      'ArrowDownCircle': ArrowDownCircle,
+                    }[insight.icon] || Activity;
+
+                    // Map insight types to color schemes
+                    const colorScheme = {
+                      'positive': {
+                        bg: 'bg-gradient-to-br from-green-50 to-green-100',
+                        border: 'border-green-300',
+                        icon: 'text-green-600',
+                        title: 'text-green-900',
+                        text: 'text-green-800',
+                        badge: 'bg-green-200 text-green-800'
+                      },
+                      'warning': {
+                        bg: 'bg-gradient-to-br from-amber-50 to-amber-100',
+                        border: 'border-amber-300',
+                        icon: 'text-amber-600',
+                        title: 'text-amber-900',
+                        text: 'text-amber-800',
+                        badge: 'bg-amber-200 text-amber-800'
+                      },
+                      'info': {
+                        bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
+                        border: 'border-blue-300',
+                        icon: 'text-blue-600',
+                        title: 'text-blue-900',
+                        text: 'text-blue-800',
+                        badge: 'bg-blue-200 text-blue-800'
+                      },
+                      'critical': {
+                        bg: 'bg-gradient-to-br from-red-50 to-red-100',
+                        border: 'border-red-300',
+                        icon: 'text-red-600',
+                        title: 'text-red-900',
+                        text: 'text-red-800',
+                        badge: 'bg-red-200 text-red-800'
+                      }
+                    }[insight.type];
+
+                    return (
+                      <div
+                        key={insight.id}
+                        className={`${colorScheme.bg} border-2 ${colorScheme.border} rounded-lg p-4 hover:shadow-lg transition-all`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <IconComponent className={`w-6 h-6 ${colorScheme.icon} flex-shrink-0 mt-0.5`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h4 className={`font-semibold text-sm ${colorScheme.title}`}>
+                                {insight.title}
+                              </h4>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${colorScheme.badge} flex-shrink-0`}>
+                                {insight.priority}
+                              </span>
+                            </div>
+                            <p className={`text-sm ${colorScheme.text} mb-2`}>
+                              {insight.message}
+                            </p>
+                            {insight.action && (
+                              <div className={`text-xs font-medium ${colorScheme.text} flex items-start gap-1.5 mt-2 pt-2 border-t ${colorScheme.border}`}>
+                                <ArrowUpCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                <span>{insight.action}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No payment insights available for this date</p>
+                  <p className="text-sm mt-1">Insights will appear as payment data is collected</p>
+                </div>
+              )}
             </div>
 
             {/* Actionable Insights */}
