@@ -33,13 +33,18 @@ export const useNewPatientTracker = (dailyCount: number) => {
       setLoading(true);
       setError(null);
 
+      console.log('[NP Tracker] Fetching new patient data...');
+      console.log('[NP Tracker] Daily count passed to hook:', dailyCount);
+
       // Try to fetch from monthly_metric_trends table first (faster)
       let monthlyData = await getMonthlyTrends('eod_new_patients', 6);
+      console.log('[NP Tracker] Monthly trends data:', monthlyData);
 
       // If monthly trends table doesn't have data, fall back to daily aggregation
       if (monthlyData.length === 0) {
-        console.log('No data in monthly_metric_trends, aggregating from daily values');
+        console.log('[NP Tracker] No data in monthly_metric_trends, aggregating from daily values');
         const dailyMonthlyData = await getNewPatientsByMonth(6);
+        console.log('[NP Tracker] Daily aggregation result:', dailyMonthlyData);
         monthlyData = dailyMonthlyData.map(m => ({
           month: m.month,
           year: m.year,
@@ -50,7 +55,7 @@ export const useNewPatientTracker = (dailyCount: number) => {
 
       // If still no data, use sample/fallback data so the chart isn't empty
       if (monthlyData.length === 0) {
-        console.log('No data found in Supabase, using sample fallback data');
+        console.log('[NP Tracker] No data found in Supabase, using sample fallback data');
         // Generate last 6 months with sample data
         monthlyData = [];
         const now = new Date();
@@ -66,15 +71,18 @@ export const useNewPatientTracker = (dailyCount: number) => {
             goal: 40
           });
         }
+        console.log('[NP Tracker] Generated fallback monthly data:', monthlyData);
       }
 
       // Fetch aggregated data for week/month/quarter
       const aggregates = await getNewPatientsAggregates();
+      console.log('[NP Tracker] Aggregates from Supabase:', aggregates);
 
       // If aggregates are all zero, use sample data
       const hasAggregateData = aggregates.perWeek > 0 || aggregates.perMonth > 0 || aggregates.quarterly > 0;
+      console.log('[NP Tracker] Has aggregate data:', hasAggregateData);
 
-      setData({
+      const finalData = {
         perDay: dailyCount,
         perDayGoal: 2,
         perWeek: hasAggregateData ? aggregates.perWeek : 3,
@@ -84,7 +92,10 @@ export const useNewPatientTracker = (dailyCount: number) => {
         quarterly: hasAggregateData ? aggregates.quarterly : 43,
         quarterlyGoal: 120,
         monthlyAverages: monthlyData.map(m => ({ month: m.month, count: m.count }))
-      });
+      };
+
+      console.log('[NP Tracker] Final data to display:', finalData);
+      setData(finalData);
     } catch (err) {
       console.error('Error fetching new patient tracker data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch new patient data');
