@@ -978,15 +978,16 @@ const CourtStreetRCM = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { id: 'claims', name: 'Claims', icon: FileText },
+    { id: 'patient-management', name: 'Patient Management', icon: Users },
     { id: 'payments', name: 'Payments', icon: DollarSign },
-    { id: 'patients', name: 'Patients', icon: Users },
-    { id: 'preauths', name: 'Pre-Auths', icon: FileText },
     { id: 'insurance', name: 'Insurance', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'checklist', name: 'Checklist', icon: List },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar }
   ];
+
+  // Sub-navigation for Patient Management tab
+  const [patientManagementView, setPatientManagementView] = useState('claims');
 
   // Helper function to export PDF
   const exportToPDF = () => {
