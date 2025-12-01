@@ -1341,7 +1341,7 @@ const CourtStreetRCM = () => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsDayMode(!isDayMode)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all shadow-md ${
                   isDayMode
                     ? 'bg-gray-800 text-white hover:bg-gray-700'
                     : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
@@ -1350,12 +1350,12 @@ const CourtStreetRCM = () => {
                 {isDayMode ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    Night Mode
+                    <span className="text-sm font-medium">Night Mode</span>
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" />
-                    Day Mode
+                    <span className="text-sm font-medium">Day Mode</span>
                   </>
                 )}
               </button>
@@ -1363,9 +1363,9 @@ const CourtStreetRCM = () => {
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md font-medium"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-5 h-5" />
                 <span className="text-sm font-medium">Task Board</span>
               </a>
               <div className="text-right">
