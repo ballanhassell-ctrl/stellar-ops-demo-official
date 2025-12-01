@@ -8,6 +8,7 @@ import {
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
 import { useProviderMetrics } from './hooks/useProviderMetrics';
+import { useNewPatientTracker } from './hooks/useNewPatientTracker';
 import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 
@@ -356,6 +357,7 @@ const CourtStreetRCM = () => {
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
+  const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: _refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
@@ -934,51 +936,33 @@ const CourtStreetRCM = () => {
 
   // EOD Report data (now managed by state - see above)
 
-  // Claims data
+  // Claims data - using Supabase data when available, fallback to defaults
   const claimsData = {
-    totalActive: 283,
-    pending: 201,
-    denied: 0,
-    overSixtyDays: 54,
+    totalActive: metricsData?.claims.totalActive ?? 283,
+    pending: metricsData?.claims.pending ?? 201,
+    denied: metricsData?.claims.denied ?? 0,
+    overSixtyDays: metricsData?.claims.overSixtyDays ?? 54,
     arAging: {
-      zeroToThirty: { amount: 143767.80, count: 284 },
-      thirtyOneToSixty: { amount: 21870.99, count: 32 },
-      sixtyOneToNinety: { amount: 22570.01, count: 21 },
-      ninetyPlus: { amount: 35995.39, count: 33 }
+      zeroToThirty: {
+        amount: metricsData?.claims.arAging.zeroToThirty.amount ?? 143767.80,
+        count: metricsData?.claims.arAging.zeroToThirty.count ?? 284
+      },
+      thirtyOneToSixty: {
+        amount: metricsData?.claims.arAging.thirtyOneToSixty.amount ?? 21870.99,
+        count: metricsData?.claims.arAging.thirtyOneToSixty.count ?? 32
+      },
+      sixtyOneToNinety: {
+        amount: metricsData?.claims.arAging.sixtyOneToNinety.amount ?? 22570.01,
+        count: metricsData?.claims.arAging.sixtyOneToNinety.count ?? 21
+      },
+      ninetyPlus: {
+        amount: metricsData?.claims.arAging.ninetyPlus.amount ?? 35995.39,
+        count: metricsData?.claims.arAging.ninetyPlus.count ?? 33
+      }
     }
   };
 
-  // Helper function to get last 6 months
-  const getLastSixMonths = () => {
-    const months = [];
-    const today = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      months.push({ month: monthName, count: 0 });
-    }
-    return months;
-  };
-
-  // New Patient Tracker data (synced with eodData.newPatients for daily value)
-  const newPatientTrackerData = {
-    perDay: eodData?.newPatients || 0, // Synced with EOD data
-    perDayGoal: 2,
-    perWeek: 7,
-    perWeekGoal: 10,
-    perMonth: 14,
-    perMonthGoal: 40,
-    quarterly: 43,
-    quarterlyGoal: 120,
-    monthlyAverages: [
-      { month: getLastSixMonths()[0].month, count: 33 },
-      { month: getLastSixMonths()[1].month, count: 22 },
-      { month: getLastSixMonths()[2].month, count: 22 },
-      { month: getLastSixMonths()[3].month, count: 26 },
-      { month: getLastSixMonths()[4].month, count: 29 },
-      { month: getLastSixMonths()[5].month, count: 14 }
-    ]
-  };
+  // New Patient Tracker data is now managed by the useNewPatientTracker hook above
 
   // Third Party Financing data
   const thirdPartyFinancingData = {
@@ -994,15 +978,16 @@ const CourtStreetRCM = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { id: 'claims', name: 'Claims', icon: FileText },
+    { id: 'patient-management', name: 'Patient Management', icon: Users },
     { id: 'payments', name: 'Payments', icon: DollarSign },
-    { id: 'patients', name: 'Patients', icon: Users },
-    { id: 'preauths', name: 'Pre-Auths', icon: FileText },
     { id: 'insurance', name: 'Insurance', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'checklist', name: 'Checklist', icon: List },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar }
   ];
+
+  // Sub-navigation for Patient Management tab
+  const [patientManagementView, setPatientManagementView] = useState('claims');
 
   // Helper function to export PDF
   const exportToPDF = () => {
@@ -1701,8 +1686,52 @@ const CourtStreetRCM = () => {
               </div>
             </div>
           </div>
-        ) : currentView === 'claims' ? (
+        ) : currentView === 'patient-management' ? (
           <div className="space-y-6">
+            {/* Sub-navigation tabs */}
+            <div className={`rounded-lg shadow p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setPatientManagementView('claims')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'claims'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Claims
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('preauths')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'preauths'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Pre-Auths
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('patients')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'patients'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Patients
+                </button>
+              </div>
+            </div>
+
+            {patientManagementView === 'claims' && (
+              <>
             {/* Claims Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
@@ -1854,7 +1883,9 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
-          </div>
+            </>
+            )}
+
         ) : currentView === 'payments' ? (
           <div className="space-y-6">
             {/* Payments Header */}
@@ -2089,7 +2120,9 @@ const CourtStreetRCM = () => {
               </div>
             </div>
           </div>
-        ) : currentView === 'patients' ? (
+
+            {patientManagementView === 'patients' && (
+              <>
           <div className="space-y-6">
             {/* Patients Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
@@ -2273,7 +2306,11 @@ const CourtStreetRCM = () => {
               </div>
             </div>
           </div>
-        ) : currentView === 'preauths' ? (
+              </>
+            )}
+
+            {patientManagementView === 'preauths' && (
+              <>
           <div className="space-y-6">
             {/* Pre-Auths Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
@@ -2414,6 +2451,9 @@ const CourtStreetRCM = () => {
                 </p>
               </div>
             </div>
+          </div>
+              </>
+            )}
           </div>
         ) : currentView === 'insurance' ? (
           <div className="space-y-6">

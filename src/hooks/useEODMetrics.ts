@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
 
 export interface EODData {
   reportDate: string;
@@ -58,10 +58,23 @@ export const useEODMetrics = (date: string) => {
 
       const metrics = await getMetricsForDate(date);
 
+      // Define persistent metrics for EOD data (metrics that should show latest value)
+      const persistentMetrics = ['eod_new_patients'];
+
+      // Fetch latest values for persistent metrics
+      const latestValues = await getLatestMetricValues(persistentMetrics);
+
       // Helper function to find metric value by field_key
-      const getMetricValue = (fieldKey: string, defaultValue: number = 0): number => {
+      const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
         const metric = metrics.find(m => m.field_key === fieldKey);
-        return metric ? metric.value : defaultValue;
+        const currentValue = metric ? metric.value : 0;
+
+        // If this is a persistent metric and we don't have data for the current date, use latest
+        if (usePersistent && currentValue === 0 && latestValues.has(fieldKey)) {
+          return latestValues.get(fieldKey) || defaultValue;
+        }
+
+        return currentValue || defaultValue;
       };
 
       // Map the flat metrics array to EOD data structure
@@ -103,7 +116,7 @@ export const useEODMetrics = (date: string) => {
 
         // Daily Metrics
         patientsSeenToday: getMetricValue('eod_patients_seen'),
-        newPatients: getMetricValue('eod_new_patients'),
+        newPatients: getMetricValue('eod_new_patients', 0, true), // Use persistent data
         proceduresCompleted: getMetricValue('eod_procedures_completed'),
         unbilledProcedures: getMetricValue('eod_unbilled_procedures'),
         unappliedPayments: getMetricValue('eod_unapplied_payments'),
