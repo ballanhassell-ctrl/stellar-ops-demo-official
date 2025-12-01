@@ -553,7 +553,6 @@ const CourtStreetRCM = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('full');
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
-  const [showFinancingModal, setShowFinancingModal] = useState(false);
   const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
 
@@ -2741,21 +2740,10 @@ const CourtStreetRCM = () => {
 
             {/* Third Party Financing */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold" style={{ color: csdGold }}>
-                    Third Party Financing
-                  </h3>
-                  <p className="text-sm text-gray-600">Past 30 Days</p>
-                </div>
-                <button
-                  onClick={() => setShowFinancingModal(true)}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Update Data
-                </button>
-              </div>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Third Party Financing
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">Current Month (Most Recent Data)</p>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Cherry Financing */}
@@ -5110,18 +5098,6 @@ const CourtStreetRCM = () => {
             </div>
           </div>
         )}
-
-        {/* Third Party Financing Modal */}
-        <ThirdPartyFinancingModal
-          isOpen={showFinancingModal}
-          onClose={() => setShowFinancingModal(false)}
-          onSave={() => {
-            // Refresh metrics after saving
-            refreshMetrics();
-          }}
-          currentDate={dashboardDate}
-          isDayMode={isDayMode}
-        />
 
         {/* Top Procedures Modal */}
         <TopProceduresModal
