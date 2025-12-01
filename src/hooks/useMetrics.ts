@@ -83,6 +83,8 @@ export const useMetrics = (date: string) => {
       // Define persistent metrics that should use latest values if not found for current date
       const persistentMetrics = [
         'bam_current_revenue',
+        'bam_target_goal',
+        'practice_goal',
         'active_patients',
         'collection_rate',
         'outstanding_ar',
@@ -117,8 +119,8 @@ export const useMetrics = (date: string) => {
       const mappedData: MetricsData = {
         dashboard: {
           bamCurrentRevenue: getMetricValue('bam_current_revenue', 0, true),
-          bamTargetGoal: getMetricValue('bam_target_goal'),
-          practiceGoal: getMetricValue('practice_goal'),
+          bamTargetGoal: getMetricValue('bam_target_goal', 224548, true),
+          practiceGoal: getMetricValue('practice_goal', 300000, true),
           collectionRate: getMetricValue('collection_rate', 0, true),
           activePatients: getMetricValue('active_patients', 0, true),
           activeClaims: getMetricValue('active_claims'),
