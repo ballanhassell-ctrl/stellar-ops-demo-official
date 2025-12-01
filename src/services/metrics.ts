@@ -277,6 +277,58 @@ export async function getNewPatientsAggregates() {
   }
 }
 
+/**
+ * Aggregates payment totals for various time periods
+ */
+export async function getPaymentAggregates() {
+  try {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    // Calculate date ranges
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    const monthStart = new Date(currentYear, currentMonth, 1);
+
+    // Fetch data for each period
+    const [weekData, monthData] = await Promise.all([
+      // Last 7 days
+      supabase
+        .from('csd_metric_values')
+        .select('value')
+        .eq('field_key', 'todays_payments')
+        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0]),
+
+      // Current month
+      supabase
+        .from('csd_metric_values')
+        .select('value')
+        .eq('field_key', 'todays_payments')
+        .gte('as_of_date', monthStart.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0]),
+    ]);
+
+    // Sum up the values
+    const sumValues = (data: any) => {
+      return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+    };
+
+    return {
+      perWeek: sumValues(weekData),
+      perMonth: sumValues(monthData),
+    };
+  } catch (err) {
+    console.error('Error in getPaymentAggregates:', err);
+    return {
+      perWeek: 0,
+      perMonth: 0,
+    };
+  }
+}
+
 export async function getMetricsForDate(date: string) {
   console.log('Fetching metrics for date:', date);
 

@@ -972,14 +972,14 @@ const CourtStreetRCM = () => {
 
   // New Patient Tracker data is now managed by the useNewPatientTracker hook above
 
-  // Third Party Financing data
-  const thirdPartyFinancingData = {
-    cherryPatients: 2,
-    careCreditPatients: 3,
-    cherryAmount: 8898.80,
-    careCreditAmount: 4052.40,
-    totalPatients: 5,
-    totalAmount: 12951.20
+  // Third Party Financing data - now comes from metricsData.financing
+  const thirdPartyFinancingData = metricsData?.financing || {
+    cherryPatients: 0,
+    careCreditPatients: 0,
+    cherryAmount: 0,
+    careCreditAmount: 0,
+    totalPatients: 0,
+    totalAmount: 0
   };
 
   // Daily Production by Provider data (now managed by state - see above)
@@ -1894,241 +1894,6 @@ const CourtStreetRCM = () => {
             </>
             )}
 
-        ) : currentView === 'payments' ? (
-          <div className="space-y-6">
-            {/* Payments Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
-                Payment Processing & Reconciliation
-              </h2>
-
-              {/* Payment Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Today's Payments */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-700 mb-1">Today's Payments</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        ${paymentsData.todaysPayments.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-green-600 mt-2">Posted today</p>
-                    </div>
-                    <DollarSign className="w-8 h-8 text-green-500" />
-                  </div>
-                </div>
-
-                {/* Weekly Payments */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Weekly Payments</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        ${paymentsData.weeklyPayments.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">Last 7 days</p>
-                    </div>
-                    <TrendingUp className="w-8 h-8 text-blue-500" />
-                  </div>
-                </div>
-
-                {/* Monthly Payments */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-700 mb-1">Monthly Payments</p>
-                      <p className="text-3xl font-bold text-purple-900">
-                        ${paymentsData.monthlyPayments.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-2">This month</p>
-                    </div>
-                    <Activity className="w-8 h-8 text-purple-500" />
-                  </div>
-                </div>
-
-                {/* Pending Deposits */}
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-yellow-700 mb-1">Pending Deposits</p>
-                      <p className="text-3xl font-bold text-yellow-900">
-                        ${paymentsData.pendingDeposits.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-yellow-600 mt-2">Awaiting deposit</p>
-                    </div>
-                    <Clock className="w-8 h-8 text-yellow-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Payment Sources */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Payment Sources
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-3">
-                      <Shield className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Insurance Payments</p>
-                        <p className="text-xs text-gray-500">EOB reconciliation</p>
-                      </div>
-                    </div>
-                    <p className="text-xl font-bold text-blue-900">
-                      ${paymentsData.insurancePayments.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center space-x-3">
-                      <Users className="w-6 h-6 text-green-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Patient Payments</p>
-                        <p className="text-xs text-gray-500">Direct patient collections</p>
-                      </div>
-                    </div>
-                    <p className="text-xl font-bold text-green-900">
-                      ${paymentsData.patientPayments.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Actions */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Action Items
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
-                    <div className="flex items-center space-x-3">
-                      <CreditCard className="w-5 h-5 text-orange-600" />
-                      <span className="text-sm font-medium text-gray-700">Unapplied Credits</span>
-                    </div>
-                    <span className="text-lg font-bold text-orange-900">
-                      ${paymentsData.unappliedCredits.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center space-x-3">
-                      <ArrowUpCircle className="w-5 h-5 text-red-600" />
-                      <span className="text-sm font-medium text-gray-700">Refunds Pending</span>
-                    </div>
-                    <span className="text-lg font-bold text-red-900">
-                      ${paymentsData.refundsPending.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Payment Activity */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Recent Payment Activity
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 border-b border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <ArrowDownCircle className="w-5 h-5 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">No recent payments</p>
-                      <p className="text-xs text-gray-500">Awaiting payment data</p>
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-500">--</span>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg text-center">
-                  <p className="text-sm text-gray-600">
-                    Payment activity will appear here as transactions are processed
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Third Party Financing */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Third Party Financing
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">Past 30 Days</p>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Cherry Financing */}
-                <div className="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-300 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h4 className="text-lg font-bold text-pink-900 mb-1">Cherry</h4>
-                      <p className="text-xs text-pink-700">Financing Platform</p>
-                    </div>
-                    <CreditCard className="w-8 h-8 text-pink-600" />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-pink-700">Patients Financed</span>
-                      <span className="text-2xl font-bold text-pink-900">
-                        {thirdPartyFinancingData.cherryPatients}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-pink-200">
-                      <span className="text-sm font-medium text-pink-700">Total Amount</span>
-                      <span className="text-xl font-bold text-pink-900">
-                        ${thirdPartyFinancingData.cherryAmount.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CareCredit Financing */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h4 className="text-lg font-bold text-teal-900 mb-1">CareCredit</h4>
-                      <p className="text-xs text-teal-700">Financing Platform</p>
-                    </div>
-                    <CreditCard className="w-8 h-8 text-teal-600" />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-teal-700">Patients Financed</span>
-                      <span className="text-2xl font-bold text-teal-900">
-                        {thirdPartyFinancingData.careCreditPatients}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-teal-200">
-                      <span className="text-sm font-medium text-teal-700">Total Amount</span>
-                      <span className="text-xl font-bold text-teal-900">
-                        ${thirdPartyFinancingData.careCreditAmount.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Combined Summary */}
-              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-6">
-                <h4 className="text-sm font-semibold text-indigo-900 mb-4">Combined Financing Summary</h4>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-indigo-700 mb-1">Total Patients</p>
-                    <p className="text-3xl font-bold text-indigo-900">
-                      {thirdPartyFinancingData.totalPatients}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-indigo-700 mb-1">Total Financed</p>
-                    <p className="text-3xl font-bold text-indigo-900">
-                      ${thirdPartyFinancingData.totalAmount.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
             {patientManagementView === 'patients' && (
               <>
           <div className="space-y-6">
@@ -2462,6 +2227,240 @@ const CourtStreetRCM = () => {
           </div>
               </>
             )}
+          </div>
+        ) : currentView === 'payments' ? (
+          <div className="space-y-6">
+            {/* Payments Header */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                Payment Processing & Reconciliation
+              </h2>
+
+              {/* Payment Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Today's Payments */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-700 mb-1">Today's Payments</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        ${paymentsData.todaysPayments.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-green-600 mt-2">Posted today</p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-green-500" />
+                  </div>
+                </div>
+
+                {/* Weekly Payments */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-700 mb-1">Weekly Payments</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        ${paymentsData.weeklyPayments.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">Last 7 days</p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-blue-500" />
+                  </div>
+                </div>
+
+                {/* Monthly Payments */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-700 mb-1">Monthly Payments</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        ${paymentsData.monthlyPayments.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-2">This month</p>
+                    </div>
+                    <Activity className="w-8 h-8 text-purple-500" />
+                  </div>
+                </div>
+
+                {/* Pending Deposits */}
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-yellow-700 mb-1">Pending Deposits</p>
+                      <p className="text-3xl font-bold text-yellow-900">
+                        ${paymentsData.pendingDeposits.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-yellow-600 mt-2">Awaiting deposit</p>
+                    </div>
+                    <Clock className="w-8 h-8 text-yellow-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Payment Sources */}
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Payment Sources
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <Shield className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Insurance Payments</p>
+                        <p className="text-xs text-gray-500">EOB reconciliation</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-blue-900">
+                      ${paymentsData.insurancePayments.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center space-x-3">
+                      <Users className="w-6 h-6 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Patient Payments</p>
+                        <p className="text-xs text-gray-500">Direct patient collections</p>
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-green-900">
+                      ${paymentsData.patientPayments.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Actions */}
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Action Items
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center space-x-3">
+                      <CreditCard className="w-5 h-5 text-orange-600" />
+                      <span className="text-sm font-medium text-gray-700">Unapplied Credits</span>
+                    </div>
+                    <span className="text-lg font-bold text-orange-900">
+                      ${paymentsData.unappliedCredits.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center space-x-3">
+                      <ArrowUpCircle className="w-5 h-5 text-red-600" />
+                      <span className="text-sm font-medium text-gray-700">Refunds Pending</span>
+                    </div>
+                    <span className="text-lg font-bold text-red-900">
+                      ${paymentsData.refundsPending.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Payment Activity */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Recent Payment Activity
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 border-b border-gray-200">
+                  <div className="flex items-center space-x-3">
+                    <ArrowDownCircle className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">No recent payments</p>
+                      <p className="text-xs text-gray-500">Awaiting payment data</p>
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-500">--</span>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-600">
+                    Payment activity will appear here as transactions are processed
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Third Party Financing */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Third Party Financing
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">Past 30 Days</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Cherry Financing */}
+                <div className="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-300 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-pink-900 mb-1">Cherry</h4>
+                      <p className="text-xs text-pink-700">Financing Platform</p>
+                    </div>
+                    <CreditCard className="w-8 h-8 text-pink-600" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-pink-700">Patients Financed</span>
+                      <span className="text-2xl font-bold text-pink-900">
+                        {thirdPartyFinancingData.cherryPatients}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-pink-200">
+                      <span className="text-sm font-medium text-pink-700">Total Amount</span>
+                      <span className="text-xl font-bold text-pink-900">
+                        ${thirdPartyFinancingData.cherryAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CareCredit Financing */}
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-teal-900 mb-1">CareCredit</h4>
+                      <p className="text-xs text-teal-700">Financing Platform</p>
+                    </div>
+                    <CreditCard className="w-8 h-8 text-teal-600" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-teal-700">Patients Financed</span>
+                      <span className="text-2xl font-bold text-teal-900">
+                        {thirdPartyFinancingData.careCreditPatients}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-teal-200">
+                      <span className="text-sm font-medium text-teal-700">Total Amount</span>
+                      <span className="text-xl font-bold text-teal-900">
+                        ${thirdPartyFinancingData.careCreditAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Combined Summary */}
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-6">
+                <h4 className="text-sm font-semibold text-indigo-900 mb-4">Combined Financing Summary</h4>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-indigo-700 mb-1">Total Patients</p>
+                    <p className="text-3xl font-bold text-indigo-900">
+                      {thirdPartyFinancingData.totalPatients}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-indigo-700 mb-1">Total Financed</p>
+                    <p className="text-3xl font-bold text-indigo-900">
+                      ${thirdPartyFinancingData.totalAmount.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : currentView === 'insurance' ? (
           <div className="space-y-6">

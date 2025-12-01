@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates } from '../services/metrics';
 
 interface DashboardMetrics {
   bamCurrentRevenue: number;
@@ -60,12 +60,22 @@ interface ClaimsMetrics {
   };
 }
 
+interface FinancingMetrics {
+  cherryPatients: number;
+  cherryAmount: number;
+  careCreditPatients: number;
+  careCreditAmount: number;
+  totalPatients: number;
+  totalAmount: number;
+}
+
 export interface MetricsData {
   dashboard: DashboardMetrics;
   payments: PaymentsMetrics;
   patients: PatientsMetrics;
   preAuths: PreAuthsMetrics;
   claims: ClaimsMetrics;
+  financing: FinancingMetrics;
 }
 
 export const useMetrics = (date: string) => {
@@ -88,6 +98,11 @@ export const useMetrics = (date: string) => {
         'active_patients',
         'collection_rate',
         'outstanding_ar',
+        // Claims metrics
+        'active_claims',
+        'claims_pending',
+        'claims_denied',
+        'claims_over_sixty_days',
         'insurance_ar_0_30_amount',
         'insurance_ar_31_60_amount',
         'insurance_ar_61_90_amount',
@@ -96,10 +111,24 @@ export const useMetrics = (date: string) => {
         'insurance_ar_31_60_count',
         'insurance_ar_61_90_count',
         'insurance_ar_90_plus_count',
+        // Payment metrics (persistent ones - not daily/weekly/monthly aggregates)
+        'pending_deposits',
+        'insurance_payments',
+        'patient_payments',
+        'unapplied_credits',
+        'refunds_pending',
+        // Third party financing metrics
+        'cherry_patients',
+        'cherry_amount',
+        'care_credit_patients',
+        'care_credit_amount',
       ];
 
       // Fetch latest values for persistent metrics if they're not in the current date's data
       const latestValues = await getLatestMetricValues(persistentMetrics);
+
+      // Fetch aggregated payment data for weekly/monthly totals
+      const paymentAggregates = await getPaymentAggregates();
 
       // Helper function to find metric value by field_key
       // For persistent metrics, use latest value if current date doesn't have data
@@ -129,13 +158,13 @@ export const useMetrics = (date: string) => {
         },
         payments: {
           todaysPayments: getMetricValue('todays_payments'),
-          weeklyPayments: getMetricValue('weekly_payments'),
-          monthlyPayments: getMetricValue('monthly_payments'),
-          pendingDeposits: getMetricValue('pending_deposits'),
-          insurancePayments: getMetricValue('insurance_payments'),
-          patientPayments: getMetricValue('patient_payments'),
-          unappliedCredits: getMetricValue('unapplied_credits'),
-          refundsPending: getMetricValue('refunds_pending'),
+          weeklyPayments: paymentAggregates.perWeek,
+          monthlyPayments: paymentAggregates.perMonth,
+          pendingDeposits: getMetricValue('pending_deposits', 0, true),
+          insurancePayments: getMetricValue('insurance_payments', 0, true),
+          patientPayments: getMetricValue('patient_payments', 0, true),
+          unappliedCredits: getMetricValue('unapplied_credits', 0, true),
+          refundsPending: getMetricValue('refunds_pending', 0, true),
         },
         patients: {
           totalPatients: getMetricValue('total_patients'),
@@ -160,10 +189,10 @@ export const useMetrics = (date: string) => {
           expiringThisMonth: getMetricValue('pre_auths_expiring_this_month'),
         },
         claims: {
-          totalActive: getMetricValue('active_claims'),
-          pending: getMetricValue('claims_pending'),
-          denied: getMetricValue('claims_denied'),
-          overSixtyDays: getMetricValue('claims_over_sixty_days'),
+          totalActive: getMetricValue('active_claims', 0, true),
+          pending: getMetricValue('claims_pending', 0, true),
+          denied: getMetricValue('claims_denied', 0, true),
+          overSixtyDays: getMetricValue('claims_over_sixty_days', 0, true),
           arAging: {
             zeroToThirty: {
               amount: getMetricValue('insurance_ar_0_30_amount', 0, true),
@@ -182,6 +211,14 @@ export const useMetrics = (date: string) => {
               count: getMetricValue('insurance_ar_90_plus_count', 0, true),
             },
           },
+        },
+        financing: {
+          cherryPatients: getMetricValue('cherry_patients', 0, true),
+          cherryAmount: getMetricValue('cherry_amount', 0, true),
+          careCreditPatients: getMetricValue('care_credit_patients', 0, true),
+          careCreditAmount: getMetricValue('care_credit_amount', 0, true),
+          totalPatients: getMetricValue('cherry_patients', 0, true) + getMetricValue('care_credit_patients', 0, true),
+          totalAmount: getMetricValue('cherry_amount', 0, true) + getMetricValue('care_credit_amount', 0, true),
         },
       };
 
