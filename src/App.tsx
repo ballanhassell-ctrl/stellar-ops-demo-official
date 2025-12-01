@@ -1225,13 +1225,132 @@ const CourtStreetRCM = () => {
             <head>
               <title>EOD Report - ${dashboardDate}</title>
               <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f3f4f6; }
-                .header { color: #B8985F; font-size: 24px; margin-bottom: 10px; }
-                .section { margin: 20px 0; }
-                .metric { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+                @media print {
+                  @page { margin: 0.5in; }
+                  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                }
+
+                body {
+                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                  padding: 20px;
+                  color: #1f2937;
+                  background: white;
+                }
+
+                /* Report Header Styling */
+                .report-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding-bottom: 20px;
+                  margin-bottom: 30px;
+                  border-bottom: 3px solid #B8985F;
+                }
+
+                .report-header > div:first-child {
+                  display: flex;
+                  align-items: center;
+                  gap: 15px;
+                }
+
+                .report-header h1 {
+                  color: #B8985F;
+                  font-size: 28px;
+                  font-weight: bold;
+                  margin: 0;
+                }
+
+                .report-header h2 {
+                  font-size: 20px;
+                  font-weight: 600;
+                  margin: 0;
+                  color: #1f2937;
+                }
+
+                .report-header p {
+                  margin: 5px 0 0 0;
+                  font-size: 14px;
+                  color: #6b7280;
+                }
+
+                /* Logo styling */
+                .report-header > div:first-child > div:first-child {
+                  width: 64px;
+                  height: 64px;
+                  background-color: #B8985F;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                }
+
+                .report-header > div:first-child > div:first-child span {
+                  color: white;
+                  font-size: 24px;
+                  font-weight: bold;
+                }
+
+                table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin: 20px 0;
+                  font-size: 14px;
+                }
+
+                th, td {
+                  border: 1px solid #e5e7eb;
+                  padding: 10px;
+                  text-align: left;
+                }
+
+                th {
+                  background-color: #f9fafb;
+                  font-weight: 600;
+                  color: #374151;
+                }
+
+                .header {
+                  color: #B8985F;
+                  font-size: 20px;
+                  font-weight: 600;
+                  margin: 25px 0 15px 0;
+                }
+
+                .section {
+                  margin: 20px 0;
+                  page-break-inside: avoid;
+                }
+
+                .metric {
+                  display: inline-block;
+                  margin: 10px;
+                  padding: 15px;
+                  border: 2px solid #e5e7eb;
+                  border-radius: 8px;
+                  min-width: 200px;
+                }
+
+                /* Grid layouts for cards */
+                .grid {
+                  display: grid;
+                  gap: 15px;
+                  margin: 20px 0;
+                }
+
+                /* Improve card visibility in print */
+                [class*="bg-gradient"] {
+                  border: 2px solid #e5e7eb;
+                  padding: 15px;
+                  border-radius: 8px;
+                  margin-bottom: 10px;
+                  page-break-inside: avoid;
+                }
+
+                /* Hide certain UI elements in print */
+                button, .no-print {
+                  display: none !important;
+                }
               </style>
             </head>
             <body>
@@ -4050,6 +4169,34 @@ const CourtStreetRCM = () => {
 
             {/* Wrap the entire report in a div with id for PDF export */}
             <div id="eod-report-content">
+              {/* Report Header with Logo - prints on export */}
+              <div className="report-header mb-6 pb-4 border-b-2" style={{ borderColor: csdGold }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {/* Logo placeholder - replace src with actual logo path when available */}
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full" style={{ backgroundColor: csdGold }}>
+                      <span className="text-2xl font-bold text-white">SC</span>
+                    </div>
+                    <div>
+                      <h1 className="text-3xl font-bold" style={{ color: csdGold }}>
+                        Stellar Consults
+                      </h1>
+                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                        Dental Revenue Cycle Management
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <h2 className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                      End of Day Report
+                    </h2>
+                    <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {eodData.reportDate}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             {/* Daily Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Daily Production */}
