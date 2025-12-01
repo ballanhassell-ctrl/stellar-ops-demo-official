@@ -1032,30 +1032,55 @@ const CourtStreetRCM = () => {
     }
   };
 
-  // Scorecard data
+  // Scorecard data - pulls from live data sources
   const scorecardData = {
-    productionGoal: 300000,
-    productionActual: 127126.53,
-    collectionGoal: 98,
-    collectionActual: 73,
-    newPatientsGoal: 30,
-    newPatientsActual: 14,
-    claimApprovalRate: 90,
-    avgDaysToPay: 0,
-    // Enhanced metrics
+    // Production metrics from BAM data
+    productionGoal: metricsData?.dashboard.practiceGoal ?? 300000,
+    productionActual: metricsData?.dashboard.bamCurrentRevenue ?? 0,
+
+    // Collection metrics from dashboard
+    collectionGoal: 98, // Target collection rate percentage
+    collectionActual: metricsData?.dashboard.collectionRate ?? 0,
+
+    // New patients from tracker
+    newPatientsGoal: newPatientTrackerData?.perMonthGoal ?? 30,
+    newPatientsActual: newPatientTrackerData?.perMonth ?? 0,
+
+    // Claim metrics - calculated from claims data
+    claimApprovalRate: (() => {
+      if (!metricsData || !metricsData.claims.totalActive) return 90;
+      const total = metricsData.claims.totalActive;
+      const denied = metricsData.claims.denied || 0;
+      return Math.round(((total - denied) / total) * 100);
+    })(),
+    avgDaysToPay: 0, // Can be added to Supabase csd_metric_values later
+
+    // Enhanced metrics - show rates (defaults until added to Supabase)
     avgShowRateDr: 77.5,
     avgShowRateDrTarget: 90,
     avgShowRateHyg: 49.3,
     avgShowRateHygTarget: 85,
-    avgNewPatientsPerWeek: 7,
+
+    // New patients per week from tracker
+    avgNewPatientsPerWeek: newPatientTrackerData?.perWeek ?? 0,
+
+    // Treatment acceptance (defaults until added to Supabase)
     txAcceptance: 52.6,
     txAcceptanceTarget: 50,
-    avgCollectionRate: 35,
+
+    // Collection rate from dashboard
+    avgCollectionRate: metricsData?.dashboard.collectionRate ?? 0,
     avgCollectionRateTarget: 100,
-    totalTxPresented: 196145.17,
-    totalTxAccepted: 68964.24,
-    totalNewPatients: 14,
-    fiveStarReviews: 36,
+
+    // Treatment totals (defaults until added to Supabase)
+    totalTxPresented: 0,
+    totalTxAccepted: 0,
+
+    // Monthly totals
+    totalNewPatients: newPatientTrackerData?.perMonth ?? 0,
+    fiveStarReviews: 0, // Can be added to Supabase csd_metric_values later
+
+    // Weekly data - defaults until added to Supabase
     weeklyData: [
       {
         week: 1,
@@ -3609,7 +3634,7 @@ const CourtStreetRCM = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {scorecardData.weeklyData.map((week) => (
+                    {scorecardData.weeklyData.map((week: any) => (
                       <tr key={week.week} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="p-3 font-medium text-gray-900">{week.week}</td>
                         <td className="p-3 text-gray-700">{week.date}</td>
@@ -3654,7 +3679,7 @@ const CourtStreetRCM = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Show Rates</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week) => (
+                    {scorecardData.weeklyData.map((week: any) => (
                       <div key={`show-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
@@ -3689,7 +3714,7 @@ const CourtStreetRCM = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Treatment Acceptance</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week) => (
+                    {scorecardData.weeklyData.map((week: any) => (
                       <div key={`tx-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
