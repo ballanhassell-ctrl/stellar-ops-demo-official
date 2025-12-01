@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
-import { calculateMTDPayments } from '../services/paymentAggregator';
 
 export interface EODData {
   reportDate: string;
@@ -69,9 +68,6 @@ export const useEODMetrics = (date: string) => {
       // Calculate MTD metrics from authoritative sources
       const mtdMetrics = await getMTDMetrics(date);
 
-      // Calculate payment breakdowns
-      const mtdPayments = await calculateMTDPayments(date);
-
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
         const metric = metrics.find(m => m.field_key === fieldKey);
@@ -104,8 +100,8 @@ export const useEODMetrics = (date: string) => {
         collectionRate: dailyProduction > 0
           ? Math.round((paymentsCollected / dailyProduction) * 100)
           : 0,
-        insurancePayments: mtdPayments.insurancePayments,
-        patientPayments: mtdPayments.patientPayments,
+        insurancePayments: getMetricValue('eod_insurance_payments'),
+        patientPayments: getMetricValue('eod_patient_payments'),
         productionCollectedDifference: dailyProduction - paymentsCollected,
 
         // Payment Methods

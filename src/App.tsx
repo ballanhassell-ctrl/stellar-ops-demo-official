@@ -986,41 +986,57 @@ const CourtStreetRCM = () => {
     pastDueAccounts: metricsData?.patients.pastDueAccounts ?? 1128
   };
 
-  // Insurance data - dynamically calculated from Supabase providers
-  const insuranceStats = calculateInsuranceStats(insuranceProviders);
+  // Insurance data - use Supabase if available, otherwise fallback to hardcoded
+  const defaultProviders = [
+    { name: 'Aetna', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Cigna', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Delta Dental Insurance', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
+    { name: 'MetLife', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Anthem BCBS', feeSchedule: 'Decare', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'United Healthcare (Optum ID)', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
+    { name: 'Guardian', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
+    { name: 'Humana', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Ameritas', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Principal', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Beam Benefits', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' }
+  ];
+
+  const providers = insuranceProviders.length > 0
+    ? insuranceProviders.map((p: InsuranceProvider) => ({
+        name: p.name,
+        feeSchedule: p.fee_schedule,
+        portalStatus: p.portal_status,
+        eftStatus: p.eft_status,
+        drGajjar: p.dr_gajjar_network,
+        drJudge: p.dr_judge_network,
+        drStrachan: p.dr_strachan_network
+      }))
+    : defaultProviders;
+
+  // Calculate in-network count (all 3 doctors must be "In")
+  const inNetworkCount = providers.filter(p => p.drGajjar === 'In' && p.drJudge === 'In' && p.drStrachan === 'In').length;
+  const gajjarIn = providers.filter(p => p.drGajjar === 'In').length;
+  const judgeIn = providers.filter(p => p.drJudge === 'In').length;
+  const strachanIn = providers.filter(p => p.drStrachan === 'In').length;
+  const totalPlans = providers.length;
+
   const insuranceData = {
-    totalProviders: insuranceStats.inNetworkProviders, // Show only fully in-network providers (all doctors "In")
-    activePlans: insuranceStats.activePlans,
+    totalProviders: inNetworkCount, // Number of plans where ALL doctors are in-network
+    activePlans: totalPlans,
     credentialingPending: 0,
     verificationsPending: 0,
     topPayerByVolume: "Delta Dental",
     topPayerByRevenue: "Aetna",
-    totalPortals: insuranceStats.totalPortals,
-    eftEnrolled: insuranceStats.eftEnrolled,
-    connectionNetwork: insuranceStats.connectionNetwork,
-    directContracts: insuranceStats.directContracts,
-    providers: insuranceProviders.map((p: InsuranceProvider) => ({
-      name: p.name,
-      feeSchedule: p.fee_schedule,
-      portalStatus: p.portal_status,
-      eftStatus: p.eft_status,
-      drGajjar: p.dr_gajjar_network,
-      drJudge: p.dr_judge_network,
-      drStrachan: p.dr_strachan_network
-    })),
-    networkSummary: (() => {
-      // Calculate network summary dynamically
-      const gajjarIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_gajjar_network === 'In').length;
-      const judgeIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_judge_network === 'In').length;
-      const strachanIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_strachan_network === 'In').length;
-      const total = insuranceProviders.length;
-
-      return {
-        drGajjar: { inNetwork: gajjarIn, outNetwork: total - gajjarIn, percentage: total > 0 ? Math.round((gajjarIn / total) * 100) : 0 },
-        drJudge: { inNetwork: judgeIn, outNetwork: total - judgeIn, percentage: total > 0 ? Math.round((judgeIn / total) * 100) : 0 },
-        drStrachan: { inNetwork: strachanIn, outNetwork: total - strachanIn, percentage: total > 0 ? Math.round((strachanIn / total) * 100) : 0 }
-      };
-    })()
+    totalPortals: totalPlans,
+    eftEnrolled: totalPlans,
+    connectionNetwork: providers.filter(p => p.feeSchedule === 'Connection').length,
+    directContracts: providers.filter(p => p.feeSchedule === 'Direct').length,
+    providers,
+    networkSummary: {
+      drGajjar: { inNetwork: gajjarIn, outNetwork: totalPlans - gajjarIn, percentage: totalPlans > 0 ? Math.round((gajjarIn / totalPlans) * 100) : 0 },
+      drJudge: { inNetwork: judgeIn, outNetwork: totalPlans - judgeIn, percentage: totalPlans > 0 ? Math.round((judgeIn / totalPlans) * 100) : 0 },
+      drStrachan: { inNetwork: strachanIn, outNetwork: totalPlans - strachanIn, percentage: totalPlans > 0 ? Math.round((strachanIn / totalPlans) * 100) : 0 }
+    }
   };
 
   // Scorecard data

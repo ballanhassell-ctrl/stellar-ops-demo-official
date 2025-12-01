@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates } from '../services/metrics';
-import { calculateMTDPayments } from '../services/paymentAggregator';
 
 interface DashboardMetrics {
   bamCurrentRevenue: number;
@@ -163,9 +162,6 @@ export const useMetrics = (date: string) => {
       // Fetch aggregated payment data for weekly/monthly totals
       const paymentAggregates = await getPaymentAggregates();
 
-      // Calculate MTD payment aggregates (insurance vs patient)
-      const mtdPayments = await calculateMTDPayments(date);
-
       // Helper function to find metric value by field_key
       // For persistent metrics, use latest value if current date doesn't have data
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
@@ -197,8 +193,8 @@ export const useMetrics = (date: string) => {
           weeklyPayments: paymentAggregates.perWeek,
           monthlyPayments: paymentAggregates.perMonth,
           pendingDeposits: getMetricValue('pending_deposits', 0, true),
-          insurancePayments: mtdPayments.insurancePayments,
-          patientPayments: mtdPayments.patientPayments,
+          insurancePayments: getMetricValue('insurance_payments', 0, true),
+          patientPayments: getMetricValue('patient_payments', 0, true),
           unappliedCredits: getMetricValue('unapplied_credits', 0, true),
           refundsPending: getMetricValue('refunds_pending', 0, true),
         },
