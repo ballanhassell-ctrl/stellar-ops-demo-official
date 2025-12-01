@@ -999,7 +999,7 @@ const CourtStreetRCM = () => {
     eftEnrolled: insuranceStats.eftEnrolled,
     connectionNetwork: insuranceStats.connectionNetwork,
     directContracts: insuranceStats.directContracts,
-    providers: insuranceProviders.map(p => ({
+    providers: insuranceProviders.map((p: InsuranceProvider) => ({
       name: p.name,
       feeSchedule: p.fee_schedule,
       portalStatus: p.portal_status,
@@ -1010,9 +1010,9 @@ const CourtStreetRCM = () => {
     })),
     networkSummary: (() => {
       // Calculate network summary dynamically
-      const gajjarIn = insuranceProviders.filter(p => p.dr_gajjar_network === 'In').length;
-      const judgeIn = insuranceProviders.filter(p => p.dr_judge_network === 'In').length;
-      const strachanIn = insuranceProviders.filter(p => p.dr_strachan_network === 'In').length;
+      const gajjarIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_gajjar_network === 'In').length;
+      const judgeIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_judge_network === 'In').length;
+      const strachanIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_strachan_network === 'In').length;
       const total = insuranceProviders.length;
 
       return {
@@ -5102,7 +5102,7 @@ const CourtStreetRCM = () => {
           onClose={() => setShowFinancingModal(false)}
           onSave={() => {
             // Refresh metrics after saving
-            metricsRefresh();
+            refreshMetrics();
           }}
           currentDate={dashboardDate}
           isDayMode={isDayMode}

@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabaseClient';
  * Calculate MTD Production based on BAM Current Revenue
  * MTD Production should equal BAM Current Revenue for the current billing cycle
  */
-export async function calculateMTDProduction(date: string): Promise<number> {
+export async function calculateMTDProduction(_date: string): Promise<number> {
   try {
     // Fetch BAM Current Revenue (this is the authoritative source for monthly production)
     const { data, error } = await supabase
