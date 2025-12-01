@@ -934,17 +934,29 @@ const CourtStreetRCM = () => {
 
   // EOD Report data (now managed by state - see above)
 
-  // Claims data
+  // Claims data - using Supabase data when available, fallback to defaults
   const claimsData = {
-    totalActive: 283,
-    pending: 201,
-    denied: 0,
-    overSixtyDays: 54,
+    totalActive: metricsData?.claims.totalActive ?? 283,
+    pending: metricsData?.claims.pending ?? 201,
+    denied: metricsData?.claims.denied ?? 0,
+    overSixtyDays: metricsData?.claims.overSixtyDays ?? 54,
     arAging: {
-      zeroToThirty: { amount: 143767.80, count: 284 },
-      thirtyOneToSixty: { amount: 21870.99, count: 32 },
-      sixtyOneToNinety: { amount: 22570.01, count: 21 },
-      ninetyPlus: { amount: 35995.39, count: 33 }
+      zeroToThirty: {
+        amount: metricsData?.claims.arAging.zeroToThirty.amount ?? 143767.80,
+        count: metricsData?.claims.arAging.zeroToThirty.count ?? 284
+      },
+      thirtyOneToSixty: {
+        amount: metricsData?.claims.arAging.thirtyOneToSixty.amount ?? 21870.99,
+        count: metricsData?.claims.arAging.thirtyOneToSixty.count ?? 32
+      },
+      sixtyOneToNinety: {
+        amount: metricsData?.claims.arAging.sixtyOneToNinety.amount ?? 22570.01,
+        count: metricsData?.claims.arAging.sixtyOneToNinety.count ?? 21
+      },
+      ninetyPlus: {
+        amount: metricsData?.claims.arAging.ninetyPlus.amount ?? 35995.39,
+        count: metricsData?.claims.arAging.ninetyPlus.count ?? 33
+      }
     }
   };
 

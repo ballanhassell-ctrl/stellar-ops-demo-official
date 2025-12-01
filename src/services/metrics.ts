@@ -15,6 +15,63 @@ export type MetricWithValue = {
   } | null;
 };
 
+/**
+ * Fetches the most recent value for a specific metric field_key
+ * This is used for persistent metrics that should not reset on a new day
+ */
+export async function getLatestMetricValue(fieldKey: string): Promise<number | null> {
+  try {
+    const { data, error } = await supabase
+      .from('csd_metric_values')
+      .select('value, as_of_date')
+      .eq('field_key', fieldKey)
+      .order('as_of_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      console.warn(`No data found for ${fieldKey}:`, error.message);
+      return null;
+    }
+
+    return data?.value || null;
+  } catch (err) {
+    console.warn(`Error fetching latest value for ${fieldKey}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Fetches the latest values for multiple metric field_keys
+ * Returns a map of field_key -> value
+ */
+export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<string, number>> {
+  const results = new Map<string, number>();
+
+  try {
+    // Fetch all the latest values in parallel
+    const promises = fieldKeys.map(async (fieldKey) => {
+      const { data, error } = await supabase
+        .from('csd_metric_values')
+        .select('value, as_of_date')
+        .eq('field_key', fieldKey)
+        .order('as_of_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        results.set(fieldKey, data.value || 0);
+      }
+    });
+
+    await Promise.all(promises);
+  } catch (err) {
+    console.error('Error fetching latest metric values:', err);
+  }
+
+  return results;
+}
+
 export async function getMetricsForDate(date: string) {
   console.log('Fetching metrics for date:', date);
 
