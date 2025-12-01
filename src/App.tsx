@@ -14,7 +14,6 @@ import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
-import { ThirdPartyFinancingModal } from './components/ThirdPartyFinancingModal';
 import { TopProceduresModal } from './components/TopProceduresModal';
 import { generateInsights, Insight } from './services/aiInsights';
 import { getTopProceduresForDate } from './services/topProcedures';
