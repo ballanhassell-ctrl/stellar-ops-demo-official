@@ -72,6 +72,134 @@ export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<st
   return results;
 }
 
+/**
+ * Aggregates new patient counts by month for the last N months
+ * Returns an array of {month, year, count} objects
+ */
+export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number }>> {
+  try {
+    // Calculate the date range (last N months)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - (numMonths - 1));
+    startDate.setDate(1); // First day of the start month
+
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+
+    // Fetch all new patient data for the date range
+    const { data, error } = await supabase
+      .from('csd_metric_values')
+      .select('as_of_date, value')
+      .eq('field_key', 'eod_new_patients')
+      .gte('as_of_date', startDateStr)
+      .lte('as_of_date', endDateStr)
+      .order('as_of_date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching new patient data:', error);
+      return [];
+    }
+
+    // Aggregate by month
+    const monthlyTotals = new Map<string, number>();
+
+    data?.forEach((record: any) => {
+      const date = new Date(record.as_of_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const currentTotal = monthlyTotals.get(monthKey) || 0;
+      monthlyTotals.set(monthKey, currentTotal + (record.value || 0));
+    });
+
+    // Build result array for last N months (even if no data)
+    const results: Array<{ month: string; year: number; count: number }> = [];
+    for (let i = numMonths - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+      results.push({
+        month: monthName,
+        year: year,
+        count: monthlyTotals.get(monthKey) || 0
+      });
+    }
+
+    return results;
+  } catch (err) {
+    console.error('Error in getNewPatientsByMonth:', err);
+    return [];
+  }
+}
+
+/**
+ * Aggregates new patient counts for various time periods
+ */
+export async function getNewPatientsAggregates() {
+  try {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    // Calculate date ranges
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    const monthStart = new Date(currentYear, currentMonth, 1);
+
+    const quarterMonth = Math.floor(currentMonth / 3) * 3;
+    const quarterStart = new Date(currentYear, quarterMonth, 1);
+
+    // Fetch data for each period
+    const [weekData, monthData, quarterData] = await Promise.all([
+      // Last 7 days
+      supabase
+        .from('csd_metric_values')
+        .select('value')
+        .eq('field_key', 'eod_new_patients')
+        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0]),
+
+      // Current month
+      supabase
+        .from('csd_metric_values')
+        .select('value')
+        .eq('field_key', 'eod_new_patients')
+        .gte('as_of_date', monthStart.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0]),
+
+      // Current quarter
+      supabase
+        .from('csd_metric_values')
+        .select('value')
+        .eq('field_key', 'eod_new_patients')
+        .gte('as_of_date', quarterStart.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0])
+    ]);
+
+    // Sum up the values
+    const sumValues = (data: any) => {
+      return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+    };
+
+    return {
+      perWeek: sumValues(weekData),
+      perMonth: sumValues(monthData),
+      quarterly: sumValues(quarterData)
+    };
+  } catch (err) {
+    console.error('Error in getNewPatientsAggregates:', err);
+    return {
+      perWeek: 0,
+      perMonth: 0,
+      quarterly: 0
+    };
+  }
+}
+
 export async function getMetricsForDate(date: string) {
   console.log('Fetching metrics for date:', date);
 

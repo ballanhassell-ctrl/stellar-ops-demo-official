@@ -8,6 +8,7 @@ import {
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
 import { useProviderMetrics } from './hooks/useProviderMetrics';
+import { useNewPatientTracker } from './hooks/useNewPatientTracker';
 import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 
@@ -356,6 +357,7 @@ const CourtStreetRCM = () => {
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
+  const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: _refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
@@ -960,37 +962,7 @@ const CourtStreetRCM = () => {
     }
   };
 
-  // Helper function to get last 6 months
-  const getLastSixMonths = () => {
-    const months = [];
-    const today = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      months.push({ month: monthName, count: 0 });
-    }
-    return months;
-  };
-
-  // New Patient Tracker data (synced with eodData.newPatients for daily value)
-  const newPatientTrackerData = {
-    perDay: eodData?.newPatients || 0, // Synced with EOD data
-    perDayGoal: 2,
-    perWeek: 7,
-    perWeekGoal: 10,
-    perMonth: 14,
-    perMonthGoal: 40,
-    quarterly: 43,
-    quarterlyGoal: 120,
-    monthlyAverages: [
-      { month: getLastSixMonths()[0].month, count: 33 },
-      { month: getLastSixMonths()[1].month, count: 22 },
-      { month: getLastSixMonths()[2].month, count: 22 },
-      { month: getLastSixMonths()[3].month, count: 26 },
-      { month: getLastSixMonths()[4].month, count: 29 },
-      { month: getLastSixMonths()[5].month, count: 14 }
-    ]
-  };
+  // New Patient Tracker data is now managed by the useNewPatientTracker hook above
 
   // Third Party Financing data
   const thirdPartyFinancingData = {
