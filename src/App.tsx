@@ -1129,44 +1129,45 @@ const CourtStreetRCM = () => {
   };
 
   // Advanced Scorecard Metrics
+  // Advanced Metrics - fetched from Supabase
   const advancedMetrics = {
-    // Financial Metrics
-    cac: 0, // Customer Acquisition Cost
-    grossProfitMargin: 0, // Gross Profit Margin %
-    operatingProfitMargin: 0, // Operating Profit Margin %
-    cashFlow: 0, // Cash Flow amount
-    revenueGrowthRate: 0, // Revenue Growth Rate %
+    // Financial Metrics - from Supabase
+    cac: metricsData?.advanced.cac ?? 0,
+    grossProfitMargin: metricsData?.advanced.grossProfitMargin ?? 0,
+    operatingProfitMargin: metricsData?.advanced.operatingProfitMargin ?? 0,
+    cashFlow: metricsData?.advanced.cashFlow ?? 0,
+    revenueGrowthRate: metricsData?.advanced.revenueGrowthRate ?? 0,
 
-    // COGS Components
+    // COGS Components - from Supabase
     cogs: {
-      dentalSupplies: 0,
-      labFees: 0,
-      associateDoctorExpense: 0,
-      hygienePayroll: 0,
-      assistantPayroll: 0,
-      totalCOGS: 0
+      dentalSupplies: metricsData?.advanced.cogs.dentalSupplies ?? 0,
+      labFees: metricsData?.advanced.cogs.labFees ?? 0,
+      associateDoctorExpense: metricsData?.advanced.cogs.associateDoctorExpense ?? 0,
+      hygienePayroll: metricsData?.advanced.cogs.hygienePayroll ?? 0,
+      assistantPayroll: metricsData?.advanced.cogs.assistantPayroll ?? 0,
+      totalCOGS: metricsData?.advanced.cogs.totalCOGS ?? 0
     },
 
-    operatingCosts: 0, // Total Operating Costs
+    operatingCosts: metricsData?.advanced.operatingCosts ?? 0,
 
     // Customer Metrics
-    churnedPatientsPerMonth: 0,
-    churnRate: 13.2, // Churn Rate %
-    patientLifeCycleMonths: 0, // Patient Life Cycle in Months
-    patientLifeCycleYears: 0, // Patient Life Cycle in Years
-    activePtsFirstOfPriorMonth: 0,
+    churnedPatientsPerMonth: metricsData?.advanced.churnedPatientsMonth ?? 0,
+    churnRate: 13.2, // Calculated or hardcoded
+    patientLifeCycleMonths: 0, // Calculated
+    patientLifeCycleYears: 0, // Calculated
+    activePtsFirstOfPriorMonth: 0, // TODO: Add to Supabase
 
     // Revenue Metrics
-    averageRevenuePerClient: 0, // ARPC
-    ltv: 0, // Lifetime Value (ARPC x Avg Retention Period)
-    avgRetentionPeriod: 0, // Average Retention Period in months
+    averageRevenuePerClient: 0, // TODO: Calculate or add to Supabase
+    ltv: 0, // TODO: Calculate (ARPC x Avg Retention Period)
+    avgRetentionPeriod: 0, // TODO: Calculate
 
     // Satisfaction Metrics
-    nps: 99, // Net Promoter Score
-    enps: 0, // Employee Net Promoter Score
+    nps: 99, // TODO: Add to Supabase or calculate
+    enps: 0, // TODO: Add to Supabase
 
     // Employee Metrics
-    employeeUtilizationRate: 0 // Employee Utilization Rate %
+    employeeUtilizationRate: 0 // TODO: Calculate or add to Supabase
   };
 
   // Checklist data
