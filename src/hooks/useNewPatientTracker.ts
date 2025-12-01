@@ -78,18 +78,22 @@ export const useNewPatientTracker = (dailyCount: number) => {
       const aggregates = await getNewPatientsAggregates();
       console.log('[NP Tracker] Aggregates from Supabase:', aggregates);
 
-      // If aggregates are all zero, use sample data
+      // Check if we have meaningful aggregate data (not just zeros)
       const hasAggregateData = aggregates.perWeek > 0 || aggregates.perMonth > 0 || aggregates.quarterly > 0;
       console.log('[NP Tracker] Has aggregate data:', hasAggregateData);
+
+      // If we have no real data AND no monthly trend data, use sample values
+      const useFallbackData = !hasAggregateData && monthlyData.every(m => m.count === 0);
+      console.log('[NP Tracker] Using fallback sample data:', useFallbackData);
 
       const finalData = {
         perDay: dailyCount,
         perDayGoal: 2,
-        perWeek: hasAggregateData ? aggregates.perWeek : 3,
+        perWeek: useFallbackData ? 3 : aggregates.perWeek,
         perWeekGoal: 10,
-        perMonth: hasAggregateData ? aggregates.perMonth : 14,
+        perMonth: useFallbackData ? 14 : aggregates.perMonth,
         perMonthGoal: 40,
-        quarterly: hasAggregateData ? aggregates.quarterly : 43,
+        quarterly: useFallbackData ? 43 : aggregates.quarterly,
         quarterlyGoal: 120,
         monthlyAverages: monthlyData.map(m => ({ month: m.month, count: m.count }))
       };

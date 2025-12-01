@@ -217,55 +217,53 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
  */
 export async function getNewPatientsAggregates() {
   try {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
+    console.log('[getNewPatientsAggregates] Fetching pre-calculated aggregate values...');
 
-    // Calculate date ranges
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
-
-    const monthStart = new Date(currentYear, currentMonth, 1);
-
-    const quarterMonth = Math.floor(currentMonth / 3) * 3;
-    const quarterStart = new Date(currentYear, quarterMonth, 1);
-
-    // Fetch data for each period
+    // Fetch the latest pre-calculated aggregate values from Supabase
+    // These are already calculated and stored as: new_pts_per_week, new_pts_per_month, new_pts_quarterly
     const [weekData, monthData, quarterData] = await Promise.all([
-      // Last 7 days
       supabase
         .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .select('value, as_of_date')
+        .eq('field_key', 'new_pts_per_week')
+        .order('as_of_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
 
-      // Current month
       supabase
         .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', monthStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .select('value, as_of_date')
+        .eq('field_key', 'new_pts_per_month')
+        .order('as_of_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
 
-      // Current quarter
       supabase
         .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', quarterStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0])
+        .select('value, as_of_date')
+        .eq('field_key', 'new_pts_quarterly')
+        .order('as_of_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
     ]);
 
-    // Sum up the values
-    const sumValues = (data: any) => {
-      return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
-    };
+    const perWeek = weekData?.data?.value || 0;
+    const perMonth = monthData?.data?.value || 0;
+    const quarterly = quarterData?.data?.value || 0;
+
+    console.log('[getNewPatientsAggregates] Retrieved values:', {
+      perWeek,
+      perMonth,
+      quarterly,
+      weekDate: weekData?.data?.as_of_date,
+      monthDate: monthData?.data?.as_of_date,
+      quarterDate: quarterData?.data?.as_of_date
+    });
 
     return {
-      perWeek: sumValues(weekData),
-      perMonth: sumValues(monthData),
-      quarterly: sumValues(quarterData)
+      perWeek,
+      perMonth,
+      quarterly
     };
   } catch (err) {
     console.error('Error in getNewPatientsAggregates:', err);
