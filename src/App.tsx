@@ -12,6 +12,9 @@ import { useProviderMetrics } from './hooks/useProviderMetrics';
 import { useNewPatientTracker } from './hooks/useNewPatientTracker';
 import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
+import { AIInsightsButton } from './components/AIInsightsButton';
+import { AIInsightsPanel } from './components/AIInsightsPanel';
+import { generateInsights, Insight } from './services/aiInsights';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -549,6 +552,11 @@ const CourtStreetRCM = () => {
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
 
+  // AI Insights state
+  const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
+
   // Patient Management state
   const [claims, _setClaims] = useState<ClaimRecord[]>(sampleClaims);
   const [preAuths, _setPreAuths] = useState<PreAuthRecord[]>(samplePreAuths);
@@ -811,6 +819,53 @@ const CourtStreetRCM = () => {
     };
     console.log('CSD Helpers loaded. Access via window.csdHelpers');
   }, [eodData, dailyProductionByProvider]);
+
+  // Generate AI insights whenever metrics data changes
+  useEffect(() => {
+    if (metricsData) {
+      const newInsights = generateInsights(
+        {
+          bam: {
+            currentRevenue: metricsData.dashboard.bamCurrentRevenue,
+            targetGoal: metricsData.dashboard.bamTargetGoal,
+            practiceGoal: metricsData.dashboard.practiceGoal,
+          },
+          claims: {
+            totalActive: metricsData.claims.totalActive,
+            pending: metricsData.claims.pending,
+            denied: metricsData.claims.denied,
+            overSixtyDays: metricsData.claims.overSixtyDays,
+          },
+          patients: {
+            activePatients: metricsData.patients.activePatients,
+          },
+          payments: {
+            todaysPayments: metricsData.payments.todaysPayments,
+            weeklyPayments: metricsData.payments.weeklyPayments,
+            monthlyPayments: metricsData.payments.monthlyPayments,
+          },
+          financials: {
+            collectionRate: metricsData.dashboard.collectionRate,
+            outstandingAR: metricsData.dashboard.outstandingAR,
+          },
+        },
+        newPatientTrackerData
+      );
+      setInsights(newInsights);
+    }
+  }, [metricsData, newPatientTrackerData]);
+
+  // Function to refresh insights
+  const handleRefreshInsights = () => {
+    setIsRefreshingInsights(true);
+    // Refresh all data sources
+    refreshMetrics();
+    refreshEOD();
+    // Wait a bit for data to update, then stop the spinner
+    setTimeout(() => {
+      setIsRefreshingInsights(false);
+    }, 1000);
+  };
 
   const csdGold = '#B8985F';
 
@@ -5056,6 +5111,23 @@ const CourtStreetRCM = () => {
             </div>
           </div>
         )}
+
+        {/* AI Insights Button */}
+        <AIInsightsButton
+          onClick={() => setIsInsightsPanelOpen(true)}
+          insightCount={insights.length}
+          hasHighPriority={insights.some(i => i.priority === 'high')}
+        />
+
+        {/* AI Insights Panel */}
+        <AIInsightsPanel
+          isOpen={isInsightsPanelOpen}
+          onClose={() => setIsInsightsPanelOpen(false)}
+          insights={insights}
+          isDayMode={isDayMode}
+          onRefresh={handleRefreshInsights}
+          isRefreshing={isRefreshingInsights}
+        />
       </div>
     </div>
   );
