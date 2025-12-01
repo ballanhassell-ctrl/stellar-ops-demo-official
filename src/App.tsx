@@ -3,7 +3,8 @@ import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
-  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload
+  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
+  Plus, Edit, Eye
 } from 'lucide-react';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
@@ -336,6 +337,193 @@ const getInitialDailyProductionByProvider = () => ({
 });
 */
 
+// Patient Tracking Interfaces for Claims and Pre-Auths
+interface ClaimRecord {
+  id: string;
+  patientId: string;
+  patientName: string;
+  insuranceCompany: string;
+  claimNumber: string;
+  procedureCode: string;
+  claimDetail: string;
+  claimAmount: number;
+  status: 'Pending' | 'Approved' | 'Denied' | 'In Review' | 'Resubmitted';
+  dateSubmitted: string;
+  followUpDate: string;
+  handler: string;
+  notes: string;
+  agingDays: number;
+}
+
+interface PreAuthRecord {
+  id: string;
+  patientId: string;
+  patientName: string;
+  insuranceCompany: string;
+  preAuthNumber: string;
+  procedureCode: string;
+  treatmentDetail: string;
+  requestedAmount: number;
+  status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review';
+  dateRequested: string;
+  expirationDate: string;
+  approvedAmount: number;
+  handler: string;
+  notes: string;
+}
+
+// Sample Claims Data
+const sampleClaims: ClaimRecord[] = [
+  {
+    id: 'CLM-001',
+    patientId: 'PT-1234',
+    patientName: 'John Smith',
+    insuranceCompany: 'Delta Dental',
+    claimNumber: 'DD-2025-0142',
+    procedureCode: 'D2392',
+    claimDetail: 'Resin-based composite - two surfaces, posterior',
+    claimAmount: 285.00,
+    status: 'Pending',
+    dateSubmitted: '2025-11-15',
+    followUpDate: '2025-12-05',
+    handler: 'Sarah J.',
+    notes: 'Awaiting initial response',
+    agingDays: 16
+  },
+  {
+    id: 'CLM-002',
+    patientId: 'PT-5678',
+    patientName: 'Maria Garcia',
+    insuranceCompany: 'Cigna',
+    claimNumber: 'CG-2025-0987',
+    procedureCode: 'D0274',
+    claimDetail: 'Bitewing - four radiographic images',
+    claimAmount: 120.00,
+    status: 'Approved',
+    dateSubmitted: '2025-11-20',
+    followUpDate: '2025-11-28',
+    handler: 'Mike T.',
+    notes: 'Approved for full amount',
+    agingDays: 11
+  },
+  {
+    id: 'CLM-003',
+    patientId: 'PT-9012',
+    patientName: 'Robert Johnson',
+    insuranceCompany: 'Aetna',
+    claimNumber: 'AE-2025-2341',
+    procedureCode: 'D7140',
+    claimDetail: 'Extraction, erupted tooth',
+    claimAmount: 195.00,
+    status: 'Denied',
+    dateSubmitted: '2025-10-08',
+    followUpDate: '2025-11-01',
+    handler: 'Sarah J.',
+    notes: 'Denied - missing documentation, preparing appeal',
+    agingDays: 54
+  },
+  {
+    id: 'CLM-004',
+    patientId: 'PT-3456',
+    patientName: 'Emily Chen',
+    insuranceCompany: 'MetLife',
+    claimNumber: 'ML-2025-5678',
+    procedureCode: 'D1110',
+    claimDetail: 'Prophylaxis - adult',
+    claimAmount: 95.00,
+    status: 'In Review',
+    dateSubmitted: '2025-11-25',
+    followUpDate: '2025-12-10',
+    handler: 'Mike T.',
+    notes: 'Under review for frequency limitation',
+    agingDays: 6
+  },
+  {
+    id: 'CLM-005',
+    patientId: 'PT-7890',
+    patientName: 'Michael Brown',
+    insuranceCompany: 'United Healthcare',
+    claimNumber: 'UH-2025-8901',
+    procedureCode: 'D2750',
+    claimDetail: 'Crown - porcelain fused to high noble metal',
+    claimAmount: 1250.00,
+    status: 'Pending',
+    dateSubmitted: '2025-09-12',
+    followUpDate: '2025-10-15',
+    handler: 'Sarah J.',
+    notes: 'Multiple follow-ups, escalated to supervisor',
+    agingDays: 80
+  }
+];
+
+// Sample Pre-Authorization Data
+const samplePreAuths: PreAuthRecord[] = [
+  {
+    id: 'PA-001',
+    patientId: 'PT-2345',
+    patientName: 'Jennifer Davis',
+    insuranceCompany: 'Delta Dental',
+    preAuthNumber: 'DD-PA-2025-0432',
+    procedureCode: 'D6010',
+    treatmentDetail: 'Surgical placement of implant body',
+    requestedAmount: 2400.00,
+    status: 'Approved',
+    dateRequested: '2025-11-01',
+    expirationDate: '2026-05-01',
+    approvedAmount: 2100.00,
+    handler: 'Sarah J.',
+    notes: 'Approved with 12% reduction'
+  },
+  {
+    id: 'PA-002',
+    patientId: 'PT-6789',
+    patientName: 'David Wilson',
+    insuranceCompany: 'Cigna',
+    preAuthNumber: 'CG-PA-2025-1234',
+    procedureCode: 'D7210',
+    treatmentDetail: 'Extraction, erupted tooth requiring removal of bone',
+    requestedAmount: 450.00,
+    status: 'Pending',
+    dateRequested: '2025-11-28',
+    expirationDate: '2026-02-28',
+    approvedAmount: 0,
+    handler: 'Mike T.',
+    notes: 'Awaiting initial response'
+  },
+  {
+    id: 'PA-003',
+    patientId: 'PT-1357',
+    patientName: 'Lisa Martinez',
+    insuranceCompany: 'Aetna',
+    preAuthNumber: 'AE-PA-2025-5678',
+    procedureCode: 'D3310',
+    treatmentDetail: 'Root canal therapy - anterior tooth',
+    requestedAmount: 850.00,
+    status: 'Denied',
+    dateRequested: '2025-11-10',
+    expirationDate: '2026-02-10',
+    approvedAmount: 0,
+    handler: 'Sarah J.',
+    notes: 'Denied - requires additional X-rays, resubmitting'
+  },
+  {
+    id: 'PA-004',
+    patientId: 'PT-2468',
+    patientName: 'James Taylor',
+    insuranceCompany: 'MetLife',
+    preAuthNumber: 'ML-PA-2025-9012',
+    procedureCode: 'D5110',
+    treatmentDetail: 'Complete denture - upper',
+    requestedAmount: 1600.00,
+    status: 'In Review',
+    dateRequested: '2025-11-22',
+    expirationDate: '2026-03-22',
+    approvedAmount: 0,
+    handler: 'Mike T.',
+    notes: 'Under clinical review by insurance'
+  }
+];
+
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
@@ -352,6 +540,10 @@ const CourtStreetRCM = () => {
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
+
+  // Patient Management state
+  const [claims, _setClaims] = useState<ClaimRecord[]>(sampleClaims);
+  const [preAuths, _setPreAuths] = useState<PreAuthRecord[]>(samplePreAuths);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -701,16 +893,6 @@ const CourtStreetRCM = () => {
     pastDueAccounts: metricsData?.patients.pastDueAccounts ?? 1128
   };
 
-  // Pre-Auths data - using Supabase data when available, fallback to defaults
-  const preAuthsData = {
-    totalPreAuths: metricsData?.preAuths.totalPreAuths ?? 61,
-    pending: metricsData?.preAuths.pending ?? 61,
-    approved: metricsData?.preAuths.approved ?? 0,
-    denied: metricsData?.preAuths.denied ?? 0,
-    expiringSoon: metricsData?.preAuths.expiringSoon ?? 0,
-    expiringThisMonth: metricsData?.preAuths.expiringThisMonth ?? 0
-  };
-
   // Insurance data
   const insuranceData = {
     totalProviders: 11,
@@ -988,6 +1170,27 @@ const CourtStreetRCM = () => {
 
   // Sub-navigation for Patient Management tab
   const [patientManagementView, setPatientManagementView] = useState('claims');
+
+  // Filter functions for search
+  const filteredClaims = claims.filter(claim =>
+    searchQuery === '' ||
+    claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    claim.status.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredPreAuths = preAuths.filter(preAuth =>
+    searchQuery === '' ||
+    preAuth.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    preAuth.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    preAuth.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    preAuth.preAuthNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    preAuth.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Helper function to export PDF
   const exportToPDF = () => {
@@ -1883,9 +2086,289 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
+
+            {/* Detailed Claims Table */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold" style={{ color: csdGold }}>
+                  Claims Details ({filteredClaims.length} {filteredClaims.length === 1 ? 'claim' : 'claims'})
+                </h3>
+                <button
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  onClick={() => alert('Add New Claim functionality - to be implemented')}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add New Claim</span>
+                </button>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Patient</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Claim #</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Procedure</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredClaims.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                          No claims found matching your search.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredClaims.map((claim) => (
+                        <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-4">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{claim.patientName}</div>
+                              <div className="text-xs text-gray-500">{claim.patientId}</div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="text-sm text-gray-900">{claim.claimNumber}</div>
+                            <div className="text-xs text-gray-500">{claim.dateSubmitted}</div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">{claim.insuranceCompany}</td>
+                          <td className="px-4 py-4">
+                            <div className="text-sm font-medium text-gray-900">{claim.procedureCode}</div>
+                            <div className="text-xs text-gray-500">{claim.claimDetail.length > 40 ? claim.claimDetail.substring(0, 40) + '...' : claim.claimDetail}</div>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">${claim.claimAmount.toLocaleString()}</td>
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              claim.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                              claim.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                              claim.status === 'Denied' ? 'bg-red-100 text-red-800' :
+                              claim.status === 'In Review' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {claim.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`text-sm font-medium ${
+                              claim.agingDays > 60 ? 'text-red-600' :
+                              claim.agingDays > 30 ? 'text-orange-600' :
+                              'text-green-600'
+                            }`}>
+                              {claim.agingDays} days
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">{claim.handler}</td>
+                          <td className="px-4 py-4">
+                            <div className="flex space-x-2">
+                              <button
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                onClick={() => alert(`View details for ${claim.patientName} - To be implemented`)}
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                                onClick={() => alert(`Edit claim ${claim.claimNumber} - To be implemented`)}
+                                title="Edit Claim"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             </>
             )}
 
+            {/* Pre-Auths Section */}
+            {patientManagementView === 'preauths' && (
+              <>
+                {/* Pre-Auths Header */}
+                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                    Pre-Authorization Management
+                  </h2>
+
+                  {/* Search Bar */}
+                  <div className="mb-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Search by Patient, Pre-Auth #, or Insurance..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pre-Auth Statistics Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Total Pre-Auths */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-700 mb-1">Total Pre-Auths</p>
+                          <p className="text-3xl font-bold text-blue-900">{preAuths.length}</p>
+                          <p className="text-xs text-blue-600 mt-2">All requests</p>
+                        </div>
+                        <CheckCircle className="w-8 h-8 text-blue-500" />
+                      </div>
+                    </div>
+
+                    {/* Pending */}
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-yellow-700 mb-1">Pending</p>
+                          <p className="text-3xl font-bold text-yellow-900">{preAuths.filter(pa => pa.status === 'Pending').length}</p>
+                          <p className="text-xs text-yellow-600 mt-2">Awaiting response</p>
+                        </div>
+                        <Clock className="w-8 h-8 text-yellow-500" />
+                      </div>
+                    </div>
+
+                    {/* Approved */}
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-green-700 mb-1">Approved</p>
+                          <p className="text-3xl font-bold text-green-900">{preAuths.filter(pa => pa.status === 'Approved').length}</p>
+                          <p className="text-xs text-green-600 mt-2">Ready to schedule</p>
+                        </div>
+                        <CheckCircle className="w-8 h-8 text-green-500" />
+                      </div>
+                    </div>
+
+                    {/* Denied */}
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-red-700 mb-1">Denied</p>
+                          <p className="text-3xl font-bold text-red-900">{preAuths.filter(pa => pa.status === 'Denied').length}</p>
+                          <p className="text-xs text-red-600 mt-2">Need attention</p>
+                        </div>
+                        <XCircle className="w-8 h-8 text-red-500" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detailed Pre-Auths Table */}
+                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>
+                      Pre-Authorization Details ({filteredPreAuths.length} {filteredPreAuths.length === 1 ? 'request' : 'requests'})
+                    </h3>
+                    <button
+                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                      onClick={() => alert('Add New Pre-Auth functionality - to be implemented')}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Request Pre-Auth</span>
+                    </button>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-100 border-b-2 border-gray-300">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Patient</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Pre-Auth #</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Treatment</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Requested</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Approved</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Expires</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredPreAuths.length === 0 ? (
+                          <tr>
+                            <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                              No pre-authorizations found matching your search.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredPreAuths.map((preAuth) => (
+                            <tr key={preAuth.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-4">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{preAuth.patientName}</div>
+                                  <div className="text-xs text-gray-500">{preAuth.patientId}</div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4">
+                                <div className="text-sm text-gray-900">{preAuth.preAuthNumber}</div>
+                                <div className="text-xs text-gray-500">{preAuth.dateRequested}</div>
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{preAuth.insuranceCompany}</td>
+                              <td className="px-4 py-4">
+                                <div className="text-sm font-medium text-gray-900">{preAuth.procedureCode}</div>
+                                <div className="text-xs text-gray-500">{preAuth.treatmentDetail.length > 35 ? preAuth.treatmentDetail.substring(0, 35) + '...' : preAuth.treatmentDetail}</div>
+                              </td>
+                              <td className="px-4 py-4 text-sm font-semibold text-gray-900">${preAuth.requestedAmount.toLocaleString()}</td>
+                              <td className="px-4 py-4 text-sm font-semibold text-green-700">
+                                {preAuth.approvedAmount > 0 ? `$${preAuth.approvedAmount.toLocaleString()}` : '-'}
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  preAuth.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                  preAuth.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  preAuth.status === 'Denied' ? 'bg-red-100 text-red-800' :
+                                  preAuth.status === 'Expired' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {preAuth.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{preAuth.expirationDate}</td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{preAuth.handler}</td>
+                              <td className="px-4 py-4">
+                                <div className="flex space-x-2">
+                                  <button
+                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                    onClick={() => alert(`View details for ${preAuth.patientName} - To be implemented`)}
+                                    title="View Details"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                                    onClick={() => alert(`Edit pre-auth ${preAuth.preAuthNumber} - To be implemented`)}
+                                    title="Edit Pre-Auth"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
         ) : currentView === 'payments' ? (
           <div className="space-y-6">
             {/* Payments Header */}
@@ -2302,152 +2785,6 @@ const CourtStreetRCM = () => {
               <div className="p-4 bg-gray-50 rounded-lg text-center">
                 <p className="text-sm text-gray-600">
                   Patient activity and recent transactions will appear here
-                </p>
-              </div>
-            </div>
-          </div>
-              </>
-            )}
-
-            {patientManagementView === 'preauths' && (
-              <>
-          <div className="space-y-6">
-            {/* Pre-Auths Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
-                Pre-Authorization Management
-              </h2>
-
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search pre-auths by patient, procedure, or auth number..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Pre-Auth Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Total Pre-Auths */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Total Pre-Auths</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {preAuthsData.totalPreAuths}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">Active requests</p>
-                    </div>
-                    <ClipboardCheck className="w-8 h-8 text-blue-500" />
-                  </div>
-                </div>
-
-                {/* Pending Pre-Auths */}
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-yellow-700 mb-1">Pending</p>
-                      <p className="text-3xl font-bold text-yellow-900">
-                        {preAuthsData.pending}
-                      </p>
-                      <p className="text-xs text-yellow-600 mt-2">Awaiting decision</p>
-                    </div>
-                    <Clock className="w-8 h-8 text-yellow-500" />
-                  </div>
-                </div>
-
-                {/* Approved Pre-Auths */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-700 mb-1">Approved</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        {preAuthsData.approved}
-                      </p>
-                      <p className="text-xs text-green-600 mt-2">Ready for treatment</p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-500" />
-                  </div>
-                </div>
-
-                {/* Denied Pre-Auths */}
-                <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-red-700 mb-1">Denied</p>
-                      <p className="text-3xl font-bold text-red-900">
-                        {preAuthsData.denied}
-                      </p>
-                      <p className="text-xs text-red-600 mt-2">Require appeal</p>
-                    </div>
-                    <XCircle className="w-8 h-8 text-red-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Expiration Tracking */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Expiring Soon */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Expiration Alerts
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <div className="flex items-center space-x-3">
-                      <AlertCircle className="w-6 h-6 text-orange-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Expiring in 7 Days</p>
-                        <p className="text-xs text-gray-500">Urgent action required</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-orange-900">
-                      {preAuthsData.expiringSoon}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="flex items-center space-x-3">
-                      <Clock className="w-6 h-6 text-yellow-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Expiring This Month</p>
-                        <p className="text-xs text-gray-500">Monitor closely</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-yellow-900">
-                      {preAuthsData.expiringThisMonth}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pre-Auth Status by Insurance */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Status by Insurance
-                </h3>
-                <div className="p-4 bg-gray-50 rounded-lg text-center">
-                  <p className="text-sm text-gray-600">
-                    Insurance breakdown will appear here when pre-auths are submitted
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Pre-Auth Activity */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Recent Pre-Authorization Activity
-              </h3>
-              <div className="p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">
-                  Recent pre-auth submissions and decisions will appear here
                 </p>
               </div>
             </div>
