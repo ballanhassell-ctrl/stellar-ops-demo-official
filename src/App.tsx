@@ -14,10 +14,10 @@ import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
-import { TopProceduresModal } from './components/TopProceduresModal';
+import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
 import { generateInsights, Insight } from './services/aiInsights';
 import { getTopProceduresForDate } from './services/topProcedures';
-import { getInsuranceProviders, calculateInsuranceStats, InsuranceProvider } from './services/insuranceProvider';
+import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -4445,8 +4445,8 @@ const CourtStreetRCM = () => {
                   onClick={() => setShowTopProceduresModal(true)}
                   className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
                 >
-                  <Plus className="w-4 h-4" />
-                  Update Data
+                  <Upload className="w-4 h-4" />
+                  Upload CSV
                 </button>
               </div>
               <div className="space-y-3">
@@ -4478,7 +4478,7 @@ const CourtStreetRCM = () => {
                       onClick={() => setShowTopProceduresModal(true)}
                       className="mt-3 text-purple-600 hover:text-purple-700 text-sm font-medium"
                     >
-                      Add procedures
+                      Upload CSV file
                     </button>
                   </div>
                 )}
@@ -5099,17 +5099,16 @@ const CourtStreetRCM = () => {
           </div>
         )}
 
-        {/* Top Procedures Modal */}
-        <TopProceduresModal
+        {/* Top Procedures CSV Upload */}
+        <TopProceduresCSVUpload
           isOpen={showTopProceduresModal}
           onClose={() => setShowTopProceduresModal(false)}
-          onSave={() => {
-            // Refresh top procedures after saving
+          onSuccess={() => {
+            // Refresh top procedures after upload
             getTopProceduresForDate(dashboardDate).then(setTopProcedures);
             refreshEOD();
           }}
           currentDate={dashboardDate}
-          isDayMode={isDayMode}
         />
 
         {/* AI Insights Button */}
