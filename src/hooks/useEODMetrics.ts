@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
+import { getMTDMetrics } from '../services/mtdCalculator';
+import { calculateMTDPayments } from '../services/paymentAggregator';
 
 export interface EODData {
   reportDate: string;
@@ -64,6 +66,12 @@ export const useEODMetrics = (date: string) => {
       // Fetch latest values for persistent metrics
       const latestValues = await getLatestMetricValues(persistentMetrics);
 
+      // Calculate MTD metrics from authoritative sources
+      const mtdMetrics = await getMTDMetrics(date);
+
+      // Calculate payment breakdowns
+      const mtdPayments = await calculateMTDPayments(date);
+
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
         const metric = metrics.find(m => m.field_key === fieldKey);
@@ -96,8 +104,8 @@ export const useEODMetrics = (date: string) => {
         collectionRate: dailyProduction > 0
           ? Math.round((paymentsCollected / dailyProduction) * 100)
           : 0,
-        insurancePayments: getMetricValue('eod_insurance_payments'),
-        patientPayments: getMetricValue('eod_patient_payments'),
+        insurancePayments: mtdPayments.insurancePayments,
+        patientPayments: mtdPayments.patientPayments,
         productionCollectedDifference: dailyProduction - paymentsCollected,
 
         // Payment Methods
@@ -135,13 +143,13 @@ export const useEODMetrics = (date: string) => {
         payments: [],
         topProcedures: [],
 
-        // Month-to-Date Summary
+        // Month-to-Date Summary - now calculated from BAM revenue and daily totals
         monthToDateSummary: {
-          production: getMetricValue('eod_mtd_production', 182905.83),
-          productionGoal: getMetricValue('eod_mtd_production_goal', 250000),
-          collected: getMetricValue('eod_mtd_collected', 79569.47),
-          collectionRate: getMetricValue('eod_mtd_collection_rate', 73),
-          newPatients: getMetricValue('eod_mtd_new_patients', 14),
+          production: mtdMetrics.production,
+          productionGoal: mtdMetrics.productionGoal,
+          collected: mtdMetrics.collected,
+          collectionRate: mtdMetrics.collectionRate,
+          newPatients: mtdMetrics.newPatients,
         },
       };
 

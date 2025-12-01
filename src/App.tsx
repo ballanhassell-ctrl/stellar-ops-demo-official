@@ -14,7 +14,10 @@ import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
+import { ThirdPartyFinancingModal } from './components/ThirdPartyFinancingModal';
+import { TopProceduresModal } from './components/TopProceduresModal';
 import { generateInsights, Insight } from './services/aiInsights';
+import { getTopProceduresForDate } from './services/topProcedures';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -550,12 +553,17 @@ const CourtStreetRCM = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('full');
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
+  const [showFinancingModal, setShowFinancingModal] = useState(false);
+  const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
 
   // AI Insights state
   const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
+
+  // Top Procedures state
+  const [topProcedures, setTopProcedures] = useState<any[]>([]);
 
   // Patient Management state
   const [claims, _setClaims] = useState<ClaimRecord[]>(sampleClaims);
@@ -854,6 +862,15 @@ const CourtStreetRCM = () => {
       setInsights(newInsights);
     }
   }, [metricsData, newPatientTrackerData]);
+
+  // Fetch top procedures for the selected date
+  useEffect(() => {
+    const fetchTopProcedures = async () => {
+      const procedures = await getTopProceduresForDate(dashboardDate);
+      setTopProcedures(procedures);
+    };
+    fetchTopProcedures();
+  }, [dashboardDate]);
 
   // Function to refresh insights
   const handleRefreshInsights = () => {
@@ -2779,10 +2796,21 @@ const CourtStreetRCM = () => {
 
             {/* Third Party Financing */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Third Party Financing
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">Past 30 Days</p>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                    Third Party Financing
+                  </h3>
+                  <p className="text-sm text-gray-600">Past 30 Days</p>
+                </div>
+                <button
+                  onClick={() => setShowFinancingModal(true)}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Update Data
+                </button>
+              </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Cherry Financing */}
@@ -4476,26 +4504,51 @@ const CourtStreetRCM = () => {
 
             {/* Top Procedures */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Top Procedures Today
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Top Procedures Today
+                </h3>
+                <button
+                  onClick={() => setShowTopProceduresModal(true)}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Update Data
+                </button>
+              </div>
               <div className="space-y-3">
-                {eodData.topProcedures.map((procedure: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-blue-700">{index + 1}</span>
+                {topProcedures.length > 0 ? (
+                  topProcedures.map((procedure: any, index: number) => (
+                    <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-purple-700">{index + 1}</span>
+                        </div>
+                        <div>
+                          <p className={`font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                            {procedure.procedure_name}
+                            {procedure.procedure_code && <span className="text-xs ml-2 text-gray-500">({procedure.procedure_code})</span>}
+                          </p>
+                          <p className="text-xs text-gray-500">{procedure.count} procedure{procedure.count !== 1 ? 's' : ''}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{procedure.name}</p>
-                        <p className="text-xs text-gray-500">{procedure.count} procedures</p>
-                      </div>
+                      <p className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                        ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
                     </div>
-                    <p className="text-lg font-bold text-gray-900">
-                      ${procedure.revenue.toLocaleString()}
-                    </p>
+                  ))
+                ) : (
+                  <div className={`text-center py-8 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No procedures recorded for this date</p>
+                    <button
+                      onClick={() => setShowTopProceduresModal(true)}
+                      className="mt-3 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                    >
+                      Add procedures
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -5112,6 +5165,31 @@ const CourtStreetRCM = () => {
             </div>
           </div>
         )}
+
+        {/* Third Party Financing Modal */}
+        <ThirdPartyFinancingModal
+          isOpen={showFinancingModal}
+          onClose={() => setShowFinancingModal(false)}
+          onSave={() => {
+            // Refresh metrics after saving
+            metricsRefresh();
+          }}
+          currentDate={dashboardDate}
+          isDayMode={isDayMode}
+        />
+
+        {/* Top Procedures Modal */}
+        <TopProceduresModal
+          isOpen={showTopProceduresModal}
+          onClose={() => setShowTopProceduresModal(false)}
+          onSave={() => {
+            // Refresh top procedures after saving
+            getTopProceduresForDate(dashboardDate).then(setTopProcedures);
+            refreshEOD();
+          }}
+          currentDate={dashboardDate}
+          isDayMode={isDayMode}
+        />
 
         {/* AI Insights Button */}
         <AIInsightsButton
