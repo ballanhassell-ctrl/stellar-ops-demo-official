@@ -73,6 +73,83 @@ export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<st
 }
 
 /**
+ * Fetches monthly trend data from the monthly_metric_trends table
+ * This is faster than aggregating from daily values
+ */
+export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number; goal: number }>> {
+  try {
+    const { data, error } = await supabase
+      .from('monthly_metric_trends')
+      .select('year, month, month_name, value, goal_value')
+      .eq('field_key', fieldKey)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(numMonths);
+
+    if (error) {
+      console.warn('Error fetching monthly trends, falling back to daily aggregation:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      console.log('No monthly trend data found, falling back to daily aggregation');
+      return [];
+    }
+
+    // Reverse to get chronological order (oldest to newest)
+    return data.reverse().map((record: any) => ({
+      month: record.month_name,
+      year: record.year,
+      count: record.value || 0,
+      goal: record.goal_value || 0
+    }));
+  } catch (err) {
+    console.error('Error in getMonthlyTrends:', err);
+    return [];
+  }
+}
+
+/**
+ * Updates or inserts a monthly trend record
+ */
+export async function upsertMonthlyTrend(
+  fieldKey: string,
+  year: number,
+  month: number,
+  value: number,
+  goalValue: number = 0
+): Promise<boolean> {
+  try {
+    const monthDate = new Date(year, month - 1, 1);
+    const monthName = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+    const { error } = await supabase
+      .from('monthly_metric_trends')
+      .upsert({
+        field_key: fieldKey,
+        year,
+        month,
+        month_name: monthName,
+        value,
+        goal_value: goalValue,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'field_key,year,month'
+      });
+
+    if (error) {
+      console.error('Error upserting monthly trend:', error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error in upsertMonthlyTrend:', err);
+    return false;
+  }
+}
+
+/**
  * Aggregates new patient counts by month for the last N months
  * Returns an array of {month, year, count} objects
  */

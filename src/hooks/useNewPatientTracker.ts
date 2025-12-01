@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getNewPatientsByMonth, getNewPatientsAggregates } from '../services/metrics';
+import { getNewPatientsByMonth, getNewPatientsAggregates, getMonthlyTrends } from '../services/metrics';
 
 export interface NewPatientTrackerData {
   perDay: number;
@@ -33,11 +33,23 @@ export const useNewPatientTracker = (dailyCount: number) => {
       setLoading(true);
       setError(null);
 
-      // Fetch aggregated data and monthly trends in parallel
-      const [aggregates, monthlyData] = await Promise.all([
-        getNewPatientsAggregates(),
-        getNewPatientsByMonth(6)
-      ]);
+      // Try to fetch from monthly_metric_trends table first (faster)
+      let monthlyData = await getMonthlyTrends('eod_new_patients', 6);
+
+      // If monthly trends table doesn't have data, fall back to daily aggregation
+      if (monthlyData.length === 0) {
+        console.log('No data in monthly_metric_trends, aggregating from daily values');
+        const dailyMonthlyData = await getNewPatientsByMonth(6);
+        monthlyData = dailyMonthlyData.map(m => ({
+          month: m.month,
+          year: m.year,
+          count: m.count,
+          goal: 40 // Default monthly goal
+        }));
+      }
+
+      // Fetch aggregated data for week/month/quarter
+      const aggregates = await getNewPatientsAggregates();
 
       setData({
         perDay: dailyCount,
