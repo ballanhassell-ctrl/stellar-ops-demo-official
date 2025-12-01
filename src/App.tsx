@@ -13,6 +13,14 @@ import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 
 // BAM Cycle Helper Functions
+// Get local date string in YYYY-MM-DD format (respects user's timezone)
+const getLocalDateString = (date: Date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const isWeekend = (date: Date) => {
   const day = date.getDay();
   return day === 0 || day === 6; // Sunday or Saturday
@@ -339,8 +347,8 @@ const getInitialDailyProductionByProvider = () => ({
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  // Unified date state for all dashboard sections
-  const [dashboardDate, setDashboardDate] = useState(new Date().toISOString().split('T')[0]);
+  // Unified date state for all dashboard sections (uses local timezone)
+  const [dashboardDate, setDashboardDate] = useState(getLocalDateString());
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState('');
   const [emailSubject, setEmailSubject] = useState('EOD Report - Court Street Dental');
@@ -484,7 +492,7 @@ const CourtStreetRCM = () => {
 
         try {
           const { getMetricsForDate } = await import('./services/metrics');
-          const today = new Date().toISOString().split('T')[0];
+          const today = getLocalDateString();
           console.log(`Fetching metrics for ${today}...`);
           const metrics = await getMetricsForDate(today);
           console.log(`✓ Successfully fetched ${metrics.length} metrics from Supabase`);
