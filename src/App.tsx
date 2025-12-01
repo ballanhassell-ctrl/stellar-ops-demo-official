@@ -14,11 +14,11 @@ import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
-import { ThirdPartyFinancingModal } from './components/ThirdPartyFinancingModal';
-import { TopProceduresModal } from './components/TopProceduresModal';
+import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
 import { generateInsights, Insight } from './services/aiInsights';
+import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDate } from './services/topProcedures';
-import { getInsuranceProviders, calculateInsuranceStats, InsuranceProvider } from './services/insuranceProvider';
+import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -129,31 +129,6 @@ const getBAMBusinessDaysBetween = (startDate: Date, endDate: Date) => {
   return count;
 };
 
-// Patient Name Masking Function (HIPAA Protection)
-const maskPatientName = (name: string, type: string) => {
-  // If it's an insurance payment, show full company name
-  if (type === 'Insurance') {
-    return name;
-  }
-
-  // For patient payments, mask to initials only
-  const nameParts = name.trim().split(' ');
-
-  if (nameParts.length === 0) {
-    return 'N/A';
-  }
-
-  if (nameParts.length === 1) {
-    // Only one name provided, show first initial
-    return `${nameParts[0].charAt(0).toUpperCase()}.`;
-  }
-
-  // Get first initial of first name and first initial of last name
-  const firstInitial = nameParts[0].charAt(0).toUpperCase();
-  const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
-
-  return `${firstInitial}. ${lastInitial}.`;
-};
 
 const calculateBAMCycle = (referenceStartDate: Date) => {
   const today = new Date();
@@ -554,7 +529,6 @@ const CourtStreetRCM = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('full');
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
-  const [showFinancingModal, setShowFinancingModal] = useState(false);
   const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
 
@@ -562,6 +536,7 @@ const CourtStreetRCM = () => {
   const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
+  const [paymentInsights, setPaymentInsights] = useState<PaymentInsight[]>([]);
 
   // Top Procedures state
   const [topProcedures, setTopProcedures] = useState<any[]>([]);
@@ -867,6 +842,24 @@ const CourtStreetRCM = () => {
     }
   }, [metricsData, newPatientTrackerData]);
 
+  // Generate payment insights whenever payment metrics change
+  useEffect(() => {
+    if (metricsData && eodData) {
+      const newPaymentInsights = generatePaymentInsights(
+        metricsData.payments,
+        {
+          mtdProduction: eodData.monthToDateSummary.production,
+          mtdCollected: eodData.monthToDateSummary.collected,
+          mtdCollectionRate: eodData.monthToDateSummary.collectionRate,
+          paymentsCollected: eodData.paymentsCollected,
+          insurancePayments: eodData.insurancePayments,
+          patientPayments: eodData.patientPayments,
+        }
+      );
+      setPaymentInsights(newPaymentInsights);
+    }
+  }, [metricsData, eodData]);
+
   // Fetch top procedures for the selected date
   useEffect(() => {
     const fetchTopProcedures = async () => {
@@ -986,41 +979,57 @@ const CourtStreetRCM = () => {
     pastDueAccounts: metricsData?.patients.pastDueAccounts ?? 1128
   };
 
-  // Insurance data - dynamically calculated from Supabase providers
-  const insuranceStats = calculateInsuranceStats(insuranceProviders);
+  // Insurance data - use Supabase if available, otherwise fallback to hardcoded
+  const defaultProviders = [
+    { name: 'Aetna', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Cigna', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Delta Dental Insurance', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
+    { name: 'MetLife', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Anthem BCBS', feeSchedule: 'Decare', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'United Healthcare (Optum ID)', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
+    { name: 'Guardian', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
+    { name: 'Humana', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Ameritas', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Principal', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
+    { name: 'Beam Benefits', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' }
+  ];
+
+  const providers = insuranceProviders.length > 0
+    ? insuranceProviders.map((p: InsuranceProvider) => ({
+        name: p.name,
+        feeSchedule: p.fee_schedule,
+        portalStatus: p.portal_status,
+        eftStatus: p.eft_status,
+        drGajjar: p.dr_gajjar_network,
+        drJudge: p.dr_judge_network,
+        drStrachan: p.dr_strachan_network
+      }))
+    : defaultProviders;
+
+  // Calculate in-network count (all 3 doctors must be "In")
+  const inNetworkCount = providers.filter(p => p.drGajjar === 'In' && p.drJudge === 'In' && p.drStrachan === 'In').length;
+  const gajjarIn = providers.filter(p => p.drGajjar === 'In').length;
+  const judgeIn = providers.filter(p => p.drJudge === 'In').length;
+  const strachanIn = providers.filter(p => p.drStrachan === 'In').length;
+  const totalPlans = providers.length;
+
   const insuranceData = {
-    totalProviders: insuranceStats.inNetworkProviders, // Show only fully in-network providers (all doctors "In")
-    activePlans: insuranceStats.activePlans,
+    totalProviders: inNetworkCount, // Number of plans where ALL doctors are in-network
+    activePlans: totalPlans,
     credentialingPending: 0,
     verificationsPending: 0,
     topPayerByVolume: "Delta Dental",
     topPayerByRevenue: "Aetna",
-    totalPortals: insuranceStats.totalPortals,
-    eftEnrolled: insuranceStats.eftEnrolled,
-    connectionNetwork: insuranceStats.connectionNetwork,
-    directContracts: insuranceStats.directContracts,
-    providers: insuranceProviders.map((p: InsuranceProvider) => ({
-      name: p.name,
-      feeSchedule: p.fee_schedule,
-      portalStatus: p.portal_status,
-      eftStatus: p.eft_status,
-      drGajjar: p.dr_gajjar_network,
-      drJudge: p.dr_judge_network,
-      drStrachan: p.dr_strachan_network
-    })),
-    networkSummary: (() => {
-      // Calculate network summary dynamically
-      const gajjarIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_gajjar_network === 'In').length;
-      const judgeIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_judge_network === 'In').length;
-      const strachanIn = insuranceProviders.filter((p: InsuranceProvider) => p.dr_strachan_network === 'In').length;
-      const total = insuranceProviders.length;
-
-      return {
-        drGajjar: { inNetwork: gajjarIn, outNetwork: total - gajjarIn, percentage: total > 0 ? Math.round((gajjarIn / total) * 100) : 0 },
-        drJudge: { inNetwork: judgeIn, outNetwork: total - judgeIn, percentage: total > 0 ? Math.round((judgeIn / total) * 100) : 0 },
-        drStrachan: { inNetwork: strachanIn, outNetwork: total - strachanIn, percentage: total > 0 ? Math.round((strachanIn / total) * 100) : 0 }
-      };
-    })()
+    totalPortals: totalPlans,
+    eftEnrolled: totalPlans,
+    connectionNetwork: providers.filter(p => p.feeSchedule === 'Connection').length,
+    directContracts: providers.filter(p => p.feeSchedule === 'Direct').length,
+    providers,
+    networkSummary: {
+      drGajjar: { inNetwork: gajjarIn, outNetwork: totalPlans - gajjarIn, percentage: totalPlans > 0 ? Math.round((gajjarIn / totalPlans) * 100) : 0 },
+      drJudge: { inNetwork: judgeIn, outNetwork: totalPlans - judgeIn, percentage: totalPlans > 0 ? Math.round((judgeIn / totalPlans) * 100) : 0 },
+      drStrachan: { inNetwork: strachanIn, outNetwork: totalPlans - strachanIn, percentage: totalPlans > 0 ? Math.round((strachanIn / totalPlans) * 100) : 0 }
+    }
   };
 
   // Scorecard data
@@ -2726,21 +2735,10 @@ const CourtStreetRCM = () => {
 
             {/* Third Party Financing */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold" style={{ color: csdGold }}>
-                    Third Party Financing
-                  </h3>
-                  <p className="text-sm text-gray-600">Past 30 Days</p>
-                </div>
-                <button
-                  onClick={() => setShowFinancingModal(true)}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Update Data
-                </button>
-              </div>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Third Party Financing
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">Current Month (Most Recent Data)</p>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Cherry Financing */}
@@ -4297,53 +4295,109 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
-            {/* Today's Payments Detail */}
+            {/* Payment Performance Insights */}
             <div className={`rounded-lg shadow p-6 mt-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Today's Payments - Detailed View
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-100 border-b-2 border-gray-200">
-                      <th className="text-left p-3 font-semibold text-gray-700">Time</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Patient/Payer</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Type</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Method</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Procedure</th>
-                      <th className="text-right p-3 font-semibold text-gray-700">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {eodData.payments.map((payment: any, index: number) => (
-                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="p-3 text-gray-700">{payment.time}</td>
-                        <td className="p-3 font-medium text-gray-900">{maskPatientName(payment.patient, payment.type)}</td>
-                        <td className="p-3">
-                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                            payment.type === 'Insurance' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                          }`}>
-                            {payment.type}
-                          </span>
-                        </td>
-                        <td className="p-3 text-gray-700">{payment.method}</td>
-                        <td className="p-3 text-gray-600 text-xs">{payment.procedure}</td>
-                        <td className="p-3 text-right font-bold text-gray-900">
-                          ${payment.amount.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-gray-100 border-t-2 border-gray-300">
-                      <td colSpan={5} className="p-3 text-right font-bold text-gray-700">Total:</td>
-                      <td className="p-3 text-right font-bold text-gray-900">
-                        ${eodData.paymentsCollected.toLocaleString()}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Payment Performance Insights
+                </h3>
+                <span className="text-xs text-gray-500">
+                  {paymentInsights.length} actionable insight{paymentInsights.length !== 1 ? 's' : ''}
+                </span>
               </div>
+
+              {paymentInsights.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {paymentInsights.map((insight) => {
+                    // Map icon names to icon components
+                    const IconComponent = {
+                      'TrendingUp': TrendingUp,
+                      'TrendingDown': TrendingUp,
+                      'AlertCircle': AlertCircle,
+                      'CheckCircle': CheckCircle,
+                      'XCircle': XCircle,
+                      'Activity': Activity,
+                      'Shield': Shield,
+                      'Users': Users,
+                      'Clock': Clock,
+                      'DollarSign': DollarSign,
+                      'ArrowDownCircle': ArrowDownCircle,
+                    }[insight.icon] || Activity;
+
+                    // Map insight types to color schemes
+                    const colorScheme = {
+                      'positive': {
+                        bg: 'bg-gradient-to-br from-green-50 to-green-100',
+                        border: 'border-green-300',
+                        icon: 'text-green-600',
+                        title: 'text-green-900',
+                        text: 'text-green-800',
+                        badge: 'bg-green-200 text-green-800'
+                      },
+                      'warning': {
+                        bg: 'bg-gradient-to-br from-amber-50 to-amber-100',
+                        border: 'border-amber-300',
+                        icon: 'text-amber-600',
+                        title: 'text-amber-900',
+                        text: 'text-amber-800',
+                        badge: 'bg-amber-200 text-amber-800'
+                      },
+                      'info': {
+                        bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
+                        border: 'border-blue-300',
+                        icon: 'text-blue-600',
+                        title: 'text-blue-900',
+                        text: 'text-blue-800',
+                        badge: 'bg-blue-200 text-blue-800'
+                      },
+                      'critical': {
+                        bg: 'bg-gradient-to-br from-red-50 to-red-100',
+                        border: 'border-red-300',
+                        icon: 'text-red-600',
+                        title: 'text-red-900',
+                        text: 'text-red-800',
+                        badge: 'bg-red-200 text-red-800'
+                      }
+                    }[insight.type];
+
+                    return (
+                      <div
+                        key={insight.id}
+                        className={`${colorScheme.bg} border-2 ${colorScheme.border} rounded-lg p-4 hover:shadow-lg transition-all`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <IconComponent className={`w-6 h-6 ${colorScheme.icon} flex-shrink-0 mt-0.5`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h4 className={`font-semibold text-sm ${colorScheme.title}`}>
+                                {insight.title}
+                              </h4>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${colorScheme.badge} flex-shrink-0`}>
+                                {insight.priority}
+                              </span>
+                            </div>
+                            <p className={`text-sm ${colorScheme.text} mb-2`}>
+                              {insight.message}
+                            </p>
+                            {insight.action && (
+                              <div className={`text-xs font-medium ${colorScheme.text} flex items-start gap-1.5 mt-2 pt-2 border-t ${colorScheme.border}`}>
+                                <ArrowUpCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                <span>{insight.action}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No payment insights available for this date</p>
+                  <p className="text-sm mt-1">Insights will appear as payment data is collected</p>
+                </div>
+              )}
             </div>
 
             {/* Actionable Insights */}
@@ -4442,8 +4496,8 @@ const CourtStreetRCM = () => {
                   onClick={() => setShowTopProceduresModal(true)}
                   className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
                 >
-                  <Plus className="w-4 h-4" />
-                  Update Data
+                  <Upload className="w-4 h-4" />
+                  Upload CSV
                 </button>
               </div>
               <div className="space-y-3">
@@ -4475,7 +4529,7 @@ const CourtStreetRCM = () => {
                       onClick={() => setShowTopProceduresModal(true)}
                       className="mt-3 text-purple-600 hover:text-purple-700 text-sm font-medium"
                     >
-                      Add procedures
+                      Upload CSV file
                     </button>
                   </div>
                 )}
@@ -5096,29 +5150,16 @@ const CourtStreetRCM = () => {
           </div>
         )}
 
-        {/* Third Party Financing Modal */}
-        <ThirdPartyFinancingModal
-          isOpen={showFinancingModal}
-          onClose={() => setShowFinancingModal(false)}
-          onSave={() => {
-            // Refresh metrics after saving
-            refreshMetrics();
-          }}
-          currentDate={dashboardDate}
-          isDayMode={isDayMode}
-        />
-
-        {/* Top Procedures Modal */}
-        <TopProceduresModal
+        {/* Top Procedures CSV Upload */}
+        <TopProceduresCSVUpload
           isOpen={showTopProceduresModal}
           onClose={() => setShowTopProceduresModal(false)}
-          onSave={() => {
-            // Refresh top procedures after saving
+          onSuccess={() => {
+            // Refresh top procedures after upload
             getTopProceduresForDate(dashboardDate).then(setTopProcedures);
             refreshEOD();
           }}
           currentDate={dashboardDate}
-          isDayMode={isDayMode}
         />
 
         {/* AI Insights Button */}
