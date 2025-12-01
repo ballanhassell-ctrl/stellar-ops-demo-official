@@ -1154,14 +1154,14 @@ const CourtStreetRCM = () => {
 
   // New Patient Tracker data is now managed by the useNewPatientTracker hook above
 
-  // Third Party Financing data
-  const thirdPartyFinancingData = {
-    cherryPatients: 2,
-    careCreditPatients: 3,
-    cherryAmount: 8898.80,
-    careCreditAmount: 4052.40,
-    totalPatients: 5,
-    totalAmount: 12951.20
+  // Third Party Financing data - now comes from metricsData.financing
+  const thirdPartyFinancingData = metricsData?.financing || {
+    cherryPatients: 0,
+    careCreditPatients: 0,
+    cherryAmount: 0,
+    careCreditAmount: 0,
+    totalPatients: 0,
+    totalAmount: 0
   };
 
   // Daily Production by Provider data (now managed by state - see above)
@@ -2377,6 +2377,195 @@ const CourtStreetRCM = () => {
                 </div>
               </>
             )}
+
+            {patientManagementView === 'patients' && (
+              <>
+          <div className="space-y-6">
+            {/* Patients Header */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                Patient Accounts Receivable Management
+              </h2>
+
+              {/* Search Bar */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search patients by name, ID, or phone number..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Patient Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Total Patients */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-700 mb-1">Total Patients</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        {patientsData.totalPatients}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">In practice</p>
+                    </div>
+                    <Users className="w-8 h-8 text-blue-500" />
+                  </div>
+                </div>
+
+                {/* Active Patients */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-700 mb-1">Active Patients</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        {patientsData.activePatients}
+                      </p>
+                      <p className="text-xs text-green-600 mt-2">Last 12 months</p>
+                    </div>
+                    <UserCheck className="w-8 h-8 text-green-500" />
+                  </div>
+                </div>
+
+                {/* Patients with Balance */}
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-700 mb-1">Patients w/ Balance</p>
+                      <p className="text-3xl font-bold text-orange-900">
+                        {patientsData.patientsWithBalance}
+                      </p>
+                      <p className="text-xs text-orange-600 mt-2">Require follow-up</p>
+                    </div>
+                    <AlertCircle className="w-8 h-8 text-orange-500" />
+                  </div>
+                </div>
+
+                {/* Total Patient A/R */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-700 mb-1">Total Patient A/R</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        ${patientsData.totalPatientAR.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-2">Outstanding balance</p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-purple-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Patient A/R Aging */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Patient A/R Aging Analysis
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-green-800 mb-2">0-30 Days</p>
+                    <p className="text-2xl font-bold text-green-900">
+                      ${patientsData.patientARAging.zeroToThirty.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">Current</p>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-yellow-800 mb-2">31-60 Days</p>
+                    <p className="text-2xl font-bold text-yellow-900">
+                      ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-yellow-600 mt-1">Follow-up needed</p>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-orange-800 mb-2">61-90 Days</p>
+                    <p className="text-2xl font-bold text-orange-900">
+                      ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-orange-600 mt-1">Action required</p>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-lg p-5 hover:shadow-lg transition-all">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-red-800 mb-2">90+ Days</p>
+                    <p className="text-2xl font-bold text-red-900">
+                      ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-red-600 mt-1">Collections</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Plans & Collections */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Payment Plans */}
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Payment Plans
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Active Payment Plans</p>
+                        <p className="text-xs text-gray-500">Patients on scheduled payments</p>
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {patientsData.paymentPlans}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Past Due Accounts */}
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Collections Status
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center space-x-3">
+                      <XCircle className="w-6 h-6 text-red-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Past Due Accounts</p>
+                        <p className="text-xs text-gray-500">Require immediate attention</p>
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-red-900">
+                      {patientsData.pastDueAccounts}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Patient Activity */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Recent Patient Activity
+              </h3>
+              <div className="p-4 bg-gray-50 rounded-lg text-center">
+                <p className="text-sm text-gray-600">
+                  Patient activity and recent transactions will appear here
+                </p>
+              </div>
+            </div>
+          </div>
+              </>
+            )}
+          </div>
         ) : currentView === 'payments' ? (
           <div className="space-y-6">
             {/* Payments Header */}
@@ -2610,195 +2799,6 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-            {patientManagementView === 'patients' && (
-              <>
-          <div className="space-y-6">
-            {/* Patients Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
-                Patient Accounts Receivable Management
-              </h2>
-
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search patients by name, ID, or phone number..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Patient Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Total Patients */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Total Patients</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {patientsData.totalPatients}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">In practice</p>
-                    </div>
-                    <Users className="w-8 h-8 text-blue-500" />
-                  </div>
-                </div>
-
-                {/* Active Patients */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-700 mb-1">Active Patients</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        {patientsData.activePatients}
-                      </p>
-                      <p className="text-xs text-green-600 mt-2">Last 12 months</p>
-                    </div>
-                    <UserCheck className="w-8 h-8 text-green-500" />
-                  </div>
-                </div>
-
-                {/* Patients with Balance */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-orange-700 mb-1">Patients w/ Balance</p>
-                      <p className="text-3xl font-bold text-orange-900">
-                        {patientsData.patientsWithBalance}
-                      </p>
-                      <p className="text-xs text-orange-600 mt-2">Require follow-up</p>
-                    </div>
-                    <AlertCircle className="w-8 h-8 text-orange-500" />
-                  </div>
-                </div>
-
-                {/* Total Patient A/R */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-700 mb-1">Total Patient A/R</p>
-                      <p className="text-3xl font-bold text-purple-900">
-                        ${patientsData.totalPatientAR.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-2">Outstanding balance</p>
-                    </div>
-                    <DollarSign className="w-8 h-8 text-purple-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Patient A/R Aging */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Patient A/R Aging Analysis
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-green-800 mb-2">0-30 Days</p>
-                    <p className="text-2xl font-bold text-green-900">
-                      ${patientsData.patientARAging.zeroToThirty.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">Current</p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2">31-60 Days</p>
-                    <p className="text-2xl font-bold text-yellow-900">
-                      ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-yellow-600 mt-1">Follow-up needed</p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-orange-800 mb-2">61-90 Days</p>
-                    <p className="text-2xl font-bold text-orange-900">
-                      ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-orange-600 mt-1">Action required</p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-red-800 mb-2">90+ Days</p>
-                    <p className="text-2xl font-bold text-red-900">
-                      ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-red-600 mt-1">Collections</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Plans & Collections */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Payment Plans */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Payment Plans
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Active Payment Plans</p>
-                        <p className="text-xs text-gray-500">Patients on scheduled payments</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {patientsData.paymentPlans}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Past Due Accounts */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Collections Status
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center space-x-3">
-                      <XCircle className="w-6 h-6 text-red-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Past Due Accounts</p>
-                        <p className="text-xs text-gray-500">Require immediate attention</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-red-900">
-                      {patientsData.pastDueAccounts}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Patient Activity */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Recent Patient Activity
-              </h3>
-              <div className="p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">
-                  Patient activity and recent transactions will appear here
-                </p>
-              </div>
-            </div>
-          </div>
-              </>
-            )}
           </div>
         ) : currentView === 'insurance' ? (
           <div className="space-y-6">
