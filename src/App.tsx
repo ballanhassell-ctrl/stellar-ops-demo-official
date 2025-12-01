@@ -1341,7 +1341,7 @@ const CourtStreetRCM = () => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsDayMode(!isDayMode)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all shadow-md ${
                   isDayMode
                     ? 'bg-gray-800 text-white hover:bg-gray-700'
                     : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
@@ -1350,12 +1350,12 @@ const CourtStreetRCM = () => {
                 {isDayMode ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    Night Mode
+                    <span className="text-sm font-medium">Night Mode</span>
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" />
-                    Day Mode
+                    <span className="text-sm font-medium">Day Mode</span>
                   </>
                 )}
               </button>
@@ -1363,9 +1363,9 @@ const CourtStreetRCM = () => {
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md font-medium"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-5 h-5" />
                 <span className="text-sm font-medium">Task Board</span>
               </a>
               <div className="text-right">
@@ -3075,9 +3075,22 @@ const CourtStreetRCM = () => {
 
             {/* Advanced Business Metrics */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
+              <h3 className="text-xl font-bold mb-4" style={{ color: csdGold }}>
                 Advanced Business Metrics
               </h3>
+
+              {/* Experimental Data Disclaimer */}
+              <div className="mb-6 bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">Calculated Metrics</p>
+                    <p className="text-xs text-amber-700 mt-1">These metrics are calculated estimates based on available data. Please review for accuracy and adjust assumptions as needed.</p>
+                  </div>
+                </div>
+              </div>
 
               {/* Financial Performance */}
               <div className="mb-8">
