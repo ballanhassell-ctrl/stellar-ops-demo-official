@@ -63,6 +63,9 @@ export type Claim = {
   handler: string;
   notes: string | null;
   aging_days: number;
+  archived: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -82,8 +85,37 @@ export type PreAuth = {
   approved_amount: number;
   handler: string;
   notes: string | null;
+  archived: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
   created_at?: string;
   updated_at?: string;
+};
+
+export type ClaimAuditHistory = {
+  audit_id: number;
+  claim_id: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE' | 'ARCHIVE' | 'UNARCHIVE';
+  changed_by: string | null;
+  changed_at: string;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
+  changes: Record<string, any> | null;
+  ip_address: string | null;
+  user_agent: string | null;
+};
+
+export type PreAuthAuditHistory = {
+  audit_id: number;
+  pre_auth_id: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE' | 'ARCHIVE' | 'UNARCHIVE';
+  changed_by: string | null;
+  changed_at: string;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
+  changes: Record<string, any> | null;
+  ip_address: string | null;
+  user_agent: string | null;
 };
 
 export type Database = {
@@ -93,4 +125,6 @@ export type Database = {
   lifecycle_metrics: LifecycleMetrics;
   claims: Claim;
   pre_auths: PreAuth;
+  claims_audit_history: ClaimAuditHistory;
+  pre_auths_audit_history: PreAuthAuditHistory;
 };

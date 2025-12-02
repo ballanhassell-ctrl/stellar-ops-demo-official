@@ -436,7 +436,10 @@ const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated
   follow_up_date: record.followUpDate,
   handler: record.handler,
   notes: record.notes,
-  aging_days: record.agingDays
+  aging_days: record.agingDays,
+  archived: false,
+  archived_at: null,
+  archived_by: null
 });
 
 const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
@@ -470,7 +473,10 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
   expiration_date: record.expirationDate,
   approved_amount: record.approvedAmount,
   handler: record.handler,
-  notes: record.notes
+  notes: record.notes,
+  archived: false,
+  archived_at: null,
+  archived_by: null
 });
 
 
