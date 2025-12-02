@@ -24,9 +24,11 @@ import {
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges,
-  getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate
+  getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate,
+  getInsuranceChecks, insertInsuranceCheck, updateInsuranceCheck, deleteInsuranceCheck, getInsuranceCheckAuditHistory,
+  subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -485,6 +487,47 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
   archived_by: null
 });
 
+interface InsuranceCheckRecord {
+  id: string;
+  checkEftNumber: string;
+  paymentType: 'Check' | 'EFT';
+  insuranceCompany: string;
+  distributionType: 'Bulk' | 'Individual';
+  totalAmount: number;
+  aging: number;
+  enteredBy: string;
+  handler: string;
+  status: 'Entered' | 'Pending Review';
+  paymentDate: string;
+}
+
+const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => ({
+  id: check.id,
+  checkEftNumber: check.check_eft_number,
+  paymentType: check.payment_type,
+  insuranceCompany: check.insurance_company,
+  distributionType: check.distribution_type,
+  totalAmount: check.total_amount,
+  aging: check.aging,
+  enteredBy: check.entered_by,
+  handler: check.handler,
+  status: check.status,
+  paymentDate: check.payment_date
+});
+
+const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'> => ({
+  check_eft_number: record.checkEftNumber,
+  payment_type: record.paymentType,
+  insurance_company: record.insuranceCompany,
+  distribution_type: record.distributionType,
+  total_amount: record.totalAmount,
+  aging: record.aging,
+  entered_by: record.enteredBy,
+  handler: record.handler,
+  status: record.status,
+  payment_date: record.paymentDate
+});
+
 
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -544,9 +587,15 @@ const CourtStreetRCM = () => {
 
   // Add Update modal state
   const [showAddUpdateModal, setShowAddUpdateModal] = useState(false);
-  const [updateTarget, setUpdateTarget] = useState<{ type: 'claim' | 'preauth', id: string, name: string, currentStatus: string } | null>(null);
+  const [updateTarget, setUpdateTarget] = useState<{ type: 'claim' | 'preauth' | 'insurance-check', id: string, name: string, currentStatus: string } | null>(null);
   const [claimUpdates, setClaimUpdates] = useState<ClaimUpdate[]>([]);
   const [preAuthUpdates, setPreAuthUpdates] = useState<PreAuthUpdate[]>([]);
+
+  // Insurance Checks state
+  const [insuranceChecks, setInsuranceChecks] = useState<InsuranceCheck[]>([]);
+  const [showAddInsuranceCheckModal, setShowAddInsuranceCheckModal] = useState(false);
+  const [insuranceCheckUpdates, setInsuranceCheckUpdates] = useState<InsuranceCheckUpdate[]>([]);
+  const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -682,7 +731,25 @@ const CourtStreetRCM = () => {
     fetchPreAuths();
   }, [showArchivedPreAuths]);
 
-  // Set up real-time subscriptions for claims and pre-auths
+  // Fetch insurance checks from Supabase
+  useEffect(() => {
+    const fetchInsuranceChecks = async () => {
+      try {
+        setInsuranceChecksLoading(true);
+        const checksData = await getInsuranceChecks();
+        const checkRecords = checksData.map(insuranceCheckToRecord);
+        setInsuranceChecks(checkRecords);
+      } catch (error) {
+        console.error('Error fetching insurance checks:', error);
+      } finally {
+        setInsuranceChecksLoading(false);
+      }
+    };
+
+    fetchInsuranceChecks();
+  }, []);
+
+  // Set up real-time subscriptions for claims, pre-auths, and insurance checks
   useEffect(() => {
     // Subscribe to claims changes
     const claimsSubscription = subscribeToClaimsChanges(async (payload) => {
@@ -710,10 +777,24 @@ const CourtStreetRCM = () => {
       }
     });
 
+    // Subscribe to insurance checks changes
+    const insuranceChecksSubscription = subscribeToInsuranceChecksChanges(async (payload) => {
+      console.log('Insurance checks change detected:', payload);
+      // Refetch insurance checks data
+      try {
+        const checksData = await getInsuranceChecks();
+        const checkRecords = checksData.map(insuranceCheckToRecord);
+        setInsuranceChecks(checkRecords);
+      } catch (error) {
+        console.error('Error refetching insurance checks after update:', error);
+      }
+    });
+
     // Cleanup subscriptions on unmount
     return () => {
       claimsSubscription.unsubscribe();
       preAuthsSubscription.unsubscribe();
+      insuranceChecksSubscription.unsubscribe();
     };
   }, []);
 
@@ -2274,6 +2355,18 @@ const CourtStreetRCM = () => {
                   }`}
                 >
                   Patients
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-checks')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'insurance-checks'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Insurance Checks/EFT's
                 </button>
               </div>
             </div>
