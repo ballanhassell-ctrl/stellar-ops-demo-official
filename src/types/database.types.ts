@@ -154,8 +154,10 @@ export type InsuranceCheck = {
   aging: number;
   entered_by: string;
   handler: string;
-  status: 'Entered' | 'Pending Review';
+  status: 'Created' | 'Entered' | 'Pending Review';
   payment_date: string; // ISO date string
+  date_of_service?: string; // ISO date string
+  date_entered?: string; // ISO date string
   created_at?: string;
   updated_at?: string;
 };

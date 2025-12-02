@@ -497,8 +497,10 @@ interface InsuranceCheckRecord {
   aging: number;
   enteredBy: string;
   handler: string;
-  status: 'Entered' | 'Pending Review';
+  status: 'Created' | 'Entered' | 'Pending Review';
   paymentDate: string;
+  dateOfService?: string;
+  dateEntered?: string;
 }
 
 const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => ({
@@ -512,7 +514,9 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
   enteredBy: check.entered_by,
   handler: check.handler,
   status: check.status,
-  paymentDate: check.payment_date
+  paymentDate: check.payment_date,
+  dateOfService: check.date_of_service,
+  dateEntered: check.date_entered
 });
 
 const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'> => ({
@@ -525,7 +529,9 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceChe
   entered_by: record.enteredBy,
   handler: record.handler,
   status: record.status,
-  payment_date: record.paymentDate
+  payment_date: record.paymentDate,
+  date_of_service: record.dateOfService,
+  date_entered: record.dateEntered
 });
 
 
@@ -3288,6 +3294,8 @@ const CourtStreetRCM = () => {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance Company</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Distribution</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">DOS</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Entered</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
@@ -3298,7 +3306,7 @@ const CourtStreetRCM = () => {
                       <tbody className="divide-y divide-gray-200">
                         {filteredInsuranceChecks.length === 0 ? (
                           <tr>
-                            <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                            <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
                               No insurance checks found matching your search.
                             </td>
                           </tr>
@@ -3307,7 +3315,9 @@ const CourtStreetRCM = () => {
                             <tr
                               key={check.id}
                               className={`transition-colors ${
-                                check.status === 'Entered'
+                                check.status === 'Created'
+                                  ? 'bg-gray-50 hover:bg-gray-100'
+                                  : check.status === 'Entered'
                                   ? 'bg-green-50 hover:bg-green-100'
                                   : 'bg-yellow-50 hover:bg-yellow-100'
                               }`}
@@ -3325,6 +3335,8 @@ const CourtStreetRCM = () => {
                               <td className="px-4 py-4 text-sm text-gray-900">{check.insuranceCompany}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{check.distributionType}</td>
                               <td className="px-4 py-4 text-sm font-semibold text-gray-900">${check.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{check.dateOfService || '-'}</td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{check.dateEntered || '-'}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{check.paymentDate}</td>
                               <td className="px-4 py-4">
                                 <span className={`text-sm font-medium ${
@@ -3338,7 +3350,9 @@ const CourtStreetRCM = () => {
                               <td className="px-4 py-4 text-sm text-gray-900">{check.handler}</td>
                               <td className="px-4 py-4">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  check.status === 'Entered'
+                                  check.status === 'Created'
+                                    ? 'bg-gray-100 text-gray-800'
+                                    : check.status === 'Entered'
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-yellow-100 text-yellow-800'
                                 }`}>
@@ -3642,8 +3656,10 @@ const CourtStreetRCM = () => {
                       aging: parseInt(formData.get('aging') as string) || 0,
                       enteredBy: formData.get('enteredBy') as string,
                       handler: formData.get('handler') as string,
-                      status: formData.get('status') as 'Entered' | 'Pending Review',
-                      paymentDate: formData.get('paymentDate') as string
+                      status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
+                      paymentDate: formData.get('paymentDate') as string,
+                      dateOfService: formData.get('dateOfService') as string || undefined,
+                      dateEntered: formData.get('dateEntered') as string || undefined
                     };
 
                     try {
@@ -3717,6 +3733,16 @@ const CourtStreetRCM = () => {
                       </div>
 
                       <div>
+                        <label className="block text-sm font-medium mb-1">DOS (Date of Service)</label>
+                        <input name="dateOfService" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Date Entered</label>
+                        <input name="dateEntered" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+
+                      <div>
                         <label className="block text-sm font-medium mb-1">Payment Date</label>
                         <input name="paymentDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                       </div>
@@ -3724,6 +3750,7 @@ const CourtStreetRCM = () => {
                       <div>
                         <label className="block text-sm font-medium mb-1">Status</label>
                         <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                          <option value="Created">Created</option>
                           <option value="Entered">Entered</option>
                           <option value="Pending Review">Pending Review</option>
                         </select>
@@ -6763,8 +6790,10 @@ const CourtStreetRCM = () => {
                       aging: parseInt(formData.get('aging') as string),
                       entered_by: formData.get('enteredBy') as string,
                       handler: formData.get('handler') as string,
-                      status: formData.get('status') as 'Entered' | 'Pending Review',
+                      status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
                       payment_date: formData.get('paymentDate') as string,
+                      date_of_service: formData.get('dateOfService') as string || undefined,
+                      date_entered: formData.get('dateEntered') as string || undefined,
                     };
 
                     try {
@@ -6872,6 +6901,24 @@ const CourtStreetRCM = () => {
                             />
                           </div>
                           <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">DOS (Date of Service)</label>
+                            <input
+                              type="date"
+                              name="dateOfService"
+                              defaultValue={check.dateOfService || ''}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Entered</label>
+                            <input
+                              type="date"
+                              name="dateEntered"
+                              defaultValue={check.dateEntered || ''}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
                             <input
                               type="date"
@@ -6889,6 +6936,7 @@ const CourtStreetRCM = () => {
                               required
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
+                              <option value="Created">Created</option>
                               <option value="Entered">Entered</option>
                               <option value="Pending Review">Pending Review</option>
                             </select>
@@ -7091,6 +7139,7 @@ const CourtStreetRCM = () => {
                       >
                         {updateTarget.type === 'insurance-check' ? (
                           <>
+                            <option value="Created">Created</option>
                             <option value="Entered">Entered</option>
                             <option value="Pending Review">Pending Review</option>
                           </>
