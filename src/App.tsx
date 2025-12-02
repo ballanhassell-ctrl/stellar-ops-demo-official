@@ -5872,7 +5872,9 @@ const CourtStreetRCM = () => {
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
+                    const claim = editingItem as ClaimRecord;
                     const updatedClaim = {
+                      patient_id: claim.patientId, // Preserve existing patient_id
                       patient_name: formData.get('patientName') as string,
                       insurance_company: formData.get('insuranceCompany') as string,
                       claim_number: formData.get('claimNumber') as string,
@@ -5888,8 +5890,9 @@ const CourtStreetRCM = () => {
                     };
 
                     try {
-                      await updateClaim(editingItem.id, updatedClaim);
-                      const updatedClaims = await getClaims();
+                      await updateClaim(claim.id, updatedClaim);
+                      // Refetch based on current toggle state
+                      const updatedClaims = showArchivedClaims ? await getArchivedClaims() : await getActiveClaims();
                       setClaims(updatedClaims.map(claimToRecord));
                       setShowEditModal(false);
                       setEditingItem(null);
@@ -6055,7 +6058,9 @@ const CourtStreetRCM = () => {
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
+                    const preAuth = editingItem as PreAuthRecord;
                     const updatedPreAuth = {
+                      patient_id: preAuth.patientId, // Preserve existing patient_id
                       patient_name: formData.get('patientName') as string,
                       insurance_company: formData.get('insuranceCompany') as string,
                       pre_auth_number: formData.get('preAuthNumber') as string,
@@ -6071,8 +6076,9 @@ const CourtStreetRCM = () => {
                     };
 
                     try {
-                      await updatePreAuth(editingItem.id, updatedPreAuth);
-                      const updatedPreAuths = await getPreAuths();
+                      await updatePreAuth(preAuth.id, updatedPreAuth);
+                      // Refetch based on current toggle state
+                      const updatedPreAuths = showArchivedPreAuths ? await getArchivedPreAuths() : await getActivePreAuths();
                       setPreAuths(updatedPreAuths.map(preAuthToRecord));
                       setShowEditModal(false);
                       setEditingItem(null);
