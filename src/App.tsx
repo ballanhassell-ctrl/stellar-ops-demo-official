@@ -6,6 +6,7 @@ import {
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
   Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus
 } from 'lucide-react';
+import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
 import { useProviderMetrics } from './hooks/useProviderMetrics';
@@ -7133,11 +7134,17 @@ const CourtStreetRCM = () => {
                         notes
                       });
                     } else {
-                      // If status is changing, update the actual record first
+                      // If status is changing, update the actual record first using direct Supabase call
                       if (updateType === 'status_change' && newStatus) {
-                        await updateInsuranceCheck(updateTarget.id, {
-                          status: newStatus as 'Created' | 'Entered' | 'Pending Review'
-                        });
+                        const { error: updateError } = await supabase
+                          .from('insurance_checks')
+                          .update({ status: newStatus })
+                          .eq('id', updateTarget.id);
+
+                        if (updateError) {
+                          console.error('Error updating insurance check status:', updateError);
+                          throw updateError;
+                        }
                       }
 
                       // Log the update
