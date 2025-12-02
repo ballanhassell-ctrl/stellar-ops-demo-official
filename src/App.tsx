@@ -23,9 +23,10 @@ import {
   getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, unarchiveClaim, getClaimAuditHistory,
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
-  subscribeToClaimsChanges, subscribeToPreAuthsChanges
+  subscribeToClaimsChanges, subscribeToPreAuthsChanges,
+  getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate
 } from './services/claimsService';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -540,6 +541,12 @@ const CourtStreetRCM = () => {
   // Archive view toggle state
   const [showArchivedClaims, setShowArchivedClaims] = useState(false);
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
+
+  // Add Update modal state
+  const [showAddUpdateModal, setShowAddUpdateModal] = useState(false);
+  const [updateTarget, setUpdateTarget] = useState<{ type: 'claim' | 'preauth', id: string, name: string, currentStatus: string } | null>(null);
+  const [claimUpdates, setClaimUpdates] = useState<ClaimUpdate[]>([]);
+  const [preAuthUpdates, setPreAuthUpdates] = useState<PreAuthUpdate[]>([]);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -1389,15 +1396,26 @@ const CourtStreetRCM = () => {
     try {
       if (type === 'claim') {
         const history = await getClaimAuditHistory(id);
+        const updates = await getClaimUpdates(id);
         setHistoryData(history);
+        setClaimUpdates(updates);
       } else {
         const history = await getPreAuthAuditHistory(id);
+        const updates = await getPreAuthUpdates(id);
         setHistoryData(history);
+        setPreAuthUpdates(updates);
       }
     } catch (error) {
       console.error('Error fetching history:', error);
       setHistoryData([]);
+      setClaimUpdates([]);
+      setPreAuthUpdates([]);
     }
+  };
+
+  const handleAddUpdate = (type: 'claim' | 'preauth', id: string, name: string, currentStatus: string) => {
+    setUpdateTarget({ type, id, name, currentStatus });
+    setShowAddUpdateModal(true);
   };
 
   // Helper function to export PDF
