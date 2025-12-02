@@ -155,9 +155,11 @@ export type InsuranceCheck = {
   entered_by: string;
   handler: string;
   status: 'Created' | 'Entered' | 'Pending Review';
-  payment_date: string; // ISO date string
   date_of_service?: string; // ISO date string
   date_entered?: string; // ISO date string
+  is_archived?: boolean;
+  archived_at?: string;
+  archived_by?: string;
   created_at?: string;
   updated_at?: string;
 };
