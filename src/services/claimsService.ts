@@ -651,3 +651,69 @@ export async function getFilteredPreAuths(filters: PreAuthFilters, sortBy: strin
 
   return data as PreAuth[];
 }
+
+// =====================================================
+// CLAIM UPDATES OPERATIONS
+// =====================================================
+
+import type { ClaimUpdate, PreAuthUpdate } from '../types/database.types';
+
+export async function getClaimUpdates(claimId: string) {
+  const { data, error } = await supabase
+    .from('claim_updates')
+    .select('*')
+    .eq('claim_id', claimId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching claim updates:', error);
+    throw error;
+  }
+
+  return data as ClaimUpdate[];
+}
+
+export async function addClaimUpdate(update: Omit<ClaimUpdate, 'update_id' | 'created_at'>) {
+  const { data, error } = await supabase
+    .from('claim_updates')
+    .insert(update)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding claim update:', error);
+    throw error;
+  }
+
+  return data as ClaimUpdate;
+}
+
+export async function getPreAuthUpdates(preAuthId: string) {
+  const { data, error } = await supabase
+    .from('pre_auth_updates')
+    .select('*')
+    .eq('pre_auth_id', preAuthId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching pre-auth updates:', error);
+    throw error;
+  }
+
+  return data as PreAuthUpdate[];
+}
+
+export async function addPreAuthUpdate(update: Omit<PreAuthUpdate, 'update_id' | 'created_at'>) {
+  const { data, error } = await supabase
+    .from('pre_auth_updates')
+    .insert(update)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding pre-auth update:', error);
+    throw error;
+  }
+
+  return data as PreAuthUpdate;
+}

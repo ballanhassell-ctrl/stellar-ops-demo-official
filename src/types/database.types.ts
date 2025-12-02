@@ -118,6 +118,32 @@ export type PreAuthAuditHistory = {
   user_agent: string | null;
 };
 
+export type ClaimUpdate = {
+  update_id: number;
+  claim_id: string;
+  handler: string;
+  update_type: 'status_change' | 'note' | 'follow_up' | 'amount_change' | 'general';
+  old_status: string | null;
+  new_status: string | null;
+  old_amount: number | null;
+  new_amount: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type PreAuthUpdate = {
+  update_id: number;
+  pre_auth_id: string;
+  handler: string;
+  update_type: 'status_change' | 'note' | 'follow_up' | 'amount_change' | 'general';
+  old_status: string | null;
+  new_status: string | null;
+  old_amount: number | null;
+  new_amount: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
 export type Database = {
   patients: Patient;
   appointments: Appointment;
@@ -127,4 +153,6 @@ export type Database = {
   pre_auths: PreAuth;
   claims_audit_history: ClaimAuditHistory;
   pre_auths_audit_history: PreAuthAuditHistory;
+  claim_updates: ClaimUpdate;
+  pre_auth_updates: PreAuthUpdate;
 };
