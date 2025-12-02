@@ -362,157 +362,6 @@ interface PreAuthRecord {
   notes: string;
 }
 
-// Sample Claims Data
-const sampleClaims: ClaimRecord[] = [
-  {
-    id: 'CLM-001',
-    patientId: 'PT-1234',
-    patientName: 'John Smith',
-    insuranceCompany: 'Delta Dental',
-    claimNumber: 'DD-2025-0142',
-    procedureCode: 'D2392',
-    claimDetail: 'Resin-based composite - two surfaces, posterior',
-    claimAmount: 285.00,
-    status: 'Pending',
-    dateSubmitted: '2025-11-15',
-    followUpDate: '2025-12-05',
-    handler: 'Sarah J.',
-    notes: 'Awaiting initial response',
-    agingDays: 16
-  },
-  {
-    id: 'CLM-002',
-    patientId: 'PT-5678',
-    patientName: 'Maria Garcia',
-    insuranceCompany: 'Cigna',
-    claimNumber: 'CG-2025-0987',
-    procedureCode: 'D0274',
-    claimDetail: 'Bitewing - four radiographic images',
-    claimAmount: 120.00,
-    status: 'Approved',
-    dateSubmitted: '2025-11-20',
-    followUpDate: '2025-11-28',
-    handler: 'Mike T.',
-    notes: 'Approved for full amount',
-    agingDays: 11
-  },
-  {
-    id: 'CLM-003',
-    patientId: 'PT-9012',
-    patientName: 'Robert Johnson',
-    insuranceCompany: 'Aetna',
-    claimNumber: 'AE-2025-2341',
-    procedureCode: 'D7140',
-    claimDetail: 'Extraction, erupted tooth',
-    claimAmount: 195.00,
-    status: 'Denied',
-    dateSubmitted: '2025-10-08',
-    followUpDate: '2025-11-01',
-    handler: 'Sarah J.',
-    notes: 'Denied - missing documentation, preparing appeal',
-    agingDays: 54
-  },
-  {
-    id: 'CLM-004',
-    patientId: 'PT-3456',
-    patientName: 'Emily Chen',
-    insuranceCompany: 'MetLife',
-    claimNumber: 'ML-2025-5678',
-    procedureCode: 'D1110',
-    claimDetail: 'Prophylaxis - adult',
-    claimAmount: 95.00,
-    status: 'In Review',
-    dateSubmitted: '2025-11-25',
-    followUpDate: '2025-12-10',
-    handler: 'Mike T.',
-    notes: 'Under review for frequency limitation',
-    agingDays: 6
-  },
-  {
-    id: 'CLM-005',
-    patientId: 'PT-7890',
-    patientName: 'Michael Brown',
-    insuranceCompany: 'United Healthcare',
-    claimNumber: 'UH-2025-8901',
-    procedureCode: 'D2750',
-    claimDetail: 'Crown - porcelain fused to high noble metal',
-    claimAmount: 1250.00,
-    status: 'Pending',
-    dateSubmitted: '2025-09-12',
-    followUpDate: '2025-10-15',
-    handler: 'Sarah J.',
-    notes: 'Multiple follow-ups, escalated to supervisor',
-    agingDays: 80
-  }
-];
-
-// Sample Pre-Authorization Data
-const samplePreAuths: PreAuthRecord[] = [
-  {
-    id: 'PA-001',
-    patientId: 'PT-2345',
-    patientName: 'Jennifer Davis',
-    insuranceCompany: 'Delta Dental',
-    preAuthNumber: 'DD-PA-2025-0432',
-    procedureCode: 'D6010',
-    treatmentDetail: 'Surgical placement of implant body',
-    requestedAmount: 2400.00,
-    status: 'Approved',
-    dateRequested: '2025-11-01',
-    expirationDate: '2026-05-01',
-    approvedAmount: 2100.00,
-    handler: 'Sarah J.',
-    notes: 'Approved with 12% reduction'
-  },
-  {
-    id: 'PA-002',
-    patientId: 'PT-6789',
-    patientName: 'David Wilson',
-    insuranceCompany: 'Cigna',
-    preAuthNumber: 'CG-PA-2025-1234',
-    procedureCode: 'D7210',
-    treatmentDetail: 'Extraction, erupted tooth requiring removal of bone',
-    requestedAmount: 450.00,
-    status: 'Pending',
-    dateRequested: '2025-11-28',
-    expirationDate: '2026-02-28',
-    approvedAmount: 0,
-    handler: 'Mike T.',
-    notes: 'Awaiting initial response'
-  },
-  {
-    id: 'PA-003',
-    patientId: 'PT-1357',
-    patientName: 'Lisa Martinez',
-    insuranceCompany: 'Aetna',
-    preAuthNumber: 'AE-PA-2025-5678',
-    procedureCode: 'D3310',
-    treatmentDetail: 'Root canal therapy - anterior tooth',
-    requestedAmount: 850.00,
-    status: 'Denied',
-    dateRequested: '2025-11-10',
-    expirationDate: '2026-02-10',
-    approvedAmount: 0,
-    handler: 'Sarah J.',
-    notes: 'Denied - requires additional X-rays, resubmitting'
-  },
-  {
-    id: 'PA-004',
-    patientId: 'PT-2468',
-    patientName: 'James Taylor',
-    insuranceCompany: 'MetLife',
-    preAuthNumber: 'ML-PA-2025-9012',
-    procedureCode: 'D5110',
-    treatmentDetail: 'Complete denture - upper',
-    requestedAmount: 1600.00,
-    status: 'In Review',
-    dateRequested: '2025-11-22',
-    expirationDate: '2026-03-22',
-    approvedAmount: 0,
-    handler: 'Mike T.',
-    notes: 'Under clinical review by insurance'
-  }
-];
 
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -545,8 +394,10 @@ const CourtStreetRCM = () => {
   const [insuranceProviders, setInsuranceProviders] = useState<InsuranceProvider[]>([]);
 
   // Patient Management state
-  const [claims, _setClaims] = useState<ClaimRecord[]>(sampleClaims);
-  const [preAuths, _setPreAuths] = useState<PreAuthRecord[]>(samplePreAuths);
+  const [claims, setClaims] = useState<ClaimRecord[]>([]);
+  const [preAuths, setPreAuths] = useState<PreAuthRecord[]>([]);
+  const [showAddClaimModal, setShowAddClaimModal] = useState(false);
+  const [showAddPreAuthModal, setShowAddPreAuthModal] = useState(false);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -2259,7 +2110,7 @@ const CourtStreetRCM = () => {
                 </h3>
                 <button
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                  onClick={() => alert('Add New Claim functionality - to be implemented')}
+                  onClick={() => setShowAddClaimModal(true)}
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add New Claim</span>
@@ -2440,7 +2291,7 @@ const CourtStreetRCM = () => {
                     </h3>
                     <button
                       className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                      onClick={() => alert('Add New Pre-Auth functionality - to be implemented')}
+                      onClick={() => setShowAddPreAuthModal(true)}
                     >
                       <Plus className="w-4 h-4" />
                       <span>Request Pre-Auth</span>
@@ -2720,6 +2571,214 @@ const CourtStreetRCM = () => {
             </div>
           </div>
               </>
+            )}
+
+            {/* Add New Claim Modal */}
+            {showAddClaimModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Claim</h3>
+                    <button onClick={() => setShowAddClaimModal(false)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newClaim: ClaimRecord = {
+                      id: `CLM-${String(claims.length + 1).padStart(3, '0')}`,
+                      patientId: formData.get('patientId') as string,
+                      patientName: formData.get('patientName') as string,
+                      insuranceCompany: formData.get('insuranceCompany') as string,
+                      claimNumber: formData.get('claimNumber') as string,
+                      procedureCode: formData.get('procedureCode') as string,
+                      claimDetail: formData.get('claimDetail') as string,
+                      claimAmount: parseFloat(formData.get('claimAmount') as string),
+                      status: formData.get('status') as 'Pending' | 'Approved' | 'Denied' | 'In Review' | 'Resubmitted',
+                      dateSubmitted: formData.get('dateSubmitted') as string,
+                      followUpDate: formData.get('followUpDate') as string,
+                      handler: formData.get('handler') as string,
+                      notes: formData.get('notes') as string,
+                      agingDays: Math.floor((new Date().getTime() - new Date(formData.get('dateSubmitted') as string).getTime()) / (1000 * 60 * 60 * 24))
+                    };
+                    setClaims([...claims, newClaim]);
+                    setShowAddClaimModal(false);
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient ID</label>
+                        <input name="patientId" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="PT-1234" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient Name</label>
+                        <input name="patientName" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John Smith" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Insurance Company</label>
+                        <input name="insuranceCompany" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Delta Dental" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Claim Number</label>
+                        <input name="claimNumber" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="DD-2025-0142" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Procedure Code</label>
+                        <input name="procedureCode" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="D2392" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Claim Amount</label>
+                        <input name="claimAmount" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="285.00" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                          <option value="Pending">Pending</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Denied">Denied</option>
+                          <option value="In Review">In Review</option>
+                          <option value="Resubmitted">Resubmitted</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Handler</label>
+                        <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Date Submitted</label>
+                        <input name="dateSubmitted" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Follow-up Date</label>
+                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Claim Detail</label>
+                      <input name="claimDetail" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Resin-based composite - two surfaces, posterior" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <textarea name="notes" rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <button type="button" onClick={() => setShowAddClaimModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        Cancel
+                      </button>
+                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+                        Add Claim
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Add New Pre-Auth Modal */}
+            {showAddPreAuthModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Request Pre-Authorization</h3>
+                    <button onClick={() => setShowAddPreAuthModal(false)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newPreAuth: PreAuthRecord = {
+                      id: `PA-${String(preAuths.length + 1).padStart(3, '0')}`,
+                      patientId: formData.get('patientId') as string,
+                      patientName: formData.get('patientName') as string,
+                      insuranceCompany: formData.get('insuranceCompany') as string,
+                      preAuthNumber: formData.get('preAuthNumber') as string,
+                      procedureCode: formData.get('procedureCode') as string,
+                      treatmentDetail: formData.get('treatmentDetail') as string,
+                      requestedAmount: parseFloat(formData.get('requestedAmount') as string),
+                      status: formData.get('status') as 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review',
+                      dateRequested: formData.get('dateRequested') as string,
+                      expirationDate: formData.get('expirationDate') as string,
+                      approvedAmount: parseFloat(formData.get('approvedAmount') as string) || 0,
+                      handler: formData.get('handler') as string,
+                      notes: formData.get('notes') as string
+                    };
+                    setPreAuths([...preAuths, newPreAuth]);
+                    setShowAddPreAuthModal(false);
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient ID</label>
+                        <input name="patientId" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="PT-1234" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient Name</label>
+                        <input name="patientName" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John Smith" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Insurance Company</label>
+                        <input name="insuranceCompany" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Delta Dental" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Pre-Auth Number</label>
+                        <input name="preAuthNumber" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="DD-PA-2025-0432" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Procedure Code</label>
+                        <input name="procedureCode" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="D6010" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Requested Amount</label>
+                        <input name="requestedAmount" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="2400.00" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                          <option value="Pending">Pending</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Denied">Denied</option>
+                          <option value="Expired">Expired</option>
+                          <option value="In Review">In Review</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Handler</label>
+                        <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Date Requested</label>
+                        <input name="dateRequested" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Expiration Date</label>
+                        <input name="expirationDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Approved Amount (if applicable)</label>
+                        <input name="approvedAmount" type="number" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0.00" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Treatment Detail</label>
+                      <input name="treatmentDetail" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Surgical placement of implant body" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <textarea name="notes" rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <button type="button" onClick={() => setShowAddPreAuthModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        Cancel
+                      </button>
+                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+                        Request Pre-Auth
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             )}
           </div>
         ) : currentView === 'payments' ? (
