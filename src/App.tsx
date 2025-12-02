@@ -4,7 +4,7 @@ import {
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Eye
+  Plus, Edit, Trash2, Archive, History
 } from 'lucide-react';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
@@ -19,8 +19,12 @@ import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDate } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
-import { getClaims, insertClaim, getPreAuths, insertPreAuth } from './services/claimsService';
-import type { Claim, PreAuth } from './types/database.types';
+import {
+  getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, getClaimAuditHistory,
+  getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, getPreAuthAuditHistory,
+  subscribeToClaimsChanges, subscribeToPreAuthsChanges
+} from './services/claimsService';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -518,6 +522,20 @@ const CourtStreetRCM = () => {
   const [_claimsLoading, setClaimsLoading] = useState(true);
   const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
 
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<ClaimRecord | PreAuthRecord | null>(null);
+  const [editingType, setEditingType] = useState<'claim' | 'preauth' | null>(null);
+
+  // Delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<{ type: 'claim' | 'preauth', id: string, name: string } | null>(null);
+
+  // History modal state
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyItem, setHistoryItem] = useState<{ type: 'claim' | 'preauth', id: string, name: string } | null>(null);
+  const [historyData, setHistoryData] = useState<(ClaimAuditHistory | PreAuthAuditHistory)[]>([]);
+
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
@@ -650,6 +668,41 @@ const CourtStreetRCM = () => {
     };
 
     fetchPreAuths();
+  }, []);
+
+  // Set up real-time subscriptions for claims and pre-auths
+  useEffect(() => {
+    // Subscribe to claims changes
+    const claimsSubscription = subscribeToClaimsChanges(async (payload) => {
+      console.log('Claims change detected:', payload);
+      // Refetch claims data
+      try {
+        const claimsData = await getClaims();
+        const claimRecords = claimsData.map(claimToRecord);
+        setClaims(claimRecords);
+      } catch (error) {
+        console.error('Error refetching claims after update:', error);
+      }
+    });
+
+    // Subscribe to pre-auths changes
+    const preAuthsSubscription = subscribeToPreAuthsChanges(async (payload) => {
+      console.log('Pre-auths change detected:', payload);
+      // Refetch pre-auths data
+      try {
+        const preAuthsData = await getPreAuths();
+        const preAuthRecords = preAuthsData.map(preAuthToRecord);
+        setPreAuths(preAuthRecords);
+      } catch (error) {
+        console.error('Error refetching pre-auths after update:', error);
+      }
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      claimsSubscription.unsubscribe();
+      preAuthsSubscription.unsubscribe();
+    };
   }, []);
 
   // Expose helper functions to window for console access (useful for testing and manual operations)
@@ -1242,6 +1295,81 @@ const CourtStreetRCM = () => {
     preAuth.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Handler functions for claims and pre-auths management
+  const handleEditClaim = (claim: ClaimRecord) => {
+    setEditingItem(claim);
+    setEditingType('claim');
+    setShowEditModal(true);
+  };
+
+  const handleEditPreAuth = (preAuth: PreAuthRecord) => {
+    setEditingItem(preAuth);
+    setEditingType('preauth');
+    setShowEditModal(true);
+  };
+
+  const handleDeleteClick = (type: 'claim' | 'preauth', id: string, name: string) => {
+    setDeleteItem({ type, id, name });
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteItem) return;
+
+    try {
+      if (deleteItem.type === 'claim') {
+        await deleteClaim(deleteItem.id);
+        setClaims(claims.filter(c => c.id !== deleteItem.id));
+      } else {
+        await deletePreAuth(deleteItem.id);
+        setPreAuths(preAuths.filter(pa => pa.id !== deleteItem.id));
+      }
+      setShowDeleteModal(false);
+      setDeleteItem(null);
+    } catch (error) {
+      console.error('Error deleting:', error);
+      alert('Failed to delete. Please try again.');
+    }
+  };
+
+  const handleArchiveClaim = async (id: string) => {
+    try {
+      const archived = await archiveClaim(id, 'user');
+      setClaims(claims.map(c => c.id === id ? claimToRecord(archived) : c));
+    } catch (error) {
+      console.error('Error archiving claim:', error);
+      alert('Failed to archive claim. Please try again.');
+    }
+  };
+
+  const handleArchivePreAuth = async (id: string) => {
+    try {
+      const archived = await archivePreAuth(id, 'user');
+      setPreAuths(preAuths.map(pa => pa.id === id ? preAuthToRecord(archived) : pa));
+    } catch (error) {
+      console.error('Error archiving pre-auth:', error);
+      alert('Failed to archive pre-auth. Please try again.');
+    }
+  };
+
+  const handleViewHistory = async (type: 'claim' | 'preauth', id: string, name: string) => {
+    setHistoryItem({ type, id, name });
+    setShowHistoryModal(true);
+
+    try {
+      if (type === 'claim') {
+        const history = await getClaimAuditHistory(id);
+        setHistoryData(history);
+      } else {
+        const history = await getPreAuthAuditHistory(id);
+        setHistoryData(history);
+      }
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      setHistoryData([]);
+    }
+  };
 
   // Helper function to export PDF
   const exportToPDF = () => {
@@ -2345,20 +2473,34 @@ const CourtStreetRCM = () => {
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-900">{claim.handler}</td>
                           <td className="px-4 py-4">
-                            <div className="flex space-x-2">
+                            <div className="flex space-x-1">
                               <button
                                 className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                onClick={() => alert(`View details for ${claim.patientName} - To be implemented`)}
-                                title="View Details"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button
-                                className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                                onClick={() => alert(`Edit claim ${claim.claimNumber} - To be implemented`)}
+                                onClick={() => handleEditClaim(claim)}
                                 title="Edit Claim"
                               >
                                 <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                onClick={() => handleViewHistory('claim', claim.id, claim.patientName)}
+                                title="View History"
+                              >
+                                <History className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                onClick={() => handleArchiveClaim(claim.id)}
+                                title="Archive Claim"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                onClick={() => handleDeleteClick('claim', claim.id, claim.patientName)}
+                                title="Delete Claim"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -2531,20 +2673,34 @@ const CourtStreetRCM = () => {
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.expirationDate}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.handler}</td>
                               <td className="px-4 py-4">
-                                <div className="flex space-x-2">
+                                <div className="flex space-x-1">
                                   <button
                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                    onClick={() => alert(`View details for ${preAuth.patientName} - To be implemented`)}
-                                    title="View Details"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                                    onClick={() => alert(`Edit pre-auth ${preAuth.preAuthNumber} - To be implemented`)}
+                                    onClick={() => handleEditPreAuth(preAuth)}
                                     title="Edit Pre-Auth"
                                   >
                                     <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                    onClick={() => handleViewHistory('preauth', preAuth.id, preAuth.patientName)}
+                                    title="View History"
+                                  >
+                                    <History className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                    onClick={() => handleArchivePreAuth(preAuth.id)}
+                                    title="Archive Pre-Auth"
+                                  >
+                                    <Archive className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    onClick={() => handleDeleteClick('preauth', preAuth.id, preAuth.patientName)}
+                                    title="Delete Pre-Auth"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
                               </td>
@@ -5583,6 +5739,526 @@ const CourtStreetRCM = () => {
           }}
           currentDate={dashboardDate}
         />
+
+        {/* Edit Modal */}
+        {showEditModal && editingItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingType === 'claim' ? 'Edit Claim' : 'Edit Pre-Authorization'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                    setEditingType(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                {editingType === 'claim' ? (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const updatedClaim = {
+                      patient_name: formData.get('patientName') as string,
+                      insurance_company: formData.get('insuranceCompany') as string,
+                      claim_number: formData.get('claimNumber') as string,
+                      procedure_code: formData.get('procedureCode') as string,
+                      claim_detail: formData.get('claimDetail') as string,
+                      claim_amount: parseFloat(formData.get('claimAmount') as string),
+                      status: formData.get('status') as Claim['status'],
+                      date_submitted: formData.get('dateSubmitted') as string,
+                      follow_up_date: formData.get('followUpDate') as string,
+                      handler: formData.get('handler') as string,
+                      notes: formData.get('notes') as string || null,
+                      aging_days: parseInt(formData.get('agingDays') as string),
+                    };
+
+                    try {
+                      await updateClaim(editingItem.id, updatedClaim);
+                      const updatedClaims = await getClaims();
+                      setClaims(updatedClaims.map(claimToRecord));
+                      setShowEditModal(false);
+                      setEditingItem(null);
+                      setEditingType(null);
+                    } catch (error) {
+                      console.error('Error updating claim:', error);
+                      alert('Failed to update claim. Please try again.');
+                    }
+                  }}>
+                    {(() => {
+                      const claim = editingItem as ClaimRecord;
+                      return (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
+                            <input
+                              type="text"
+                              name="patientName"
+                              defaultValue={claim.patientName}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Company</label>
+                            <input
+                              type="text"
+                              name="insuranceCompany"
+                              defaultValue={claim.insuranceCompany}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Claim Number</label>
+                            <input
+                              type="text"
+                              name="claimNumber"
+                              defaultValue={claim.claimNumber}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Procedure Code</label>
+                            <input
+                              type="text"
+                              name="procedureCode"
+                              defaultValue={claim.procedureCode}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Claim Detail</label>
+                            <input
+                              type="text"
+                              name="claimDetail"
+                              defaultValue={claim.claimDetail}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Claim Amount</label>
+                            <input
+                              type="number"
+                              name="claimAmount"
+                              step="0.01"
+                              defaultValue={claim.claimAmount}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select
+                              name="status"
+                              defaultValue={claim.status}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Approved">Approved</option>
+                              <option value="Denied">Denied</option>
+                              <option value="In Review">In Review</option>
+                              <option value="Resubmitted">Resubmitted</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Submitted</label>
+                            <input
+                              type="date"
+                              name="dateSubmitted"
+                              defaultValue={claim.dateSubmitted}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Follow-Up Date</label>
+                            <input
+                              type="date"
+                              name="followUpDate"
+                              defaultValue={claim.followUpDate}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Handler</label>
+                            <input
+                              type="text"
+                              name="handler"
+                              defaultValue={claim.handler}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Aging Days</label>
+                            <input
+                              type="number"
+                              name="agingDays"
+                              defaultValue={claim.agingDays}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                            <textarea
+                              name="notes"
+                              defaultValue={claim.notes || ''}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <div className="mt-6 flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setEditingItem(null);
+                          setEditingType(null);
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const updatedPreAuth = {
+                      patient_name: formData.get('patientName') as string,
+                      insurance_company: formData.get('insuranceCompany') as string,
+                      pre_auth_number: formData.get('preAuthNumber') as string,
+                      procedure_code: formData.get('procedureCode') as string,
+                      treatment_detail: formData.get('treatmentDetail') as string,
+                      requested_amount: parseFloat(formData.get('requestedAmount') as string),
+                      status: formData.get('status') as PreAuth['status'],
+                      date_requested: formData.get('dateRequested') as string,
+                      expiration_date: formData.get('expirationDate') as string,
+                      approved_amount: parseFloat(formData.get('approvedAmount') as string),
+                      handler: formData.get('handler') as string,
+                      notes: formData.get('notes') as string || null,
+                    };
+
+                    try {
+                      await updatePreAuth(editingItem.id, updatedPreAuth);
+                      const updatedPreAuths = await getPreAuths();
+                      setPreAuths(updatedPreAuths.map(preAuthToRecord));
+                      setShowEditModal(false);
+                      setEditingItem(null);
+                      setEditingType(null);
+                    } catch (error) {
+                      console.error('Error updating pre-auth:', error);
+                      alert('Failed to update pre-auth. Please try again.');
+                    }
+                  }}>
+                    {(() => {
+                      const preAuth = editingItem as PreAuthRecord;
+                      return (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
+                            <input
+                              type="text"
+                              name="patientName"
+                              defaultValue={preAuth.patientName}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Company</label>
+                            <input
+                              type="text"
+                              name="insuranceCompany"
+                              defaultValue={preAuth.insuranceCompany}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Pre-Auth Number</label>
+                            <input
+                              type="text"
+                              name="preAuthNumber"
+                              defaultValue={preAuth.preAuthNumber}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Procedure Code</label>
+                            <input
+                              type="text"
+                              name="procedureCode"
+                              defaultValue={preAuth.procedureCode}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Detail</label>
+                            <input
+                              type="text"
+                              name="treatmentDetail"
+                              defaultValue={preAuth.treatmentDetail}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Requested Amount</label>
+                            <input
+                              type="number"
+                              name="requestedAmount"
+                              step="0.01"
+                              defaultValue={preAuth.requestedAmount}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Approved Amount</label>
+                            <input
+                              type="number"
+                              name="approvedAmount"
+                              step="0.01"
+                              defaultValue={preAuth.approvedAmount}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select
+                              name="status"
+                              defaultValue={preAuth.status}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Approved">Approved</option>
+                              <option value="Denied">Denied</option>
+                              <option value="Expired">Expired</option>
+                              <option value="In Review">In Review</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Requested</label>
+                            <input
+                              type="date"
+                              name="dateRequested"
+                              defaultValue={preAuth.dateRequested}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
+                            <input
+                              type="date"
+                              name="expirationDate"
+                              defaultValue={preAuth.expirationDate}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Handler</label>
+                            <input
+                              type="text"
+                              name="handler"
+                              defaultValue={preAuth.handler}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                            <textarea
+                              name="notes"
+                              defaultValue={preAuth.notes || ''}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <div className="mt-6 flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setEditingItem(null);
+                          setEditingType(null);
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
+                  Confirm Delete
+                </h3>
+                <p className="text-sm text-gray-600 text-center mb-4">
+                  Are you sure you want to delete this {deleteItem?.type === 'claim' ? 'claim' : 'pre-authorization'} for{' '}
+                  <span className="font-semibold">{deleteItem?.name}</span>?
+                  <br />
+                  <span className="text-red-600 font-semibold">This action cannot be undone.</span>
+                </p>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeleteItem(null);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* History/Audit Timeline Modal */}
+        {showHistoryModal && historyItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Audit History
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {historyItem.type === 'claim' ? 'Claim' : 'Pre-Authorization'} for {historyItem.name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowHistoryModal(false);
+                    setHistoryItem(null);
+                    setHistoryData([]);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                {historyData.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No history available</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {historyData.map((entry) => (
+                      <div key={entry.audit_id} className="relative pl-8 pb-6 border-l-2 border-gray-200 last:border-l-0 last:pb-0">
+                        <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white"></div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              entry.action === 'INSERT' ? 'bg-green-100 text-green-800' :
+                              entry.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
+                              entry.action === 'DELETE' ? 'bg-red-100 text-red-800' :
+                              entry.action === 'ARCHIVE' ? 'bg-orange-100 text-orange-800' :
+                              'bg-purple-100 text-purple-800'
+                            }`}>
+                              {entry.action}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(entry.changed_at).toLocaleString()}
+                            </span>
+                          </div>
+                          {entry.changed_by && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              Changed by: <span className="font-medium">{entry.changed_by}</span>
+                            </p>
+                          )}
+                          {entry.changes && entry.changes.changed_fields && (
+                            <div className="mt-3">
+                              <p className="text-sm font-medium text-gray-700 mb-2">Changes:</p>
+                              <div className="space-y-2">
+                                {Object.entries(entry.changes.changed_fields).map(([field, values]: [string, any]) => (
+                                  <div key={field} className="text-xs bg-white p-2 rounded border border-gray-200">
+                                    <span className="font-semibold text-gray-700">{field}:</span>
+                                    <div className="mt-1 flex items-center space-x-2">
+                                      <span className="text-red-600 line-through">
+                                        {JSON.stringify(values.old)}
+                                      </span>
+                                      <span className="text-gray-400">→</span>
+                                      <span className="text-green-600 font-medium">
+                                        {JSON.stringify(values.new)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI Insights Button */}
         <AIInsightsButton
