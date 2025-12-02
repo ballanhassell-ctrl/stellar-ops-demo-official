@@ -327,6 +327,46 @@ const getInitialDailyProductionByProvider = () => ({
 });
 */
 
+// CSV Export Utility Functions
+const exportToCSV = (data: any[], filename: string) => {
+  if (data.length === 0) {
+    alert('No data to export');
+    return;
+  }
+
+  // Get headers from the first object
+  const headers = Object.keys(data[0]);
+
+  // Create CSV content
+  const csvContent = [
+    // Header row
+    headers.join(','),
+    // Data rows
+    ...data.map(row =>
+      headers.map(header => {
+        const value = row[header];
+        // Escape values that contain commas or quotes
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(',')
+    )
+  ].join('\n');
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 // Patient Tracking Interfaces for Claims and Pre-Auths
 interface ClaimRecord {
   id: string;
@@ -2108,13 +2148,22 @@ const CourtStreetRCM = () => {
                 <h3 className="text-xl font-bold" style={{ color: csdGold }}>
                   Claims Details ({filteredClaims.length} {filteredClaims.length === 1 ? 'claim' : 'claims'})
                 </h3>
-                <button
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                  onClick={() => setShowAddClaimModal(true)}
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add New Claim</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                  <button
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                    onClick={() => exportToCSV(filteredClaims, `claims-export-${getLocalDateString()}.csv`)}
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Export to CSV</span>
+                  </button>
+                  <button
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                    onClick={() => setShowAddClaimModal(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add New Claim</span>
+                  </button>
+                </div>
               </div>
 
               {/* Table */}
@@ -2289,13 +2338,22 @@ const CourtStreetRCM = () => {
                     <h3 className="text-xl font-bold" style={{ color: csdGold }}>
                       Pre-Authorization Details ({filteredPreAuths.length} {filteredPreAuths.length === 1 ? 'request' : 'requests'})
                     </h3>
-                    <button
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                      onClick={() => setShowAddPreAuthModal(true)}
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Request Pre-Auth</span>
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                        onClick={() => exportToCSV(filteredPreAuths, `pre-auths-export-${getLocalDateString()}.csv`)}
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Export to CSV</span>
+                      </button>
+                      <button
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                        onClick={() => setShowAddPreAuthModal(true)}
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Request Pre-Auth</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Table */}
