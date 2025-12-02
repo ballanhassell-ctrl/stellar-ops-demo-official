@@ -4,7 +4,7 @@ import {
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Trash2, Archive, History
+  Plus, Edit, Trash2, Archive, ArchiveRestore, History
 } from 'lucide-react';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
@@ -20,8 +20,9 @@ import { generatePaymentInsights, PaymentInsight } from './services/paymentInsig
 import { getTopProceduresForDate } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 import {
-  getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, getClaimAuditHistory,
-  getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, getPreAuthAuditHistory,
+  getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, unarchiveClaim, getClaimAuditHistory,
+  getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
+  getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges
 } from './services/claimsService';
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory } from './types/database.types';
@@ -536,6 +537,10 @@ const CourtStreetRCM = () => {
   const [historyItem, setHistoryItem] = useState<{ type: 'claim' | 'preauth', id: string, name: string } | null>(null);
   const [historyData, setHistoryData] = useState<(ClaimAuditHistory | PreAuthAuditHistory)[]>([]);
 
+  // Archive view toggle state
+  const [showArchivedClaims, setShowArchivedClaims] = useState(false);
+  const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
+
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
@@ -634,12 +639,12 @@ const CourtStreetRCM = () => {
   };
   */
 
-  // Fetch claims from Supabase on component mount
+  // Fetch claims from Supabase (refetch when toggle changes)
   useEffect(() => {
     const fetchClaims = async () => {
       try {
         setClaimsLoading(true);
-        const claimsData = await getClaims();
+        const claimsData = showArchivedClaims ? await getArchivedClaims() : await getActiveClaims();
         const claimRecords = claimsData.map(claimToRecord);
         setClaims(claimRecords);
       } catch (error) {
@@ -650,14 +655,14 @@ const CourtStreetRCM = () => {
     };
 
     fetchClaims();
-  }, []);
+  }, [showArchivedClaims]);
 
-  // Fetch pre-auths from Supabase on component mount
+  // Fetch pre-auths from Supabase (refetch when toggle changes)
   useEffect(() => {
     const fetchPreAuths = async () => {
       try {
         setPreAuthsLoading(true);
-        const preAuthsData = await getPreAuths();
+        const preAuthsData = showArchivedPreAuths ? await getArchivedPreAuths() : await getActivePreAuths();
         const preAuthRecords = preAuthsData.map(preAuthToRecord);
         setPreAuths(preAuthRecords);
       } catch (error) {
@@ -668,7 +673,7 @@ const CourtStreetRCM = () => {
     };
 
     fetchPreAuths();
-  }, []);
+  }, [showArchivedPreAuths]);
 
   // Set up real-time subscriptions for claims and pre-auths
   useEffect(() => {
@@ -1335,21 +1340,45 @@ const CourtStreetRCM = () => {
 
   const handleArchiveClaim = async (id: string) => {
     try {
-      const archived = await archiveClaim(id, 'user');
-      setClaims(claims.map(c => c.id === id ? claimToRecord(archived) : c));
+      await archiveClaim(id, 'user');
+      // Remove from current view (we're viewing active records)
+      setClaims(claims.filter(c => c.id !== id));
     } catch (error) {
       console.error('Error archiving claim:', error);
       alert('Failed to archive claim. Please try again.');
     }
   };
 
+  const handleUnarchiveClaim = async (id: string) => {
+    try {
+      await unarchiveClaim(id);
+      // Remove from current view (we're viewing archived records)
+      setClaims(claims.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Error unarchiving claim:', error);
+      alert('Failed to unarchive claim. Please try again.');
+    }
+  };
+
   const handleArchivePreAuth = async (id: string) => {
     try {
-      const archived = await archivePreAuth(id, 'user');
-      setPreAuths(preAuths.map(pa => pa.id === id ? preAuthToRecord(archived) : pa));
+      await archivePreAuth(id, 'user');
+      // Remove from current view (we're viewing active records)
+      setPreAuths(preAuths.filter(pa => pa.id !== id));
     } catch (error) {
       console.error('Error archiving pre-auth:', error);
       alert('Failed to archive pre-auth. Please try again.');
+    }
+  };
+
+  const handleUnarchivePreAuth = async (id: string) => {
+    try {
+      await unarchivePreAuth(id);
+      // Remove from current view (we're viewing archived records)
+      setPreAuths(preAuths.filter(pa => pa.id !== id));
+    } catch (error) {
+      console.error('Error unarchiving pre-auth:', error);
+      alert('Failed to unarchive pre-auth. Please try again.');
     }
   };
 
@@ -2235,9 +2264,38 @@ const CourtStreetRCM = () => {
               <>
             {/* Claims Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
-                Claims Management
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
+                  Claims Management
+                </h2>
+
+                {/* Archive Toggle */}
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    {showArchivedClaims ? 'Showing Archived' : 'Showing Active'}
+                  </span>
+                  <button
+                    onClick={() => setShowArchivedClaims(!showArchivedClaims)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      showArchivedClaims
+                        ? 'bg-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {showArchivedClaims ? (
+                      <span className="flex items-center gap-2">
+                        <Archive className="w-4 h-4" />
+                        View Active
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Archive className="w-4 h-4" />
+                        View Archived
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
 
               {/* Search Bar */}
               <div className="mb-6">
@@ -2488,13 +2546,23 @@ const CourtStreetRCM = () => {
                               >
                                 <History className="w-4 h-4" />
                               </button>
-                              <button
-                                className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                onClick={() => handleArchiveClaim(claim.id)}
-                                title="Archive Claim"
-                              >
-                                <Archive className="w-4 h-4" />
-                              </button>
+                              {showArchivedClaims ? (
+                                <button
+                                  className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                  onClick={() => handleUnarchiveClaim(claim.id)}
+                                  title="Unarchive Claim"
+                                >
+                                  <ArchiveRestore className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                  onClick={() => handleArchiveClaim(claim.id)}
+                                  title="Archive Claim"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </button>
+                              )}
                               <button
                                 className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                                 onClick={() => handleDeleteClick('claim', claim.id, claim.patientName)}
@@ -2519,9 +2587,38 @@ const CourtStreetRCM = () => {
               <>
                 {/* Pre-Auths Header */}
                 <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
-                    Pre-Authorization Management
-                  </h2>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
+                      Pre-Authorization Management
+                    </h2>
+
+                    {/* Archive Toggle */}
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                        {showArchivedPreAuths ? 'Showing Archived' : 'Showing Active'}
+                      </span>
+                      <button
+                        onClick={() => setShowArchivedPreAuths(!showArchivedPreAuths)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          showArchivedPreAuths
+                            ? 'bg-gray-600 text-white hover:bg-gray-700'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {showArchivedPreAuths ? (
+                          <span className="flex items-center gap-2">
+                            <Archive className="w-4 h-4" />
+                            View Active
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Archive className="w-4 h-4" />
+                            View Archived
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
                   {/* Search Bar */}
                   <div className="mb-6">
@@ -2688,13 +2785,23 @@ const CourtStreetRCM = () => {
                                   >
                                     <History className="w-4 h-4" />
                                   </button>
-                                  <button
-                                    className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                    onClick={() => handleArchivePreAuth(preAuth.id)}
-                                    title="Archive Pre-Auth"
-                                  >
-                                    <Archive className="w-4 h-4" />
-                                  </button>
+                                  {showArchivedPreAuths ? (
+                                    <button
+                                      className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                      onClick={() => handleUnarchivePreAuth(preAuth.id)}
+                                      title="Unarchive Pre-Auth"
+                                    >
+                                      <ArchiveRestore className="w-4 h-4" />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                      onClick={() => handleArchivePreAuth(preAuth.id)}
+                                      title="Archive Pre-Auth"
+                                    >
+                                      <Archive className="w-4 h-4" />
+                                    </button>
+                                  )}
                                   <button
                                     className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                                     onClick={() => handleDeleteClick('preauth', preAuth.id, preAuth.patientName)}
