@@ -7133,6 +7133,14 @@ const CourtStreetRCM = () => {
                         notes
                       });
                     } else {
+                      // If status is changing, update the actual record first
+                      if (updateType === 'status_change' && newStatus) {
+                        await updateInsuranceCheck(updateTarget.id, {
+                          status: newStatus as 'Created' | 'Entered' | 'Pending Review'
+                        });
+                      }
+
+                      // Log the update
                       await addInsuranceCheckUpdate({
                         check_id: updateTarget.id,
                         handler,
@@ -7143,6 +7151,12 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
+
+                      // Refresh the insurance checks list to show updated color
+                      const updatedChecks = showArchivedInsuranceChecks
+                        ? await getArchivedInsuranceChecks()
+                        : await getActiveInsuranceChecks();
+                      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
                     }
 
                     setShowAddUpdateModal(false);
