@@ -4,7 +4,7 @@ import {
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Trash2, Archive, ArchiveRestore, History
+  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus
 } from 'lucide-react';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
@@ -23,9 +23,10 @@ import {
   getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, unarchiveClaim, getClaimAuditHistory,
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
-  subscribeToClaimsChanges, subscribeToPreAuthsChanges
+  subscribeToClaimsChanges, subscribeToPreAuthsChanges,
+  getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate
 } from './services/claimsService';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -540,6 +541,12 @@ const CourtStreetRCM = () => {
   // Archive view toggle state
   const [showArchivedClaims, setShowArchivedClaims] = useState(false);
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
+
+  // Add Update modal state
+  const [showAddUpdateModal, setShowAddUpdateModal] = useState(false);
+  const [updateTarget, setUpdateTarget] = useState<{ type: 'claim' | 'preauth', id: string, name: string, currentStatus: string } | null>(null);
+  const [claimUpdates, setClaimUpdates] = useState<ClaimUpdate[]>([]);
+  const [preAuthUpdates, setPreAuthUpdates] = useState<PreAuthUpdate[]>([]);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -1389,15 +1396,26 @@ const CourtStreetRCM = () => {
     try {
       if (type === 'claim') {
         const history = await getClaimAuditHistory(id);
+        const updates = await getClaimUpdates(id);
         setHistoryData(history);
+        setClaimUpdates(updates);
       } else {
         const history = await getPreAuthAuditHistory(id);
+        const updates = await getPreAuthUpdates(id);
         setHistoryData(history);
+        setPreAuthUpdates(updates);
       }
     } catch (error) {
       console.error('Error fetching history:', error);
       setHistoryData([]);
+      setClaimUpdates([]);
+      setPreAuthUpdates([]);
     }
+  };
+
+  const handleAddUpdate = (type: 'claim' | 'preauth', id: string, name: string, currentStatus: string) => {
+    setUpdateTarget({ type, id, name, currentStatus });
+    setShowAddUpdateModal(true);
   };
 
   // Helper function to export PDF
@@ -2531,7 +2549,8 @@ const CourtStreetRCM = () => {
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-900">{claim.handler}</td>
                           <td className="px-4 py-4">
-                            <div className="flex space-x-1">
+                            <div className="flex justify-between items-center">
+                              {/* Edit button - left side */}
                               <button
                                 className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                                 onClick={() => handleEditClaim(claim)}
@@ -2539,37 +2558,48 @@ const CourtStreetRCM = () => {
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
-                              <button
-                                className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                                onClick={() => handleViewHistory('claim', claim.id, claim.patientName)}
-                                title="View History"
-                              >
-                                <History className="w-4 h-4" />
-                              </button>
-                              {showArchivedClaims ? (
+
+                              {/* Update/History/Archive/Delete buttons - right side */}
+                              <div className="flex space-x-1">
                                 <button
-                                  className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                  onClick={() => handleUnarchiveClaim(claim.id)}
-                                  title="Unarchive Claim"
+                                  className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                  onClick={() => handleAddUpdate('claim', claim.id, claim.patientName, claim.status)}
+                                  title="Add Update"
                                 >
-                                  <ArchiveRestore className="w-4 h-4" />
+                                  <MessageSquarePlus className="w-4 h-4" />
                                 </button>
-                              ) : (
                                 <button
-                                  className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                  onClick={() => handleArchiveClaim(claim.id)}
-                                  title="Archive Claim"
+                                  className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                  onClick={() => handleViewHistory('claim', claim.id, claim.patientName)}
+                                  title="View History"
                                 >
-                                  <Archive className="w-4 h-4" />
+                                  <History className="w-4 h-4" />
                                 </button>
-                              )}
-                              <button
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                onClick={() => handleDeleteClick('claim', claim.id, claim.patientName)}
-                                title="Delete Claim"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                                {showArchivedClaims ? (
+                                  <button
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                    onClick={() => handleUnarchiveClaim(claim.id)}
+                                    title="Unarchive Claim"
+                                  >
+                                    <ArchiveRestore className="w-4 h-4" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                    onClick={() => handleArchiveClaim(claim.id)}
+                                    title="Archive Claim"
+                                  >
+                                    <Archive className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <button
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  onClick={() => handleDeleteClick('claim', claim.id, claim.patientName)}
+                                  title="Delete Claim"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -2770,7 +2800,8 @@ const CourtStreetRCM = () => {
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.expirationDate}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.handler}</td>
                               <td className="px-4 py-4">
-                                <div className="flex space-x-1">
+                                <div className="flex justify-between items-center">
+                                  {/* Edit button - left side */}
                                   <button
                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                                     onClick={() => handleEditPreAuth(preAuth)}
@@ -2778,37 +2809,48 @@ const CourtStreetRCM = () => {
                                   >
                                     <Edit className="w-4 h-4" />
                                   </button>
-                                  <button
-                                    className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                                    onClick={() => handleViewHistory('preauth', preAuth.id, preAuth.patientName)}
-                                    title="View History"
-                                  >
-                                    <History className="w-4 h-4" />
-                                  </button>
-                                  {showArchivedPreAuths ? (
+
+                                  {/* Update/History/Archive/Delete buttons - right side */}
+                                  <div className="flex space-x-1">
                                     <button
-                                      className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                      onClick={() => handleUnarchivePreAuth(preAuth.id)}
-                                      title="Unarchive Pre-Auth"
+                                      className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                      onClick={() => handleAddUpdate('preauth', preAuth.id, preAuth.patientName, preAuth.status)}
+                                      title="Add Update"
                                     >
-                                      <ArchiveRestore className="w-4 h-4" />
+                                      <MessageSquarePlus className="w-4 h-4" />
                                     </button>
-                                  ) : (
                                     <button
-                                      className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                      onClick={() => handleArchivePreAuth(preAuth.id)}
-                                      title="Archive Pre-Auth"
+                                      className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                      onClick={() => handleViewHistory('preauth', preAuth.id, preAuth.patientName)}
+                                      title="View History"
                                     >
-                                      <Archive className="w-4 h-4" />
+                                      <History className="w-4 h-4" />
                                     </button>
-                                  )}
-                                  <button
-                                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                    onClick={() => handleDeleteClick('preauth', preAuth.id, preAuth.patientName)}
-                                    title="Delete Pre-Auth"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
+                                    {showArchivedPreAuths ? (
+                                      <button
+                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                        onClick={() => handleUnarchivePreAuth(preAuth.id)}
+                                        title="Unarchive Pre-Auth"
+                                      >
+                                        <ArchiveRestore className="w-4 h-4" />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                        onClick={() => handleArchivePreAuth(preAuth.id)}
+                                        title="Archive Pre-Auth"
+                                      >
+                                        <Archive className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      onClick={() => handleDeleteClick('preauth', preAuth.id, preAuth.patientName)}
+                                      title="Delete Pre-Auth"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </div>
                               </td>
                             </tr>
@@ -6286,6 +6328,184 @@ const CourtStreetRCM = () => {
           </div>
         )}
 
+        {/* Add Update Modal */}
+        {showAddUpdateModal && updateTarget && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Add Update
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {updateTarget.type === 'claim' ? 'Claim' : 'Pre-Authorization'} for {updateTarget.name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAddUpdateModal(false);
+                    setUpdateTarget(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const updateType = formData.get('update_type') as string;
+                  const handler = formData.get('handler') as string;
+                  const notes = formData.get('notes') as string;
+                  const newStatus = formData.get('new_status') as string | null;
+                  const newAmount = formData.get('new_amount') as string | null;
+
+                  try {
+                    if (updateTarget.type === 'claim') {
+                      await addClaimUpdate({
+                        claim_id: updateTarget.id,
+                        handler,
+                        update_type: updateType as any,
+                        old_status: updateType === 'status_change' ? updateTarget.currentStatus : null,
+                        new_status: updateType === 'status_change' ? newStatus : null,
+                        old_amount: null,
+                        new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
+                        notes
+                      });
+                    } else {
+                      await addPreAuthUpdate({
+                        pre_auth_id: updateTarget.id,
+                        handler,
+                        update_type: updateType as any,
+                        old_status: updateType === 'status_change' ? updateTarget.currentStatus : null,
+                        new_status: updateType === 'status_change' ? newStatus : null,
+                        old_amount: null,
+                        new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
+                        notes
+                      });
+                    }
+
+                    setShowAddUpdateModal(false);
+                    setUpdateTarget(null);
+                    alert('Update added successfully!');
+                  } catch (error) {
+                    console.error('Error adding update:', error);
+                    alert('Failed to add update. Please try again.');
+                  }
+                }}>
+                  <div className="space-y-4">
+                    {/* Update Type */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Update Type
+                      </label>
+                      <select
+                        name="update_type"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(e) => {
+                          const statusField = document.getElementById('status-field');
+                          const amountField = document.getElementById('amount-field');
+                          if (statusField && amountField) {
+                            statusField.style.display = e.target.value === 'status_change' ? 'block' : 'none';
+                            amountField.style.display = e.target.value === 'amount_change' ? 'block' : 'none';
+                          }
+                        }}
+                      >
+                        <option value="note">Note</option>
+                        <option value="follow_up">Follow-up</option>
+                        <option value="status_change">Status Change</option>
+                        <option value="amount_change">Amount Change</option>
+                        <option value="general">General</option>
+                      </select>
+                    </div>
+
+                    {/* Handler */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Handler
+                      </label>
+                      <input
+                        type="text"
+                        name="handler"
+                        required
+                        placeholder="Your name or initials"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Conditional: New Status (only for status_change) */}
+                    <div id="status-field" style={{ display: 'none' }}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        New Status
+                      </label>
+                      <select
+                        name="new_status"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="In Review">In Review</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Denied">Denied</option>
+                        {updateTarget.type === 'preauth' && <option value="Expired">Expired</option>}
+                      </select>
+                    </div>
+
+                    {/* Conditional: New Amount (only for amount_change) */}
+                    <div id="amount-field" style={{ display: 'none' }}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        New Amount
+                      </label>
+                      <input
+                        type="number"
+                        name="new_amount"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Notes
+                      </label>
+                      <textarea
+                        name="notes"
+                        rows={4}
+                        required
+                        placeholder="Enter update details, notes, or follow-up information..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddUpdateModal(false);
+                        setUpdateTarget(null);
+                      }}
+                      className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                    >
+                      Add Update
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* History/Audit Timeline Modal */}
         {showHistoryModal && historyItem && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -6293,7 +6513,7 @@ const CourtStreetRCM = () => {
               <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
-                    Audit History
+                    History & Updates
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     {historyItem.type === 'claim' ? 'Claim' : 'Pre-Authorization'} for {historyItem.name}
@@ -6304,6 +6524,8 @@ const CourtStreetRCM = () => {
                     setShowHistoryModal(false);
                     setHistoryItem(null);
                     setHistoryData([]);
+                    setClaimUpdates([]);
+                    setPreAuthUpdates([]);
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -6312,62 +6534,173 @@ const CourtStreetRCM = () => {
               </div>
 
               <div className="p-6">
-                {historyData.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No history available</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {historyData.map((entry) => (
-                      <div key={entry.audit_id} className="relative pl-8 pb-6 border-l-2 border-gray-200 last:border-l-0 last:pb-0">
-                        <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white"></div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              entry.action === 'INSERT' ? 'bg-green-100 text-green-800' :
-                              entry.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
-                              entry.action === 'DELETE' ? 'bg-red-100 text-red-800' :
-                              entry.action === 'ARCHIVE' ? 'bg-orange-100 text-orange-800' :
-                              'bg-purple-100 text-purple-800'
-                            }`}>
-                              {entry.action}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(entry.changed_at).toLocaleString()}
-                            </span>
-                          </div>
-                          {entry.changed_by && (
-                            <p className="text-sm text-gray-600 mb-2">
-                              Changed by: <span className="font-medium">{entry.changed_by}</span>
-                            </p>
-                          )}
-                          {entry.changes && entry.changes.changed_fields && (
-                            <div className="mt-3">
-                              <p className="text-sm font-medium text-gray-700 mb-2">Changes:</p>
-                              <div className="space-y-2">
-                                {Object.entries(entry.changes.changed_fields).map(([field, values]: [string, any]) => (
-                                  <div key={field} className="text-xs bg-white p-2 rounded border border-gray-200">
-                                    <span className="font-semibold text-gray-700">{field}:</span>
-                                    <div className="mt-1 flex items-center space-x-2">
-                                      <span className="text-red-600 line-through">
-                                        {JSON.stringify(values.old)}
+                {(() => {
+                  // Combine audit history and updates into a single timeline
+                  const updates = historyItem.type === 'claim' ? claimUpdates : preAuthUpdates;
+
+                  // Convert updates to timeline entries
+                  const updateEntries = updates.map(update => ({
+                    type: 'update' as const,
+                    timestamp: new Date(update.created_at).getTime(),
+                    created_at: update.created_at,
+                    handler: update.handler,
+                    update_type: update.update_type,
+                    old_status: update.old_status,
+                    new_status: update.new_status,
+                    old_amount: update.old_amount,
+                    new_amount: update.new_amount,
+                    notes: update.notes,
+                    update_id: update.update_id
+                  }));
+
+                  // Convert audit history to timeline entries
+                  const auditEntries = historyData.map(entry => ({
+                    type: 'audit' as const,
+                    timestamp: new Date(entry.changed_at).getTime(),
+                    ...entry
+                  }));
+
+                  // Combine and sort by timestamp (newest first)
+                  const combinedTimeline = [...updateEntries, ...auditEntries]
+                    .sort((a, b) => b.timestamp - a.timestamp);
+
+                  if (combinedTimeline.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-500">
+                        <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>No history or updates available</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      {combinedTimeline.map((entry) => {
+                        if (entry.type === 'update') {
+                          // Render update entry
+                          return (
+                            <div key={`update-${entry.update_id}`} className="relative pl-8 pb-6 border-l-2 border-gray-200 last:border-l-0 last:pb-0">
+                              <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-teal-500 border-2 border-white"></div>
+                              <div className="bg-teal-50 rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                    entry.update_type === 'status_change' ? 'bg-blue-100 text-blue-800' :
+                                    entry.update_type === 'note' ? 'bg-gray-100 text-gray-800' :
+                                    entry.update_type === 'follow_up' ? 'bg-yellow-100 text-yellow-800' :
+                                    entry.update_type === 'amount_change' ? 'bg-green-100 text-green-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {entry.update_type.replace('_', ' ').toUpperCase()}
+                                  </span>
+                                  <span className="text-xs text-gray-600">
+                                    {new Date(entry.created_at).toLocaleString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-700 mb-2">
+                                  <span className="font-medium">Handler:</span> {entry.handler}
+                                </p>
+                                {entry.old_status && entry.new_status && (
+                                  <div className="mb-2 text-sm">
+                                    <span className="font-medium text-gray-700">Status Change:</span>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                      <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700">
+                                        {entry.old_status}
                                       </span>
                                       <span className="text-gray-400">→</span>
-                                      <span className="text-green-600 font-medium">
-                                        {JSON.stringify(values.new)}
+                                      <span className="px-2 py-1 text-xs rounded-full bg-blue-200 text-blue-800">
+                                        {entry.new_status}
                                       </span>
                                     </div>
                                   </div>
-                                ))}
+                                )}
+                                {entry.old_amount !== null && entry.new_amount !== null && (
+                                  <div className="mb-2 text-sm">
+                                    <span className="font-medium text-gray-700">Amount Change:</span>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                      <span className="text-gray-600">${entry.old_amount.toLocaleString()}</span>
+                                      <span className="text-gray-400">→</span>
+                                      <span className="text-green-600 font-medium">${entry.new_amount.toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                )}
+                                {entry.notes && (
+                                  <div className="mt-2">
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-medium">Notes:</span> {entry.notes}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                          );
+                        } else {
+                          // Render audit entry
+                          return (
+                            <div key={`audit-${entry.audit_id}`} className="relative pl-8 pb-6 border-l-2 border-gray-200 last:border-l-0 last:pb-0">
+                              <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white"></div>
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                    entry.action === 'INSERT' ? 'bg-green-100 text-green-800' :
+                                    entry.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
+                                    entry.action === 'DELETE' ? 'bg-red-100 text-red-800' :
+                                    entry.action === 'ARCHIVE' ? 'bg-orange-100 text-orange-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {entry.action}
+                                  </span>
+                                  <span className="text-xs text-gray-600">
+                                    {new Date(entry.changed_at).toLocaleString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })}
+                                  </span>
+                                </div>
+                                {entry.changed_by && (
+                                  <p className="text-sm text-gray-700 mb-2">
+                                    <span className="font-medium">Handler:</span> {entry.changed_by}
+                                  </p>
+                                )}
+                                {entry.changes && entry.changes.changed_fields && (
+                                  <div className="mt-3">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Changes:</p>
+                                    <div className="space-y-2">
+                                      {Object.entries(entry.changes.changed_fields).map(([field, values]: [string, any]) => (
+                                        <div key={field} className="text-xs bg-white p-2 rounded border border-gray-200">
+                                          <span className="font-semibold text-gray-700">{field}:</span>
+                                          <div className="mt-1 flex items-center space-x-2">
+                                            <span className="text-red-600 line-through">
+                                              {JSON.stringify(values.old)}
+                                            </span>
+                                            <span className="text-gray-400">→</span>
+                                            <span className="text-green-600 font-medium">
+                                              {JSON.stringify(values.new)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
