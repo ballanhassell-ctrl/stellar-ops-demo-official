@@ -794,12 +794,78 @@ export async function deleteInsuranceCheck(id: string) {
   return true;
 }
 
+export async function archiveInsuranceCheck(id: string, archivedBy: string) {
+  const { error } = await supabase
+    .from('insurance_checks')
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      archived_by: archivedBy
+    })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error archiving insurance check:', error);
+    throw error;
+  }
+
+  return true;
+}
+
+export async function unarchiveInsuranceCheck(id: string) {
+  const { error } = await supabase
+    .from('insurance_checks')
+    .update({
+      is_archived: false,
+      archived_at: null,
+      archived_by: null
+    })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error unarchiving insurance check:', error);
+    throw error;
+  }
+
+  return true;
+}
+
+export async function getActiveInsuranceChecks() {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .select('*')
+    .eq('is_archived', false)
+    .order('date_entered', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching active insurance checks:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck[];
+}
+
+export async function getArchivedInsuranceChecks() {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .select('*')
+    .eq('is_archived', true)
+    .order('archived_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching archived insurance checks:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck[];
+}
+
 export async function getInsuranceChecksByStatus(status: InsuranceCheck['status']) {
   const { data, error } = await supabase
     .from('insurance_checks')
     .select('*')
     .eq('status', status)
-    .order('payment_date', { ascending: false });
+    .order('date_entered', { ascending: false });
 
   if (error) {
     console.error('Error fetching insurance checks by status:', error);
@@ -810,11 +876,11 @@ export async function getInsuranceChecksByStatus(status: InsuranceCheck['status'
 }
 
 export async function getInsuranceChecksByPaymentType(paymentType: InsuranceCheck['payment_type']) {
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('insurance_checks')
     .select('*')
     .eq('payment_type', paymentType)
-    .order('payment_date', { ascending: false });
+    .order('date_entered', { ascending: false });
 
   if (error) {
     console.error('Error fetching insurance checks by payment type:', error);

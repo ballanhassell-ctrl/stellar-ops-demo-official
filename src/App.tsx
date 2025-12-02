@@ -25,7 +25,8 @@ import {
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges,
   getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate,
-  getInsuranceChecks, insertInsuranceCheck, updateInsuranceCheck, deleteInsuranceCheck, getInsuranceCheckAuditHistory,
+  insertInsuranceCheck, updateInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
+  getActiveInsuranceChecks, getArchivedInsuranceChecks, getInsuranceCheckAuditHistory,
   subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate } from './types/database.types';
@@ -498,26 +499,42 @@ interface InsuranceCheckRecord {
   enteredBy: string;
   handler: string;
   status: 'Created' | 'Entered' | 'Pending Review';
-  paymentDate: string;
   dateOfService?: string;
   dateEntered?: string;
+  isArchived?: boolean;
+  archivedAt?: string;
+  archivedBy?: string;
 }
 
-const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => ({
-  id: check.id,
-  checkEftNumber: check.check_eft_number,
-  paymentType: check.payment_type,
-  insuranceCompany: check.insurance_company,
-  distributionType: check.distribution_type,
-  totalAmount: check.total_amount,
-  aging: check.aging,
-  enteredBy: check.entered_by,
-  handler: check.handler,
-  status: check.status,
-  paymentDate: check.payment_date,
-  dateOfService: check.date_of_service,
-  dateEntered: check.date_entered
-});
+const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => {
+  // Calculate aging from date_entered to today
+  const calculateAging = (dateEntered?: string): number => {
+    if (!dateEntered) return 0;
+    const enteredDate = new Date(dateEntered);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - enteredDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  return {
+    id: check.id,
+    checkEftNumber: check.check_eft_number,
+    paymentType: check.payment_type,
+    insuranceCompany: check.insurance_company,
+    distributionType: check.distribution_type,
+    totalAmount: check.total_amount,
+    aging: calculateAging(check.date_entered),
+    enteredBy: check.entered_by,
+    handler: check.handler,
+    status: check.status,
+    dateOfService: check.date_of_service,
+    dateEntered: check.date_entered,
+    isArchived: check.is_archived,
+    archivedAt: check.archived_at,
+    archivedBy: check.archived_by
+  };
+};
 
 const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'> => ({
   check_eft_number: record.checkEftNumber,
@@ -529,9 +546,11 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceChe
   entered_by: record.enteredBy,
   handler: record.handler,
   status: record.status,
-  payment_date: record.paymentDate,
   date_of_service: record.dateOfService,
-  date_entered: record.dateEntered
+  date_entered: record.dateEntered,
+  is_archived: record.isArchived,
+  archived_at: record.archivedAt,
+  archived_by: record.archivedBy
 });
 
 
@@ -602,6 +621,7 @@ const CourtStreetRCM = () => {
   const [showAddInsuranceCheckModal, setShowAddInsuranceCheckModal] = useState(false);
   const [insuranceCheckUpdates, setInsuranceCheckUpdates] = useState<InsuranceCheckUpdate[]>([]);
   const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
+  const [showArchivedInsuranceChecks, setShowArchivedInsuranceChecks] = useState(false);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -742,7 +762,9 @@ const CourtStreetRCM = () => {
     const fetchInsuranceChecks = async () => {
       try {
         setInsuranceChecksLoading(true);
-        const checksData = await getInsuranceChecks();
+        const checksData = showArchivedInsuranceChecks
+          ? await getArchivedInsuranceChecks()
+          : await getActiveInsuranceChecks();
         const checkRecords = checksData.map(insuranceCheckToRecord);
         setInsuranceChecks(checkRecords);
       } catch (error) {
@@ -753,7 +775,7 @@ const CourtStreetRCM = () => {
     };
 
     fetchInsuranceChecks();
-  }, []);
+  }, [showArchivedInsuranceChecks]);
 
   // Set up real-time subscriptions for claims, pre-auths, and insurance checks
   useEffect(() => {
@@ -786,11 +808,16 @@ const CourtStreetRCM = () => {
     // Subscribe to insurance checks changes
     const insuranceChecksSubscription = subscribeToInsuranceChecksChanges(async (payload) => {
       console.log('Insurance checks change detected:', payload);
-      // Refetch insurance checks data
+      // Refetch insurance checks data (always refetch active to update the current view)
       try {
-        const checksData = await getInsuranceChecks();
+        const checksData = await getActiveInsuranceChecks();
         const checkRecords = checksData.map(insuranceCheckToRecord);
-        setInsuranceChecks(checkRecords);
+        // Only update if we're currently viewing active checks
+        setInsuranceChecks(prevChecks => {
+          // Check if we're viewing archived by checking if any check in current state is archived
+          const viewingArchived = prevChecks.some(c => c.isArchived);
+          return viewingArchived ? prevChecks : checkRecords;
+        });
       } catch (error) {
         console.error('Error refetching insurance checks after update:', error);
       }
@@ -1544,6 +1571,30 @@ const CourtStreetRCM = () => {
       console.error('Error fetching insurance check history:', error);
       setHistoryData([]);
       setInsuranceCheckUpdates([]);
+    }
+  };
+
+  const handleArchiveInsuranceCheck = async (id: string, archivedBy: string) => {
+    try {
+      await archiveInsuranceCheck(id, archivedBy);
+      // Refetch based on current toggle state
+      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
+      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
+    } catch (error) {
+      console.error('Error archiving insurance check:', error);
+      alert('Failed to archive insurance check. Please try again.');
+    }
+  };
+
+  const handleUnarchiveInsuranceCheck = async (id: string) => {
+    try {
+      await unarchiveInsuranceCheck(id);
+      // Refetch based on current toggle state
+      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
+      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
+    } catch (error) {
+      console.error('Error unarchiving insurance check:', error);
+      alert('Failed to unarchive insurance check. Please try again.');
     }
   };
 
@@ -3211,8 +3262,8 @@ const CourtStreetRCM = () => {
                     </button>
                   </div>
 
-                  {/* Search Bar */}
-                  <div className="mb-6">
+                  {/* Search Bar and Archive Toggle */}
+                  <div className="mb-6 space-y-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <input
@@ -3222,6 +3273,21 @@ const CourtStreetRCM = () => {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
+                    </div>
+
+                    {/* Archive Toggle */}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setShowArchivedInsuranceChecks(!showArchivedInsuranceChecks)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          showArchivedInsuranceChecks
+                            ? 'bg-orange-500 text-white hover:bg-orange-600'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        <Archive className="w-4 h-4" />
+                        {showArchivedInsuranceChecks ? 'Show Active' : 'Show Archived'}
+                      </button>
                     </div>
                   </div>
 
@@ -3296,8 +3362,8 @@ const CourtStreetRCM = () => {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">DOS</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Entered</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Entered By</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
@@ -3337,7 +3403,6 @@ const CourtStreetRCM = () => {
                               <td className="px-4 py-4 text-sm font-semibold text-gray-900">${check.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{check.dateOfService || '-'}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{check.dateEntered || '-'}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.paymentDate}</td>
                               <td className="px-4 py-4">
                                 <span className={`text-sm font-medium ${
                                   check.aging > 60 ? 'text-red-600' :
@@ -3347,6 +3412,7 @@ const CourtStreetRCM = () => {
                                   {check.aging} days
                                 </span>
                               </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{check.enteredBy}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{check.handler}</td>
                               <td className="px-4 py-4">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -3370,7 +3436,7 @@ const CourtStreetRCM = () => {
                                     <Edit className="w-4 h-4" />
                                   </button>
 
-                                  {/* Update/History/Delete buttons - right side */}
+                                  {/* Update/History/Archive/Delete buttons - right side */}
                                   <div className="flex space-x-1">
                                     <button
                                       className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
@@ -3386,6 +3452,23 @@ const CourtStreetRCM = () => {
                                     >
                                       <History className="w-4 h-4" />
                                     </button>
+                                    {check.isArchived ? (
+                                      <button
+                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                        onClick={() => handleUnarchiveInsuranceCheck(check.id)}
+                                        title="Unarchive Check/EFT"
+                                      >
+                                        <ArchiveRestore className="w-4 h-4" />
+                                      </button>
+                                    ) : (
+                                      <button
+                                        className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                        onClick={() => handleArchiveInsuranceCheck(check.id, 'Current User')}
+                                        title="Archive Check/EFT"
+                                      >
+                                        <Archive className="w-4 h-4" />
+                                      </button>
+                                    )}
                                     <button
                                       className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                                       onClick={() => handleDeleteInsuranceCheck(check.id, check.checkEftNumber)}
@@ -3657,7 +3740,6 @@ const CourtStreetRCM = () => {
                       enteredBy: formData.get('enteredBy') as string,
                       handler: formData.get('handler') as string,
                       status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
-                      paymentDate: formData.get('paymentDate') as string,
                       dateOfService: formData.get('dateOfService') as string || undefined,
                       dateEntered: formData.get('dateEntered') as string || undefined
                     };
@@ -6791,15 +6873,14 @@ const CourtStreetRCM = () => {
                       entered_by: formData.get('enteredBy') as string,
                       handler: formData.get('handler') as string,
                       status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
-                      payment_date: formData.get('paymentDate') as string,
                       date_of_service: formData.get('dateOfService') as string || undefined,
                       date_entered: formData.get('dateEntered') as string || undefined,
                     };
 
                     try {
                       await updateInsuranceCheck(check.id, updatedCheck);
-                      // Refetch insurance checks
-                      const updatedChecks = await getInsuranceChecks();
+                      // Refetch insurance checks based on current toggle
+                      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
                       setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
                       setShowEditModal(false);
                       setEditingItem(null);
@@ -6915,16 +6996,6 @@ const CourtStreetRCM = () => {
                               type="date"
                               name="dateEntered"
                               defaultValue={check.dateEntered || ''}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
-                            <input
-                              type="date"
-                              name="paymentDate"
-                              defaultValue={check.paymentDate}
-                              required
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
