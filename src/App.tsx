@@ -19,6 +19,8 @@ import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDate } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
+import { getClaims, insertClaim, getPreAuths, insertPreAuth } from './services/claimsService';
+import type { Claim, PreAuth } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -367,7 +369,7 @@ const exportToCSV = (data: any[], filename: string) => {
   document.body.removeChild(link);
 };
 
-// Patient Tracking Interfaces for Claims and Pre-Auths
+// Patient Tracking Interfaces for Claims and Pre-Auths (Frontend camelCase)
 interface ClaimRecord {
   id: string;
   patientId: string;
@@ -401,6 +403,75 @@ interface PreAuthRecord {
   handler: string;
   notes: string;
 }
+
+// Conversion functions between frontend camelCase and database snake_case
+const claimToRecord = (claim: Claim): ClaimRecord => ({
+  id: claim.id,
+  patientId: claim.patient_id,
+  patientName: claim.patient_name,
+  insuranceCompany: claim.insurance_company,
+  claimNumber: claim.claim_number,
+  procedureCode: claim.procedure_code,
+  claimDetail: claim.claim_detail,
+  claimAmount: claim.claim_amount,
+  status: claim.status,
+  dateSubmitted: claim.date_submitted,
+  followUpDate: claim.follow_up_date,
+  handler: claim.handler,
+  notes: claim.notes || '',
+  agingDays: claim.aging_days
+});
+
+const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated_at'> => ({
+  id: record.id,
+  patient_id: record.patientId,
+  patient_name: record.patientName,
+  insurance_company: record.insuranceCompany,
+  claim_number: record.claimNumber,
+  procedure_code: record.procedureCode,
+  claim_detail: record.claimDetail,
+  claim_amount: record.claimAmount,
+  status: record.status,
+  date_submitted: record.dateSubmitted,
+  follow_up_date: record.followUpDate,
+  handler: record.handler,
+  notes: record.notes,
+  aging_days: record.agingDays
+});
+
+const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
+  id: preAuth.id,
+  patientId: preAuth.patient_id,
+  patientName: preAuth.patient_name,
+  insuranceCompany: preAuth.insurance_company,
+  preAuthNumber: preAuth.pre_auth_number,
+  procedureCode: preAuth.procedure_code,
+  treatmentDetail: preAuth.treatment_detail,
+  requestedAmount: preAuth.requested_amount,
+  status: preAuth.status,
+  dateRequested: preAuth.date_requested,
+  expirationDate: preAuth.expiration_date,
+  approvedAmount: preAuth.approved_amount,
+  handler: preAuth.handler,
+  notes: preAuth.notes || ''
+});
+
+const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'updated_at'> => ({
+  id: record.id,
+  patient_id: record.patientId,
+  patient_name: record.patientName,
+  insurance_company: record.insuranceCompany,
+  pre_auth_number: record.preAuthNumber,
+  procedure_code: record.procedureCode,
+  treatment_detail: record.treatmentDetail,
+  requested_amount: record.requestedAmount,
+  status: record.status,
+  date_requested: record.dateRequested,
+  expiration_date: record.expirationDate,
+  approved_amount: record.approvedAmount,
+  handler: record.handler,
+  notes: record.notes
+});
 
 
 const CourtStreetRCM = () => {
@@ -438,6 +509,8 @@ const CourtStreetRCM = () => {
   const [preAuths, setPreAuths] = useState<PreAuthRecord[]>([]);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [showAddPreAuthModal, setShowAddPreAuthModal] = useState(false);
+  const [_claimsLoading, setClaimsLoading] = useState(true);
+  const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -536,6 +609,42 @@ const CourtStreetRCM = () => {
     }
   };
   */
+
+  // Fetch claims from Supabase on component mount
+  useEffect(() => {
+    const fetchClaims = async () => {
+      try {
+        setClaimsLoading(true);
+        const claimsData = await getClaims();
+        const claimRecords = claimsData.map(claimToRecord);
+        setClaims(claimRecords);
+      } catch (error) {
+        console.error('Error fetching claims:', error);
+      } finally {
+        setClaimsLoading(false);
+      }
+    };
+
+    fetchClaims();
+  }, []);
+
+  // Fetch pre-auths from Supabase on component mount
+  useEffect(() => {
+    const fetchPreAuths = async () => {
+      try {
+        setPreAuthsLoading(true);
+        const preAuthsData = await getPreAuths();
+        const preAuthRecords = preAuthsData.map(preAuthToRecord);
+        setPreAuths(preAuthRecords);
+      } catch (error) {
+        console.error('Error fetching pre-auths:', error);
+      } finally {
+        setPreAuthsLoading(false);
+      }
+    };
+
+    fetchPreAuths();
+  }, []);
 
   // Expose helper functions to window for console access (useful for testing and manual operations)
   useEffect(() => {
@@ -2642,7 +2751,7 @@ const CourtStreetRCM = () => {
                     </button>
                   </div>
 
-                  <form onSubmit={(e) => {
+                  <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const newClaim: ClaimRecord = {
@@ -2661,8 +2770,17 @@ const CourtStreetRCM = () => {
                       notes: formData.get('notes') as string,
                       agingDays: Math.floor((new Date().getTime() - new Date(formData.get('dateSubmitted') as string).getTime()) / (1000 * 60 * 60 * 24))
                     };
-                    setClaims([...claims, newClaim]);
-                    setShowAddClaimModal(false);
+
+                    try {
+                      // Save to Supabase
+                      const savedClaim = await insertClaim(recordToClaim(newClaim));
+                      // Update local state with the saved claim
+                      setClaims([...claims, claimToRecord(savedClaim)]);
+                      setShowAddClaimModal(false);
+                    } catch (error) {
+                      console.error('Error saving claim:', error);
+                      alert('Failed to save claim. Please try again.');
+                    }
                   }} className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -2744,7 +2862,7 @@ const CourtStreetRCM = () => {
                     </button>
                   </div>
 
-                  <form onSubmit={(e) => {
+                  <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const newPreAuth: PreAuthRecord = {
@@ -2763,8 +2881,17 @@ const CourtStreetRCM = () => {
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string
                     };
-                    setPreAuths([...preAuths, newPreAuth]);
-                    setShowAddPreAuthModal(false);
+
+                    try {
+                      // Save to Supabase
+                      const savedPreAuth = await insertPreAuth(recordToPreAuth(newPreAuth));
+                      // Update local state with the saved pre-auth
+                      setPreAuths([...preAuths, preAuthToRecord(savedPreAuth)]);
+                      setShowAddPreAuthModal(false);
+                    } catch (error) {
+                      console.error('Error saving pre-auth:', error);
+                      alert('Failed to save pre-authorization. Please try again.');
+                    }
                   }} className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
