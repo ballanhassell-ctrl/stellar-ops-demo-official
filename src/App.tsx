@@ -24,9 +24,11 @@ import {
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges,
-  getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate
+  getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate,
+  getInsuranceChecks, insertInsuranceCheck, updateInsuranceCheck, deleteInsuranceCheck, getInsuranceCheckAuditHistory,
+  subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -485,6 +487,47 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
   archived_by: null
 });
 
+interface InsuranceCheckRecord {
+  id: string;
+  checkEftNumber: string;
+  paymentType: 'Check' | 'EFT';
+  insuranceCompany: string;
+  distributionType: 'Bulk' | 'Individual';
+  totalAmount: number;
+  aging: number;
+  enteredBy: string;
+  handler: string;
+  status: 'Entered' | 'Pending Review';
+  paymentDate: string;
+}
+
+const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => ({
+  id: check.id,
+  checkEftNumber: check.check_eft_number,
+  paymentType: check.payment_type,
+  insuranceCompany: check.insurance_company,
+  distributionType: check.distribution_type,
+  totalAmount: check.total_amount,
+  aging: check.aging,
+  enteredBy: check.entered_by,
+  handler: check.handler,
+  status: check.status,
+  paymentDate: check.payment_date
+});
+
+const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'> => ({
+  check_eft_number: record.checkEftNumber,
+  payment_type: record.paymentType,
+  insurance_company: record.insuranceCompany,
+  distribution_type: record.distributionType,
+  total_amount: record.totalAmount,
+  aging: record.aging,
+  entered_by: record.enteredBy,
+  handler: record.handler,
+  status: record.status,
+  payment_date: record.paymentDate
+});
+
 
 const CourtStreetRCM = () => {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -526,17 +569,17 @@ const CourtStreetRCM = () => {
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<ClaimRecord | PreAuthRecord | null>(null);
-  const [editingType, setEditingType] = useState<'claim' | 'preauth' | null>(null);
+  const [editingItem, setEditingItem] = useState<ClaimRecord | PreAuthRecord | InsuranceCheckRecord | null>(null);
+  const [editingType, setEditingType] = useState<'claim' | 'preauth' | 'insurance-check' | null>(null);
 
   // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteItem, setDeleteItem] = useState<{ type: 'claim' | 'preauth', id: string, name: string } | null>(null);
+  const [deleteItem, setDeleteItem] = useState<{ type: 'claim' | 'preauth' | 'insurance-check', id: string, name: string } | null>(null);
 
   // History modal state
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [historyItem, setHistoryItem] = useState<{ type: 'claim' | 'preauth', id: string, name: string } | null>(null);
-  const [historyData, setHistoryData] = useState<(ClaimAuditHistory | PreAuthAuditHistory)[]>([]);
+  const [historyItem, setHistoryItem] = useState<{ type: 'claim' | 'preauth' | 'insurance-check', id: string, name: string } | null>(null);
+  const [historyData, setHistoryData] = useState<(ClaimAuditHistory | PreAuthAuditHistory | InsuranceCheckAuditHistory)[]>([]);
 
   // Archive view toggle state
   const [showArchivedClaims, setShowArchivedClaims] = useState(false);
@@ -544,9 +587,15 @@ const CourtStreetRCM = () => {
 
   // Add Update modal state
   const [showAddUpdateModal, setShowAddUpdateModal] = useState(false);
-  const [updateTarget, setUpdateTarget] = useState<{ type: 'claim' | 'preauth', id: string, name: string, currentStatus: string } | null>(null);
+  const [updateTarget, setUpdateTarget] = useState<{ type: 'claim' | 'preauth' | 'insurance-check', id: string, name: string, currentStatus: string } | null>(null);
   const [claimUpdates, setClaimUpdates] = useState<ClaimUpdate[]>([]);
   const [preAuthUpdates, setPreAuthUpdates] = useState<PreAuthUpdate[]>([]);
+
+  // Insurance Checks state
+  const [insuranceChecks, setInsuranceChecks] = useState<InsuranceCheckRecord[]>([]);
+  const [showAddInsuranceCheckModal, setShowAddInsuranceCheckModal] = useState(false);
+  const [insuranceCheckUpdates, setInsuranceCheckUpdates] = useState<InsuranceCheckUpdate[]>([]);
+  const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
@@ -682,7 +731,25 @@ const CourtStreetRCM = () => {
     fetchPreAuths();
   }, [showArchivedPreAuths]);
 
-  // Set up real-time subscriptions for claims and pre-auths
+  // Fetch insurance checks from Supabase
+  useEffect(() => {
+    const fetchInsuranceChecks = async () => {
+      try {
+        setInsuranceChecksLoading(true);
+        const checksData = await getInsuranceChecks();
+        const checkRecords = checksData.map(insuranceCheckToRecord);
+        setInsuranceChecks(checkRecords);
+      } catch (error) {
+        console.error('Error fetching insurance checks:', error);
+      } finally {
+        setInsuranceChecksLoading(false);
+      }
+    };
+
+    fetchInsuranceChecks();
+  }, []);
+
+  // Set up real-time subscriptions for claims, pre-auths, and insurance checks
   useEffect(() => {
     // Subscribe to claims changes
     const claimsSubscription = subscribeToClaimsChanges(async (payload) => {
@@ -710,10 +777,24 @@ const CourtStreetRCM = () => {
       }
     });
 
+    // Subscribe to insurance checks changes
+    const insuranceChecksSubscription = subscribeToInsuranceChecksChanges(async (payload) => {
+      console.log('Insurance checks change detected:', payload);
+      // Refetch insurance checks data
+      try {
+        const checksData = await getInsuranceChecks();
+        const checkRecords = checksData.map(insuranceCheckToRecord);
+        setInsuranceChecks(checkRecords);
+      } catch (error) {
+        console.error('Error refetching insurance checks after update:', error);
+      }
+    });
+
     // Cleanup subscriptions on unmount
     return () => {
       claimsSubscription.unsubscribe();
       preAuthsSubscription.unsubscribe();
+      insuranceChecksSubscription.unsubscribe();
     };
   }, []);
 
@@ -1308,6 +1389,17 @@ const CourtStreetRCM = () => {
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredInsuranceChecks = insuranceChecks.filter(check =>
+    searchQuery === '' ||
+    check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    check.status.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Handler functions for claims and pre-auths management
   const handleEditClaim = (claim: ClaimRecord) => {
     setEditingItem(claim);
@@ -1333,9 +1425,12 @@ const CourtStreetRCM = () => {
       if (deleteItem.type === 'claim') {
         await deleteClaim(deleteItem.id);
         setClaims(claims.filter(c => c.id !== deleteItem.id));
-      } else {
+      } else if (deleteItem.type === 'preauth') {
         await deletePreAuth(deleteItem.id);
         setPreAuths(preAuths.filter(pa => pa.id !== deleteItem.id));
+      } else if (deleteItem.type === 'insurance-check') {
+        await deleteInsuranceCheck(deleteItem.id);
+        setInsuranceChecks(insuranceChecks.filter(ic => ic.id !== deleteItem.id));
       }
       setShowDeleteModal(false);
       setDeleteItem(null);
@@ -1413,9 +1508,37 @@ const CourtStreetRCM = () => {
     }
   };
 
-  const handleAddUpdate = (type: 'claim' | 'preauth', id: string, name: string, currentStatus: string) => {
+  const handleAddUpdate = (type: 'claim' | 'preauth' | 'insurance-check', id: string, name: string, currentStatus: string) => {
     setUpdateTarget({ type, id, name, currentStatus });
     setShowAddUpdateModal(true);
+  };
+
+  // Insurance check handler functions
+  const handleEditInsuranceCheck = (check: InsuranceCheckRecord) => {
+    setEditingItem(check);
+    setEditingType('insurance-check' as any);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteInsuranceCheck = (id: string, checkNumber: string) => {
+    setDeleteItem({ type: 'insurance-check' as any, id, name: checkNumber });
+    setShowDeleteModal(true);
+  };
+
+  const handleViewInsuranceCheckHistory = async (id: string, checkNumber: string) => {
+    setHistoryItem({ type: 'insurance-check' as any, id, name: checkNumber });
+    setShowHistoryModal(true);
+
+    try {
+      const history = await getInsuranceCheckAuditHistory(id);
+      const updates = await getInsuranceCheckUpdates(id);
+      setHistoryData(history as any);
+      setInsuranceCheckUpdates(updates);
+    } catch (error) {
+      console.error('Error fetching insurance check history:', error);
+      setHistoryData([]);
+      setInsuranceCheckUpdates([]);
+    }
   };
 
   // Helper function to export PDF
@@ -2275,6 +2398,18 @@ const CourtStreetRCM = () => {
                 >
                   Patients
                 </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-checks')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'insurance-checks'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Insurance Checks/EFT's
+                </button>
               </div>
             </div>
 
@@ -3051,6 +3186,212 @@ const CourtStreetRCM = () => {
               </>
             )}
 
+            {/* Insurance Checks/EFT's View */}
+            {patientManagementView === 'insurance-checks' && (
+              <>
+                {/* Insurance Checks Header */}
+                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
+                      Insurance Checks/EFT's
+                    </h2>
+
+                    <button
+                      onClick={() => setShowAddInsuranceCheckModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Add New Check/EFT
+                    </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="mb-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Search by Check/EFT#, Insurance Company, or Handler..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Totals Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {/* Total Checks */}
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-green-700 mb-1">Check Payments</p>
+                          <p className="text-3xl font-bold text-green-900">
+                            ${filteredInsuranceChecks
+                              .filter(c => c.paymentType === 'Check')
+                              .reduce((sum, c) => sum + c.totalAmount, 0)
+                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-green-600 mt-2">
+                            {filteredInsuranceChecks.filter(c => c.paymentType === 'Check').length} checks
+                          </p>
+                        </div>
+                        <CreditCard className="w-8 h-8 text-green-500" />
+                      </div>
+                    </div>
+
+                    {/* Total EFTs */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-700 mb-1">EFT Payments</p>
+                          <p className="text-3xl font-bold text-blue-900">
+                            ${filteredInsuranceChecks
+                              .filter(c => c.paymentType === 'EFT')
+                              .reduce((sum, c) => sum + c.totalAmount, 0)
+                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-blue-600 mt-2">
+                            {filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').length} EFTs
+                          </p>
+                        </div>
+                        <Download className="w-8 h-8 text-blue-500" />
+                      </div>
+                    </div>
+
+                    {/* Grand Total */}
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-purple-700 mb-1">Total Payments</p>
+                          <p className="text-3xl font-bold text-purple-900">
+                            ${filteredInsuranceChecks
+                              .reduce((sum, c) => sum + c.totalAmount, 0)
+                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-purple-600 mt-2">
+                            {filteredInsuranceChecks.length} total payments
+                          </p>
+                        </div>
+                        <DollarSign className="w-8 h-8 text-purple-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Insurance Checks Table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Check/EFT#</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance Company</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Distribution</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredInsuranceChecks.length === 0 ? (
+                          <tr>
+                            <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                              No insurance checks found matching your search.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredInsuranceChecks.map((check) => (
+                            <tr
+                              key={check.id}
+                              className={`transition-colors ${
+                                check.status === 'Entered'
+                                  ? 'bg-green-50 hover:bg-green-100'
+                                  : 'bg-yellow-50 hover:bg-yellow-100'
+                              }`}
+                            >
+                              <td className="px-4 py-4 text-sm font-medium text-gray-900">{check.checkEftNumber}</td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  check.paymentType === 'Check'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {check.paymentType}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{check.insuranceCompany}</td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{check.distributionType}</td>
+                              <td className="px-4 py-4 text-sm font-semibold text-gray-900">${check.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{check.paymentDate}</td>
+                              <td className="px-4 py-4">
+                                <span className={`text-sm font-medium ${
+                                  check.aging > 60 ? 'text-red-600' :
+                                  check.aging > 30 ? 'text-orange-600' :
+                                  'text-green-600'
+                                }`}>
+                                  {check.aging} days
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">{check.handler}</td>
+                              <td className="px-4 py-4">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  check.status === 'Entered'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {check.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4">
+                                <div className="flex justify-between items-center">
+                                  {/* Edit button - left side */}
+                                  <button
+                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                    onClick={() => handleEditInsuranceCheck(check)}
+                                    title="Edit Check/EFT"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+
+                                  {/* Update/History/Delete buttons - right side */}
+                                  <div className="flex space-x-1">
+                                    <button
+                                      className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                      onClick={() => handleAddUpdate('insurance-check', check.id, check.checkEftNumber, check.status)}
+                                      title="Add Update"
+                                    >
+                                      <MessageSquarePlus className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                      onClick={() => handleViewInsuranceCheckHistory(check.id, check.checkEftNumber)}
+                                      title="View History"
+                                    >
+                                      <History className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      onClick={() => handleDeleteInsuranceCheck(check.id, check.checkEftNumber)}
+                                      title="Delete Check/EFT"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Add New Claim Modal */}
             {showAddClaimModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -3270,6 +3611,131 @@ const CourtStreetRCM = () => {
                       </button>
                       <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
                         Request Pre-Auth
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Add New Insurance Check/EFT Modal */}
+            {showAddInsuranceCheckModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Insurance Check/EFT</h3>
+                    <button onClick={() => setShowAddInsuranceCheckModal(false)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newCheck: InsuranceCheckRecord = {
+                      id: '',
+                      checkEftNumber: formData.get('checkEftNumber') as string,
+                      paymentType: formData.get('paymentType') as 'Check' | 'EFT',
+                      insuranceCompany: formData.get('insuranceCompany') as string,
+                      distributionType: formData.get('distributionType') as 'Bulk' | 'Individual',
+                      totalAmount: parseFloat(formData.get('totalAmount') as string),
+                      aging: parseInt(formData.get('aging') as string) || 0,
+                      enteredBy: formData.get('enteredBy') as string,
+                      handler: formData.get('handler') as string,
+                      status: formData.get('status') as 'Entered' | 'Pending Review',
+                      paymentDate: formData.get('paymentDate') as string
+                    };
+
+                    try {
+                      // Save to Supabase
+                      const savedCheck = await insertInsuranceCheck(recordToInsuranceCheck(newCheck));
+                      // Update local state with the saved check
+                      setInsuranceChecks([...insuranceChecks, insuranceCheckToRecord(savedCheck)]);
+                      setShowAddInsuranceCheckModal(false);
+                    } catch (error) {
+                      console.error('Error saving insurance check:', error);
+                      alert('Failed to save insurance check. Please try again.');
+                    }
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Check/EFT Number</label>
+                        <input name="checkEftNumber" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="12345" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Payment Type</label>
+                        <div className="flex space-x-4">
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="paymentType" value="Check" defaultChecked className="mr-2" />
+                            <span className="text-sm">Check</span>
+                          </label>
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="paymentType" value="EFT" className="mr-2" />
+                            <span className="text-sm">EFT</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Insurance Company</label>
+                        <input name="insuranceCompany" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Delta Dental" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Distribution Type</label>
+                        <div className="flex space-x-4">
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="distributionType" value="Bulk" defaultChecked className="mr-2" />
+                            <span className="text-sm">Bulk</span>
+                          </label>
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="distributionType" value="Individual" className="mr-2" />
+                            <span className="text-sm">Individual</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Total Amount</label>
+                        <input name="totalAmount" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="1500.00" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Aging (Days)</label>
+                        <input name="aging" type="number" defaultValue="0" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Entered By</label>
+                        <input name="enteredBy" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John D." />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Handler</label>
+                        <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Payment Date</label>
+                        <input name="paymentDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                          <option value="Entered">Entered</option>
+                          <option value="Pending Review">Pending Review</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <button type="button" onClick={() => setShowAddInsuranceCheckModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        Cancel
+                      </button>
+                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+                        Add Check/EFT
                       </button>
                     </div>
                   </form>
@@ -5895,7 +6361,7 @@ const CourtStreetRCM = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-900">
-                  {editingType === 'claim' ? 'Edit Claim' : 'Edit Pre-Authorization'}
+                  {editingType === 'claim' ? 'Edit Claim' : editingType === 'preauth' ? 'Edit Pre-Authorization' : 'Edit Insurance Check/EFT'}
                 </h3>
                 <button
                   onClick={() => {
@@ -6096,7 +6562,7 @@ const CourtStreetRCM = () => {
                       </button>
                     </div>
                   </form>
-                ) : (
+                ) : editingType === 'preauth' ? (
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
@@ -6283,6 +6749,173 @@ const CourtStreetRCM = () => {
                       </button>
                     </div>
                   </form>
+                ) : (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const check = editingItem as InsuranceCheckRecord;
+                    const updatedCheck = {
+                      check_eft_number: formData.get('checkEftNumber') as string,
+                      payment_type: formData.get('paymentType') as 'Check' | 'EFT',
+                      insurance_company: formData.get('insuranceCompany') as string,
+                      distribution_type: formData.get('distributionType') as 'Bulk' | 'Individual',
+                      total_amount: parseFloat(formData.get('totalAmount') as string),
+                      aging: parseInt(formData.get('aging') as string),
+                      entered_by: formData.get('enteredBy') as string,
+                      handler: formData.get('handler') as string,
+                      status: formData.get('status') as 'Entered' | 'Pending Review',
+                      payment_date: formData.get('paymentDate') as string,
+                    };
+
+                    try {
+                      await updateInsuranceCheck(check.id, updatedCheck);
+                      // Refetch insurance checks
+                      const updatedChecks = await getInsuranceChecks();
+                      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
+                      setShowEditModal(false);
+                      setEditingItem(null);
+                      setEditingType(null);
+                    } catch (error) {
+                      console.error('Error updating insurance check:', error);
+                      alert('Failed to update insurance check. Please try again.');
+                    }
+                  }}>
+                    {(() => {
+                      const check = editingItem as InsuranceCheckRecord;
+                      return (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Check/EFT Number</label>
+                            <input
+                              type="text"
+                              name="checkEftNumber"
+                              defaultValue={check.checkEftNumber}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                            <div className="flex space-x-4">
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="paymentType" value="Check" defaultChecked={check.paymentType === 'Check'} className="mr-2" />
+                                <span className="text-sm">Check</span>
+                              </label>
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="paymentType" value="EFT" defaultChecked={check.paymentType === 'EFT'} className="mr-2" />
+                                <span className="text-sm">EFT</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Company</label>
+                            <input
+                              type="text"
+                              name="insuranceCompany"
+                              defaultValue={check.insuranceCompany}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Distribution Type</label>
+                            <div className="flex space-x-4">
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="distributionType" value="Bulk" defaultChecked={check.distributionType === 'Bulk'} className="mr-2" />
+                                <span className="text-sm">Bulk</span>
+                              </label>
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="distributionType" value="Individual" defaultChecked={check.distributionType === 'Individual'} className="mr-2" />
+                                <span className="text-sm">Individual</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
+                            <input
+                              type="number"
+                              name="totalAmount"
+                              step="0.01"
+                              defaultValue={check.totalAmount}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Aging (Days)</label>
+                            <input
+                              type="number"
+                              name="aging"
+                              defaultValue={check.aging}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Entered By</label>
+                            <input
+                              type="text"
+                              name="enteredBy"
+                              defaultValue={check.enteredBy}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Handler</label>
+                            <input
+                              type="text"
+                              name="handler"
+                              defaultValue={check.handler}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                            <input
+                              type="date"
+                              name="paymentDate"
+                              defaultValue={check.paymentDate}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select
+                              name="status"
+                              defaultValue={check.status}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="Entered">Entered</option>
+                              <option value="Pending Review">Pending Review</option>
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <div className="mt-6 flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setEditingItem(null);
+                          setEditingType(null);
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
                 )}
               </div>
             </div>
@@ -6338,7 +6971,7 @@ const CourtStreetRCM = () => {
                     Add Update
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {updateTarget.type === 'claim' ? 'Claim' : 'Pre-Authorization'} for {updateTarget.name}
+                    {updateTarget.type === 'claim' ? 'Claim' : updateTarget.type === 'preauth' ? 'Pre-Authorization' : 'Insurance Check/EFT'} for {updateTarget.name}
                   </p>
                 </div>
                 <button
@@ -6374,9 +7007,20 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
-                    } else {
+                    } else if (updateTarget.type === 'preauth') {
                       await addPreAuthUpdate({
                         pre_auth_id: updateTarget.id,
+                        handler,
+                        update_type: updateType as any,
+                        old_status: updateType === 'status_change' ? updateTarget.currentStatus : null,
+                        new_status: updateType === 'status_change' ? newStatus : null,
+                        old_amount: null,
+                        new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
+                        notes
+                      });
+                    } else {
+                      await addInsuranceCheckUpdate({
+                        check_id: updateTarget.id,
                         handler,
                         update_type: updateType as any,
                         old_status: updateType === 'status_change' ? updateTarget.currentStatus : null,
@@ -6445,11 +7089,20 @@ const CourtStreetRCM = () => {
                         name="new_status"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="Pending">Pending</option>
-                        <option value="In Review">In Review</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Denied">Denied</option>
-                        {updateTarget.type === 'preauth' && <option value="Expired">Expired</option>}
+                        {updateTarget.type === 'insurance-check' ? (
+                          <>
+                            <option value="Entered">Entered</option>
+                            <option value="Pending Review">Pending Review</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="Pending">Pending</option>
+                            <option value="In Review">In Review</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Denied">Denied</option>
+                            {updateTarget.type === 'preauth' && <option value="Expired">Expired</option>}
+                          </>
+                        )}
                       </select>
                     </div>
 
@@ -6516,7 +7169,7 @@ const CourtStreetRCM = () => {
                     History & Updates
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {historyItem.type === 'claim' ? 'Claim' : 'Pre-Authorization'} for {historyItem.name}
+                    {historyItem.type === 'claim' ? 'Claim' : historyItem.type === 'preauth' ? 'Pre-Authorization' : 'Insurance Check/EFT'} for {historyItem.name}
                   </p>
                 </div>
                 <button
@@ -6526,6 +7179,7 @@ const CourtStreetRCM = () => {
                     setHistoryData([]);
                     setClaimUpdates([]);
                     setPreAuthUpdates([]);
+                    setInsuranceCheckUpdates([]);
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -6536,7 +7190,7 @@ const CourtStreetRCM = () => {
               <div className="p-6">
                 {(() => {
                   // Combine audit history and updates into a single timeline
-                  const updates = historyItem.type === 'claim' ? claimUpdates : preAuthUpdates;
+                  const updates = historyItem.type === 'claim' ? claimUpdates : historyItem.type === 'preauth' ? preAuthUpdates : insuranceCheckUpdates;
 
                   // Convert updates to timeline entries
                   const updateEntries = updates.map(update => ({

@@ -144,6 +144,46 @@ export type PreAuthUpdate = {
   created_at: string;
 };
 
+export type InsuranceCheck = {
+  id: string;
+  check_eft_number: string;
+  payment_type: 'Check' | 'EFT';
+  insurance_company: string;
+  distribution_type: 'Bulk' | 'Individual';
+  total_amount: number;
+  aging: number;
+  entered_by: string;
+  handler: string;
+  status: 'Entered' | 'Pending Review';
+  payment_date: string; // ISO date string
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type InsuranceCheckAuditHistory = {
+  audit_id: number;
+  check_id: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE';
+  changed_by: string | null;
+  changed_at: string;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
+  changes: Record<string, any> | null;
+};
+
+export type InsuranceCheckUpdate = {
+  update_id: number;
+  check_id: string;
+  handler: string;
+  update_type: 'status_change' | 'note' | 'follow_up' | 'amount_change' | 'general';
+  old_status: string | null;
+  new_status: string | null;
+  old_amount: number | null;
+  new_amount: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
 export type Database = {
   patients: Patient;
   appointments: Appointment;
@@ -155,4 +195,7 @@ export type Database = {
   pre_auths_audit_history: PreAuthAuditHistory;
   claim_updates: ClaimUpdate;
   pre_auth_updates: PreAuthUpdate;
+  insurance_checks: InsuranceCheck;
+  insurance_checks_audit_history: InsuranceCheckAuditHistory;
+  insurance_check_updates: InsuranceCheckUpdate;
 };

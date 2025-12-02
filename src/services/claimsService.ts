@@ -1,6 +1,6 @@
 // src/services/claimsService.ts
 import { supabase } from '../lib/supabaseClient';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory } from '../types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate } from '../types/database.types';
 
 // =====================================================
 // CLAIMS CRUD OPERATIONS
@@ -656,8 +656,6 @@ export async function getFilteredPreAuths(filters: PreAuthFilters, sortBy: strin
 // CLAIM UPDATES OPERATIONS
 // =====================================================
 
-import type { ClaimUpdate, PreAuthUpdate } from '../types/database.types';
-
 export async function getClaimUpdates(claimId: string) {
   const { data, error } = await supabase
     .from('claim_updates')
@@ -716,4 +714,191 @@ export async function addPreAuthUpdate(update: Omit<PreAuthUpdate, 'update_id' |
   }
 
   return data as PreAuthUpdate;
+}
+
+// =====================================================
+// INSURANCE CHECKS CRUD OPERATIONS
+// =====================================================
+
+export async function getInsuranceChecks() {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .select('*')
+    .order('payment_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching insurance checks:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck[];
+}
+
+export async function getInsuranceCheckById(id: string) {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching insurance check:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck;
+}
+
+export async function insertInsuranceCheck(check: Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'>) {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .insert(check)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error inserting insurance check:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck;
+}
+
+export async function updateInsuranceCheck(id: string, updates: Partial<Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'>>) {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating insurance check:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck;
+}
+
+export async function deleteInsuranceCheck(id: string) {
+  const { error } = await supabase
+    .from('insurance_checks')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting insurance check:', error);
+    throw error;
+  }
+
+  return true;
+}
+
+export async function getInsuranceChecksByStatus(status: InsuranceCheck['status']) {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .select('*')
+    .eq('status', status)
+    .order('payment_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching insurance checks by status:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck[];
+}
+
+export async function getInsuranceChecksByPaymentType(paymentType: InsuranceCheck['payment_type']) {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .select('*')
+    .eq('payment_type', paymentType)
+    .order('payment_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching insurance checks by payment type:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck[];
+}
+
+export async function getInsuranceChecksByDate(date: string) {
+  const { data, error } = await supabase
+    .from('insurance_checks')
+    .select('*')
+    .eq('payment_date', date)
+    .order('check_eft_number', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching insurance checks by date:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheck[];
+}
+
+// =====================================================
+// INSURANCE CHECKS AUDIT HISTORY
+// =====================================================
+
+export async function getInsuranceCheckAuditHistory(checkId: string) {
+  const { data, error } = await supabase
+    .from('insurance_checks_audit_history')
+    .select('*')
+    .eq('check_id', checkId)
+    .order('changed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching insurance check audit history:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheckAuditHistory[];
+}
+
+// =====================================================
+// INSURANCE CHECKS REAL-TIME SUBSCRIPTIONS
+// =====================================================
+
+export function subscribeToInsuranceChecksChanges(callback: (payload: any) => void) {
+  return supabase
+    .channel('insurance_checks_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'insurance_checks' }, callback)
+    .subscribe();
+}
+
+// =====================================================
+// INSURANCE CHECK UPDATES (MANUAL PROGRESSION NOTES)
+// =====================================================
+
+export async function getInsuranceCheckUpdates(checkId: string) {
+  const { data, error } = await supabase
+    .from('insurance_check_updates')
+    .select('*')
+    .eq('check_id', checkId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching insurance check updates:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheckUpdate[];
+}
+
+export async function addInsuranceCheckUpdate(update: Omit<InsuranceCheckUpdate, 'update_id' | 'created_at'>) {
+  const { data, error } = await supabase
+    .from('insurance_check_updates')
+    .insert(update)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding insurance check update:', error);
+    throw error;
+  }
+
+  return data as InsuranceCheckUpdate;
 }
