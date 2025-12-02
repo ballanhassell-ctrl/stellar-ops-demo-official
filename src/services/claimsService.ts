@@ -656,8 +656,6 @@ export async function getFilteredPreAuths(filters: PreAuthFilters, sortBy: strin
 // CLAIM UPDATES OPERATIONS
 // =====================================================
 
-import type { ClaimUpdate, PreAuthUpdate } from '../types/database.types';
-
 export async function getClaimUpdates(claimId: string) {
   const { data, error } = await supabase
     .from('claim_updates')

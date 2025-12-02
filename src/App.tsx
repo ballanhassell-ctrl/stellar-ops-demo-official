@@ -3617,6 +3617,131 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             )}
+
+            {/* Add New Insurance Check/EFT Modal */}
+            {showAddInsuranceCheckModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Insurance Check/EFT</h3>
+                    <button onClick={() => setShowAddInsuranceCheckModal(false)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newCheck: InsuranceCheckRecord = {
+                      id: '',
+                      checkEftNumber: formData.get('checkEftNumber') as string,
+                      paymentType: formData.get('paymentType') as 'Check' | 'EFT',
+                      insuranceCompany: formData.get('insuranceCompany') as string,
+                      distributionType: formData.get('distributionType') as 'Bulk' | 'Individual',
+                      totalAmount: parseFloat(formData.get('totalAmount') as string),
+                      aging: parseInt(formData.get('aging') as string) || 0,
+                      enteredBy: formData.get('enteredBy') as string,
+                      handler: formData.get('handler') as string,
+                      status: formData.get('status') as 'Entered' | 'Pending Review',
+                      paymentDate: formData.get('paymentDate') as string
+                    };
+
+                    try {
+                      // Save to Supabase
+                      const savedCheck = await insertInsuranceCheck(recordToInsuranceCheck(newCheck));
+                      // Update local state with the saved check
+                      setInsuranceChecks([...insuranceChecks, insuranceCheckToRecord(savedCheck)]);
+                      setShowAddInsuranceCheckModal(false);
+                    } catch (error) {
+                      console.error('Error saving insurance check:', error);
+                      alert('Failed to save insurance check. Please try again.');
+                    }
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Check/EFT Number</label>
+                        <input name="checkEftNumber" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="12345" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Payment Type</label>
+                        <div className="flex space-x-4">
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="paymentType" value="Check" defaultChecked className="mr-2" />
+                            <span className="text-sm">Check</span>
+                          </label>
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="paymentType" value="EFT" className="mr-2" />
+                            <span className="text-sm">EFT</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Insurance Company</label>
+                        <input name="insuranceCompany" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Delta Dental" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Distribution Type</label>
+                        <div className="flex space-x-4">
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="distributionType" value="Bulk" defaultChecked className="mr-2" />
+                            <span className="text-sm">Bulk</span>
+                          </label>
+                          <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="distributionType" value="Individual" className="mr-2" />
+                            <span className="text-sm">Individual</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Total Amount</label>
+                        <input name="totalAmount" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="1500.00" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Aging (Days)</label>
+                        <input name="aging" type="number" defaultValue="0" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Entered By</label>
+                        <input name="enteredBy" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John D." />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Handler</label>
+                        <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Payment Date</label>
+                        <input name="paymentDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                          <option value="Entered">Entered</option>
+                          <option value="Pending Review">Pending Review</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <button type="button" onClick={() => setShowAddInsuranceCheckModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                        Cancel
+                      </button>
+                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+                        Add Check/EFT
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         ) : currentView === 'payments' ? (
           <div className="space-y-6">
@@ -6236,7 +6361,7 @@ const CourtStreetRCM = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-900">
-                  {editingType === 'claim' ? 'Edit Claim' : 'Edit Pre-Authorization'}
+                  {editingType === 'claim' ? 'Edit Claim' : editingType === 'preauth' ? 'Edit Pre-Authorization' : 'Edit Insurance Check/EFT'}
                 </h3>
                 <button
                   onClick={() => {
@@ -6437,7 +6562,7 @@ const CourtStreetRCM = () => {
                       </button>
                     </div>
                   </form>
-                ) : (
+                ) : editingType === 'preauth' ? (
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
@@ -6624,6 +6749,173 @@ const CourtStreetRCM = () => {
                       </button>
                     </div>
                   </form>
+                ) : (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const check = editingItem as InsuranceCheckRecord;
+                    const updatedCheck = {
+                      check_eft_number: formData.get('checkEftNumber') as string,
+                      payment_type: formData.get('paymentType') as 'Check' | 'EFT',
+                      insurance_company: formData.get('insuranceCompany') as string,
+                      distribution_type: formData.get('distributionType') as 'Bulk' | 'Individual',
+                      total_amount: parseFloat(formData.get('totalAmount') as string),
+                      aging: parseInt(formData.get('aging') as string),
+                      entered_by: formData.get('enteredBy') as string,
+                      handler: formData.get('handler') as string,
+                      status: formData.get('status') as 'Entered' | 'Pending Review',
+                      payment_date: formData.get('paymentDate') as string,
+                    };
+
+                    try {
+                      await updateInsuranceCheck(check.id, updatedCheck);
+                      // Refetch insurance checks
+                      const updatedChecks = await getInsuranceChecks();
+                      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
+                      setShowEditModal(false);
+                      setEditingItem(null);
+                      setEditingType(null);
+                    } catch (error) {
+                      console.error('Error updating insurance check:', error);
+                      alert('Failed to update insurance check. Please try again.');
+                    }
+                  }}>
+                    {(() => {
+                      const check = editingItem as InsuranceCheckRecord;
+                      return (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Check/EFT Number</label>
+                            <input
+                              type="text"
+                              name="checkEftNumber"
+                              defaultValue={check.checkEftNumber}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                            <div className="flex space-x-4">
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="paymentType" value="Check" defaultChecked={check.paymentType === 'Check'} className="mr-2" />
+                                <span className="text-sm">Check</span>
+                              </label>
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="paymentType" value="EFT" defaultChecked={check.paymentType === 'EFT'} className="mr-2" />
+                                <span className="text-sm">EFT</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Company</label>
+                            <input
+                              type="text"
+                              name="insuranceCompany"
+                              defaultValue={check.insuranceCompany}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Distribution Type</label>
+                            <div className="flex space-x-4">
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="distributionType" value="Bulk" defaultChecked={check.distributionType === 'Bulk'} className="mr-2" />
+                                <span className="text-sm">Bulk</span>
+                              </label>
+                              <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="distributionType" value="Individual" defaultChecked={check.distributionType === 'Individual'} className="mr-2" />
+                                <span className="text-sm">Individual</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
+                            <input
+                              type="number"
+                              name="totalAmount"
+                              step="0.01"
+                              defaultValue={check.totalAmount}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Aging (Days)</label>
+                            <input
+                              type="number"
+                              name="aging"
+                              defaultValue={check.aging}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Entered By</label>
+                            <input
+                              type="text"
+                              name="enteredBy"
+                              defaultValue={check.enteredBy}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Handler</label>
+                            <input
+                              type="text"
+                              name="handler"
+                              defaultValue={check.handler}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                            <input
+                              type="date"
+                              name="paymentDate"
+                              defaultValue={check.paymentDate}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select
+                              name="status"
+                              defaultValue={check.status}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="Entered">Entered</option>
+                              <option value="Pending Review">Pending Review</option>
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <div className="mt-6 flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setEditingItem(null);
+                          setEditingType(null);
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
                 )}
               </div>
             </div>
@@ -6679,7 +6971,7 @@ const CourtStreetRCM = () => {
                     Add Update
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {updateTarget.type === 'claim' ? 'Claim' : 'Pre-Authorization'} for {updateTarget.name}
+                    {updateTarget.type === 'claim' ? 'Claim' : updateTarget.type === 'preauth' ? 'Pre-Authorization' : 'Insurance Check/EFT'} for {updateTarget.name}
                   </p>
                 </div>
                 <button
@@ -6715,9 +7007,20 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
-                    } else {
+                    } else if (updateTarget.type === 'preauth') {
                       await addPreAuthUpdate({
                         pre_auth_id: updateTarget.id,
+                        handler,
+                        update_type: updateType as any,
+                        old_status: updateType === 'status_change' ? updateTarget.currentStatus : null,
+                        new_status: updateType === 'status_change' ? newStatus : null,
+                        old_amount: null,
+                        new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
+                        notes
+                      });
+                    } else {
+                      await addInsuranceCheckUpdate({
+                        check_id: updateTarget.id,
                         handler,
                         update_type: updateType as any,
                         old_status: updateType === 'status_change' ? updateTarget.currentStatus : null,
@@ -6786,11 +7089,20 @@ const CourtStreetRCM = () => {
                         name="new_status"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="Pending">Pending</option>
-                        <option value="In Review">In Review</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Denied">Denied</option>
-                        {updateTarget.type === 'preauth' && <option value="Expired">Expired</option>}
+                        {updateTarget.type === 'insurance-check' ? (
+                          <>
+                            <option value="Entered">Entered</option>
+                            <option value="Pending Review">Pending Review</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="Pending">Pending</option>
+                            <option value="In Review">In Review</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Denied">Denied</option>
+                            {updateTarget.type === 'preauth' && <option value="Expired">Expired</option>}
+                          </>
+                        )}
                       </select>
                     </div>
 
@@ -6857,7 +7169,7 @@ const CourtStreetRCM = () => {
                     History & Updates
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {historyItem.type === 'claim' ? 'Claim' : 'Pre-Authorization'} for {historyItem.name}
+                    {historyItem.type === 'claim' ? 'Claim' : historyItem.type === 'preauth' ? 'Pre-Authorization' : 'Insurance Check/EFT'} for {historyItem.name}
                   </p>
                 </div>
                 <button
@@ -6867,6 +7179,7 @@ const CourtStreetRCM = () => {
                     setHistoryData([]);
                     setClaimUpdates([]);
                     setPreAuthUpdates([]);
+                    setInsuranceCheckUpdates([]);
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -6877,7 +7190,7 @@ const CourtStreetRCM = () => {
               <div className="p-6">
                 {(() => {
                   // Combine audit history and updates into a single timeline
-                  const updates = historyItem.type === 'claim' ? claimUpdates : preAuthUpdates;
+                  const updates = historyItem.type === 'claim' ? claimUpdates : historyItem.type === 'preauth' ? preAuthUpdates : insuranceCheckUpdates;
 
                   // Convert updates to timeline entries
                   const updateEntries = updates.map(update => ({
