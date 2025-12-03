@@ -389,7 +389,7 @@ interface ClaimRecord {
   procedureCode: string;
   claimDetail: string;
   claimAmount: number;
-  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted';
+  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
   dateSubmitted: string;
   followUpDate: string;
   handler: string;
@@ -2825,8 +2825,10 @@ const CourtStreetRCM = () => {
                               claim.status === 'Entered' ? 'bg-teal-100 text-teal-800' :
                               claim.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                               claim.status === 'Denied' ? 'bg-red-100 text-red-800' :
+                              claim.status === 'Denied/2nd Appeal' ? 'bg-red-100 text-red-800' :
                               claim.status === 'In Review/2nd Appeal' ? 'bg-blue-100 text-blue-800' :
-                              claim.status === 'Resubmitted' ? 'bg-orange-100 text-orange-800' :
+                              claim.status === 'Resubmitted with Attachments' ? 'bg-orange-100 text-orange-800' :
+                              claim.status === 'Resubmitted/1st Appeal' ? 'bg-purple-100 text-purple-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {claim.status}
@@ -2961,11 +2963,11 @@ const CourtStreetRCM = () => {
                       <div>
                         <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fully Denied Claims</p>
                         <p className="text-2xl font-bold text-red-600">
-                          {filteredClaims.filter(c => c.status === 'Denied').length}
+                          {filteredClaims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length}
                         </p>
                         <p className="text-xs text-gray-500">
                           {filteredClaims.length > 0
-                            ? Math.round((filteredClaims.filter(c => c.status === 'Denied').length / filteredClaims.length) * 100)
+                            ? Math.round((filteredClaims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length / filteredClaims.length) * 100)
                             : 0}% of total
                         </p>
                       </div>
@@ -2981,14 +2983,24 @@ const CourtStreetRCM = () => {
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {(() => {
-                      // Filter for denied claims with D codes (ADA codes)
-                      const deniedWithDCodes = filteredClaims
-                        .filter(c => c.status === 'Denied' && c.procedureCode.trim().toUpperCase().startsWith('D'));
+                      // Filter for denied claims (all denied statuses)
+                      const deniedClaims = filteredClaims
+                        .filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal');
 
-                      // Count occurrences of each code
-                      const codeCounts = deniedWithDCodes.reduce((acc, claim) => {
-                        const code = claim.procedureCode.trim();
-                        acc[code] = (acc[code] || 0) + 1;
+                      // Count occurrences of each code (split multiple codes by space)
+                      const codeCounts = deniedClaims.reduce((acc, claim) => {
+                        // Split procedure codes by space and filter for D codes (ADA codes)
+                        const codes = claim.procedureCode
+                          .trim()
+                          .split(/\s+/)
+                          .filter(code => code.toUpperCase().startsWith('D'));
+
+                        // Count each code separately
+                        codes.forEach(code => {
+                          const normalizedCode = code.trim().toUpperCase();
+                          acc[normalizedCode] = (acc[normalizedCode] || 0) + 1;
+                        });
+
                         return acc;
                       }, {} as Record<string, number>);
 
@@ -3174,7 +3186,6 @@ const CourtStreetRCM = () => {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Approved</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Expires</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -3230,7 +3241,6 @@ const CourtStreetRCM = () => {
                                   {preAuth.agingDays} days
                                 </span>
                               </td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{preAuth.expirationDate}</td>
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.handler}</td>
                               <td className="px-4 py-4">
                                 <div className="flex justify-between items-center">
@@ -3299,7 +3309,7 @@ const CourtStreetRCM = () => {
                   <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
                     Pre-Authorization Analytics
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Average Aging Days */}
                     <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                       <div className="flex items-center justify-between">
@@ -3353,6 +3363,32 @@ const CourtStreetRCM = () => {
                           </p>
                         </div>
                         <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
+                      </div>
+                    </div>
+
+                    {/* Treatment Scheduled */}
+                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment Scheduled</p>
+                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                            ${filteredPreAuths.filter(pa => pa.status === 'Scheduled').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <Calendar className="w-8 h-8 text-purple-500 opacity-50" />
+                      </div>
+                    </div>
+
+                    {/* Waiting for Patient Response */}
+                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Waiting for Patient</p>
+                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                            ${filteredPreAuths.filter(pa => pa.status === 'Pending').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <Clock className="w-8 h-8 text-yellow-500 opacity-50" />
                       </div>
                     </div>
                   </div>
@@ -4221,7 +4257,7 @@ const CourtStreetRCM = () => {
                       procedureCode: formData.get('procedureCode') as string,
                       claimDetail: formData.get('claimDetail') as string,
                       claimAmount: parseFloat(formData.get('claimAmount') as string),
-                      status: formData.get('status') as 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted',
+                      status: formData.get('status') as ClaimRecord['status'],
                       dateSubmitted: formData.get('dateSubmitted') as string,
                       followUpDate: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
@@ -4272,8 +4308,10 @@ const CourtStreetRCM = () => {
                           <option value="Entered">Entered</option>
                           <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
                           <option value="Denied">Denied</option>
+                          <option value="Denied/2nd Appeal">Denied/2nd Appeal</option>
                           <option value="In Review/2nd Appeal">In Review/2nd Appeal</option>
-                          <option value="Resubmitted">Resubmitted</option>
+                          <option value="Resubmitted with Attachments">Resubmitted with Attachments</option>
+                          <option value="Resubmitted/1st Appeal">Resubmitted/1st Appeal</option>
                         </select>
                       </div>
                       <div>
@@ -4315,7 +4353,7 @@ const CourtStreetRCM = () => {
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
-                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Request Pre-Authorization</h3>
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Pre-Authorization Request</h3>
                     <button onClick={() => setShowAddPreAuthModal(false)} className="text-gray-500 hover:text-gray-700">
                       <X className="w-6 h-6" />
                     </button>
@@ -4339,7 +4377,7 @@ const CourtStreetRCM = () => {
                       status: formData.get('status') as 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review',
                       dateRequested: dateRequested,
                       followUpDate: followUpDate,
-                      expirationDate: formData.get('expirationDate') as string,
+                      expirationDate: '',
                       approvedAmount: parseFloat(formData.get('approvedAmount') as string) || 0,
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string,
@@ -4398,16 +4436,12 @@ const CourtStreetRCM = () => {
                         <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Date Requested</label>
+                        <label className="block text-sm font-medium mb-1">Date Added</label>
                         <input name="dateRequested" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-Up Date</label>
                         <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Expiration Date</label>
-                        <input name="expirationDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Approved Amount (if applicable)</label>
@@ -4427,7 +4461,7 @@ const CourtStreetRCM = () => {
                         Cancel
                       </button>
                       <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
-                        Request Pre-Auth
+                        Add Pre-Auth
                       </button>
                     </div>
                   </form>
@@ -7077,8 +7111,10 @@ const CourtStreetRCM = () => {
                               <option value="Entered">Entered</option>
                               <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
                               <option value="Denied">Denied</option>
+                              <option value="Denied/2nd Appeal">Denied/2nd Appeal</option>
                               <option value="In Review/2nd Appeal">In Review/2nd Appeal</option>
-                              <option value="Resubmitted">Resubmitted</option>
+                              <option value="Resubmitted with Attachments">Resubmitted with Attachments</option>
+                              <option value="Resubmitted/1st Appeal">Resubmitted/1st Appeal</option>
                             </select>
                           </div>
                           <div>
@@ -7285,7 +7321,7 @@ const CourtStreetRCM = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Requested</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Added</label>
                             <input
                               type="date"
                               name="dateRequested"
@@ -7300,16 +7336,6 @@ const CourtStreetRCM = () => {
                               type="date"
                               name="followUpDate"
                               defaultValue={preAuth.followUpDate}
-                              required
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
-                            <input
-                              type="date"
-                              name="expirationDate"
-                              defaultValue={preAuth.expirationDate}
                               required
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
@@ -7615,6 +7641,26 @@ const CourtStreetRCM = () => {
 
                   try {
                     if (updateTarget.type === 'claim') {
+                      // If status is changing, update the actual record first
+                      if (updateType === 'status_change' && newStatus) {
+                        const { error: updateError } = await supabase
+                          .from('claims')
+                          .update({ status: newStatus })
+                          .eq('id', updateTarget.id);
+
+                        if (updateError) {
+                          console.error('[Update Modal] Error updating claim status:', updateError);
+                          throw updateError;
+                        }
+
+                        // Refresh the claims list to show updated status
+                        const updatedClaims = showArchivedClaims
+                          ? await getArchivedClaims()
+                          : await getActiveClaims();
+                        setClaims(updatedClaims.map(claimToRecord));
+                      }
+
+                      // Log the update
                       await addClaimUpdate({
                         claim_id: updateTarget.id,
                         handler,
@@ -7626,6 +7672,26 @@ const CourtStreetRCM = () => {
                         notes
                       });
                     } else if (updateTarget.type === 'preauth') {
+                      // If status is changing, update the actual record first
+                      if (updateType === 'status_change' && newStatus) {
+                        const { error: updateError } = await supabase
+                          .from('pre_auths')
+                          .update({ status: newStatus })
+                          .eq('id', updateTarget.id);
+
+                        if (updateError) {
+                          console.error('[Update Modal] Error updating pre-auth status:', updateError);
+                          throw updateError;
+                        }
+
+                        // Refresh the pre-auths list to show updated status
+                        const updatedPreAuths = showArchivedPreAuths
+                          ? await getArchivedPreAuths()
+                          : await getActivePreAuths();
+                        setPreAuths(updatedPreAuths.map(preAuthToRecord));
+                      }
+
+                      // Log the update
                       await addPreAuthUpdate({
                         pre_auth_id: updateTarget.id,
                         handler,
@@ -7747,7 +7813,9 @@ const CourtStreetRCM = () => {
                             <option value="In Review/2nd Appeal">In Review/2nd Appeal</option>
                             <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
                             <option value="Denied">Denied</option>
-                            <option value="Resubmitted">Resubmitted</option>
+                            <option value="Denied/2nd Appeal">Denied/2nd Appeal</option>
+                            <option value="Resubmitted with Attachments">Resubmitted with Attachments</option>
+                            <option value="Resubmitted/1st Appeal">Resubmitted/1st Appeal</option>
                           </>
                         ) : (
                           <>
