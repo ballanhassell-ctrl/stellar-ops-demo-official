@@ -1495,7 +1495,6 @@ const CourtStreetRCM = () => {
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'patient-management', name: 'RCM Management', icon: Users },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
-    { id: 'checklist', name: 'Checklist', icon: List },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar },
     { id: 'administration', name: 'Administration', icon: Settings }
   ];
@@ -3009,6 +3008,18 @@ const CourtStreetRCM = () => {
                   }`}
                 >
                   Insurance Networks
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('checklist')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'checklist'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Checklist
                 </button>
               </div>
             </div>
@@ -5420,6 +5431,172 @@ const CourtStreetRCM = () => {
             </div>
               </>
             )}
+
+            {patientManagementView === 'checklist' && (
+              <>
+            {/* Checklist Header */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+                Daily, Weekly & Monthly Checklists
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Stay on track with systematic RCM task management
+              </p>
+            </div>
+
+            {/* Checklist Progress Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Daily Tasks */}
+              <div className={`rounded-lg shadow p-5 border-t-4 border-blue-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Daily Tasks</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {checklistData.dailyCompleted}/{checklistData.dailyTotal}
+                    </p>
+                  </div>
+                  <List className="w-8 h-8 text-blue-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
+                    style={{
+                      width: `${(checklistData.dailyCompleted / checklistData.dailyTotal) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {checklistData.dailyTotal - checklistData.dailyCompleted} remaining
+                </p>
+              </div>
+
+              {/* Weekly Tasks */}
+              <div className={`rounded-lg shadow p-5 border-t-4 border-green-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Weekly Tasks</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {checklistData.weeklyCompleted}/{checklistData.weeklyTotal}
+                    </p>
+                  </div>
+                  <ClipboardCheck className="w-8 h-8 text-green-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{
+                      width: `${(checklistData.weeklyCompleted / checklistData.weeklyTotal) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {checklistData.weeklyTotal - checklistData.weeklyCompleted} remaining
+                </p>
+              </div>
+
+              {/* Monthly Tasks */}
+              <div className={`rounded-lg shadow p-5 border-t-4 border-purple-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Monthly Tasks</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {checklistData.monthlyCompleted}/{checklistData.monthlyTotal}
+                    </p>
+                  </div>
+                  <Award className="w-8 h-8 text-purple-500" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-purple-500 h-2 rounded-full"
+                    style={{
+                      width: `${(checklistData.monthlyCompleted / checklistData.monthlyTotal) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {checklistData.monthlyTotal - checklistData.monthlyCompleted} remaining
+                </p>
+              </div>
+            </div>
+
+            {/* Daily Checklist */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Daily RCM Tasks
+              </h3>
+              <div className="space-y-2">
+                {[
+                  'Review and post payments from previous day',
+                  'Submit claims for completed procedures',
+                  'Follow up on pending pre-authorizations',
+                  'Verify insurance for scheduled appointments',
+                  'Process patient payment plans',
+                  'Review denied claims and submit appeals',
+                  'Update A/R aging report',
+                  'Reconcile daily deposits'
+                ].map((task, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                  >
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
+                    <span className="text-sm text-gray-700">{task}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Weekly & Monthly Checklists */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weekly Tasks */}
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Weekly RCM Tasks
+                </h3>
+                <div className="space-y-2">
+                  {[
+                    'Review A/R aging by insurance carrier',
+                    'Follow up on claims >30 days',
+                    'Update pre-authorization expiration tracking',
+                    'Review production and collection metrics',
+                    'Reconcile insurance payments vs. EOBs'
+                  ].map((task, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                    >
+                      <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
+                      <span className="text-sm text-gray-700">{task}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Monthly Tasks */}
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Monthly RCM Tasks
+                </h3>
+                <div className="space-y-2">
+                  {[
+                    'Complete monthly financial close',
+                    'Review practice scorecard metrics',
+                    'Analyze collection rate trends',
+                    'Update fee schedules and contracts'
+                  ].map((task, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                    >
+                      <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
+                      <span className="text-sm text-gray-700">{task}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+              </>
+            )}
           </div>
         ) : currentView === 'scorecard' ? (
           <div className="space-y-6">
@@ -6181,170 +6358,6 @@ const CourtStreetRCM = () => {
               </div>
             </div>
           </div>
-        ) : currentView === 'checklist' ? (
-          <div className="space-y-6">
-            {/* Checklist Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
-                Daily, Weekly & Monthly Checklists
-              </h2>
-              <p className="text-gray-600 text-sm">
-                Stay on track with systematic RCM task management
-              </p>
-            </div>
-
-            {/* Checklist Progress Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Daily Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-blue-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Daily Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.dailyCompleted}/{checklistData.dailyTotal}
-                    </p>
-                  </div>
-                  <List className="w-8 h-8 text-blue-500" />
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.dailyCompleted / checklistData.dailyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.dailyTotal - checklistData.dailyCompleted} remaining
-                </p>
-              </div>
-
-              {/* Weekly Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-green-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Weekly Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.weeklyCompleted}/{checklistData.weeklyTotal}
-                    </p>
-                  </div>
-                  <ClipboardCheck className="w-8 h-8 text-green-500" />
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.weeklyCompleted / checklistData.weeklyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.weeklyTotal - checklistData.weeklyCompleted} remaining
-                </p>
-              </div>
-
-              {/* Monthly Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-purple-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Monthly Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.monthlyCompleted}/{checklistData.monthlyTotal}
-                    </p>
-                  </div>
-                  <Award className="w-8 h-8 text-purple-500" />
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-purple-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.monthlyCompleted / checklistData.monthlyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.monthlyTotal - checklistData.monthlyCompleted} remaining
-                </p>
-              </div>
-            </div>
-
-            {/* Daily Checklist */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Daily RCM Tasks
-              </h3>
-              <div className="space-y-2">
-                {[
-                  'Review and post payments from previous day',
-                  'Submit claims for completed procedures',
-                  'Follow up on pending pre-authorizations',
-                  'Verify insurance for scheduled appointments',
-                  'Process patient payment plans',
-                  'Review denied claims and submit appeals',
-                  'Update A/R aging report',
-                  'Reconcile daily deposits'
-                ].map((task, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                  >
-                    <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
-                    <span className="text-sm text-gray-700">{task}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Weekly & Monthly Checklists */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Weekly Tasks */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Weekly RCM Tasks
-                </h3>
-                <div className="space-y-2">
-                  {[
-                    'Review A/R aging by insurance carrier',
-                    'Follow up on claims >30 days',
-                    'Update pre-authorization expiration tracking',
-                    'Review production and collection metrics',
-                    'Reconcile insurance payments vs. EOBs'
-                  ].map((task, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                    >
-                      <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
-                      <span className="text-sm text-gray-700">{task}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Monthly Tasks */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Monthly RCM Tasks
-                </h3>
-                <div className="space-y-2">
-                  {[
-                    'Complete monthly financial close',
-                    'Review practice scorecard metrics',
-                    'Analyze collection rate trends',
-                    'Update fee schedules and contracts'
-                  ].map((task, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                    >
-                      <div className="w-5 h-5 border-2 border-gray-300 rounded mr-3"></div>
-                      <span className="text-sm text-gray-700">{task}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
         ) : currentView === 'eod-report' ? (
           <div className="space-y-6">
             {/* EOD Report Header with Date Picker and Action Buttons */}
@@ -6827,19 +6840,6 @@ const CourtStreetRCM = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center space-x-3">
-                    <Users className="w-6 h-6 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Accounts Follow-Up</p>
-                      <p className="text-xs text-gray-500">Need contact</p>
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {eodData.actionItems.accountsNeedingFollowUp}
-                  </p>
-                </div>
-
                 <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
                   <div className="flex items-center space-x-3">
                     <AlertCircle className="w-6 h-6 text-purple-600" />
@@ -6852,24 +6852,11 @@ const CourtStreetRCM = () => {
                     {eodData.actionItems.missedAppointments}
                   </p>
                 </div>
-
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Unbilled Procedures</p>
-                      <p className="text-xs text-gray-500">To bill</p>
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-green-900">
-                    {eodData.unbilledProcedures}
-                  </p>
-                </div>
               </div>
             </div>
 
             {/* Top Procedures */}
-            <div className={`rounded-lg shadow p-6 mb-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+            <div className={`rounded-lg shadow p-6 mt-6 mb-8 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold" style={{ color: csdGold }}>
                   Top Procedures Monthly
@@ -7013,6 +7000,49 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
+            {/* Claims Summary Section */}
+            <div className={`rounded-lg shadow p-6 mt-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Claims Management Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Pending Submission</p>
+                  <p className="text-3xl font-bold text-red-900">
+                    {eodData.actionItems.claimsToSubmit}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Ready to submit</p>
+                </div>
+
+                <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Denied Claims</p>
+                  <p className="text-3xl font-bold text-orange-900">
+                    {eodData.actionItems.deniedClaimsToResubmit}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Need resubmission</p>
+                </div>
+
+                <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Pre-Auths Approved</p>
+                  <p className="text-3xl font-bold text-yellow-900">
+                    {eodData.actionItems.preAuthsApproved}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Ready for treatment</p>
+                </div>
+
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Active Claims</p>
+                  <p className="text-3xl font-bold text-blue-900">
+                    {eodData.actionItems.claimsToSubmit + eodData.actionItems.deniedClaimsToResubmit}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Requiring action</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                Real-time data from Claims Management - updated automatically
+              </p>
+            </div>
+
             {/* Important Notes Section */}
             <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-lg p-6">
               <h3 className="text-lg font-bold mb-3 text-amber-900 flex items-center">
@@ -7022,15 +7052,15 @@ const CourtStreetRCM = () => {
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start">
                   <span className="text-amber-600 mr-2">•</span>
-                  <span><strong>Unapplied Payments:</strong> ${eodData.unappliedPayments.toLocaleString()} needs to be allocated</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-amber-600 mr-2">•</span>
-                  <span><strong>Failed Transaction:</strong> {eodData.failedTransactions} payment(s) failed - requires follow-up</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-amber-600 mr-2">•</span>
                   <span><strong>Daily Goal:</strong> {((eodData.dailyProduction / eodData.dailyProductionGoal) * 100).toFixed(1)}% of daily production goal achieved</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-amber-600 mr-2">•</span>
+                  <span><strong>Collection Rate:</strong> {eodData.collectionRate}% of production collected today</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-amber-600 mr-2">•</span>
+                  <span><strong>Outstanding Claims:</strong> {eodData.actionItems.claimsToSubmit + eodData.actionItems.deniedClaimsToResubmit} claims require immediate attention</span>
                 </li>
               </ul>
             </div>
