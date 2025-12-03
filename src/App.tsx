@@ -7136,18 +7136,21 @@ const CourtStreetRCM = () => {
                     } else {
                       // If status is changing, update the actual record first using direct Supabase call
                       if (updateType === 'status_change' && newStatus) {
+                        console.log('[Update Modal] Updating insurance check status to:', newStatus);
                         const { error: updateError } = await supabase
                           .from('insurance_checks')
                           .update({ status: newStatus })
                           .eq('id', updateTarget.id);
 
                         if (updateError) {
-                          console.error('Error updating insurance check status:', updateError);
+                          console.error('[Update Modal] Error updating insurance check status:', updateError);
                           throw updateError;
                         }
+                        console.log('[Update Modal] Status updated successfully');
                       }
 
                       // Log the update
+                      console.log('[Update Modal] Adding update to insurance_check_updates table');
                       await addInsuranceCheckUpdate({
                         check_id: updateTarget.id,
                         handler,
@@ -7158,20 +7161,24 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
+                      console.log('[Update Modal] Update logged successfully');
 
                       // Refresh the insurance checks list to show updated color
+                      console.log('[Update Modal] Refreshing insurance checks list');
                       const updatedChecks = showArchivedInsuranceChecks
                         ? await getArchivedInsuranceChecks()
                         : await getActiveInsuranceChecks();
                       setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
+                      console.log('[Update Modal] List refreshed successfully');
                     }
 
                     setShowAddUpdateModal(false);
                     setUpdateTarget(null);
                     alert('Update added successfully!');
-                  } catch (error) {
+                  } catch (error: any) {
                     console.error('Error adding update:', error);
-                    alert('Failed to add update. Please try again.');
+                    const errorMessage = error?.message || error?.error_description || JSON.stringify(error);
+                    alert(`Failed to add update: ${errorMessage}\n\nCheck console for details.`);
                   }
                 }}>
                   <div className="space-y-4">
