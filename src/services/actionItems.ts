@@ -25,33 +25,33 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     console.log('[Action Items] Fetching real-time data from RCM Management...');
 
     // 1. Claims to Submit - Query claims table for pending/ready to submit
-    const { data: claimsData } = await supabase
+    const { count: claimsCount } = await supabase
       .from('csd_claims')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Pending')
       .eq('archived', false);
 
-    const claimsToSubmit = claimsData?.length || 0;
+    const claimsToSubmit = claimsCount || 0;
     console.log('[Action Items] Claims to submit:', claimsToSubmit);
 
     // 2. Denied Claims to Resubmit - Query claims with denied status
-    const { data: deniedData } = await supabase
+    const { count: deniedCount } = await supabase
       .from('csd_claims')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'denied')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['Denied', 'Denied/2nd Appeal'])
       .eq('archived', false);
 
-    const deniedClaimsToResubmit = deniedData?.length || 0;
+    const deniedClaimsToResubmit = deniedCount || 0;
     console.log('[Action Items] Denied claims to resubmit:', deniedClaimsToResubmit);
 
     // 3. Pre-Auths Approved - Query pre-auths with approved status
-    const { data: preAuthsData } = await supabase
+    const { count: preAuthsCount } = await supabase
       .from('csd_preauths')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'approved')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Approved')
       .eq('archived', false);
 
-    const preAuthsApproved = preAuthsData?.length || 0;
+    const preAuthsApproved = preAuthsCount || 0;
     console.log('[Action Items] Pre-auths approved:', preAuthsApproved);
 
     // 4. Accounts Needing Follow-Up - Count from multiple sources
@@ -67,18 +67,18 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0];
 
     // Claims pending > 30 days
-    const { data: oldClaimsData } = await supabase
+    const { count: oldClaimsCount } = await supabase
       .from('csd_claims')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['pending', 'processing', 'waiting_for_info'])
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['Pending', 'In Review/2nd Appeal', 'Resubmitted with Attachments', 'Resubmitted/1st Appeal'])
       .lt('date_submitted', thirtyDaysAgoStr)
       .eq('archived', false);
 
     // Pre-auths pending > 14 days
-    const { data: oldPreAuthsData } = await supabase
+    const { count: oldPreAuthsCount } = await supabase
       .from('csd_preauths')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Pending')
       .lt('date_submitted', fourteenDaysAgoStr)
       .eq('archived', false);
 
@@ -94,14 +94,14 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     const ar90PlusCount = patientARData?.find(r => r.field_key === 'patient_ar_90_plus_count')?.value || 0;
 
     const accountsNeedingFollowUp =
-      (oldClaimsData?.length || 0) +
-      (oldPreAuthsData?.length || 0) +
+      (oldClaimsCount || 0) +
+      (oldPreAuthsCount || 0) +
       ar6190Count +
       ar90PlusCount;
 
     console.log('[Action Items] Accounts needing follow-up:', accountsNeedingFollowUp, {
-      oldClaims: oldClaimsData?.length || 0,
-      oldPreAuths: oldPreAuthsData?.length || 0,
+      oldClaims: oldClaimsCount || 0,
+      oldPreAuths: oldPreAuthsCount || 0,
       ar6190: ar6190Count,
       ar90Plus: ar90PlusCount
     });
@@ -174,7 +174,7 @@ export async function getFollowUpCounts() {
     const { count: claimsCount } = await supabase
       .from('csd_claims')
       .select('*', { count: 'exact', head: true })
-      .in('status', ['pending', 'processing', 'waiting_for_info'])
+      .in('status', ['Pending', 'In Review/2nd Appeal', 'Resubmitted with Attachments', 'Resubmitted/1st Appeal'])
       .lt('date_submitted', thirtyDaysAgoStr)
       .eq('archived', false);
 
@@ -182,7 +182,7 @@ export async function getFollowUpCounts() {
     const { count: preAuthsCount } = await supabase
       .from('csd_preauths')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending')
+      .eq('status', 'Pending')
       .lt('date_submitted', fourteenDaysAgoStr)
       .eq('archived', false);
 
