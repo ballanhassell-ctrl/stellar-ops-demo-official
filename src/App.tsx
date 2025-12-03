@@ -4,7 +4,7 @@ import {
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus
+  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, Settings
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -1444,11 +1444,20 @@ const CourtStreetRCM = () => {
     { id: 'insurance', name: 'Insurance', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'checklist', name: 'Checklist', icon: List },
-    { id: 'eod-report', name: 'EOD Report', icon: Calendar }
+    { id: 'eod-report', name: 'EOD Report', icon: Calendar },
+    { id: 'administration', name: 'Administration', icon: Settings }
   ];
 
   // Sub-navigation for RCM Management tab
   const [patientManagementView, setPatientManagementView] = useState('claims');
+
+  // Sub-navigation for Administration tab
+  const [administrationView, setAdministrationView] = useState('scheduling');
+
+  // Administration - Scheduling lists toggle state
+  const [showVipList, setShowVipList] = useState(false);
+  const [showRecareList, setShowRecareList] = useState(false);
+  const [showTreatmentList, setShowTreatmentList] = useState(false);
 
   // Filter functions for search
   const filteredClaims = claims.filter(claim => {
@@ -6660,6 +6669,144 @@ const CourtStreetRCM = () => {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : currentView === 'administration' ? (
+          <div className="space-y-6">
+            {/* Administration Header */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                Administration
+              </h2>
+
+              {/* Sub-navigation Tabs */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setAdministrationView('scheduling')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    administrationView === 'scheduling'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Scheduling
+                </button>
+                <button
+                  onClick={() => setAdministrationView('training')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    administrationView === 'training'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Training
+                </button>
+              </div>
+            </div>
+
+            {/* Scheduling View */}
+            {administrationView === 'scheduling' && (
+              <>
+                {/* VIP List Section */}
+                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>VIP List</h3>
+                    <button
+                      onClick={() => setShowVipList(!showVipList)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        showVipList
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {showVipList ? 'Hide' : 'Show'} VIP List
+                    </button>
+                  </div>
+
+                  {showVipList && (
+                    <div className="mt-4">
+                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
+                        <p className={`text-center ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                          VIP List functionality coming soon. Will include patient tracking, contact management, and production metrics.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recare List Section */}
+                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>Recare List</h3>
+                    <button
+                      onClick={() => setShowRecareList(!showRecareList)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        showRecareList
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {showRecareList ? 'Hide' : 'Show'} Recare List
+                    </button>
+                  </div>
+
+                  {showRecareList && (
+                    <div className="mt-4">
+                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
+                        <p className={`text-center ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                          Recare List functionality coming soon. Will include recare tracking, follow-up management, and patient metrics.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Treatment List Section */}
+                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>Treatment List</h3>
+                    <button
+                      onClick={() => setShowTreatmentList(!showTreatmentList)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        showTreatmentList
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {showTreatmentList ? 'Hide' : 'Show'} Treatment List
+                    </button>
+                  </div>
+
+                  {showTreatmentList && (
+                    <div className="mt-4">
+                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
+                        <p className={`text-center ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                          Treatment List functionality coming soon. Will include treatment planning, scheduling, and production tracking.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Training View */}
+            {administrationView === 'training' && (
+              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className="text-center py-12">
+                  <h3 className="text-2xl font-bold mb-4" style={{ color: csdGold }}>Training Module</h3>
+                  <p className={`text-lg ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Coming Soon
+                  </p>
+                  <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Comprehensive training resources and modules will be available here.
+                  </p>
                 </div>
               </div>
             )}
