@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
+import { getRealTimeActionItems } from '../services/actionItems';
 
 export interface EODData {
   reportDate: string;
@@ -69,6 +70,9 @@ export const useEODMetrics = (date: string) => {
       // Calculate MTD metrics from authoritative sources
       const mtdMetrics = await getMTDMetrics(targetDate);
 
+      // Fetch real-time action items from RCM Management data
+      const realTimeActionItems = await getRealTimeActionItems();
+
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
         const metric = metrics.find(m => m.field_key === fieldKey);
@@ -128,13 +132,13 @@ export const useEODMetrics = (date: string) => {
         unappliedPayments: getMetricValue('eod_unapplied_payments'),
         failedTransactions: getMetricValue('eod_failed_transactions'),
 
-        // Action Items
+        // Action Items - Real-time data from RCM Management
         actionItems: {
-          claimsToSubmit: getMetricValue('eod_claims_to_submit'),
-          deniedClaimsToResubmit: getMetricValue('eod_denied_claims_resubmit'),
-          preAuthsApproved: getMetricValue('eod_preauths_approved'),
-          accountsNeedingFollowUp: getMetricValue('eod_accounts_followup'),
-          missedAppointments: getMetricValue('eod_missed_appointments'),
+          claimsToSubmit: realTimeActionItems.claimsToSubmit,
+          deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+          preAuthsApproved: realTimeActionItems.preAuthsApproved,
+          accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+          missedAppointments: realTimeActionItems.missedAppointments,
         },
 
         // Arrays (not stored in Supabase for now)
