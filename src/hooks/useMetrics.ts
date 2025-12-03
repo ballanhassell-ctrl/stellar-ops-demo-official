@@ -186,7 +186,8 @@ export const useMetrics = (date: string) => {
           activePatients: getMetricValue('active_patients', 0, true),
           activeClaims: getMetricValue('active_claims'),
           pendingPayments: getMetricValue('pending_payments'),
-          outstandingAR: getMetricValue('outstanding_ar', 0, true),
+          // Outstanding A/R is auto-calculated from Insurance + Patient A/R aging totals
+          outstandingAR: 0, // Will be calculated below after aging data is loaded
         },
         payments: {
           todaysPayments: getMetricValue('todays_payments'),
@@ -202,7 +203,8 @@ export const useMetrics = (date: string) => {
           totalPatients: getMetricValue('total_patients'),
           activePatients: getMetricValue('active_patients', 0, true),
           patientsWithBalance: getMetricValue('patients_with_balance'),
-          totalPatientAR: getMetricValue('total_patient_ar'),
+          // Total Patient A/R is auto-calculated from Patient A/R aging buckets
+          totalPatientAR: 0, // Will be calculated below
           patientARAging: {
             zeroToThirty: getMetricValue('patient_ar_0_30'),
             thirtyOneToSixty: getMetricValue('patient_ar_31_60'),
@@ -275,6 +277,23 @@ export const useMetrics = (date: string) => {
           revenueGrowthRate: getMetricValue('adv_revenue_growth_rate', 0, true),
         },
       };
+
+      // Auto-calculate Total Patient A/R from aging buckets
+      mappedData.patients.totalPatientAR =
+        mappedData.patients.patientARAging.zeroToThirty +
+        mappedData.patients.patientARAging.thirtyOneToSixty +
+        mappedData.patients.patientARAging.sixtyOneToNinety +
+        mappedData.patients.patientARAging.ninetyPlus;
+
+      // Auto-calculate Total Insurance A/R from aging buckets
+      const totalInsuranceAR =
+        mappedData.claims.arAging.zeroToThirty.amount +
+        mappedData.claims.arAging.thirtyOneToSixty.amount +
+        mappedData.claims.arAging.sixtyOneToNinety.amount +
+        mappedData.claims.arAging.ninetyPlus.amount;
+
+      // Auto-calculate Outstanding A/R as sum of Insurance A/R + Patient A/R
+      mappedData.dashboard.outstandingAR = totalInsuranceAR + mappedData.patients.totalPatientAR;
 
       setData(mappedData);
     } catch (err) {
