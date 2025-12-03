@@ -395,6 +395,8 @@ interface ClaimRecord {
   handler: string;
   notes: string;
   agingDays: number;
+  archivedAt?: string;
+  archivedBy?: string;
 }
 
 interface PreAuthRecord {
@@ -429,7 +431,9 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   followUpDate: claim.follow_up_date,
   handler: claim.handler,
   notes: claim.notes || '',
-  agingDays: claim.aging_days
+  agingDays: claim.aging_days,
+  archivedAt: claim.archived_at || undefined,
+  archivedBy: claim.archived_by || undefined
 });
 
 const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated_at'> => ({
