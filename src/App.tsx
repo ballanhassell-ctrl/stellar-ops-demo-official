@@ -395,6 +395,8 @@ interface ClaimRecord {
   handler: string;
   notes: string;
   agingDays: number;
+  archivedAt?: string;
+  archivedBy?: string;
 }
 
 interface PreAuthRecord {
@@ -429,7 +431,9 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   followUpDate: claim.follow_up_date,
   handler: claim.handler,
   notes: claim.notes || '',
-  agingDays: claim.aging_days
+  agingDays: claim.aging_days,
+  archivedAt: claim.archived_at || undefined,
+  archivedBy: claim.archived_by || undefined
 });
 
 const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated_at'> => ({
@@ -610,6 +614,10 @@ const CourtStreetRCM = () => {
   // Archive view toggle state
   const [showArchivedClaims, setShowArchivedClaims] = useState(false);
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
+
+  // Archive date filter state
+  const [archiveClaimsDateFilter, setArchiveClaimsDateFilter] = useState<string>('');
+  const [archiveInsuranceChecksDateFilter, setArchiveInsuranceChecksDateFilter] = useState<string>('');
 
   // Add Update modal state
   const [showAddUpdateModal, setShowAddUpdateModal] = useState(false);
@@ -1403,15 +1411,24 @@ const CourtStreetRCM = () => {
   const [patientManagementView, setPatientManagementView] = useState('claims');
 
   // Filter functions for search
-  const filteredClaims = claims.filter(claim =>
-    searchQuery === '' ||
-    claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredClaims = claims.filter(claim => {
+    // Apply search query filter
+    const matchesSearch = searchQuery === '' ||
+      claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.status.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Apply archive date filter if viewing archived items and date filter is set
+    if (showArchivedClaims && archiveClaimsDateFilter && claim.archivedAt) {
+      const archivedDate = claim.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
+      return matchesSearch && archivedDate === archiveClaimsDateFilter;
+    }
+
+    return matchesSearch;
+  });
 
   const filteredPreAuths = preAuths.filter(preAuth =>
     searchQuery === '' ||
@@ -1423,16 +1440,25 @@ const CourtStreetRCM = () => {
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredInsuranceChecks = insuranceChecks.filter(check =>
-    searchQuery === '' ||
-    check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredInsuranceChecks = insuranceChecks.filter(check => {
+    // Apply search query filter
+    const matchesSearch = searchQuery === '' ||
+      check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.status.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Apply archive date filter if viewing archived items and date filter is set
+    if (showArchivedInsuranceChecks && archiveInsuranceChecksDateFilter && check.archivedAt) {
+      const archivedDate = check.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
+      return matchesSearch && archivedDate === archiveInsuranceChecksDateFilter;
+    }
+
+    return matchesSearch;
+  });
 
   // Handler functions for claims and pre-auths management
   const handleEditClaim = (claim: ClaimRecord) => {
@@ -2505,6 +2531,27 @@ const CourtStreetRCM = () => {
                       </span>
                     )}
                   </button>
+                  {showArchivedClaims && (
+                    <div className="flex items-center gap-2">
+                      <label className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                        Filter by Date:
+                      </label>
+                      <input
+                        type="date"
+                        value={archiveClaimsDateFilter}
+                        onChange={(e) => setArchiveClaimsDateFilter(e.target.value)}
+                        className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
+                      />
+                      {archiveClaimsDateFilter && (
+                        <button
+                          onClick={() => setArchiveClaimsDateFilter('')}
+                          className="px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2800,6 +2847,121 @@ const CourtStreetRCM = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Claims Metrics Section */}
+              <div className={`mt-6 rounded-lg shadow p-6 ${isDayMode ? 'bg-gradient-to-r from-blue-50 to-indigo-50' : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}>
+                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  Claims Analytics
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Average Aging Days */}
+                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
+                        <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                          {filteredClaims.length > 0
+                            ? Math.round(filteredClaims.reduce((sum, c) => sum + c.agingDays, 0) / filteredClaims.length)
+                            : 0} days
+                        </p>
+                      </div>
+                      <Clock className="w-8 h-8 text-blue-500 opacity-50" />
+                    </div>
+                  </div>
+
+                  {/* Approval Rate */}
+                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {filteredClaims.length > 0
+                            ? Math.round((filteredClaims.filter(c => c.status === 'Approved').length / filteredClaims.length) * 100)
+                            : 0}%
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {filteredClaims.filter(c => c.status === 'Approved').length} of {filteredClaims.length}
+                        </p>
+                      </div>
+                      <CheckCircle className="w-8 h-8 text-green-500 opacity-50" />
+                    </div>
+                  </div>
+
+                  {/* Total Claim Amount */}
+                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Amount</p>
+                        <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                          ${filteredClaims.reduce((sum, c) => sum + c.claimAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <DollarSign className="w-8 h-8 text-yellow-500 opacity-50" />
+                    </div>
+                  </div>
+
+                  {/* Denied Claims */}
+                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Denied Claims</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          {filteredClaims.filter(c => c.status === 'Denied').length}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {filteredClaims.length > 0
+                            ? Math.round((filteredClaims.filter(c => c.status === 'Denied').length / filteredClaims.length) * 100)
+                            : 0}% of total
+                        </p>
+                      </div>
+                      <XCircle className="w-8 h-8 text-red-500 opacity-50" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Most Commonly Denied Procedure Codes */}
+                <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
+                    Most Commonly Denied Procedure Codes (ADA Codes)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {(() => {
+                      // Filter for denied claims with D codes (ADA codes)
+                      const deniedWithDCodes = filteredClaims
+                        .filter(c => c.status === 'Denied' && c.procedureCode.trim().toUpperCase().startsWith('D'));
+
+                      // Count occurrences of each code
+                      const codeCounts = deniedWithDCodes.reduce((acc, claim) => {
+                        const code = claim.procedureCode.trim();
+                        acc[code] = (acc[code] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>);
+
+                      // Sort by count and get top 3
+                      const topCodes = Object.entries(codeCounts)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 3);
+
+                      if (topCodes.length === 0) {
+                        return (
+                          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'} col-span-3 text-center`}>
+                            No denied ADA procedure codes
+                          </p>
+                        );
+                      }
+
+                      return topCodes.map(([code, count]) => (
+                        <div key={code} className={`flex items-center justify-between p-2 rounded ${isDayMode ? 'bg-red-50' : 'bg-red-900/20'}`}>
+                          <span className="font-semibold text-red-600">{code}</span>
+                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                            {count} {count === 1 ? 'denial' : 'denials'}
+                          </span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
               </div>
             </div>
             </>
@@ -3289,6 +3451,27 @@ const CourtStreetRCM = () => {
                         <Archive className="w-4 h-4" />
                         {showArchivedInsuranceChecks ? 'Show Active' : 'Show Archived'}
                       </button>
+                      {showArchivedInsuranceChecks && (
+                        <div className="flex items-center gap-2">
+                          <label className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                            Filter by Date:
+                          </label>
+                          <input
+                            type="date"
+                            value={archiveInsuranceChecksDateFilter}
+                            onChange={(e) => setArchiveInsuranceChecksDateFilter(e.target.value)}
+                            className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
+                          />
+                          {archiveInsuranceChecksDateFilter && (
+                            <button
+                              onClick={() => setArchiveInsuranceChecksDateFilter('')}
+                              className="px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -3485,6 +3668,124 @@ const CourtStreetRCM = () => {
                         )}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Insurance Checks/EFTs Metrics Section */}
+                  <div className={`mt-6 rounded-lg shadow p-6 ${isDayMode ? 'bg-gradient-to-r from-green-50 to-teal-50' : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}>
+                    <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                      Insurance Checks/EFTs Analytics
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Average Aging Days */}
+                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
+                            <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                              {filteredInsuranceChecks.length > 0
+                                ? Math.round(filteredInsuranceChecks.reduce((sum, c) => sum + c.aging, 0) / filteredInsuranceChecks.length)
+                                : 0} days
+                            </p>
+                          </div>
+                          <Clock className="w-8 h-8 text-blue-500 opacity-50" />
+                        </div>
+                      </div>
+
+                      {/* Total Amount */}
+                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Amount</p>
+                            <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                              ${filteredInsuranceChecks.reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <DollarSign className="w-8 h-8 text-yellow-500 opacity-50" />
+                        </div>
+                      </div>
+
+                      {/* Check vs EFT Breakdown */}
+                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-2`}>Payment Type</p>
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold">Checks:</span>
+                              <span className="text-sm" style={{ color: csdGold }}>
+                                ${filteredInsuranceChecks.filter(c => c.paymentType === 'Check').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold">EFTs:</span>
+                              <span className="text-sm" style={{ color: csdGold }}>
+                                ${filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Breakdown */}
+                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-2`}>Status</p>
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                <span className="text-xs">Created:</span>
+                              </div>
+                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Created').length}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                <span className="text-xs">Entered:</span>
+                              </div>
+                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Entered').length}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                <span className="text-xs">Pending:</span>
+                              </div>
+                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Pending Review').length}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Average Amount by Type */}
+                    <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
+                        Average Payment Amount by Type
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Check Amount:</span>
+                          <span className="font-bold text-lg" style={{ color: csdGold }}>
+                            ${(() => {
+                              const checks = filteredInsuranceChecks.filter(c => c.paymentType === 'Check');
+                              return checks.length > 0
+                                ? (checks.reduce((sum, c) => sum + c.totalAmount, 0) / checks.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : '0.00';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg EFT Amount:</span>
+                          <span className="font-bold text-lg" style={{ color: csdGold }}>
+                            ${(() => {
+                              const efts = filteredInsuranceChecks.filter(c => c.paymentType === 'EFT');
+                              return efts.length > 0
+                                ? (efts.reduce((sum, c) => sum + c.totalAmount, 0) / efts.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : '0.00';
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>
