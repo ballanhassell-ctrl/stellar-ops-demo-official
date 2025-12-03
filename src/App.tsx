@@ -410,10 +410,12 @@ interface PreAuthRecord {
   requestedAmount: number;
   status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review';
   dateRequested: string;
+  followUpDate: string;
   expirationDate: string;
   approvedAmount: number;
   handler: string;
   notes: string;
+  agingDays: number;
 }
 
 // Conversion functions between frontend camelCase and database snake_case
@@ -467,10 +469,12 @@ const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   requestedAmount: preAuth.requested_amount,
   status: preAuth.status,
   dateRequested: preAuth.date_requested,
+  followUpDate: preAuth.follow_up_date,
   expirationDate: preAuth.expiration_date,
   approvedAmount: preAuth.approved_amount,
   handler: preAuth.handler,
-  notes: preAuth.notes || ''
+  notes: preAuth.notes || '',
+  agingDays: preAuth.aging_days
 });
 
 const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'updated_at'> => ({
@@ -484,10 +488,12 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
   requested_amount: record.requestedAmount,
   status: record.status,
   date_requested: record.dateRequested,
+  follow_up_date: record.followUpDate,
   expiration_date: record.expirationDate,
   approved_amount: record.approvedAmount,
   handler: record.handler,
   notes: record.notes,
+  aging_days: record.agingDays,
   archived: false,
   archived_at: null,
   archived_by: null
@@ -3107,6 +3113,7 @@ const CourtStreetRCM = () => {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Requested</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Approved</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Expires</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
@@ -3115,7 +3122,7 @@ const CourtStreetRCM = () => {
                       <tbody className="divide-y divide-gray-200">
                         {filteredPreAuths.length === 0 ? (
                           <tr>
-                            <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                            <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
                               No pre-authorizations found matching your search.
                             </td>
                           </tr>
@@ -3150,6 +3157,16 @@ const CourtStreetRCM = () => {
                                   'bg-blue-100 text-blue-800'
                                 }`}>
                                   {preAuth.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className={`text-sm font-semibold ${
+                                  preAuth.agingDays <= 30 ? 'text-green-700' :
+                                  preAuth.agingDays <= 60 ? 'text-yellow-700' :
+                                  preAuth.agingDays <= 90 ? 'text-orange-700' :
+                                  'text-red-700'
+                                }`}>
+                                  {preAuth.agingDays} days
                                 </span>
                               </td>
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.expirationDate}</td>
@@ -3213,6 +3230,70 @@ const CourtStreetRCM = () => {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+
+                {/* Pre-Authorization Analytics */}
+                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
+                    Pre-Authorization Analytics
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Average Aging Days */}
+                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
+                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                            {filteredPreAuths.length > 0
+                              ? Math.round(filteredPreAuths.reduce((sum, pa) => sum + pa.agingDays, 0) / filteredPreAuths.length)
+                              : 0} days
+                          </p>
+                        </div>
+                        <Clock className="w-8 h-8 text-blue-500 opacity-50" />
+                      </div>
+                    </div>
+
+                    {/* Total Requested Amount */}
+                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Requested</p>
+                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                            ${filteredPreAuths.reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <DollarSign className="w-8 h-8 text-green-500 opacity-50" />
+                      </div>
+                    </div>
+
+                    {/* Total Approved Amount */}
+                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Approved</p>
+                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                            ${filteredPreAuths.reduce((sum, pa) => sum + pa.approvedAmount, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <CheckCircle className="w-8 h-8 text-green-500 opacity-50" />
+                      </div>
+                    </div>
+
+                    {/* Approval Rate */}
+                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
+                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
+                            {filteredPreAuths.length > 0
+                              ? Math.round((filteredPreAuths.filter(pa => pa.status === 'Approved').length / filteredPreAuths.length) * 100)
+                              : 0}%
+                          </p>
+                        </div>
+                        <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>
@@ -3916,6 +3997,9 @@ const CourtStreetRCM = () => {
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
+                    const dateRequested = formData.get('dateRequested') as string;
+                    const followUpDate = formData.get('followUpDate') as string;
+                    const agingDays = Math.floor((new Date(followUpDate).getTime() - new Date(dateRequested).getTime()) / (1000 * 60 * 60 * 24));
                     const newPreAuth: PreAuthRecord = {
                       id: `PA-${String(preAuths.length + 1).padStart(3, '0')}`,
                       patientId: formData.get('patientId') as string,
@@ -3926,11 +4010,13 @@ const CourtStreetRCM = () => {
                       treatmentDetail: formData.get('treatmentDetail') as string,
                       requestedAmount: parseFloat(formData.get('requestedAmount') as string),
                       status: formData.get('status') as 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review',
-                      dateRequested: formData.get('dateRequested') as string,
+                      dateRequested: dateRequested,
+                      followUpDate: followUpDate,
                       expirationDate: formData.get('expirationDate') as string,
                       approvedAmount: parseFloat(formData.get('approvedAmount') as string) || 0,
                       handler: formData.get('handler') as string,
-                      notes: formData.get('notes') as string
+                      notes: formData.get('notes') as string,
+                      agingDays: agingDays
                     };
 
                     try {
@@ -3986,6 +4072,10 @@ const CourtStreetRCM = () => {
                       <div>
                         <label className="block text-sm font-medium mb-1">Date Requested</label>
                         <input name="dateRequested" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Follow-Up Date</label>
+                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Expiration Date</label>
@@ -6973,6 +7063,9 @@ const CourtStreetRCM = () => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const preAuth = editingItem as PreAuthRecord;
+                    const dateRequested = formData.get('dateRequested') as string;
+                    const followUpDate = formData.get('followUpDate') as string;
+                    const agingDays = Math.floor((new Date(followUpDate).getTime() - new Date(dateRequested).getTime()) / (1000 * 60 * 60 * 24));
                     const updatedPreAuth = {
                       patient_id: preAuth.patientId, // Preserve existing patient_id
                       patient_name: formData.get('patientName') as string,
@@ -6982,11 +7075,13 @@ const CourtStreetRCM = () => {
                       treatment_detail: formData.get('treatmentDetail') as string,
                       requested_amount: parseFloat(formData.get('requestedAmount') as string),
                       status: formData.get('status') as PreAuth['status'],
-                      date_requested: formData.get('dateRequested') as string,
+                      date_requested: dateRequested,
+                      follow_up_date: followUpDate,
                       expiration_date: formData.get('expirationDate') as string,
                       approved_amount: parseFloat(formData.get('approvedAmount') as string),
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string || null,
+                      aging_days: agingDays,
                     };
 
                     try {
@@ -7099,6 +7194,16 @@ const CourtStreetRCM = () => {
                               type="date"
                               name="dateRequested"
                               defaultValue={preAuth.dateRequested}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Follow-Up Date</label>
+                            <input
+                              type="date"
+                              name="followUpDate"
+                              defaultValue={preAuth.followUpDate}
                               required
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />

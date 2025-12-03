@@ -81,10 +81,12 @@ export type PreAuth = {
   requested_amount: number;
   status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review';
   date_requested: string; // ISO date string
+  follow_up_date: string; // ISO date string
   expiration_date: string; // ISO date string
   approved_amount: number;
   handler: string;
   notes: string | null;
+  aging_days: number;
   archived: boolean;
   archived_at: string | null;
   archived_by: string | null;
