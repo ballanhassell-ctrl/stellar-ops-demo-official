@@ -418,6 +418,41 @@ interface PreAuthRecord {
   agingDays: number;
 }
 
+// Helper functions for automatic aging calculation
+const calculateClaimAging = (claim: Claim): number => {
+  const startDate = new Date(claim.date_submitted);
+  // Aging stops when claim is "Approved/Awaiting Payment" or "Entered"
+  const isCompleted = claim.status === 'Approved/Awaiting Payment' || claim.status === 'Entered';
+  const endDate = isCompleted ? new Date(claim.follow_up_date) : new Date();
+  return Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+const calculatePreAuthAging = (preAuth: PreAuth): number => {
+  const startDate = new Date(preAuth.date_requested);
+  // Aging stops when pre-auth is "Scheduled" or "Denied"
+  const isCompleted = preAuth.status === 'Scheduled' || preAuth.status === 'Denied';
+  const endDate = isCompleted ? new Date(preAuth.follow_up_date) : new Date();
+  return Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+// Helper function to get last 5 business days
+const getLast5BusinessDays = (): Date[] => {
+  const days: Date[] = [];
+  const today = new Date();
+  let currentDate = new Date(today);
+
+  while (days.length < 5) {
+    const dayOfWeek = currentDate.getDay();
+    // Skip weekends (0 = Sunday, 6 = Saturday)
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      days.push(new Date(currentDate));
+    }
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+
+  return days.reverse();
+};
+
 // Conversion functions between frontend camelCase and database snake_case
 const claimToRecord = (claim: Claim): ClaimRecord => ({
   id: claim.id,
@@ -433,7 +468,7 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   followUpDate: claim.follow_up_date,
   handler: claim.handler,
   notes: claim.notes || '',
-  agingDays: claim.aging_days,
+  agingDays: calculateClaimAging(claim),
   archivedAt: claim.archived_at || undefined,
   archivedBy: claim.archived_by || undefined
 });
@@ -474,7 +509,7 @@ const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   approvedAmount: preAuth.approved_amount,
   handler: preAuth.handler,
   notes: preAuth.notes || '',
-  agingDays: preAuth.aging_days
+  agingDays: calculatePreAuthAging(preAuth)
 });
 
 const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'updated_at'> => ({
@@ -2165,7 +2200,7 @@ const CourtStreetRCM = () => {
                   <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-red-50' : 'bg-red-900/30'}`}>
                     <div className="flex items-center space-x-3">
                       <XCircle className="w-5 h-5 text-red-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Denied Claims</span>
+                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Fully Denied Claims</span>
                     </div>
                     <span className={`text-lg font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
                       {claimsData.denied}
@@ -2601,11 +2636,11 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                {/* Denied Claims */}
+                {/* Fully Denied Claims */}
                 <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-5 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-red-700 mb-1">Denied Claims</p>
+                      <p className="text-sm font-medium text-red-700 mb-1">Fully Denied Claims</p>
                       <p className="text-3xl font-bold text-red-900">{claimsData.denied}</p>
                       <p className="text-xs text-red-600 mt-2">Need attention</p>
                     </div>
@@ -2909,11 +2944,11 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
 
-                  {/* Denied Claims */}
+                  {/* Fully Denied Claims */}
                   <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Denied Claims</p>
+                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fully Denied Claims</p>
                         <p className="text-2xl font-bold text-red-600">
                           {filteredClaims.filter(c => c.status === 'Denied').length}
                         </p>
@@ -3787,13 +3822,13 @@ const CourtStreetRCM = () => {
                         </div>
                       </div>
 
-                      {/* Total Amount */}
+                      {/* Total Amount Waiting to be Entered */}
                       <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Amount</p>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Amount Waiting to be Entered</p>
                             <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                              ${filteredInsuranceChecks.reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ${filteredInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           </div>
                           <DollarSign className="w-8 h-8 text-yellow-500 opacity-50" />
@@ -3880,6 +3915,35 @@ const CourtStreetRCM = () => {
                             })()}
                           </span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Daily Entered Totals - Last 5 Business Days */}
+                    <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                      <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
+                        Daily Entered Totals (Last 5 Business Days)
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        {getLast5BusinessDays().map((date, index) => {
+                          const dateStr = date.toISOString().split('T')[0];
+                          const dayTotal = filteredInsuranceChecks
+                            .filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr))
+                            .reduce((sum, c) => sum + c.totalAmount, 0);
+
+                          return (
+                            <div key={index} className={`p-3 rounded-lg border ${isDayMode ? 'bg-gray-50 border-gray-200' : 'bg-gray-700 border-gray-600'}`}>
+                              <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-1`}>
+                                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                              <p className="text-lg font-bold" style={{ color: csdGold }}>
+                                ${dayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                              <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                {filteredInsuranceChecks.filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr)).length} entered
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -6129,7 +6193,7 @@ const CourtStreetRCM = () => {
                   <div className="flex items-center space-x-3">
                     <XCircle className="w-6 h-6 text-orange-600" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Denied Claims</p>
+                      <p className="text-sm font-medium text-gray-700">Fully Denied Claims</p>
                       <p className="text-xs text-gray-500">Need resubmission</p>
                     </div>
                   </div>
