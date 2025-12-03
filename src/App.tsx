@@ -32,7 +32,7 @@ import {
 } from './services/claimsService';
 import {
   getSchedulingListItems, insertSchedulingListItem, updateSchedulingListItem, deleteSchedulingListItem,
-  calculateSchedulingMetrics, getSchedulingListItemsDueForFollowUp
+  calculateSchedulingMetrics
 } from './services/schedulingService';
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem } from './types/database.types';
 
@@ -879,128 +879,6 @@ const CourtStreetRCM = () => {
     fetchInsuranceChecks();
   }, [showArchivedInsuranceChecks]);
 
-  // Fetch VIP List items from Supabase
-  useEffect(() => {
-    const fetchVipList = async () => {
-      try {
-        const items = await getSchedulingListItems('vip');
-        const records = items.map(schedulingItemToRecord);
-        setVipListItems(records);
-
-        // Fetch metrics
-        const metrics = await calculateSchedulingMetrics('vip');
-        setVipMetrics(metrics);
-      } catch (error) {
-        console.error('Error fetching VIP list:', error);
-      }
-    };
-
-    fetchVipList();
-  }, []);
-
-  // Fetch Recare List items from Supabase
-  useEffect(() => {
-    const fetchRecareList = async () => {
-      try {
-        const items = await getSchedulingListItems('recare');
-        const records = items.map(schedulingItemToRecord);
-        setRecareListItems(records);
-
-        // Fetch metrics
-        const metrics = await calculateSchedulingMetrics('recare');
-        setRecareMetrics(metrics);
-      } catch (error) {
-        console.error('Error fetching Recare list:', error);
-      }
-    };
-
-    fetchRecareList();
-  }, []);
-
-  // Fetch Treatment List items from Supabase
-  useEffect(() => {
-    const fetchTreatmentList = async () => {
-      try {
-        const items = await getSchedulingListItems('treatment');
-        const records = items.map(schedulingItemToRecord);
-        setTreatmentListItems(records);
-
-        // Fetch metrics
-        const metrics = await calculateSchedulingMetrics('treatment');
-        setTreatmentMetrics(metrics);
-      } catch (error) {
-        console.error('Error fetching Treatment list:', error);
-      }
-    };
-
-    fetchTreatmentList();
-  }, []);
-
-  // Calculate follow-up counts based on current date
-  useEffect(() => {
-    const calculateFollowUpCounts = async () => {
-      const today = new Date().toISOString().split('T')[0];
-
-      // Count claims due for follow-up
-      const claimsDue = claims.filter(claim => claim.followUpDate <= today).length;
-
-      // Count pre-auths due for follow-up
-      const preAuthsDue = preAuths.filter(preAuth => preAuth.followUpDate <= today).length;
-
-      // Count scheduling lists due for follow-up
-      const vipDue = vipListItems.filter(item => item.followUpDate <= today).length;
-      const recareDue = recareListItems.filter(item => item.followUpDate <= today).length;
-      const treatmentDue = treatmentListItems.filter(item => item.followUpDate <= today).length;
-
-      setFollowUpCounts({
-        claims: claimsDue,
-        preAuths: preAuthsDue,
-        vip: vipDue,
-        recare: recareDue,
-        treatment: treatmentDue
-      });
-    };
-
-    calculateFollowUpCounts();
-  }, [claims, preAuths, vipListItems, recareListItems, treatmentListItems]);
-
-  // Calculate automated metrics: average claims aging and most commonly denied procedures
-  useEffect(() => {
-    if (claims.length === 0) return;
-
-    // Calculate average claims aging
-    const activeClaims = claims.filter(c => c.status !== 'Entered' && c.status !== 'Approved/Awaiting Payment');
-    const avgAgingDays = activeClaims.length > 0
-      ? Math.round(activeClaims.reduce((sum, claim) => sum + claim.agingDays, 0) / activeClaims.length)
-      : 0;
-
-    // Calculate most commonly denied procedures
-    const deniedClaims = claims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal');
-    const procedureCounts: Record<string, number> = {};
-    deniedClaims.forEach(claim => {
-      const procedure = claim.procedureCode;
-      procedureCounts[procedure] = (procedureCounts[procedure] || 0) + 1;
-    });
-    const sortedProcedures = Object.entries(procedureCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    // Calculate collection rate
-    const totalProduction = claims.reduce((sum, claim) => sum + claim.claimAmount, 0);
-    const collectedAmount = claims
-      .filter(c => c.status === 'Entered' || c.status === 'Approved/Awaiting Payment')
-      .reduce((sum, claim) => sum + claim.claimAmount, 0);
-    const collectionRate = totalProduction > 0 ? Math.round((collectedAmount / totalProduction) * 100) : 0;
-
-    setAutomatedMetrics({
-      avgAgingDays,
-      mostDeniedProcedures: sortedProcedures,
-      collectionRate,
-      totalActiveClaims: activeClaims.length,
-      totalDeniedClaims: deniedClaims.length
-    });
-  }, [claims]);
-
   // Set up real-time subscriptions for claims, pre-auths, and insurance checks
   useEffect(() => {
     // Subscribe to claims changes
@@ -1661,6 +1539,128 @@ const CourtStreetRCM = () => {
     totalActiveClaims: 0,
     totalDeniedClaims: 0
   });
+
+  // Fetch VIP List items from Supabase
+  useEffect(() => {
+    const fetchVipList = async () => {
+      try {
+        const items = await getSchedulingListItems('vip');
+        const records = items.map(schedulingItemToRecord);
+        setVipListItems(records);
+
+        // Fetch metrics
+        const metrics = await calculateSchedulingMetrics('vip');
+        setVipMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching VIP list:', error);
+      }
+    };
+
+    fetchVipList();
+  }, []);
+
+  // Fetch Recare List items from Supabase
+  useEffect(() => {
+    const fetchRecareList = async () => {
+      try {
+        const items = await getSchedulingListItems('recare');
+        const records = items.map(schedulingItemToRecord);
+        setRecareListItems(records);
+
+        // Fetch metrics
+        const metrics = await calculateSchedulingMetrics('recare');
+        setRecareMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching Recare list:', error);
+      }
+    };
+
+    fetchRecareList();
+  }, []);
+
+  // Fetch Treatment List items from Supabase
+  useEffect(() => {
+    const fetchTreatmentList = async () => {
+      try {
+        const items = await getSchedulingListItems('treatment');
+        const records = items.map(schedulingItemToRecord);
+        setTreatmentListItems(records);
+
+        // Fetch metrics
+        const metrics = await calculateSchedulingMetrics('treatment');
+        setTreatmentMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching Treatment list:', error);
+      }
+    };
+
+    fetchTreatmentList();
+  }, []);
+
+  // Calculate follow-up counts based on current date
+  useEffect(() => {
+    const calculateFollowUpCounts = async () => {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Count claims due for follow-up
+      const claimsDue = claims.filter(claim => claim.followUpDate <= today).length;
+
+      // Count pre-auths due for follow-up
+      const preAuthsDue = preAuths.filter(preAuth => preAuth.followUpDate <= today).length;
+
+      // Count scheduling lists due for follow-up
+      const vipDue = vipListItems.filter(item => item.followUpDate <= today).length;
+      const recareDue = recareListItems.filter(item => item.followUpDate <= today).length;
+      const treatmentDue = treatmentListItems.filter(item => item.followUpDate <= today).length;
+
+      setFollowUpCounts({
+        claims: claimsDue,
+        preAuths: preAuthsDue,
+        vip: vipDue,
+        recare: recareDue,
+        treatment: treatmentDue
+      });
+    };
+
+    calculateFollowUpCounts();
+  }, [claims, preAuths, vipListItems, recareListItems, treatmentListItems]);
+
+  // Calculate automated metrics: average claims aging and most commonly denied procedures
+  useEffect(() => {
+    if (claims.length === 0) return;
+
+    // Calculate average claims aging
+    const activeClaims = claims.filter(c => c.status !== 'Entered' && c.status !== 'Approved/Awaiting Payment');
+    const avgAgingDays = activeClaims.length > 0
+      ? Math.round(activeClaims.reduce((sum, claim) => sum + claim.agingDays, 0) / activeClaims.length)
+      : 0;
+
+    // Calculate most commonly denied procedures
+    const deniedClaims = claims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal');
+    const procedureCounts: Record<string, number> = {};
+    deniedClaims.forEach(claim => {
+      const procedure = claim.procedureCode;
+      procedureCounts[procedure] = (procedureCounts[procedure] || 0) + 1;
+    });
+    const sortedProcedures = Object.entries(procedureCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    // Calculate collection rate
+    const totalProduction = claims.reduce((sum, claim) => sum + claim.claimAmount, 0);
+    const collectedAmount = claims
+      .filter(c => c.status === 'Entered' || c.status === 'Approved/Awaiting Payment')
+      .reduce((sum, claim) => sum + claim.claimAmount, 0);
+    const collectionRate = totalProduction > 0 ? Math.round((collectedAmount / totalProduction) * 100) : 0;
+
+    setAutomatedMetrics({
+      avgAgingDays,
+      mostDeniedProcedures: sortedProcedures,
+      collectionRate,
+      totalActiveClaims: activeClaims.length,
+      totalDeniedClaims: deniedClaims.length
+    });
+  }, [claims]);
 
   // Filter functions for search
   const filteredClaims = claims.filter(claim => {
