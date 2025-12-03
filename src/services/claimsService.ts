@@ -781,6 +781,31 @@ export async function updateInsuranceCheck(id: string, updates: Partial<Omit<Ins
 }
 
 export async function deleteInsuranceCheck(id: string) {
+  // Delete child records first to avoid foreign key constraint errors
+
+  // Delete related updates
+  const { error: updatesError } = await supabase
+    .from('insurance_check_updates')
+    .delete()
+    .eq('check_id', id);
+
+  if (updatesError) {
+    console.error('Error deleting insurance check updates:', updatesError);
+    throw updatesError;
+  }
+
+  // Delete audit history
+  const { error: auditError } = await supabase
+    .from('insurance_checks_audit_history')
+    .delete()
+    .eq('check_id', id);
+
+  if (auditError) {
+    console.error('Error deleting insurance check audit history:', auditError);
+    throw auditError;
+  }
+
+  // Finally delete the main insurance check record
   const { error } = await supabase
     .from('insurance_checks')
     .delete()
