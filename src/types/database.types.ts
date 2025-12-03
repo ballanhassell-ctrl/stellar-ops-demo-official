@@ -57,7 +57,7 @@ export type Claim = {
   procedure_code: string;
   claim_detail: string;
   claim_amount: number;
-  status: 'Pending' | 'Approved' | 'Denied' | 'In Review' | 'Resubmitted';
+  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted';
   date_submitted: string; // ISO date string
   follow_up_date: string; // ISO date string
   handler: string;
@@ -79,12 +79,14 @@ export type PreAuth = {
   procedure_code: string;
   treatment_detail: string;
   requested_amount: number;
-  status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review';
+  status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review' | 'Scheduled';
   date_requested: string; // ISO date string
+  follow_up_date: string; // ISO date string
   expiration_date: string; // ISO date string
   approved_amount: number;
   handler: string;
   notes: string | null;
+  aging_days: number;
   archived: boolean;
   archived_at: string | null;
   archived_by: string | null;
