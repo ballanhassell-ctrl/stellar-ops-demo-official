@@ -394,7 +394,7 @@ interface ClaimRecord {
   procedureCode: string;
   claimDetail: string;
   claimAmount: number;
-  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
+  status: 'Pending' | 'Sent' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
   dateSubmitted: string;
   dateOfService: string;
   followUpDate: string;
@@ -696,6 +696,7 @@ const CourtStreetRCM = () => {
   const [preAuths, setPreAuths] = useState<PreAuthRecord[]>([]);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [showAddPreAuthModal, setShowAddPreAuthModal] = useState(false);
+  const [newClaimStatus, setNewClaimStatus] = useState<ClaimRecord['status']>('Pending');
   const [_claimsLoading, setClaimsLoading] = useState(true);
   const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
 
@@ -4781,12 +4782,13 @@ const CourtStreetRCM = () => {
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
+                    const claimNumber = formData.get('claimNumber') as string;
                     const newClaim: ClaimRecord = {
                       id: `CLM-${String(claims.length + 1).padStart(3, '0')}`,
                       patientId: formData.get('patientId') as string,
                       patientName: formData.get('patientName') as string,
                       insuranceCompany: formData.get('insuranceCompany') as string,
-                      claimNumber: formData.get('claimNumber') as string,
+                      claimNumber: claimNumber || '',
                       procedureCode: formData.get('procedureCode') as string,
                       claimDetail: formData.get('claimDetail') as string,
                       claimAmount: parseFloat(formData.get('claimAmount') as string),
@@ -4805,6 +4807,7 @@ const CourtStreetRCM = () => {
                       // Update local state with the saved claim
                       setClaims([...claims, claimToRecord(savedClaim)]);
                       setShowAddClaimModal(false);
+                      setNewClaimStatus('Pending'); // Reset to default
                     } catch (error) {
                       console.error('Error saving claim:', error);
                       alert('Failed to save claim. Please try again.');
@@ -4824,8 +4827,19 @@ const CourtStreetRCM = () => {
                         <input name="insuranceCompany" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Delta Dental" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Claim Number</label>
-                        <input name="claimNumber" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="DD-2025-0142" />
+                        <label className="block text-sm font-medium mb-1">
+                          Claim Number
+                          {(newClaimStatus === 'Pending' || newClaimStatus === 'Sent') &&
+                            <span className="text-xs text-gray-500 ml-1">(Optional)</span>
+                          }
+                        </label>
+                        <input
+                          name="claimNumber"
+                          type="text"
+                          required={newClaimStatus !== 'Pending' && newClaimStatus !== 'Sent'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="DD-2025-0142"
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Procedure Code</label>
@@ -4837,8 +4851,15 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Status</label>
-                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <select
+                          name="status"
+                          required
+                          value={newClaimStatus}
+                          onChange={(e) => setNewClaimStatus(e.target.value as ClaimRecord['status'])}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        >
                           <option value="Pending">Pending</option>
+                          <option value="Sent">Sent</option>
                           <option value="Entered">Entered</option>
                           <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
                           <option value="Denied">Denied</option>
@@ -8619,6 +8640,7 @@ const CourtStreetRCM = () => {
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
                               <option value="Pending">Pending</option>
+                              <option value="Sent">Sent</option>
                               <option value="Entered">Entered</option>
                               <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
                               <option value="Denied">Denied</option>
