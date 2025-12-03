@@ -782,39 +782,37 @@ export async function updateInsuranceCheck(id: string, updates: Partial<Omit<Ins
 
 export async function deleteInsuranceCheck(id: string) {
   // Delete child records first to avoid foreign key constraint errors
+  console.log('[Delete] Starting delete for insurance check:', id);
 
-  // Delete related updates
+  // Delete related updates (but keep audit history for record-keeping)
+  console.log('[Delete] Deleting insurance_check_updates...');
   const { error: updatesError } = await supabase
     .from('insurance_check_updates')
     .delete()
     .eq('check_id', id);
 
   if (updatesError) {
-    console.error('Error deleting insurance check updates:', updatesError);
+    console.error('[Delete] Error deleting insurance check updates:', updatesError);
     throw updatesError;
   }
+  console.log('[Delete] Updates deleted successfully');
 
-  // Delete audit history
-  const { error: auditError } = await supabase
-    .from('insurance_checks_audit_history')
-    .delete()
-    .eq('check_id', id);
-
-  if (auditError) {
-    console.error('Error deleting insurance check audit history:', auditError);
-    throw auditError;
-  }
+  // NOTE: We're NOT deleting audit_history - it should remain for historical records
+  // and the trigger will add a DELETE entry when we delete the main record
 
   // Finally delete the main insurance check record
+  console.log('[Delete] Deleting main insurance_checks record...');
   const { error } = await supabase
     .from('insurance_checks')
     .delete()
     .eq('id', id);
 
   if (error) {
-    console.error('Error deleting insurance check:', error);
+    console.error('[Delete] Error deleting insurance check:', error);
+    console.error('[Delete] Error details:', JSON.stringify(error, null, 2));
     throw error;
   }
+  console.log('[Delete] Insurance check deleted successfully');
 
   return true;
 }
