@@ -117,12 +117,15 @@ export const useEODMetrics = (date: string) => {
       }
 
       const mappedData: EODData = {
-        reportDate: new Date(targetDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
+        reportDate: (() => {
+          const [year, month, day] = targetDate.split('-').map(Number);
+          return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        })(),
 
         // Daily Summary
         dailyProduction,

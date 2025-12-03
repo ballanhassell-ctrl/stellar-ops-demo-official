@@ -19,7 +19,7 @@ import { AIInsightsPanel } from './components/AIInsightsPanel';
 import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
-import { getTopProceduresForDate } from './services/topProcedures';
+import { getTopProceduresForDateRange } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 import {
   getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, unarchiveClaim, getClaimAuditHistory,
@@ -1157,10 +1157,16 @@ const CourtStreetRCM = () => {
     }
   }, [metricsData, eodData]);
 
-  // Fetch top procedures for the selected date
+  // Fetch top procedures for the current month
   useEffect(() => {
     const fetchTopProcedures = async () => {
-      const procedures = await getTopProceduresForDate(dashboardDate);
+      // Get the start and end dates of the current month based on dashboardDate
+      const [year, month] = dashboardDate.split('-').map(Number);
+      const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+      const procedures = await getTopProceduresForDateRange(startOfMonth, endOfMonth);
       setTopProcedures(procedures);
     };
     fetchTopProcedures();
@@ -1676,6 +1682,20 @@ const CourtStreetRCM = () => {
 
     return matchesSearch;
   });
+
+  // Calculate real-time claims statistics from actual claims data
+  const realTimeClaimsStats = {
+    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter(c => !c.archivedAt).length,
+    pending: showArchivedClaims
+      ? filteredClaims.filter(c => c.status === 'Pending').length
+      : claims.filter(c => !c.archivedAt && c.status === 'Pending').length,
+    denied: showArchivedClaims
+      ? filteredClaims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
+      : claims.filter(c => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
+    overSixtyDays: showArchivedClaims
+      ? filteredClaims.filter(c => c.agingDays > 60).length
+      : claims.filter(c => !c.archivedAt && c.agingDays > 60).length
+  };
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
     searchQuery === '' ||
@@ -2365,14 +2385,49 @@ const CourtStreetRCM = () => {
                   : 'bg-gradient-to-br from-amber-900 to-amber-800 border-2 border-amber-600'
               }`}>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Outstanding A/R</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
-                      ${dashboardData.outstandingAR.toLocaleString()}
-                    </p>
-                    <p className={`text-xs mt-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Total receivables</p>
+                  <div className="w-full">
+                    <p className={`text-sm font-medium mb-3 ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Outstanding A/R (31+ Days)</p>
+
+                    {/* Patient A/R 31+ */}
+                    <div className="mb-2">
+                      <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Patient A/R 31+</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
+                        ${(
+                          patientsData.patientARAging.thirtyOneToSixty +
+                          patientsData.patientARAging.sixtyOneToNinety +
+                          patientsData.patientARAging.ninetyPlus
+                        ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+
+                    {/* Insurance A/R 31+ */}
+                    <div className="mb-3">
+                      <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Insurance A/R 31+</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
+                        ${(
+                          claimsData.arAging.thirtyOneToSixty.amount +
+                          claimsData.arAging.sixtyOneToNinety.amount +
+                          claimsData.arAging.ninetyPlus.amount
+                        ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+
+                    {/* Total Outstanding */}
+                    <div className={`pt-3 border-t ${isDayMode ? 'border-amber-300' : 'border-amber-600'}`}>
+                      <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Total Outstanding Receivables</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
+                        ${(
+                          patientsData.patientARAging.thirtyOneToSixty +
+                          patientsData.patientARAging.sixtyOneToNinety +
+                          patientsData.patientARAging.ninetyPlus +
+                          claimsData.arAging.thirtyOneToSixty.amount +
+                          claimsData.arAging.sixtyOneToNinety.amount +
+                          claimsData.arAging.ninetyPlus.amount
+                        ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
                   </div>
-                  <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-amber-500' : 'text-amber-300'}`} />
+                  <DollarSign className={`w-8 h-8 flex-shrink-0 ${isDayMode ? 'text-amber-500' : 'text-amber-300'}`} />
                 </div>
               </div>
             </div>
@@ -3037,7 +3092,7 @@ const CourtStreetRCM = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-blue-700 mb-1">Total Active Claims</p>
-                      <p className="text-3xl font-bold text-blue-900">{claimsData.totalActive}</p>
+                      <p className="text-3xl font-bold text-blue-900">{realTimeClaimsStats.totalActive}</p>
                       <p className="text-xs text-blue-600 mt-2">In process</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-blue-500" />
@@ -3049,7 +3104,7 @@ const CourtStreetRCM = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-yellow-700 mb-1">Pending Claims</p>
-                      <p className="text-3xl font-bold text-yellow-900">{claimsData.pending}</p>
+                      <p className="text-3xl font-bold text-yellow-900">{realTimeClaimsStats.pending}</p>
                       <p className="text-xs text-yellow-600 mt-2">Awaiting response</p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-500" />
@@ -3061,7 +3116,7 @@ const CourtStreetRCM = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-red-700 mb-1">Fully Denied Claims</p>
-                      <p className="text-3xl font-bold text-red-900">{claimsData.denied}</p>
+                      <p className="text-3xl font-bold text-red-900">{realTimeClaimsStats.denied}</p>
                       <p className="text-xs text-red-600 mt-2">Need attention</p>
                     </div>
                     <XCircle className="w-8 h-8 text-red-500" />
@@ -3073,7 +3128,7 @@ const CourtStreetRCM = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-orange-700 mb-1">Claims &gt;60 Days</p>
-                      <p className="text-3xl font-bold text-orange-900">{claimsData.overSixtyDays}</p>
+                      <p className="text-3xl font-bold text-orange-900">{realTimeClaimsStats.overSixtyDays}</p>
                       <p className="text-xs text-orange-600 mt-2">Priority follow-up</p>
                     </div>
                     <AlertCircle className="w-8 h-8 text-orange-500" />
@@ -6817,7 +6872,7 @@ const CourtStreetRCM = () => {
             <div className={`rounded-lg shadow p-6 mb-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold" style={{ color: csdGold }}>
-                  Top Procedures Today
+                  Top Procedures Monthly
                 </h3>
                 <button
                   onClick={() => setShowTopProceduresModal(true)}
@@ -6827,40 +6882,83 @@ const CourtStreetRCM = () => {
                   Upload CSV
                 </button>
               </div>
-              <div className="space-y-3">
-                {topProcedures.length > 0 ? (
-                  topProcedures.map((procedure: any, index: number) => (
-                    <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
-                      <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-purple-700">{index + 1}</span>
-                        </div>
-                        <div>
-                          <p className={`font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                            {procedure.procedure_name}
-                            {procedure.procedure_code && <span className="text-xs ml-2 text-gray-500">({procedure.procedure_code})</span>}
-                          </p>
-                          <p className="text-xs text-gray-500">{procedure.count} procedure{procedure.count !== 1 ? 's' : ''}</p>
-                        </div>
-                      </div>
-                      <p className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                        ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+              {topProcedures.length > 0 ? (
+                <>
+                  {/* Bar Chart Visualization */}
+                  <div className={`mb-6 p-4 rounded-lg ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
+                    <p className={`text-sm font-medium mb-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                      Revenue by Procedure
+                    </p>
+                    <div className="space-y-3">
+                      {topProcedures.slice(0, 5).map((procedure: any, index: number) => {
+                        const maxRevenue = Math.max(...topProcedures.map((p: any) => p.revenue));
+                        const widthPercent = (procedure.revenue / maxRevenue) * 100;
+                        const colors = [
+                          'bg-purple-500',
+                          'bg-blue-500',
+                          'bg-green-500',
+                          'bg-yellow-500',
+                          'bg-orange-500'
+                        ];
+                        return (
+                          <div key={index}>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className={`font-medium truncate max-w-[60%] ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                {procedure.procedure_name}
+                              </span>
+                              <span className={`font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                              </span>
+                            </div>
+                            <div className={`w-full rounded-full h-6 ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} overflow-hidden`}>
+                              <div
+                                className={`${colors[index]} h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
+                                style={{ width: `${widthPercent}%` }}
+                              >
+                                <span className="text-xs font-semibold text-white">{procedure.count}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))
-                ) : (
-                  <div className={`text-center py-8 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                    <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No procedures recorded for this date</p>
-                    <button
-                      onClick={() => setShowTopProceduresModal(true)}
-                      className="mt-3 text-purple-600 hover:text-purple-700 text-sm font-medium"
-                    >
-                      Upload CSV file
-                    </button>
                   </div>
-                )}
-              </div>
+
+                  {/* Procedures List */}
+                  <div className="space-y-3">
+                    {topProcedures.map((procedure: any, index: number) => (
+                      <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
+                        <div className="flex items-center space-x-4">
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-bold text-purple-700">{index + 1}</span>
+                          </div>
+                          <div>
+                            <p className={`font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                              {procedure.procedure_name}
+                              {procedure.procedure_code && <span className="text-xs ml-2 text-gray-500">({procedure.procedure_code})</span>}
+                            </p>
+                            <p className="text-xs text-gray-500">{procedure.count} procedure{procedure.count !== 1 ? 's' : ''}</p>
+                          </div>
+                        </div>
+                        <p className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                          ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className={`text-center py-8 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No procedures recorded for this month</p>
+                  <button
+                    onClick={() => setShowTopProceduresModal(true)}
+                    className="mt-3 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                  >
+                    Upload CSV file
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Month-to-Date Summary */}
@@ -8349,8 +8447,12 @@ const CourtStreetRCM = () => {
           isOpen={showTopProceduresModal}
           onClose={() => setShowTopProceduresModal(false)}
           onSuccess={() => {
-            // Refresh top procedures after upload
-            getTopProceduresForDate(dashboardDate).then(setTopProcedures);
+            // Refresh top procedures after upload - fetch for the entire current month
+            const [year, month] = dashboardDate.split('-').map(Number);
+            const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+            const lastDay = new Date(year, month, 0).getDate();
+            const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+            getTopProceduresForDateRange(startOfMonth, endOfMonth).then(setTopProcedures);
             refreshEOD();
           }}
           currentDate={dashboardDate}
