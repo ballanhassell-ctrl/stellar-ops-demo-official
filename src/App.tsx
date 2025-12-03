@@ -915,9 +915,9 @@ const CourtStreetRCM = () => {
         const checksData = await getActiveInsuranceChecks();
         const checkRecords = checksData.map(insuranceCheckToRecord);
         // Only update if we're currently viewing active checks
-        setInsuranceChecks(prevChecks => {
+        setInsuranceChecks((prevChecks: InsuranceCheckRecord[]) => {
           // Check if we're viewing archived by checking if any check in current state is archived
-          const viewingArchived = prevChecks.some(c => c.isArchived);
+          const viewingArchived = prevChecks.some((c: InsuranceCheckRecord) => c.isArchived);
           return viewingArchived ? prevChecks : checkRecords;
         });
       } catch (error) {
@@ -1294,10 +1294,11 @@ const CourtStreetRCM = () => {
     : defaultProviders;
 
   // Calculate in-network count (all 3 doctors must be "In")
-  const inNetworkCount = providers.filter(p => p.drGajjar === 'In' && p.drJudge === 'In' && p.drStrachan === 'In').length;
-  const gajjarIn = providers.filter(p => p.drGajjar === 'In').length;
-  const judgeIn = providers.filter(p => p.drJudge === 'In').length;
-  const strachanIn = providers.filter(p => p.drStrachan === 'In').length;
+  type ProviderData = { name: string; feeSchedule: string; portalStatus: string; eftStatus: string; drGajjar: string; drJudge: string; drStrachan: string };
+  const inNetworkCount = providers.filter((p: ProviderData) => p.drGajjar === 'In' && p.drJudge === 'In' && p.drStrachan === 'In').length;
+  const gajjarIn = providers.filter((p: ProviderData) => p.drGajjar === 'In').length;
+  const judgeIn = providers.filter((p: ProviderData) => p.drJudge === 'In').length;
+  const strachanIn = providers.filter((p: ProviderData) => p.drStrachan === 'In').length;
   const totalPlans = providers.length;
 
   const insuranceData = {
@@ -1309,8 +1310,8 @@ const CourtStreetRCM = () => {
     topPayerByRevenue: "Aetna",
     totalPortals: totalPlans,
     eftEnrolled: totalPlans,
-    connectionNetwork: providers.filter(p => p.feeSchedule === 'Connection').length,
-    directContracts: providers.filter(p => p.feeSchedule === 'Direct').length,
+    connectionNetwork: providers.filter((p: ProviderData) => p.feeSchedule === 'Connection').length,
+    directContracts: providers.filter((p: ProviderData) => p.feeSchedule === 'Direct').length,
     providers,
     networkSummary: {
       drGajjar: { inNetwork: gajjarIn, outNetwork: totalPlans - gajjarIn, percentage: totalPlans > 0 ? Math.round((gajjarIn / totalPlans) * 100) : 0 },
@@ -1603,15 +1604,15 @@ const CourtStreetRCM = () => {
       const today = new Date().toISOString().split('T')[0];
 
       // Count claims due for follow-up
-      const claimsDue = claims.filter(claim => claim.followUpDate <= today).length;
+      const claimsDue = claims.filter((claim: ClaimRecord) => claim.followUpDate <= today).length;
 
       // Count pre-auths due for follow-up
-      const preAuthsDue = preAuths.filter(preAuth => preAuth.followUpDate <= today).length;
+      const preAuthsDue = preAuths.filter((preAuth: PreAuthRecord) => preAuth.followUpDate <= today).length;
 
       // Count scheduling lists due for follow-up
-      const vipDue = vipListItems.filter(item => item.followUpDate <= today).length;
-      const recareDue = recareListItems.filter(item => item.followUpDate <= today).length;
-      const treatmentDue = treatmentListItems.filter(item => item.followUpDate <= today).length;
+      const vipDue = vipListItems.filter((item: SchedulingListRecord) => item.followUpDate <= today).length;
+      const recareDue = recareListItems.filter((item: SchedulingListRecord) => item.followUpDate <= today).length;
+      const treatmentDue = treatmentListItems.filter((item: SchedulingListRecord) => item.followUpDate <= today).length;
 
       setFollowUpCounts({
         claims: claimsDue,
@@ -1630,15 +1631,15 @@ const CourtStreetRCM = () => {
     if (claims.length === 0) return;
 
     // Calculate average claims aging
-    const activeClaims = claims.filter(c => c.status !== 'Entered' && c.status !== 'Approved/Awaiting Payment');
+    const activeClaims = claims.filter((c: ClaimRecord) => c.status !== 'Entered' && c.status !== 'Approved/Awaiting Payment');
     const avgAgingDays = activeClaims.length > 0
-      ? Math.round(activeClaims.reduce((sum, claim) => sum + claim.agingDays, 0) / activeClaims.length)
+      ? Math.round(activeClaims.reduce((sum: number, claim: ClaimRecord) => sum + claim.agingDays, 0) / activeClaims.length)
       : 0;
 
     // Calculate most commonly denied procedures
-    const deniedClaims = claims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal');
+    const deniedClaims = claims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal');
     const procedureCounts: Record<string, number> = {};
-    deniedClaims.forEach(claim => {
+    deniedClaims.forEach((claim: ClaimRecord) => {
       const procedure = claim.procedureCode;
       procedureCounts[procedure] = (procedureCounts[procedure] || 0) + 1;
     });
@@ -1647,10 +1648,10 @@ const CourtStreetRCM = () => {
       .slice(0, 5);
 
     // Calculate collection rate
-    const totalProduction = claims.reduce((sum, claim) => sum + claim.claimAmount, 0);
+    const totalProduction = claims.reduce((sum: number, claim: ClaimRecord) => sum + claim.claimAmount, 0);
     const collectedAmount = claims
-      .filter(c => c.status === 'Entered' || c.status === 'Approved/Awaiting Payment')
-      .reduce((sum, claim) => sum + claim.claimAmount, 0);
+      .filter((c: ClaimRecord) => c.status === 'Entered' || c.status === 'Approved/Awaiting Payment')
+      .reduce((sum: number, claim: ClaimRecord) => sum + claim.claimAmount, 0);
     const collectionRate = totalProduction > 0 ? Math.round((collectedAmount / totalProduction) * 100) : 0;
 
     setAutomatedMetrics({
@@ -1663,7 +1664,7 @@ const CourtStreetRCM = () => {
   }, [claims]);
 
   // Filter functions for search
-  const filteredClaims = claims.filter(claim => {
+  const filteredClaims = claims.filter((claim: ClaimRecord) => {
     // Apply search query filter
     const matchesSearch = searchQuery === '' ||
       claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1682,7 +1683,7 @@ const CourtStreetRCM = () => {
     return matchesSearch;
   });
 
-  const filteredPreAuths = preAuths.filter(preAuth =>
+  const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
     searchQuery === '' ||
     preAuth.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1692,7 +1693,7 @@ const CourtStreetRCM = () => {
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredInsuranceChecks = insuranceChecks.filter(check => {
+  const filteredInsuranceChecks = insuranceChecks.filter((check: InsuranceCheckRecord) => {
     // Apply search query filter
     const matchesSearch = searchQuery === '' ||
       check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1736,13 +1737,13 @@ const CourtStreetRCM = () => {
     try {
       if (deleteItem.type === 'claim') {
         await deleteClaim(deleteItem.id);
-        setClaims(claims.filter(c => c.id !== deleteItem.id));
+        setClaims(claims.filter((c: ClaimRecord) => c.id !== deleteItem.id));
       } else if (deleteItem.type === 'preauth') {
         await deletePreAuth(deleteItem.id);
-        setPreAuths(preAuths.filter(pa => pa.id !== deleteItem.id));
+        setPreAuths(preAuths.filter((pa: PreAuthRecord) => pa.id !== deleteItem.id));
       } else if (deleteItem.type === 'insurance-check') {
         await deleteInsuranceCheck(deleteItem.id);
-        setInsuranceChecks(insuranceChecks.filter(ic => ic.id !== deleteItem.id));
+        setInsuranceChecks(insuranceChecks.filter((ic: InsuranceCheckRecord) => ic.id !== deleteItem.id));
       }
       setShowDeleteModal(false);
       setDeleteItem(null);
@@ -1756,7 +1757,7 @@ const CourtStreetRCM = () => {
     try {
       await archiveClaim(id, 'user');
       // Remove from current view (we're viewing active records)
-      setClaims(claims.filter(c => c.id !== id));
+      setClaims(claims.filter((c: ClaimRecord) => c.id !== id));
     } catch (error) {
       console.error('Error archiving claim:', error);
       alert('Failed to archive claim. Please try again.');
@@ -1767,7 +1768,7 @@ const CourtStreetRCM = () => {
     try {
       await unarchiveClaim(id);
       // Remove from current view (we're viewing archived records)
-      setClaims(claims.filter(c => c.id !== id));
+      setClaims(claims.filter((c: ClaimRecord) => c.id !== id));
     } catch (error) {
       console.error('Error unarchiving claim:', error);
       alert('Failed to unarchive claim. Please try again.');
@@ -1778,7 +1779,7 @@ const CourtStreetRCM = () => {
     try {
       await archivePreAuth(id, 'user');
       // Remove from current view (we're viewing active records)
-      setPreAuths(preAuths.filter(pa => pa.id !== id));
+      setPreAuths(preAuths.filter((pa: PreAuthRecord) => pa.id !== id));
     } catch (error) {
       console.error('Error archiving pre-auth:', error);
       alert('Failed to archive pre-auth. Please try again.');
@@ -1789,7 +1790,7 @@ const CourtStreetRCM = () => {
     try {
       await unarchivePreAuth(id);
       // Remove from current view (we're viewing archived records)
-      setPreAuths(preAuths.filter(pa => pa.id !== id));
+      setPreAuths(preAuths.filter((pa: PreAuthRecord) => pa.id !== id));
     } catch (error) {
       console.error('Error unarchiving pre-auth:', error);
       alert('Failed to unarchive pre-auth. Please try again.');
@@ -2042,7 +2043,7 @@ const CourtStreetRCM = () => {
     }
 
     const emailData = {
-      to: emailRecipients.split(',').map(email => email.trim()),
+      to: emailRecipients.split(',').map((email: string) => email.trim()),
       subject: emailSubject,
       message: emailMessage,
       reportDate: dashboardDate,
@@ -3506,7 +3507,7 @@ const CourtStreetRCM = () => {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-sm font-medium text-yellow-700 mb-1">Pending</p>
-                          <p className="text-3xl font-bold text-yellow-900">{preAuths.filter(pa => pa.status === 'Pending').length}</p>
+                          <p className="text-3xl font-bold text-yellow-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Pending').length}</p>
                           <p className="text-xs text-yellow-600 mt-2">Awaiting response</p>
                         </div>
                         <Clock className="w-8 h-8 text-yellow-500" />
@@ -3518,7 +3519,7 @@ const CourtStreetRCM = () => {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-sm font-medium text-green-700 mb-1">Approved</p>
-                          <p className="text-3xl font-bold text-green-900">{preAuths.filter(pa => pa.status === 'Approved').length}</p>
+                          <p className="text-3xl font-bold text-green-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Approved').length}</p>
                           <p className="text-xs text-green-600 mt-2">Ready to schedule</p>
                         </div>
                         <CheckCircle className="w-8 h-8 text-green-500" />
@@ -3530,7 +3531,7 @@ const CourtStreetRCM = () => {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-sm font-medium text-purple-700 mb-1">Scheduled</p>
-                          <p className="text-3xl font-bold text-purple-900">{preAuths.filter(pa => pa.status === 'Scheduled').length}</p>
+                          <p className="text-3xl font-bold text-purple-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Scheduled').length}</p>
                           <p className="text-xs text-purple-600 mt-2">Appointment set</p>
                         </div>
                         <Calendar className="w-8 h-8 text-purple-500" />
@@ -3542,7 +3543,7 @@ const CourtStreetRCM = () => {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-sm font-medium text-red-700 mb-1">Denied</p>
-                          <p className="text-3xl font-bold text-red-900">{preAuths.filter(pa => pa.status === 'Denied').length}</p>
+                          <p className="text-3xl font-bold text-red-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Denied').length}</p>
                           <p className="text-xs text-red-600 mt-2">Need attention</p>
                         </div>
                         <XCircle className="w-8 h-8 text-red-500" />
