@@ -214,50 +214,66 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
 
 /**
  * Aggregates new patient counts for various time periods
+ * AUTO-CALCULATED from daily eod_new_patients values (Phase 2)
  */
 export async function getNewPatientsAggregates() {
   try {
-    console.log('[getNewPatientsAggregates] Fetching pre-calculated aggregate values...');
+    console.log('[getNewPatientsAggregates] Auto-calculating from daily eod_new_patients values...');
 
-    // Fetch the latest pre-calculated aggregate values from Supabase
-    // These are already calculated and stored as: new_pts_per_week, new_pts_per_month, new_pts_quarterly
+    const today = new Date();
+
+    // Calculate date ranges
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const threeMonthsAgo = new Date(today);
+    threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+    // Fetch daily new patient data for different time ranges
     const [weekData, monthData, quarterData] = await Promise.all([
+      // Last 7 days
       supabase
         .from('csd_metric_values')
-        .select('value, as_of_date')
-        .eq('field_key', 'new_pts_per_week')
-        .order('as_of_date', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .select('value')
+        .eq('field_key', 'eod_new_patients')
+        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0]),
 
+      // Current month
       supabase
         .from('csd_metric_values')
-        .select('value, as_of_date')
-        .eq('field_key', 'new_pts_per_month')
-        .order('as_of_date', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .select('value')
+        .eq('field_key', 'eod_new_patients')
+        .gte('as_of_date', monthStart.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0]),
 
+      // Last 3 months (quarterly)
       supabase
         .from('csd_metric_values')
-        .select('value, as_of_date')
-        .eq('field_key', 'new_pts_quarterly')
-        .order('as_of_date', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+        .select('value')
+        .eq('field_key', 'eod_new_patients')
+        .gte('as_of_date', threeMonthsAgo.toISOString().split('T')[0])
+        .lte('as_of_date', today.toISOString().split('T')[0]),
     ]);
 
-    const perWeek = weekData?.data?.value || 0;
-    const perMonth = monthData?.data?.value || 0;
-    const quarterly = quarterData?.data?.value || 0;
+    // Sum up the values
+    const sumValues = (data: any) => {
+      return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+    };
 
-    console.log('[getNewPatientsAggregates] Retrieved values:', {
+    const perWeek = sumValues(weekData);
+    const perMonth = sumValues(monthData);
+    const quarterly = sumValues(quarterData);
+
+    console.log('[getNewPatientsAggregates] Auto-calculated from daily values:', {
       perWeek,
       perMonth,
       quarterly,
-      weekDate: weekData?.data?.as_of_date,
-      monthDate: monthData?.data?.as_of_date,
-      quarterDate: quarterData?.data?.as_of_date
+      weekRecords: weekData?.data?.length || 0,
+      monthRecords: monthData?.data?.length || 0,
+      quarterRecords: quarterData?.data?.length || 0
     });
 
     return {
@@ -323,6 +339,67 @@ export async function getPaymentAggregates() {
     return {
       perWeek: 0,
       perMonth: 0,
+    };
+  }
+}
+
+/**
+ * Gets claims totals by querying the claims table directly
+ * AUTO-CALCULATED - Eliminates manual entry of claim counts (Phase 2)
+ */
+export async function getClaimsTotals() {
+  try {
+    console.log('[getClaimsTotals] Auto-calculating from csd_claims table...');
+
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
+
+    const [activeClaimsResult, pendingResult, deniedResult, oldClaimsResult] = await Promise.all([
+      // Total active claims (not archived)
+      supabase
+        .from('csd_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('archived', false),
+
+      // Pending claims
+      supabase
+        .from('csd_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .eq('archived', false),
+
+      // Denied claims
+      supabase
+        .from('csd_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'denied')
+        .eq('archived', false),
+
+      // Claims over 60 days old
+      supabase
+        .from('csd_claims')
+        .select('id', { count: 'exact', head: true })
+        .lt('date_submitted', sixtyDaysAgoStr)
+        .eq('archived', false),
+    ]);
+
+    const result = {
+      activeClaims: activeClaimsResult.count || 0,
+      pending: pendingResult.count || 0,
+      denied: deniedResult.count || 0,
+      overSixtyDays: oldClaimsResult.count || 0,
+    };
+
+    console.log('[getClaimsTotals] Auto-calculated claim counts:', result);
+    return result;
+  } catch (err) {
+    console.error('Error in getClaimsTotals:', err);
+    return {
+      activeClaims: 0,
+      pending: 0,
+      denied: 0,
+      overSixtyDays: 0,
     };
   }
 }
@@ -437,17 +514,18 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
     }
 
     // Group data by week
-    // Week starts on Sunday
+    // Week starts on Monday
     const weeklyData: Map<string, any> = new Map();
 
     data.forEach((record) => {
       const date = new Date(record.as_of_date);
 
-      // Get the Sunday of the week this date belongs to
-      const dayOfWeek = date.getDay();
-      const sunday = new Date(date);
-      sunday.setDate(date.getDate() - dayOfWeek);
-      const weekKey = sunday.toISOString().split('T')[0];
+      // Get the Monday of the week this date belongs to
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysFromMonday = (dayOfWeek + 6) % 7; // Monday = 0, Tuesday = 1, ..., Sunday = 6
+      const monday = new Date(date);
+      monday.setDate(date.getDate() - daysFromMonday);
+      const weekKey = monday.toISOString().split('T')[0];
 
       if (!weeklyData.has(weekKey)) {
         weeklyData.set(weekKey, {

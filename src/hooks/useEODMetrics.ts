@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
+import { getRealTimeActionItems } from '../services/actionItems';
 
 export interface EODData {
   reportDate: string;
@@ -69,6 +70,9 @@ export const useEODMetrics = (date: string) => {
       // Calculate MTD metrics from authoritative sources
       const mtdMetrics = await getMTDMetrics(targetDate);
 
+      // Fetch real-time action items from RCM Management data
+      const realTimeActionItems = await getRealTimeActionItems();
+
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
         const metric = metrics.find(m => m.field_key === fieldKey);
@@ -85,6 +89,32 @@ export const useEODMetrics = (date: string) => {
       // Map the flat metrics array to EOD data structure
       const dailyProduction = getMetricValue('eod_daily_production');
       const paymentsCollected = getMetricValue('eod_payments_collected');
+
+      // Get all payment methods for validation
+      const paymentMethodsSum =
+        getMetricValue('eod_payment_visa') +
+        getMetricValue('eod_payment_mastercard') +
+        getMetricValue('eod_payment_amex') +
+        getMetricValue('eod_payment_discover') +
+        getMetricValue('eod_payment_cherry') +
+        getMetricValue('eod_payment_carecredit') +
+        getMetricValue('eod_payment_insurance_check') +
+        getMetricValue('eod_payment_other_check') +
+        getMetricValue('eod_payment_cash') +
+        getMetricValue('eod_payment_weave') +
+        getMetricValue('eod_payment_ach') +
+        getMetricValue('eod_payment_paypal');
+
+      // Payment validation: Warn if methods don't match total (allow $0.01 rounding)
+      const paymentDifference = Math.abs(paymentMethodsSum - paymentsCollected);
+      if (paymentDifference > 0.01 && paymentsCollected > 0) {
+        console.warn('⚠️ Payment Methods Mismatch!', {
+          totalCollected: paymentsCollected,
+          methodsSum: paymentMethodsSum,
+          difference: paymentDifference,
+          message: 'Payment methods do not sum to total collected. Please verify entry.'
+        });
+      }
 
       const mappedData: EODData = {
         reportDate: new Date(targetDate).toLocaleDateString('en-US', {
@@ -128,13 +158,13 @@ export const useEODMetrics = (date: string) => {
         unappliedPayments: getMetricValue('eod_unapplied_payments'),
         failedTransactions: getMetricValue('eod_failed_transactions'),
 
-        // Action Items
+        // Action Items - Real-time data from RCM Management
         actionItems: {
-          claimsToSubmit: getMetricValue('eod_claims_to_submit'),
-          deniedClaimsToResubmit: getMetricValue('eod_denied_claims_resubmit'),
-          preAuthsApproved: getMetricValue('eod_preauths_approved'),
-          accountsNeedingFollowUp: getMetricValue('eod_accounts_followup'),
-          missedAppointments: getMetricValue('eod_missed_appointments'),
+          claimsToSubmit: realTimeActionItems.claimsToSubmit,
+          deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+          preAuthsApproved: realTimeActionItems.preAuthsApproved,
+          accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+          missedAppointments: realTimeActionItems.missedAppointments,
         },
 
         // Arrays (not stored in Supabase for now)
