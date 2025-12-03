@@ -25,7 +25,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     console.log('[Action Items] Fetching real-time data from RCM Management...');
 
     // 1. Claims to Submit - Query claims table for pending/ready to submit
-    const { data: claimsData, error: claimsError } = await supabase
+    const { data: claimsData } = await supabase
       .from('csd_claims')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'pending')
@@ -35,7 +35,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     console.log('[Action Items] Claims to submit:', claimsToSubmit);
 
     // 2. Denied Claims to Resubmit - Query claims with denied status
-    const { data: deniedData, error: deniedError } = await supabase
+    const { data: deniedData } = await supabase
       .from('csd_claims')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'denied')
@@ -45,7 +45,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     console.log('[Action Items] Denied claims to resubmit:', deniedClaimsToResubmit);
 
     // 3. Pre-Auths Approved - Query pre-auths with approved status
-    const { data: preAuthsData, error: preAuthsError } = await supabase
+    const { data: preAuthsData } = await supabase
       .from('csd_preauths')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'approved')

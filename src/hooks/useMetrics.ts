@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals } from '../services/metrics';
 
 interface DashboardMetrics {
   bamCurrentRevenue: number;
@@ -73,6 +73,10 @@ interface AdvancedMetrics {
   cac: number;
   cashFlow: number;
   churnedPatientsMonth: number;
+  churnRate: number; // AUTO-CALCULATED (Phase 3)
+  lifecycleYears: number; // AUTO-CALCULATED (Phase 3)
+  ltv: number; // AUTO-CALCULATED (Phase 3)
+  averagePatientValue: number; // Used in LTV calculation
   cogs: {
     assistantPayroll: number;
     associateDoctorExpense: number;
@@ -194,6 +198,9 @@ export const useMetrics = (date: string) => {
       // Fetch aggregated payment data for weekly/monthly totals
       const paymentAggregates = await getPaymentAggregates();
 
+      // Fetch auto-calculated claims totals from database (Phase 2)
+      const claimsTotals = await getClaimsTotals();
+
       // Helper function to find metric value by field_key
       // For persistent metrics, use latest value if current date doesn't have data
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
@@ -255,10 +262,11 @@ export const useMetrics = (date: string) => {
           expiringThisMonth: getMetricValue('pre_auths_expiring_this_month'),
         },
         claims: {
-          totalActive: getMetricValue('active_claims', 0, true),
-          pending: getMetricValue('claims_pending', 0, true),
-          denied: getMetricValue('claims_denied', 0, true),
-          overSixtyDays: getMetricValue('claims_over_sixty_days', 0, true),
+          // AUTO-CALCULATED from csd_claims table (Phase 2)
+          totalActive: claimsTotals.activeClaims,
+          pending: claimsTotals.pending,
+          denied: claimsTotals.denied,
+          overSixtyDays: claimsTotals.overSixtyDays,
           arAging: {
             zeroToThirty: {
               amount: getMetricValue('insurance_ar_0_30_amount', 0, true),
@@ -290,6 +298,11 @@ export const useMetrics = (date: string) => {
           cac: getMetricValue('adv_cac', 0, true),
           cashFlow: getMetricValue('adv_cash_flow', 0, true),
           churnedPatientsMonth: getMetricValue('adv_churned_patients_month', 0, true),
+          // PHASE 3: AUTO-CALCULATED ADVANCED METRICS
+          churnRate: 0, // Will be calculated below
+          lifecycleYears: 0, // Will be calculated below
+          ltv: 0, // Will be calculated below
+          averagePatientValue: getMetricValue('adv_average_patient_value', 0, true),
           cogs: {
             assistantPayroll: getMetricValue('adv_cogs_assistant_payroll', 0, true),
             associateDoctorExpense: getMetricValue('adv_cogs_associate_doctor', 0, true),
@@ -337,6 +350,36 @@ export const useMetrics = (date: string) => {
 
       // Auto-calculate Outstanding A/R as sum of Insurance A/R + Patient A/R
       mappedData.dashboard.outstandingAR = totalInsuranceAR + mappedData.patients.totalPatientAR;
+
+      // PHASE 3: AUTO-CALCULATE ADVANCED METRICS
+      // 1. Churn Rate = (churned_patients / active_patients) * 100
+      const activePatients = mappedData.patients.activePatients;
+      const churnedPatientsMonth = mappedData.advanced.churnedPatientsMonth;
+      const churnRate = activePatients > 0
+        ? Math.round((churnedPatientsMonth / activePatients) * 100 * 100) / 100 // Round to 2 decimal places
+        : 0;
+      mappedData.advanced.churnRate = churnRate;
+
+      // 2. Lifecycle Years = 1 / (churn_rate / 100)
+      const lifecycleYears = churnRate > 0
+        ? Math.round((1 / (churnRate / 100)) * 100) / 100 // Round to 2 decimal places
+        : 0;
+      mappedData.advanced.lifecycleYears = lifecycleYears;
+
+      // 3. LTV = average_patient_value * lifecycle_years
+      const ltv = Math.round(mappedData.advanced.averagePatientValue * lifecycleYears);
+      mappedData.advanced.ltv = ltv;
+
+      console.log('[Phase 3] Auto-calculated advanced metrics:', {
+        churnRate: `${churnRate}%`,
+        lifecycleYears: `${lifecycleYears} years`,
+        ltv: `$${ltv}`,
+        inputs: {
+          activePatients,
+          churnedPatientsMonth,
+          averagePatientValue: mappedData.advanced.averagePatientValue
+        }
+      });
 
       setData(mappedData);
     } catch (err) {
