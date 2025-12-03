@@ -19,7 +19,7 @@ import { AIInsightsPanel } from './components/AIInsightsPanel';
 import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
-import { getTopProceduresForDate, getTopProceduresForDateRange } from './services/topProcedures';
+import { getTopProceduresForDateRange } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 import {
   getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, unarchiveClaim, getClaimAuditHistory,
