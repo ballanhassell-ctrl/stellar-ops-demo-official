@@ -408,7 +408,7 @@ interface PreAuthRecord {
   procedureCode: string;
   treatmentDetail: string;
   requestedAmount: number;
-  status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review';
+  status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review' | 'Scheduled';
   dateRequested: string;
   followUpDate: string;
   expirationDate: string;
@@ -3026,7 +3026,7 @@ const CourtStreetRCM = () => {
                   </div>
 
                   {/* Pre-Auth Statistics Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Total Pre-Auths */}
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-5 hover:shadow-md transition-shadow">
                       <div className="flex items-start justify-between">
@@ -3060,6 +3060,18 @@ const CourtStreetRCM = () => {
                           <p className="text-xs text-green-600 mt-2">Ready to schedule</p>
                         </div>
                         <CheckCircle className="w-8 h-8 text-green-500" />
+                      </div>
+                    </div>
+
+                    {/* Scheduled */}
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-purple-700 mb-1">Scheduled</p>
+                          <p className="text-3xl font-bold text-purple-900">{preAuths.filter(pa => pa.status === 'Scheduled').length}</p>
+                          <p className="text-xs text-purple-600 mt-2">Appointment set</p>
+                        </div>
+                        <Calendar className="w-8 h-8 text-purple-500" />
                       </div>
                     </div>
 
@@ -3151,6 +3163,7 @@ const CourtStreetRCM = () => {
                               <td className="px-4 py-4">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                   preAuth.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                  preAuth.status === 'Scheduled' ? 'bg-purple-100 text-purple-800' :
                                   preAuth.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                                   preAuth.status === 'Denied' ? 'bg-red-100 text-red-800' :
                                   preAuth.status === 'Expired' ? 'bg-gray-100 text-gray-800' :
@@ -4060,6 +4073,7 @@ const CourtStreetRCM = () => {
                         <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                           <option value="Pending">Pending</option>
                           <option value="Approved">Approved</option>
+                          <option value="Scheduled">Scheduled</option>
                           <option value="Denied">Denied</option>
                           <option value="Expired">Expired</option>
                           <option value="In Review">In Review</option>
@@ -7183,6 +7197,7 @@ const CourtStreetRCM = () => {
                             >
                               <option value="Pending">Pending</option>
                               <option value="Approved">Approved</option>
+                              <option value="Scheduled">Scheduled</option>
                               <option value="Denied">Denied</option>
                               <option value="Expired">Expired</option>
                               <option value="In Review">In Review</option>
@@ -7650,7 +7665,12 @@ const CourtStreetRCM = () => {
                             <option value="In Review">In Review</option>
                             <option value="Approved">Approved</option>
                             <option value="Denied">Denied</option>
-                            {updateTarget.type === 'preauth' && <option value="Expired">Expired</option>}
+                            {updateTarget.type === 'preauth' && (
+                              <>
+                                <option value="Scheduled">Scheduled</option>
+                                <option value="Expired">Expired</option>
+                              </>
+                            )}
                           </>
                         )}
                       </select>

@@ -79,7 +79,7 @@ export type PreAuth = {
   procedure_code: string;
   treatment_detail: string;
   requested_amount: number;
-  status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review';
+  status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review' | 'Scheduled';
   date_requested: string; // ISO date string
   follow_up_date: string; // ISO date string
   expiration_date: string; // ISO date string
