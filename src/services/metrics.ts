@@ -228,8 +228,17 @@ export async function getNewPatientsAggregates() {
 
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const threeMonthsAgo = new Date(today);
-    threeMonthsAgo.setMonth(today.getMonth() - 3);
+    // Calculate current calendar quarter (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec)
+    const currentMonth = today.getMonth(); // 0-11
+    const quarterStartMonth = Math.floor(currentMonth / 3) * 3; // 0, 3, 6, or 9
+    const quarterStart = new Date(today.getFullYear(), quarterStartMonth, 1);
+    const quarterEnd = new Date(today.getFullYear(), quarterStartMonth + 3, 0); // Last day of quarter
+
+    console.log('[getNewPatientsAggregates] Calendar quarter:', {
+      start: quarterStart.toISOString().split('T')[0],
+      end: quarterEnd.toISOString().split('T')[0],
+      quarter: `Q${Math.floor(currentMonth / 3) + 1}`
+    });
 
     // Fetch daily new patient data for different time ranges
     const [weekData, monthData, quarterData] = await Promise.all([
@@ -241,7 +250,7 @@ export async function getNewPatientsAggregates() {
         .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
         .lte('as_of_date', today.toISOString().split('T')[0]),
 
-      // Current month
+      // Current month (from start of month to today)
       supabase
         .from('csd_metric_values')
         .select('value')
@@ -249,12 +258,12 @@ export async function getNewPatientsAggregates() {
         .gte('as_of_date', monthStart.toISOString().split('T')[0])
         .lte('as_of_date', today.toISOString().split('T')[0]),
 
-      // Last 3 months (quarterly)
+      // Current calendar quarter (from start of quarter to today)
       supabase
         .from('csd_metric_values')
         .select('value')
         .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', threeMonthsAgo.toISOString().split('T')[0])
+        .gte('as_of_date', quarterStart.toISOString().split('T')[0])
         .lte('as_of_date', today.toISOString().split('T')[0]),
     ]);
 
