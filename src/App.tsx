@@ -389,7 +389,7 @@ interface ClaimRecord {
   procedureCode: string;
   claimDetail: string;
   claimAmount: number;
-  status: 'Pending' | 'Approved' | 'Denied' | 'In Review' | 'Resubmitted';
+  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted';
   dateSubmitted: string;
   followUpDate: string;
   handler: string;
@@ -2775,10 +2775,12 @@ const CourtStreetRCM = () => {
                           <td className="px-4 py-4 text-sm font-semibold text-gray-900">${claim.claimAmount.toLocaleString()}</td>
                           <td className="px-4 py-4">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              claim.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                              claim.status === 'Approved/Awaiting Payment' ? 'bg-green-100 text-green-800' :
+                              claim.status === 'Entered' ? 'bg-teal-100 text-teal-800' :
                               claim.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                               claim.status === 'Denied' ? 'bg-red-100 text-red-800' :
-                              claim.status === 'In Review' ? 'bg-blue-100 text-blue-800' :
+                              claim.status === 'In Review/2nd Appeal' ? 'bg-blue-100 text-blue-800' :
+                              claim.status === 'Resubmitted' ? 'bg-orange-100 text-orange-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {claim.status}
@@ -2883,11 +2885,11 @@ const CourtStreetRCM = () => {
                         <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
                         <p className="text-2xl font-bold text-green-600">
                           {filteredClaims.length > 0
-                            ? Math.round((filteredClaims.filter(c => c.status === 'Approved').length / filteredClaims.length) * 100)
+                            ? Math.round((filteredClaims.filter(c => c.status === 'Approved/Awaiting Payment').length / filteredClaims.length) * 100)
                             : 0}%
                         </p>
                         <p className="text-xs text-gray-500">
-                          {filteredClaims.filter(c => c.status === 'Approved').length} of {filteredClaims.length}
+                          {filteredClaims.filter(c => c.status === 'Approved/Awaiting Payment').length} of {filteredClaims.length}
                         </p>
                       </div>
                       <CheckCircle className="w-8 h-8 text-green-500 opacity-50" />
@@ -3908,7 +3910,7 @@ const CourtStreetRCM = () => {
                       procedureCode: formData.get('procedureCode') as string,
                       claimDetail: formData.get('claimDetail') as string,
                       claimAmount: parseFloat(formData.get('claimAmount') as string),
-                      status: formData.get('status') as 'Pending' | 'Approved' | 'Denied' | 'In Review' | 'Resubmitted',
+                      status: formData.get('status') as 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted',
                       dateSubmitted: formData.get('dateSubmitted') as string,
                       followUpDate: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
@@ -3956,9 +3958,10 @@ const CourtStreetRCM = () => {
                         <label className="block text-sm font-medium mb-1">Status</label>
                         <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                           <option value="Pending">Pending</option>
-                          <option value="Approved">Approved</option>
+                          <option value="Entered">Entered</option>
+                          <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
                           <option value="Denied">Denied</option>
-                          <option value="In Review">In Review</option>
+                          <option value="In Review/2nd Appeal">In Review/2nd Appeal</option>
                           <option value="Resubmitted">Resubmitted</option>
                         </select>
                       </div>
@@ -6994,9 +6997,10 @@ const CourtStreetRCM = () => {
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
                               <option value="Pending">Pending</option>
-                              <option value="Approved">Approved</option>
+                              <option value="Entered">Entered</option>
+                              <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
                               <option value="Denied">Denied</option>
-                              <option value="In Review">In Review</option>
+                              <option value="In Review/2nd Appeal">In Review/2nd Appeal</option>
                               <option value="Resubmitted">Resubmitted</option>
                             </select>
                           </div>
@@ -7659,18 +7663,23 @@ const CourtStreetRCM = () => {
                             <option value="Entered">Entered</option>
                             <option value="Pending Review">Pending Review</option>
                           </>
+                        ) : updateTarget.type === 'claim' ? (
+                          <>
+                            <option value="Pending">Pending</option>
+                            <option value="Entered">Entered</option>
+                            <option value="In Review/2nd Appeal">In Review/2nd Appeal</option>
+                            <option value="Approved/Awaiting Payment">Approved/Awaiting Payment</option>
+                            <option value="Denied">Denied</option>
+                            <option value="Resubmitted">Resubmitted</option>
+                          </>
                         ) : (
                           <>
                             <option value="Pending">Pending</option>
                             <option value="In Review">In Review</option>
                             <option value="Approved">Approved</option>
                             <option value="Denied">Denied</option>
-                            {updateTarget.type === 'preauth' && (
-                              <>
-                                <option value="Scheduled">Scheduled</option>
-                                <option value="Expired">Expired</option>
-                              </>
-                            )}
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Expired">Expired</option>
                           </>
                         )}
                       </select>
