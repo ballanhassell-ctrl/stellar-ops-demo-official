@@ -314,7 +314,7 @@ const getInitialEODData = () => ({
   actionItems: {
     claimsToSubmit: 0,
     deniedClaimsToResubmit: 0,
-    preAuthsExpiring: 0,
+    preAuthsApproved: 0,
     accountsNeedingFollowUp: 0,
     missedAppointments: 0
   },
@@ -486,7 +486,7 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   status: claim.status,
   dateSubmitted: claim.date_submitted,
   followUpDate: claim.follow_up_date,
-  handler: claim.handler,
+  handler: claim.completed_by,
   notes: claim.notes || '',
   agingDays: calculateClaimAging(claim),
   archivedAt: claim.archived_at || undefined,
@@ -504,8 +504,10 @@ const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated
   claim_amount: record.claimAmount,
   status: record.status,
   date_submitted: record.dateSubmitted,
+  date_created: record.dateSubmitted,
   follow_up_date: record.followUpDate,
-  handler: record.handler,
+  created_by: record.handler,
+  completed_by: record.handler,
   notes: record.notes,
   aging_days: record.agingDays,
   archived: false,
@@ -527,7 +529,7 @@ const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   followUpDate: preAuth.follow_up_date,
   expirationDate: preAuth.expiration_date,
   approvedAmount: preAuth.approved_amount,
-  handler: preAuth.handler,
+  handler: preAuth.completed_by,
   notes: preAuth.notes || '',
   agingDays: calculatePreAuthAging(preAuth)
 });
@@ -543,10 +545,12 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
   requested_amount: record.requestedAmount,
   status: record.status,
   date_requested: record.dateRequested,
+  date_created: record.dateRequested,
   follow_up_date: record.followUpDate,
   expiration_date: record.expirationDate,
   approved_amount: record.approvedAmount,
-  handler: record.handler,
+  created_by: record.handler,
+  completed_by: record.handler,
   notes: record.notes,
   aging_days: record.agingDays,
   archived: false,
@@ -622,12 +626,12 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
     insuranceCompany: check.insurance_company,
     distributionType: check.distribution_type,
     totalAmount: check.total_amount,
-    aging: calculateAging(check.date_entered),
-    enteredBy: check.entered_by,
-    handler: check.handler,
+    aging: calculateAging(check.date_created || check.payment_date),
+    enteredBy: check.created_by,
+    handler: check.completed_by,
     status: check.status,
     dateOfService: check.date_of_service,
-    dateEntered: check.date_entered,
+    dateEntered: check.date_created || check.payment_date,
     isArchived: check.is_archived,
     archivedAt: check.archived_at,
     archivedBy: check.archived_by
@@ -641,11 +645,12 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceChe
   distribution_type: record.distributionType,
   total_amount: record.totalAmount,
   aging: record.aging,
-  entered_by: record.enteredBy,
-  handler: record.handler,
+  created_by: record.enteredBy,
+  completed_by: record.handler,
   status: record.status,
   date_of_service: record.dateOfService,
-  date_entered: record.dateEntered,
+  date_created: record.dateEntered,
+  payment_date: record.dateEntered,
   is_archived: record.isArchived,
   archived_at: record.archivedAt,
   archived_by: record.archivedBy
@@ -1494,7 +1499,7 @@ const CourtStreetRCM = () => {
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'patient-management', name: 'RCM Management', icon: Users },
-    { id: 'insurance', name: 'Insurance', icon: Shield },
+    { id: 'insurance', name: 'Insurance Networks', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'checklist', name: 'Checklist', icon: List },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar },
@@ -3192,7 +3197,7 @@ const CourtStreetRCM = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completed By</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -3589,7 +3594,7 @@ const CourtStreetRCM = () => {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Approved</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completed By</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
@@ -4126,10 +4131,10 @@ const CourtStreetRCM = () => {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Distribution</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">DOS</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Entered</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Created</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Entered By</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Handler</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Created By</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completed By</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -6489,7 +6494,7 @@ const CourtStreetRCM = () => {
                 {/* Patient Financing */}
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Patient Financing</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div className="flex justify-between items-center p-3 bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg border border-pink-200">
                       <span className="text-sm font-medium text-pink-700">Cherry</span>
                       <span className="text-lg font-bold text-pink-900">
@@ -6500,6 +6505,12 @@ const CourtStreetRCM = () => {
                       <span className="text-sm font-medium text-rose-700">CareCredit</span>
                       <span className="text-lg font-bold text-rose-900">
                         ${(eodData.paymentMethods.careCredit || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg border border-violet-200">
+                      <span className="text-sm font-medium text-violet-700">Weave</span>
+                      <span className="text-lg font-bold text-violet-900">
+                        ${(eodData.paymentMethods.weave || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -6684,14 +6695,14 @@ const CourtStreetRCM = () => {
 
                 <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                   <div className="flex items-center space-x-3">
-                    <Clock className="w-6 h-6 text-yellow-600" />
+                    <CheckCircle className="w-6 h-6 text-yellow-600" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Pre-Auths Expiring</p>
-                      <p className="text-xs text-gray-500">Within 7 days</p>
+                      <p className="text-sm font-medium text-gray-700">Pre-Auths Approved #</p>
+                      <p className="text-xs text-gray-500">Currently approved</p>
                     </div>
                   </div>
                   <p className="text-2xl font-bold text-yellow-900">
-                    {eodData.actionItems.preAuthsExpiring}
+                    {eodData.actionItems.preAuthsApproved}
                   </p>
                 </div>
 
@@ -7037,7 +7048,7 @@ const CourtStreetRCM = () => {
                             <p className="font-bold text-gray-900">
                               {eodData.actionItems.claimsToSubmit +
                                eodData.actionItems.deniedClaimsToResubmit +
-                               eodData.actionItems.preAuthsExpiring +
+                               eodData.actionItems.preAuthsApproved +
                                eodData.actionItems.accountsNeedingFollowUp +
                                eodData.actionItems.missedAppointments}
                             </p>

@@ -129,16 +129,9 @@ export async function syncMTDMetrics(date: string): Promise<boolean> {
     const collectionRate = calculateCollectionRate(production, collected);
     const newPatients = await calculateMTDNewPatients(date);
 
-    // Fetch current MTD Production Goal from BAM Target Goal
-    const { data: goalData } = await supabase
-      .from('csd_metric_values')
-      .select('value')
-      .eq('field_key', 'bam_target_goal')
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const productionGoal = goalData?.value || 250000;
+    // MTD Production Goal is $300,000 for the full month (30 days)
+    // This is different from BAM cycle goal which is typically for ~19 business days
+    const productionGoal = 300000;
 
     // Upsert all MTD metrics
     const metricsToUpdate = [
@@ -188,16 +181,9 @@ export async function getMTDMetrics(date: string) {
   const collectionRate = calculateCollectionRate(production, collected);
   const newPatients = await calculateMTDNewPatients(date);
 
-  // Get production goal
-  const { data: goalData } = await supabase
-    .from('csd_metric_values')
-    .select('value')
-    .eq('field_key', 'bam_target_goal')
-    .order('as_of_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const productionGoal = goalData?.value || 250000;
+  // MTD Production Goal is $300,000 for the full month (30 days)
+  // This is different from BAM cycle goal which is typically for ~19 business days
+  const productionGoal = 300000;
 
   return {
     production,
