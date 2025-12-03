@@ -57,7 +57,7 @@ export type Claim = {
   procedure_code: string;
   claim_detail: string;
   claim_amount: number;
-  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted';
+  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
   date_submitted: string; // ISO date string
   follow_up_date: string; // ISO date string
   handler: string;
