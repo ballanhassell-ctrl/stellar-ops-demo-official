@@ -314,7 +314,7 @@ const getInitialEODData = () => ({
   actionItems: {
     claimsToSubmit: 0,
     deniedClaimsToResubmit: 0,
-    preAuthsExpiring: 0,
+    preAuthsApproved: 0,
     accountsNeedingFollowUp: 0,
     missedAppointments: 0
   },
@@ -486,7 +486,7 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   status: claim.status,
   dateSubmitted: claim.date_submitted,
   followUpDate: claim.follow_up_date,
-  handler: claim.handler,
+  handler: claim.completed_by,
   notes: claim.notes || '',
   agingDays: calculateClaimAging(claim),
   archivedAt: claim.archived_at || undefined,
@@ -504,8 +504,10 @@ const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated
   claim_amount: record.claimAmount,
   status: record.status,
   date_submitted: record.dateSubmitted,
+  date_created: record.dateSubmitted,
   follow_up_date: record.followUpDate,
-  handler: record.handler,
+  created_by: record.handler,
+  completed_by: record.handler,
   notes: record.notes,
   aging_days: record.agingDays,
   archived: false,
@@ -527,7 +529,7 @@ const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   followUpDate: preAuth.follow_up_date,
   expirationDate: preAuth.expiration_date,
   approvedAmount: preAuth.approved_amount,
-  handler: preAuth.handler,
+  handler: preAuth.completed_by,
   notes: preAuth.notes || '',
   agingDays: calculatePreAuthAging(preAuth)
 });
@@ -543,10 +545,12 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
   requested_amount: record.requestedAmount,
   status: record.status,
   date_requested: record.dateRequested,
+  date_created: record.dateRequested,
   follow_up_date: record.followUpDate,
   expiration_date: record.expirationDate,
   approved_amount: record.approvedAmount,
-  handler: record.handler,
+  created_by: record.handler,
+  completed_by: record.handler,
   notes: record.notes,
   aging_days: record.agingDays,
   archived: false,
@@ -622,12 +626,12 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
     insuranceCompany: check.insurance_company,
     distributionType: check.distribution_type,
     totalAmount: check.total_amount,
-    aging: calculateAging(check.date_entered),
-    enteredBy: check.entered_by,
-    handler: check.handler,
+    aging: calculateAging(check.date_created || check.payment_date),
+    enteredBy: check.created_by,
+    handler: check.completed_by,
     status: check.status,
     dateOfService: check.date_of_service,
-    dateEntered: check.date_entered,
+    dateEntered: check.date_created || check.payment_date,
     isArchived: check.is_archived,
     archivedAt: check.archived_at,
     archivedBy: check.archived_by
@@ -641,11 +645,12 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceChe
   distribution_type: record.distributionType,
   total_amount: record.totalAmount,
   aging: record.aging,
-  entered_by: record.enteredBy,
-  handler: record.handler,
+  created_by: record.enteredBy,
+  completed_by: record.handler,
   status: record.status,
   date_of_service: record.dateOfService,
-  date_entered: record.dateEntered,
+  date_created: record.dateEntered,
+  payment_date: record.dateEntered,
   is_archived: record.isArchived,
   archived_at: record.archivedAt,
   archived_by: record.archivedBy
@@ -7043,7 +7048,7 @@ const CourtStreetRCM = () => {
                             <p className="font-bold text-gray-900">
                               {eodData.actionItems.claimsToSubmit +
                                eodData.actionItems.deniedClaimsToResubmit +
-                               eodData.actionItems.preAuthsExpiring +
+                               eodData.actionItems.preAuthsApproved +
                                eodData.actionItems.accountsNeedingFollowUp +
                                eodData.actionItems.missedAppointments}
                             </p>
