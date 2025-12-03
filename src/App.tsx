@@ -630,7 +630,7 @@ const CourtStreetRCM = () => {
   // Insurance Provider state
   const [insuranceProviders, setInsuranceProviders] = useState<InsuranceProvider[]>([]);
 
-  // Patient Management state
+  // RCM Management state
   const [claims, setClaims] = useState<ClaimRecord[]>([]);
   const [preAuths, setPreAuths] = useState<PreAuthRecord[]>([]);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
@@ -1440,14 +1440,14 @@ const CourtStreetRCM = () => {
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { id: 'patient-management', name: 'Patient Management', icon: Users },
+    { id: 'patient-management', name: 'RCM Management', icon: Users },
     { id: 'insurance', name: 'Insurance', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'checklist', name: 'Checklist', icon: List },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar }
   ];
 
-  // Sub-navigation for Patient Management tab
+  // Sub-navigation for RCM Management tab
   const [patientManagementView, setPatientManagementView] = useState('claims');
 
   // Filter functions for search
@@ -2520,7 +2520,7 @@ const CourtStreetRCM = () => {
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 >
-                  Patients
+                  Patient A/R
                 </button>
                 <button
                   onClick={() => setPatientManagementView('insurance-checks')}
@@ -3379,13 +3379,13 @@ const CourtStreetRCM = () => {
                       </div>
                     </div>
 
-                    {/* Waiting for Patient Response */}
+                    {/* Potential Production Waiting to be Scheduled */}
                     <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Waiting for Patient</p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Potential Production Waiting to be Scheduled</p>
                           <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.filter(pa => pa.status === 'Pending').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                            ${filteredPreAuths.filter(pa => pa.status === 'Approved').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
                           </p>
                         </div>
                         <Clock className="w-8 h-8 text-yellow-500 opacity-50" />
@@ -4538,11 +4538,35 @@ const CourtStreetRCM = () => {
                         <label className="block text-sm font-medium mb-2">Distribution Type</label>
                         <div className="flex space-x-4">
                           <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="distributionType" value="Bulk" defaultChecked className="mr-2" />
+                            <input
+                              type="radio"
+                              name="distributionType"
+                              value="Bulk"
+                              defaultChecked
+                              className="mr-2"
+                              onChange={(e) => {
+                                const dosField = document.getElementById('insurance-dos-field') as HTMLInputElement;
+                                if (dosField) {
+                                  dosField.disabled = e.target.checked;
+                                  dosField.value = '';
+                                }
+                              }}
+                            />
                             <span className="text-sm">Bulk</span>
                           </label>
                           <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="distributionType" value="Individual" className="mr-2" />
+                            <input
+                              type="radio"
+                              name="distributionType"
+                              value="Individual"
+                              className="mr-2"
+                              onChange={(e) => {
+                                const dosField = document.getElementById('insurance-dos-field') as HTMLInputElement;
+                                if (dosField) {
+                                  dosField.disabled = !e.target.checked;
+                                }
+                              }}
+                            />
                             <span className="text-sm">Individual</span>
                           </label>
                         </div>
@@ -4570,7 +4594,13 @@ const CourtStreetRCM = () => {
 
                       <div>
                         <label className="block text-sm font-medium mb-1">DOS (Date of Service)</label>
-                        <input name="dateOfService" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input
+                          id="insurance-dos-field"
+                          name="dateOfService"
+                          type="date"
+                          disabled
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        />
                       </div>
 
                       <div>
