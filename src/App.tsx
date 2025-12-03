@@ -1479,7 +1479,6 @@ const CourtStreetRCM = () => {
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'patient-management', name: 'RCM Management', icon: Users },
-    { id: 'insurance', name: 'Insurance Networks', icon: Shield },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'checklist', name: 'Checklist', icon: List },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar },
@@ -2934,6 +2933,18 @@ const CourtStreetRCM = () => {
                   }`}
                 >
                   Payments
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-networks')}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    patientManagementView === 'insurance-networks'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : isDayMode
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Insurance Networks
                 </button>
               </div>
             </div>
@@ -5082,9 +5093,9 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             )}
-          </div>
-        ) : currentView === 'insurance' ? (
-          <div className="space-y-6">
+
+            {patientManagementView === 'insurance-networks' && (
+              <>
             {/* Insurance Header */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
@@ -5343,6 +5354,8 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
+              </>
+            )}
           </div>
         ) : currentView === 'scorecard' ? (
           <div className="space-y-6">

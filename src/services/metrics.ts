@@ -437,17 +437,18 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
     }
 
     // Group data by week
-    // Week starts on Sunday
+    // Week starts on Monday
     const weeklyData: Map<string, any> = new Map();
 
     data.forEach((record) => {
       const date = new Date(record.as_of_date);
 
-      // Get the Sunday of the week this date belongs to
-      const dayOfWeek = date.getDay();
-      const sunday = new Date(date);
-      sunday.setDate(date.getDate() - dayOfWeek);
-      const weekKey = sunday.toISOString().split('T')[0];
+      // Get the Monday of the week this date belongs to
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysFromMonday = (dayOfWeek + 6) % 7; // Monday = 0, Tuesday = 1, ..., Sunday = 6
+      const monday = new Date(date);
+      monday.setDate(date.getDate() - daysFromMonday);
+      const weekKey = monday.toISOString().split('T')[0];
 
       if (!weeklyData.has(weekKey)) {
         weeklyData.set(weekKey, {
