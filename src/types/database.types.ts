@@ -59,8 +59,10 @@ export type Claim = {
   claim_amount: number;
   status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
   date_submitted: string; // ISO date string
+  date_created?: string; // ISO date string
   follow_up_date: string; // ISO date string
-  handler: string;
+  created_by: string;
+  completed_by: string;
   notes: string | null;
   aging_days: number;
   archived: boolean;
@@ -81,10 +83,12 @@ export type PreAuth = {
   requested_amount: number;
   status: 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'In Review' | 'Scheduled';
   date_requested: string; // ISO date string
+  date_created?: string; // ISO date string
   follow_up_date: string; // ISO date string
   expiration_date: string; // ISO date string
   approved_amount: number;
-  handler: string;
+  created_by: string;
+  completed_by: string;
   notes: string | null;
   aging_days: number;
   archived: boolean;
@@ -154,11 +158,12 @@ export type InsuranceCheck = {
   distribution_type: 'Bulk' | 'Individual';
   total_amount: number;
   aging: number;
-  entered_by: string;
-  handler: string;
+  created_by: string;
+  completed_by: string;
   status: 'Created' | 'Entered' | 'Pending Review';
   date_of_service?: string; // ISO date string
-  date_entered?: string; // ISO date string
+  date_created?: string; // ISO date string
+  payment_date?: string; // ISO date string
   is_archived?: boolean;
   archived_at?: string;
   archived_by?: string;

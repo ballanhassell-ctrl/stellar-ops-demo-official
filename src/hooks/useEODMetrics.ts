@@ -18,6 +18,7 @@ export interface EODData {
     discover: number;
     cherry: number;
     careCredit: number;
+    weave: number;
     insuranceCheck: number;
     otherCheck: number;
     cash: number;
@@ -32,7 +33,7 @@ export interface EODData {
   actionItems: {
     claimsToSubmit: number;
     deniedClaimsToResubmit: number;
-    preAuthsExpiring: number;
+    preAuthsApproved: number;
     accountsNeedingFollowUp: number;
     missedAppointments: number;
   };
@@ -52,12 +53,12 @@ export const useEODMetrics = (date: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchEODMetrics = async () => {
+  const fetchEODMetrics = async (targetDate: string) => {
     try {
       setLoading(true);
       setError(null);
 
-      const metrics = await getMetricsForDate(date);
+      const metrics = await getMetricsForDate(targetDate);
 
       // Define persistent metrics for EOD data (metrics that should show latest value)
       const persistentMetrics = ['eod_new_patients'];
@@ -66,7 +67,7 @@ export const useEODMetrics = (date: string) => {
       const latestValues = await getLatestMetricValues(persistentMetrics);
 
       // Calculate MTD metrics from authoritative sources
-      const mtdMetrics = await getMTDMetrics(date);
+      const mtdMetrics = await getMTDMetrics(targetDate);
 
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
@@ -86,7 +87,7 @@ export const useEODMetrics = (date: string) => {
       const paymentsCollected = getMetricValue('eod_payments_collected');
 
       const mappedData: EODData = {
-        reportDate: new Date(date).toLocaleDateString('en-US', {
+        reportDate: new Date(targetDate).toLocaleDateString('en-US', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
@@ -112,6 +113,7 @@ export const useEODMetrics = (date: string) => {
           discover: getMetricValue('eod_payment_discover'),
           cherry: getMetricValue('eod_payment_cherry'),
           careCredit: getMetricValue('eod_payment_carecredit'),
+          weave: getMetricValue('eod_payment_weave'),
           insuranceCheck: getMetricValue('eod_payment_insurance_check'),
           otherCheck: getMetricValue('eod_payment_other_check'),
           cash: getMetricValue('eod_payment_cash'),
@@ -130,7 +132,7 @@ export const useEODMetrics = (date: string) => {
         actionItems: {
           claimsToSubmit: getMetricValue('eod_claims_to_submit'),
           deniedClaimsToResubmit: getMetricValue('eod_denied_claims_resubmit'),
-          preAuthsExpiring: getMetricValue('eod_preauths_expiring'),
+          preAuthsApproved: getMetricValue('eod_preauths_approved'),
           accountsNeedingFollowUp: getMetricValue('eod_accounts_followup'),
           missedAppointments: getMetricValue('eod_missed_appointments'),
         },
@@ -159,11 +161,11 @@ export const useEODMetrics = (date: string) => {
   };
 
   useEffect(() => {
-    fetchEODMetrics();
+    fetchEODMetrics(date);
   }, [date]);
 
   const refresh = () => {
-    fetchEODMetrics();
+    fetchEODMetrics(date);
   };
 
   return { data, loading, error, refresh };
