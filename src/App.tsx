@@ -11,6 +11,7 @@ import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
 import { useProviderMetrics } from './hooks/useProviderMetrics';
 import { useNewPatientTracker } from './hooks/useNewPatientTracker';
+import { useWeeklyScorecardData } from './hooks/useWeeklyScorecardData';
 import LifecycleMetrics from './components/LifecycleMetrics';
 import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
@@ -738,6 +739,7 @@ const CourtStreetRCM = () => {
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
   const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: _refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
+  const { data: weeklyScorecardData } = useWeeklyScorecardData(12);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
@@ -1351,58 +1353,33 @@ const CourtStreetRCM = () => {
     })(),
     avgDaysToPay: 0, // Can be added to Supabase csd_metric_values later
 
-    // Enhanced metrics - show rates (defaults until added to Supabase)
-    avgShowRateDr: 77.5,
-    avgShowRateDrTarget: 90,
-    avgShowRateHyg: 49.3,
-    avgShowRateHygTarget: 85,
+    // Enhanced metrics - show rates (from Supabase)
+    avgShowRateDr: metricsData?.scorecard?.showRateDr ?? 0,
+    avgShowRateDrTarget: metricsData?.scorecard?.showRateDrTarget ?? 90,
+    avgShowRateHyg: metricsData?.scorecard?.showRateHyg ?? 0,
+    avgShowRateHygTarget: metricsData?.scorecard?.showRateHygTarget ?? 85,
 
     // New patients per week from tracker
     avgNewPatientsPerWeek: newPatientTrackerData?.perWeek ?? 0,
 
-    // Treatment acceptance (defaults until added to Supabase)
-    txAcceptance: 52.6,
-    txAcceptanceTarget: 50,
+    // Treatment acceptance (from Supabase)
+    txAcceptance: metricsData?.scorecard?.txAcceptance ?? 0,
+    txAcceptanceTarget: metricsData?.scorecard?.txAcceptanceTarget ?? 50,
 
     // Collection rate from dashboard
     avgCollectionRate: metricsData?.dashboard.collectionRate ?? 0,
     avgCollectionRateTarget: 100,
 
-    // Treatment totals (defaults until added to Supabase)
-    totalTxPresented: 0,
-    totalTxAccepted: 0,
+    // Treatment totals (from Supabase)
+    totalTxPresented: metricsData?.scorecard?.totalTxPresented ?? 0,
+    totalTxAccepted: metricsData?.scorecard?.totalTxAccepted ?? 0,
 
     // Monthly totals
     totalNewPatients: newPatientTrackerData?.perMonth ?? 0,
-    fiveStarReviews: 0, // Can be added to Supabase csd_metric_values later
+    fiveStarReviews: metricsData?.scorecard?.fiveStarReviews ?? 0,
 
-    // Weekly data - defaults until added to Supabase
-    weeklyData: [
-      {
-        week: 1,
-        date: '12/31/2024',
-        showRateDr: 80,
-        showRateHyg: 53,
-        newPts: 6,
-        txPresented: 18470,
-        txAcceptPct: 22,
-        txAccepted: 18470,
-        collectionPct: 33,
-        fiveStars: 0
-      },
-      {
-        week: 2,
-        date: '1/5/2025',
-        showRateDr: 75,
-        showRateHyg: 46,
-        newPts: 7,
-        txPresented: 38955,
-        txAcceptPct: 84,
-        txAccepted: 32722.2,
-        collectionPct: 88,
-        fiveStars: 0
-      }
-    ]
+    // Weekly data - fetched from Supabase
+    weeklyData: weeklyScorecardData || []
   };
 
   // Advanced Scorecard Metrics
