@@ -30,7 +30,11 @@ import {
   getActiveInsuranceChecks, getArchivedInsuranceChecks, getInsuranceCheckAuditHistory,
   subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate } from './types/database.types';
+import {
+  getSchedulingListItems, insertSchedulingListItem, updateSchedulingListItem, deleteSchedulingListItem,
+  calculateSchedulingMetrics
+} from './services/schedulingService';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -418,6 +422,22 @@ interface PreAuthRecord {
   agingDays: number;
 }
 
+interface SchedulingListRecord {
+  id: string;
+  listType: 'vip' | 'recare' | 'treatment';
+  patientId: string;
+  patientInitials: string;
+  treatmentNeeded: string;
+  firstContactDate: string | null;
+  secondContactDate: string | null;
+  thirdContactDate: string | null;
+  totalTxValue: number;
+  followUpDate: string;
+  employeeInitials: string;
+  status: 'unscheduled' | 'scheduled';
+  notes: string;
+}
+
 // Helper functions for automatic aging calculation
 const calculateClaimAging = (claim: Claim): number => {
   const startDate = new Date(claim.date_submitted);
@@ -532,6 +552,38 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
   archived: false,
   archived_at: null,
   archived_by: null
+});
+
+const schedulingItemToRecord = (item: SchedulingListItem): SchedulingListRecord => ({
+  id: item.id,
+  listType: item.list_type,
+  patientId: item.patient_id,
+  patientInitials: item.patient_initials,
+  treatmentNeeded: item.treatment_needed,
+  firstContactDate: item.first_contact_date,
+  secondContactDate: item.second_contact_date,
+  thirdContactDate: item.third_contact_date,
+  totalTxValue: item.total_tx_value,
+  followUpDate: item.follow_up_date,
+  employeeInitials: item.employee_initials,
+  status: item.status,
+  notes: item.notes || ''
+});
+
+const recordToSchedulingItem = (record: SchedulingListRecord): Omit<SchedulingListItem, 'created_at' | 'updated_at'> => ({
+  id: record.id,
+  list_type: record.listType,
+  patient_id: record.patientId,
+  patient_initials: record.patientInitials,
+  treatment_needed: record.treatmentNeeded,
+  first_contact_date: record.firstContactDate,
+  second_contact_date: record.secondContactDate,
+  third_contact_date: record.thirdContactDate,
+  total_tx_value: record.totalTxValue,
+  follow_up_date: record.followUpDate,
+  employee_initials: record.employeeInitials,
+  status: record.status,
+  notes: record.notes
 });
 
 interface InsuranceCheckRecord {
@@ -1459,6 +1511,157 @@ const CourtStreetRCM = () => {
   const [showRecareList, setShowRecareList] = useState(false);
   const [showTreatmentList, setShowTreatmentList] = useState(false);
 
+  // Administration - Scheduling lists data
+  const [vipListItems, setVipListItems] = useState<SchedulingListRecord[]>([]);
+  const [recareListItems, setRecareListItems] = useState<SchedulingListRecord[]>([]);
+  const [treatmentListItems, setTreatmentListItems] = useState<SchedulingListRecord[]>([]);
+
+  // Administration - Add/Edit modal states
+  const [showAddVipModal, setShowAddVipModal] = useState(false);
+  const [showAddRecareModal, setShowAddRecareModal] = useState(false);
+  const [showAddTreatmentModal, setShowAddTreatmentModal] = useState(false);
+  const [showEditSchedulingModal, setShowEditSchedulingModal] = useState(false);
+  const [selectedSchedulingItem, setSelectedSchedulingItem] = useState<SchedulingListRecord | null>(null);
+
+  // Administration - Metrics state
+  const [vipMetrics, setVipMetrics] = useState({ potentialProductionUnscheduled: 0, productionScheduled: 0, totalPatients: 0, unscheduledPatients: 0, scheduledPatients: 0 });
+  const [recareMetrics, setRecareMetrics] = useState({ potentialProductionUnscheduled: 0, productionScheduled: 0, totalPatients: 0, unscheduledPatients: 0, scheduledPatients: 0 });
+  const [treatmentMetrics, setTreatmentMetrics] = useState({ potentialProductionUnscheduled: 0, productionScheduled: 0, totalPatients: 0, unscheduledPatients: 0, scheduledPatients: 0 });
+
+  // Follow-up tracking state
+  const [followUpCounts, setFollowUpCounts] = useState({ claims: 0, preAuths: 0, vip: 0, recare: 0, treatment: 0 });
+
+  // Automated metrics state
+  const [automatedMetrics, setAutomatedMetrics] = useState({
+    avgAgingDays: 0,
+    mostDeniedProcedures: [] as [string, number][],
+    collectionRate: 0,
+    totalActiveClaims: 0,
+    totalDeniedClaims: 0
+  });
+
+  // Fetch VIP List items from Supabase
+  useEffect(() => {
+    const fetchVipList = async () => {
+      try {
+        const items = await getSchedulingListItems('vip');
+        const records = items.map(schedulingItemToRecord);
+        setVipListItems(records);
+
+        // Fetch metrics
+        const metrics = await calculateSchedulingMetrics('vip');
+        setVipMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching VIP list:', error);
+      }
+    };
+
+    fetchVipList();
+  }, []);
+
+  // Fetch Recare List items from Supabase
+  useEffect(() => {
+    const fetchRecareList = async () => {
+      try {
+        const items = await getSchedulingListItems('recare');
+        const records = items.map(schedulingItemToRecord);
+        setRecareListItems(records);
+
+        // Fetch metrics
+        const metrics = await calculateSchedulingMetrics('recare');
+        setRecareMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching Recare list:', error);
+      }
+    };
+
+    fetchRecareList();
+  }, []);
+
+  // Fetch Treatment List items from Supabase
+  useEffect(() => {
+    const fetchTreatmentList = async () => {
+      try {
+        const items = await getSchedulingListItems('treatment');
+        const records = items.map(schedulingItemToRecord);
+        setTreatmentListItems(records);
+
+        // Fetch metrics
+        const metrics = await calculateSchedulingMetrics('treatment');
+        setTreatmentMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching Treatment list:', error);
+      }
+    };
+
+    fetchTreatmentList();
+  }, []);
+
+  // Calculate follow-up counts based on current date
+  useEffect(() => {
+    const calculateFollowUpCounts = async () => {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Count claims due for follow-up
+      const claimsDue = claims.filter(claim => claim.followUpDate <= today).length;
+
+      // Count pre-auths due for follow-up
+      const preAuthsDue = preAuths.filter(preAuth => preAuth.followUpDate <= today).length;
+
+      // Count scheduling lists due for follow-up
+      const vipDue = vipListItems.filter(item => item.followUpDate <= today).length;
+      const recareDue = recareListItems.filter(item => item.followUpDate <= today).length;
+      const treatmentDue = treatmentListItems.filter(item => item.followUpDate <= today).length;
+
+      setFollowUpCounts({
+        claims: claimsDue,
+        preAuths: preAuthsDue,
+        vip: vipDue,
+        recare: recareDue,
+        treatment: treatmentDue
+      });
+    };
+
+    calculateFollowUpCounts();
+  }, [claims, preAuths, vipListItems, recareListItems, treatmentListItems]);
+
+  // Calculate automated metrics: average claims aging and most commonly denied procedures
+  useEffect(() => {
+    if (claims.length === 0) return;
+
+    // Calculate average claims aging
+    const activeClaims = claims.filter(c => c.status !== 'Entered' && c.status !== 'Approved/Awaiting Payment');
+    const avgAgingDays = activeClaims.length > 0
+      ? Math.round(activeClaims.reduce((sum, claim) => sum + claim.agingDays, 0) / activeClaims.length)
+      : 0;
+
+    // Calculate most commonly denied procedures
+    const deniedClaims = claims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal');
+    const procedureCounts: Record<string, number> = {};
+    deniedClaims.forEach(claim => {
+      const procedure = claim.procedureCode;
+      procedureCounts[procedure] = (procedureCounts[procedure] || 0) + 1;
+    });
+    const sortedProcedures = Object.entries(procedureCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    // Calculate collection rate
+    const totalProduction = claims.reduce((sum, claim) => sum + claim.claimAmount, 0);
+    const collectedAmount = claims
+      .filter(c => c.status === 'Entered' || c.status === 'Approved/Awaiting Payment')
+      .reduce((sum, claim) => sum + claim.claimAmount, 0);
+    const collectionRate = totalProduction > 0 ? Math.round((collectedAmount / totalProduction) * 100) : 0;
+
+    setAutomatedMetrics({
+      avgAgingDays,
+      mostDeniedProcedures: sortedProcedures,
+      collectionRate,
+      totalActiveClaims: activeClaims.length,
+      totalDeniedClaims: deniedClaims.length
+    });
+  }, [claims]);
+
   // Filter functions for search
   const filteredClaims = claims.filter(claim => {
     // Apply search query filter
@@ -2290,6 +2493,196 @@ const CourtStreetRCM = () => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Follow-Up Tracking */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Follow-Up Tracking
+              </h3>
+              <p className={`text-sm mb-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                Items due for follow-up today ({new Date().toLocaleDateString()})
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <button
+                  onClick={() => {
+                    setCurrentView('patient-management');
+                    setPatientManagementView('claims');
+                  }}
+                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
+                    isDayMode
+                      ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 hover:from-blue-100 hover:to-blue-200'
+                      : 'bg-gradient-to-br from-blue-900/30 to-blue-800/30 border-2 border-blue-700 hover:from-blue-800/40 hover:to-blue-700/40'
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <FileText className="w-6 h-6 text-blue-600 mb-2" />
+                    <p className={`text-2xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                      {followUpCounts.claims}
+                    </p>
+                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>
+                      Claims Follow-Up
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentView('patient-management');
+                    setPatientManagementView('preauths');
+                  }}
+                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
+                    isDayMode
+                      ? 'bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 hover:from-purple-100 hover:to-purple-200'
+                      : 'bg-gradient-to-br from-purple-900/30 to-purple-800/30 border-2 border-purple-700 hover:from-purple-800/40 hover:to-purple-700/40'
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <Shield className="w-6 h-6 text-purple-600 mb-2" />
+                    <p className={`text-2xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                      {followUpCounts.preAuths}
+                    </p>
+                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>
+                      Pre-Auth Follow-Up
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentView('administration');
+                    setAdministrationView('scheduling');
+                    setShowVipList(true);
+                  }}
+                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
+                    isDayMode
+                      ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 hover:from-green-100 hover:to-green-200'
+                      : 'bg-gradient-to-br from-green-900/30 to-green-800/30 border-2 border-green-700 hover:from-green-800/40 hover:to-green-700/40'
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <Users className="w-6 h-6 text-green-600 mb-2" />
+                    <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                      {followUpCounts.vip}
+                    </p>
+                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>
+                      VIP Follow-Up
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentView('administration');
+                    setAdministrationView('scheduling');
+                    setShowRecareList(true);
+                  }}
+                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
+                    isDayMode
+                      ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 hover:from-amber-100 hover:to-amber-200'
+                      : 'bg-gradient-to-br from-amber-900/30 to-amber-800/30 border-2 border-amber-700 hover:from-amber-800/40 hover:to-amber-700/40'
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <Clock className="w-6 h-6 text-amber-600 mb-2" />
+                    <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
+                      {followUpCounts.recare}
+                    </p>
+                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>
+                      Recare Follow-Up
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentView('administration');
+                    setAdministrationView('scheduling');
+                    setShowTreatmentList(true);
+                  }}
+                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
+                    isDayMode
+                      ? 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 hover:from-red-100 hover:to-red-200'
+                      : 'bg-gradient-to-br from-red-900/30 to-red-800/30 border-2 border-red-700 hover:from-red-800/40 hover:to-red-700/40'
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <Activity className="w-6 h-6 text-red-600 mb-2" />
+                    <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
+                      {followUpCounts.treatment}
+                    </p>
+                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>
+                      Treatment Follow-Up
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Automated Metrics Analysis */}
+            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                Automated Metrics Analysis
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-blue-50 border-blue-200' : 'bg-blue-900/30 border-blue-700'}`}>
+                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Avg Claims Aging</p>
+                  <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                    {automatedMetrics.avgAgingDays}
+                  </p>
+                  <p className={`text-xs mt-1 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>days</p>
+                </div>
+
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/30 border-green-700'}`}>
+                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Collection Rate</p>
+                  <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                    {automatedMetrics.collectionRate}%
+                  </p>
+                  <p className={`text-xs mt-1 ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>collected</p>
+                </div>
+
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/30 border-amber-700'}`}>
+                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Active Claims</p>
+                  <p className={`text-3xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
+                    {automatedMetrics.totalActiveClaims}
+                  </p>
+                  <p className={`text-xs mt-1 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>pending</p>
+                </div>
+
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-red-50 border-red-200' : 'bg-red-900/30 border-red-700'}`}>
+                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied Claims</p>
+                  <p className={`text-3xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
+                    {automatedMetrics.totalDeniedClaims}
+                  </p>
+                  <p className={`text-xs mt-1 ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>need review</p>
+                </div>
+              </div>
+
+              {/* Most Denied Procedures */}
+              {automatedMetrics.mostDeniedProcedures.length > 0 && (
+                <div className="mt-4">
+                  <h4 className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                    Most Commonly Denied Procedures
+                  </h4>
+                  <div className="space-y-2">
+                    {automatedMetrics.mostDeniedProcedures.map(([procedure, count], index) => (
+                      <div key={procedure} className={`flex items-center justify-between p-2 rounded ${isDayMode ? 'bg-gray-50' : 'bg-gray-700/50'}`}>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold px-2 py-1 rounded ${isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-900/50 text-red-300'}`}>
+                            #{index + 1}
+                          </span>
+                          <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            {procedure}
+                          </span>
+                        </div>
+                        <span className={`text-sm font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>
+                          {count} denials
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Insurance A/R Aging Summary */}
@@ -6717,24 +7110,132 @@ const CourtStreetRCM = () => {
                 <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold" style={{ color: csdGold }}>VIP List</h3>
-                    <button
-                      onClick={() => setShowVipList(!showVipList)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        showVipList
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {showVipList ? 'Hide' : 'Show'} VIP List
-                    </button>
+                    <div className="flex gap-2">
+                      {showVipList && (
+                        <button
+                          onClick={() => setShowAddVipModal(true)}
+                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add VIP
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowVipList(!showVipList)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          showVipList
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {showVipList ? 'Hide' : 'Show'} VIP List
+                      </button>
+                    </div>
                   </div>
 
                   {showVipList && (
-                    <div className="mt-4">
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
-                        <p className={`text-center ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                          VIP List functionality coming soon. Will include patient tracking, contact management, and production metrics.
-                        </p>
+                    <div className="mt-4 space-y-4">
+                      {/* VIP Metrics */}
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Unscheduled Production</p>
+                          <p className="text-xl font-bold text-red-600">${vipMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-green-50 border border-green-200' : 'bg-green-900/20 border border-green-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Scheduled Production</p>
+                          <p className="text-xl font-bold text-green-600">${vipMetrics.productionScheduled.toLocaleString()}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Total Patients</p>
+                          <p className="text-xl font-bold text-blue-600">{vipMetrics.totalPatients}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Unscheduled</p>
+                          <p className="text-xl font-bold text-amber-600">{vipMetrics.unscheduledPatients}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Scheduled</p>
+                          <p className="text-xl font-bold text-purple-600">{vipMetrics.scheduledPatients}</p>
+                        </div>
+                      </div>
+
+                      {/* VIP List Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Employee</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Status</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {vipListItems.length === 0 ? (
+                              <tr>
+                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                  No VIP list items yet. Click "Add VIP" to get started.
+                                </td>
+                              </tr>
+                            ) : (
+                              vipListItems.map((item) => (
+                                <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
+                                  <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
+                                  <td className="px-4 py-3 text-xs">
+                                    <div className="flex gap-1">
+                                      {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
+                                      {item.secondContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">2nd</span>}
+                                      {item.thirdContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">3rd</span>}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm font-semibold">${item.totalTxValue.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-sm">{new Date(item.followUpDate).toLocaleDateString()}</td>
+                                  <td className="px-4 py-3 text-sm">{item.employeeInitials}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                      item.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {item.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedSchedulingItem(item);
+                                          setShowEditSchedulingModal(true);
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm('Are you sure you want to delete this item?')) {
+                                            await deleteSchedulingListItem(item.id);
+                                            setVipListItems(vipListItems.filter(i => i.id !== item.id));
+                                            const metrics = await calculateSchedulingMetrics('vip');
+                                            setVipMetrics(metrics);
+                                          }
+                                        }}
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
@@ -6744,24 +7245,132 @@ const CourtStreetRCM = () => {
                 <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold" style={{ color: csdGold }}>Recare List</h3>
-                    <button
-                      onClick={() => setShowRecareList(!showRecareList)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        showRecareList
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {showRecareList ? 'Hide' : 'Show'} Recare List
-                    </button>
+                    <div className="flex gap-2">
+                      {showRecareList && (
+                        <button
+                          onClick={() => setShowAddRecareModal(true)}
+                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Recare
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowRecareList(!showRecareList)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          showRecareList
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {showRecareList ? 'Hide' : 'Show'} Recare List
+                      </button>
+                    </div>
                   </div>
 
                   {showRecareList && (
-                    <div className="mt-4">
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
-                        <p className={`text-center ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                          Recare List functionality coming soon. Will include recare tracking, follow-up management, and patient metrics.
-                        </p>
+                    <div className="mt-4 space-y-4">
+                      {/* Recare Metrics */}
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Unscheduled Production</p>
+                          <p className="text-xl font-bold text-red-600">${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-green-50 border border-green-200' : 'bg-green-900/20 border border-green-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Scheduled Production</p>
+                          <p className="text-xl font-bold text-green-600">${recareMetrics.productionScheduled.toLocaleString()}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Total Patients</p>
+                          <p className="text-xl font-bold text-blue-600">{recareMetrics.totalPatients}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Unscheduled</p>
+                          <p className="text-xl font-bold text-amber-600">{recareMetrics.unscheduledPatients}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Scheduled</p>
+                          <p className="text-xl font-bold text-purple-600">{recareMetrics.scheduledPatients}</p>
+                        </div>
+                      </div>
+
+                      {/* Recare List Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Employee</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Status</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recareListItems.length === 0 ? (
+                              <tr>
+                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                  No Recare list items yet. Click "Add Recare" to get started.
+                                </td>
+                              </tr>
+                            ) : (
+                              recareListItems.map((item) => (
+                                <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
+                                  <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
+                                  <td className="px-4 py-3 text-xs">
+                                    <div className="flex gap-1">
+                                      {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
+                                      {item.secondContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">2nd</span>}
+                                      {item.thirdContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">3rd</span>}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm font-semibold">${item.totalTxValue.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-sm">{new Date(item.followUpDate).toLocaleDateString()}</td>
+                                  <td className="px-4 py-3 text-sm">{item.employeeInitials}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                      item.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {item.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedSchedulingItem(item);
+                                          setShowEditSchedulingModal(true);
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm('Are you sure you want to delete this item?')) {
+                                            await deleteSchedulingListItem(item.id);
+                                            setRecareListItems(recareListItems.filter(i => i.id !== item.id));
+                                            const metrics = await calculateSchedulingMetrics('recare');
+                                            setRecareMetrics(metrics);
+                                          }
+                                        }}
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
@@ -6771,24 +7380,132 @@ const CourtStreetRCM = () => {
                 <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold" style={{ color: csdGold }}>Treatment List</h3>
-                    <button
-                      onClick={() => setShowTreatmentList(!showTreatmentList)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        showTreatmentList
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {showTreatmentList ? 'Hide' : 'Show'} Treatment List
-                    </button>
+                    <div className="flex gap-2">
+                      {showTreatmentList && (
+                        <button
+                          onClick={() => setShowAddTreatmentModal(true)}
+                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Treatment
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowTreatmentList(!showTreatmentList)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          showTreatmentList
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {showTreatmentList ? 'Hide' : 'Show'} Treatment List
+                      </button>
+                    </div>
                   </div>
 
                   {showTreatmentList && (
-                    <div className="mt-4">
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-gray-50' : 'bg-gray-700'}`}>
-                        <p className={`text-center ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                          Treatment List functionality coming soon. Will include treatment planning, scheduling, and production tracking.
-                        </p>
+                    <div className="mt-4 space-y-4">
+                      {/* Treatment Metrics */}
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Unscheduled Production</p>
+                          <p className="text-xl font-bold text-red-600">${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-green-50 border border-green-200' : 'bg-green-900/20 border border-green-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Scheduled Production</p>
+                          <p className="text-xl font-bold text-green-600">${treatmentMetrics.productionScheduled.toLocaleString()}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Total Patients</p>
+                          <p className="text-xl font-bold text-blue-600">{treatmentMetrics.totalPatients}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Unscheduled</p>
+                          <p className="text-xl font-bold text-amber-600">{treatmentMetrics.unscheduledPatients}</p>
+                        </div>
+                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
+                          <p className="text-xs text-gray-600 mb-1">Scheduled</p>
+                          <p className="text-xl font-bold text-purple-600">{treatmentMetrics.scheduledPatients}</p>
+                        </div>
+                      </div>
+
+                      {/* Treatment List Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Employee</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Status</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {treatmentListItems.length === 0 ? (
+                              <tr>
+                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                  No Treatment list items yet. Click "Add Treatment" to get started.
+                                </td>
+                              </tr>
+                            ) : (
+                              treatmentListItems.map((item) => (
+                                <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
+                                  <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
+                                  <td className="px-4 py-3 text-xs">
+                                    <div className="flex gap-1">
+                                      {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
+                                      {item.secondContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">2nd</span>}
+                                      {item.thirdContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">3rd</span>}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm font-semibold">${item.totalTxValue.toLocaleString()}</td>
+                                  <td className="px-4 py-3 text-sm">{new Date(item.followUpDate).toLocaleDateString()}</td>
+                                  <td className="px-4 py-3 text-sm">{item.employeeInitials}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                      item.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {item.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedSchedulingItem(item);
+                                          setShowEditSchedulingModal(true);
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm('Are you sure you want to delete this item?')) {
+                                            await deleteSchedulingListItem(item.id);
+                                            setTreatmentListItems(treatmentListItems.filter(i => i.id !== item.id));
+                                            const metrics = await calculateSchedulingMetrics('treatment');
+                                            setTreatmentMetrics(metrics);
+                                          }
+                                        }}
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
@@ -6807,6 +7524,411 @@ const CourtStreetRCM = () => {
                   <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>
                     Comprehensive training resources and modules will be available here.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Add VIP Modal */}
+            {showAddVipModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add VIP Patient</h3>
+                    <button onClick={() => setShowAddVipModal(false)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newItem: SchedulingListRecord = {
+                      id: `VIP-${String(vipListItems.length + 1).padStart(3, '0')}`,
+                      listType: 'vip',
+                      patientId: formData.get('patientId') as string,
+                      patientInitials: formData.get('patientInitials') as string,
+                      treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      firstContactDate: formData.get('firstContactDate') as string || null,
+                      secondContactDate: formData.get('secondContactDate') as string || null,
+                      thirdContactDate: formData.get('thirdContactDate') as string || null,
+                      totalTxValue: parseFloat(formData.get('totalTxValue') as string),
+                      followUpDate: formData.get('followUpDate') as string,
+                      employeeInitials: formData.get('employeeInitials') as string,
+                      status: formData.get('status') as 'unscheduled' | 'scheduled',
+                      notes: formData.get('notes') as string
+                    };
+                    try {
+                      const saved = await insertSchedulingListItem(recordToSchedulingItem(newItem));
+                      setVipListItems([...vipListItems, schedulingItemToRecord(saved)]);
+                      const metrics = await calculateSchedulingMetrics('vip');
+                      setVipMetrics(metrics);
+                      setShowAddVipModal(false);
+                    } catch (error) {
+                      console.error('Error saving VIP item:', error);
+                      alert('Failed to save VIP item. Please try again.');
+                    }
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient #</label>
+                        <input name="patientId" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="PT-1234" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient Initials</label>
+                        <input name="patientInitials" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="JS" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Treatment Needed</label>
+                        <input name="treatmentNeeded" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Crown #3" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">1st Contact Date</label>
+                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
+                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
+                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Total Tx Value</label>
+                        <input name="totalTxValue" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="1500.00" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Follow-up Date</label>
+                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Employee Initials</label>
+                        <input name="employeeInitials" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="MK" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <option value="unscheduled">Unscheduled</option>
+                          <option value="scheduled">Scheduled</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <textarea name="notes" rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <button type="button" onClick={() => setShowAddVipModal(false)} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                      <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add VIP</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Add Recare Modal */}
+            {showAddRecareModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add Recare Patient</h3>
+                    <button onClick={() => setShowAddRecareModal(false)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newItem: SchedulingListRecord = {
+                      id: `RCR-${String(recareListItems.length + 1).padStart(3, '0')}`,
+                      listType: 'recare',
+                      patientId: formData.get('patientId') as string,
+                      patientInitials: formData.get('patientInitials') as string,
+                      treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      firstContactDate: formData.get('firstContactDate') as string || null,
+                      secondContactDate: formData.get('secondContactDate') as string || null,
+                      thirdContactDate: formData.get('thirdContactDate') as string || null,
+                      totalTxValue: parseFloat(formData.get('totalTxValue') as string),
+                      followUpDate: formData.get('followUpDate') as string,
+                      employeeInitials: formData.get('employeeInitials') as string,
+                      status: formData.get('status') as 'unscheduled' | 'scheduled',
+                      notes: formData.get('notes') as string
+                    };
+                    try {
+                      const saved = await insertSchedulingListItem(recordToSchedulingItem(newItem));
+                      setRecareListItems([...recareListItems, schedulingItemToRecord(saved)]);
+                      const metrics = await calculateSchedulingMetrics('recare');
+                      setRecareMetrics(metrics);
+                      setShowAddRecareModal(false);
+                    } catch (error) {
+                      console.error('Error saving Recare item:', error);
+                      alert('Failed to save Recare item. Please try again.');
+                    }
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient #</label>
+                        <input name="patientId" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="PT-1234" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient Initials</label>
+                        <input name="patientInitials" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="JS" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Treatment Needed</label>
+                        <input name="treatmentNeeded" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="6-Month Cleaning" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">1st Contact Date</label>
+                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
+                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
+                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Total Tx Value</label>
+                        <input name="totalTxValue" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="150.00" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Follow-up Date</label>
+                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Employee Initials</label>
+                        <input name="employeeInitials" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="MK" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <option value="unscheduled">Unscheduled</option>
+                          <option value="scheduled">Scheduled</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <textarea name="notes" rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <button type="button" onClick={() => setShowAddRecareModal(false)} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                      <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add Recare</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Add Treatment Modal */}
+            {showAddTreatmentModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add Treatment Patient</h3>
+                    <button onClick={() => setShowAddTreatmentModal(false)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newItem: SchedulingListRecord = {
+                      id: `TXT-${String(treatmentListItems.length + 1).padStart(3, '0')}`,
+                      listType: 'treatment',
+                      patientId: formData.get('patientId') as string,
+                      patientInitials: formData.get('patientInitials') as string,
+                      treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      firstContactDate: formData.get('firstContactDate') as string || null,
+                      secondContactDate: formData.get('secondContactDate') as string || null,
+                      thirdContactDate: formData.get('thirdContactDate') as string || null,
+                      totalTxValue: parseFloat(formData.get('totalTxValue') as string),
+                      followUpDate: formData.get('followUpDate') as string,
+                      employeeInitials: formData.get('employeeInitials') as string,
+                      status: formData.get('status') as 'unscheduled' | 'scheduled',
+                      notes: formData.get('notes') as string
+                    };
+                    try {
+                      const saved = await insertSchedulingListItem(recordToSchedulingItem(newItem));
+                      setTreatmentListItems([...treatmentListItems, schedulingItemToRecord(saved)]);
+                      const metrics = await calculateSchedulingMetrics('treatment');
+                      setTreatmentMetrics(metrics);
+                      setShowAddTreatmentModal(false);
+                    } catch (error) {
+                      console.error('Error saving Treatment item:', error);
+                      alert('Failed to save Treatment item. Please try again.');
+                    }
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient #</label>
+                        <input name="patientId" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="PT-1234" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient Initials</label>
+                        <input name="patientInitials" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="JS" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Treatment Needed</label>
+                        <input name="treatmentNeeded" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Implant #19" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">1st Contact Date</label>
+                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
+                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
+                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Total Tx Value</label>
+                        <input name="totalTxValue" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="3500.00" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Follow-up Date</label>
+                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Employee Initials</label>
+                        <input name="employeeInitials" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="MK" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <option value="unscheduled">Unscheduled</option>
+                          <option value="scheduled">Scheduled</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <textarea name="notes" rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Additional notes..."></textarea>
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <button type="button" onClick={() => setShowAddTreatmentModal(false)} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                      <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add Treatment</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Scheduling Item Modal */}
+            {showEditSchedulingModal && selectedSchedulingItem && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
+                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Edit {selectedSchedulingItem.listType.toUpperCase()} Patient</h3>
+                    <button onClick={() => {
+                      setShowEditSchedulingModal(false);
+                      setSelectedSchedulingItem(null);
+                    }} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const updatedItem: SchedulingListRecord = {
+                      ...selectedSchedulingItem,
+                      patientId: formData.get('patientId') as string,
+                      patientInitials: formData.get('patientInitials') as string,
+                      treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      firstContactDate: formData.get('firstContactDate') as string || null,
+                      secondContactDate: formData.get('secondContactDate') as string || null,
+                      thirdContactDate: formData.get('thirdContactDate') as string || null,
+                      totalTxValue: parseFloat(formData.get('totalTxValue') as string),
+                      followUpDate: formData.get('followUpDate') as string,
+                      employeeInitials: formData.get('employeeInitials') as string,
+                      status: formData.get('status') as 'unscheduled' | 'scheduled',
+                      notes: formData.get('notes') as string
+                    };
+                    try {
+                      await updateSchedulingListItem(selectedSchedulingItem.id, recordToSchedulingItem(updatedItem));
+                      // Update the appropriate list
+                      if (selectedSchedulingItem.listType === 'vip') {
+                        setVipListItems(vipListItems.map(item => item.id === selectedSchedulingItem.id ? updatedItem : item));
+                        const metrics = await calculateSchedulingMetrics('vip');
+                        setVipMetrics(metrics);
+                      } else if (selectedSchedulingItem.listType === 'recare') {
+                        setRecareListItems(recareListItems.map(item => item.id === selectedSchedulingItem.id ? updatedItem : item));
+                        const metrics = await calculateSchedulingMetrics('recare');
+                        setRecareMetrics(metrics);
+                      } else {
+                        setTreatmentListItems(treatmentListItems.map(item => item.id === selectedSchedulingItem.id ? updatedItem : item));
+                        const metrics = await calculateSchedulingMetrics('treatment');
+                        setTreatmentMetrics(metrics);
+                      }
+                      setShowEditSchedulingModal(false);
+                      setSelectedSchedulingItem(null);
+                    } catch (error) {
+                      console.error('Error updating item:', error);
+                      alert('Failed to update item. Please try again.');
+                    }
+                  }} className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient #</label>
+                        <input name="patientId" type="text" required defaultValue={selectedSchedulingItem.patientId} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Patient Initials</label>
+                        <input name="patientInitials" type="text" required defaultValue={selectedSchedulingItem.patientInitials} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Treatment Needed</label>
+                        <input name="treatmentNeeded" type="text" required defaultValue={selectedSchedulingItem.treatmentNeeded} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">1st Contact Date</label>
+                        <input name="firstContactDate" type="date" defaultValue={selectedSchedulingItem.firstContactDate || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
+                        <input name="secondContactDate" type="date" defaultValue={selectedSchedulingItem.secondContactDate || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
+                        <input name="thirdContactDate" type="date" defaultValue={selectedSchedulingItem.thirdContactDate || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Total Tx Value</label>
+                        <input name="totalTxValue" type="number" step="0.01" required defaultValue={selectedSchedulingItem.totalTxValue} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Follow-up Date</label>
+                        <input name="followUpDate" type="date" required defaultValue={selectedSchedulingItem.followUpDate} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Employee Initials</label>
+                        <input name="employeeInitials" type="text" required defaultValue={selectedSchedulingItem.employeeInitials} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Status</label>
+                        <select name="status" required defaultValue={selectedSchedulingItem.status} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <option value="unscheduled">Unscheduled</option>
+                          <option value="scheduled">Scheduled</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <textarea name="notes" rows={3} defaultValue={selectedSchedulingItem.notes} className="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <button type="button" onClick={() => {
+                        setShowEditSchedulingModal(false);
+                        setSelectedSchedulingItem(null);
+                      }} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                      <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update</button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}
