@@ -7049,7 +7049,8 @@ const CourtStreetRCM = () => {
                   Confirm Delete
                 </h3>
                 <p className="text-sm text-gray-600 text-center mb-4">
-                  Are you sure you want to delete this {deleteItem?.type === 'claim' ? 'claim' : 'pre-authorization'} for{' '}
+                  Are you sure you want to delete this{' '}
+                  {deleteItem?.type === 'claim' ? 'claim' : deleteItem?.type === 'preauth' ? 'pre-authorization' : 'insurance check/EFT'} for{' '}
                   <span className="font-semibold">{deleteItem?.name}</span>?
                   <br />
                   <span className="text-red-600 font-semibold">This action cannot be undone.</span>
