@@ -90,6 +90,32 @@ export const useEODMetrics = (date: string) => {
       const dailyProduction = getMetricValue('eod_daily_production');
       const paymentsCollected = getMetricValue('eod_payments_collected');
 
+      // Get all payment methods for validation
+      const paymentMethodsSum =
+        getMetricValue('eod_payment_visa') +
+        getMetricValue('eod_payment_mastercard') +
+        getMetricValue('eod_payment_amex') +
+        getMetricValue('eod_payment_discover') +
+        getMetricValue('eod_payment_cherry') +
+        getMetricValue('eod_payment_carecredit') +
+        getMetricValue('eod_payment_insurance_check') +
+        getMetricValue('eod_payment_other_check') +
+        getMetricValue('eod_payment_cash') +
+        getMetricValue('eod_payment_weave') +
+        getMetricValue('eod_payment_ach') +
+        getMetricValue('eod_payment_paypal');
+
+      // Payment validation: Warn if methods don't match total (allow $0.01 rounding)
+      const paymentDifference = Math.abs(paymentMethodsSum - paymentsCollected);
+      if (paymentDifference > 0.01 && paymentsCollected > 0) {
+        console.warn('⚠️ Payment Methods Mismatch!', {
+          totalCollected: paymentsCollected,
+          methodsSum: paymentMethodsSum,
+          difference: paymentDifference,
+          message: 'Payment methods do not sum to total collected. Please verify entry.'
+        });
+      }
+
       const mappedData: EODData = {
         reportDate: new Date(targetDate).toLocaleDateString('en-US', {
           weekday: 'long',

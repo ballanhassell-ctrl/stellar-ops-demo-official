@@ -143,6 +143,15 @@ export const useMetrics = (date: string) => {
         'insurance_ar_31_60_count',
         'insurance_ar_61_90_count',
         'insurance_ar_90_plus_count',
+        // Patient A/R aging metrics (persistent like insurance AR)
+        'patient_ar_0_30',
+        'patient_ar_31_60',
+        'patient_ar_61_90',
+        'patient_ar_90_plus',
+        'patient_ar_0_30_count',
+        'patient_ar_31_60_count',
+        'patient_ar_61_90_count',
+        'patient_ar_90_plus_count',
         // Payment metrics (persistent ones - not daily/weekly/monthly aggregates)
         'pending_deposits',
         'insurance_payments',
@@ -229,10 +238,10 @@ export const useMetrics = (date: string) => {
           // Total Patient A/R is auto-calculated from Patient A/R aging buckets
           totalPatientAR: 0, // Will be calculated below
           patientARAging: {
-            zeroToThirty: getMetricValue('patient_ar_0_30'),
-            thirtyOneToSixty: getMetricValue('patient_ar_31_60'),
-            sixtyOneToNinety: getMetricValue('patient_ar_61_90'),
-            ninetyPlus: getMetricValue('patient_ar_90_plus'),
+            zeroToThirty: getMetricValue('patient_ar_0_30', 0, true),
+            thirtyOneToSixty: getMetricValue('patient_ar_31_60', 0, true),
+            sixtyOneToNinety: getMetricValue('patient_ar_61_90', 0, true),
+            ninetyPlus: getMetricValue('patient_ar_90_plus', 0, true),
           },
           paymentPlans: getMetricValue('payment_plans'),
           pastDueAccounts: getMetricValue('past_due_accounts'),

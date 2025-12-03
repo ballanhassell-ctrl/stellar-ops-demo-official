@@ -1362,17 +1362,26 @@ const CourtStreetRCM = () => {
     // New patients per week from tracker
     avgNewPatientsPerWeek: newPatientTrackerData?.perWeek ?? 0,
 
-    // Treatment acceptance (from Supabase)
-    txAcceptance: metricsData?.scorecard?.txAcceptance ?? 0,
+    // Treatment totals (from Supabase)
+    totalTxPresented: metricsData?.scorecard?.totalTxPresented ?? 0,
+    totalTxAccepted: metricsData?.scorecard?.totalTxAccepted ?? 0,
+
+    // Treatment acceptance (auto-calculated from totals, fallback to manual entry)
+    txAcceptance: (() => {
+      const presented = metricsData?.scorecard?.totalTxPresented ?? 0;
+      const accepted = metricsData?.scorecard?.totalTxAccepted ?? 0;
+      // If we have both totals, calculate the rate
+      if (presented > 0) {
+        return Math.round((accepted / presented) * 100);
+      }
+      // Otherwise fallback to manual entry
+      return metricsData?.scorecard?.txAcceptance ?? 0;
+    })(),
     txAcceptanceTarget: metricsData?.scorecard?.txAcceptanceTarget ?? 50,
 
     // Collection rate from dashboard
     avgCollectionRate: metricsData?.dashboard.collectionRate ?? 0,
     avgCollectionRateTarget: 100,
-
-    // Treatment totals (from Supabase)
-    totalTxPresented: metricsData?.scorecard?.totalTxPresented ?? 0,
-    totalTxAccepted: metricsData?.scorecard?.totalTxAccepted ?? 0,
 
     // Monthly totals
     totalNewPatients: newPatientTrackerData?.perMonth ?? 0,
@@ -6805,7 +6814,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Top Procedures */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+            <div className={`rounded-lg shadow p-6 mb-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold" style={{ color: csdGold }}>
                   Top Procedures Today
@@ -6855,7 +6864,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Month-to-Date Summary */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+            <div className={`rounded-lg shadow p-6 mt-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Month-to-Date Summary
               </h3>
