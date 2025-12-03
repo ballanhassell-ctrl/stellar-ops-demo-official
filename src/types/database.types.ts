@@ -190,25 +190,6 @@ export type InsuranceCheckUpdate = {
   created_at: string;
 };
 
-// Scheduling Lists Types
-export type SchedulingListItem = {
-  id: string;
-  list_type: 'vip' | 'recare' | 'treatment';
-  patient_id: string;
-  patient_initials: string;
-  treatment_needed: string;
-  first_contact_date: string | null; // ISO date string
-  second_contact_date: string | null; // ISO date string
-  third_contact_date: string | null; // ISO date string
-  total_tx_value: number;
-  follow_up_date: string; // ISO date string
-  employee_initials: string;
-  status: 'unscheduled' | 'scheduled';
-  notes: string | null;
-  created_at?: string;
-  updated_at?: string;
-};
-
 export type Database = {
   patients: Patient;
   appointments: Appointment;
@@ -223,5 +204,4 @@ export type Database = {
   insurance_checks: InsuranceCheck;
   insurance_checks_audit_history: InsuranceCheckAuditHistory;
   insurance_check_updates: InsuranceCheckUpdate;
-  scheduling_list_items: SchedulingListItem;
 };
