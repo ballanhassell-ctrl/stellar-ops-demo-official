@@ -611,6 +611,10 @@ const CourtStreetRCM = () => {
   const [showArchivedClaims, setShowArchivedClaims] = useState(false);
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
 
+  // Archive date filter state
+  const [archiveClaimsDateFilter, setArchiveClaimsDateFilter] = useState<string>('');
+  const [archiveInsuranceChecksDateFilter, setArchiveInsuranceChecksDateFilter] = useState<string>('');
+
   // Add Update modal state
   const [showAddUpdateModal, setShowAddUpdateModal] = useState(false);
   const [updateTarget, setUpdateTarget] = useState<{ type: 'claim' | 'preauth' | 'insurance-check', id: string, name: string, currentStatus: string } | null>(null);
@@ -1403,15 +1407,24 @@ const CourtStreetRCM = () => {
   const [patientManagementView, setPatientManagementView] = useState('claims');
 
   // Filter functions for search
-  const filteredClaims = claims.filter(claim =>
-    searchQuery === '' ||
-    claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    claim.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredClaims = claims.filter(claim => {
+    // Apply search query filter
+    const matchesSearch = searchQuery === '' ||
+      claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.status.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Apply archive date filter if viewing archived items and date filter is set
+    if (showArchivedClaims && archiveClaimsDateFilter && claim.archivedAt) {
+      const archivedDate = claim.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
+      return matchesSearch && archivedDate === archiveClaimsDateFilter;
+    }
+
+    return matchesSearch;
+  });
 
   const filteredPreAuths = preAuths.filter(preAuth =>
     searchQuery === '' ||
@@ -1423,16 +1436,25 @@ const CourtStreetRCM = () => {
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredInsuranceChecks = insuranceChecks.filter(check =>
-    searchQuery === '' ||
-    check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    check.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredInsuranceChecks = insuranceChecks.filter(check => {
+    // Apply search query filter
+    const matchesSearch = searchQuery === '' ||
+      check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      check.status.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Apply archive date filter if viewing archived items and date filter is set
+    if (showArchivedInsuranceChecks && archiveInsuranceChecksDateFilter && check.archivedAt) {
+      const archivedDate = check.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
+      return matchesSearch && archivedDate === archiveInsuranceChecksDateFilter;
+    }
+
+    return matchesSearch;
+  });
 
   // Handler functions for claims and pre-auths management
   const handleEditClaim = (claim: ClaimRecord) => {
@@ -2505,6 +2527,27 @@ const CourtStreetRCM = () => {
                       </span>
                     )}
                   </button>
+                  {showArchivedClaims && (
+                    <div className="flex items-center gap-2">
+                      <label className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                        Filter by Date:
+                      </label>
+                      <input
+                        type="date"
+                        value={archiveClaimsDateFilter}
+                        onChange={(e) => setArchiveClaimsDateFilter(e.target.value)}
+                        className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
+                      />
+                      {archiveClaimsDateFilter && (
+                        <button
+                          onClick={() => setArchiveClaimsDateFilter('')}
+                          className="px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -3404,6 +3447,27 @@ const CourtStreetRCM = () => {
                         <Archive className="w-4 h-4" />
                         {showArchivedInsuranceChecks ? 'Show Active' : 'Show Archived'}
                       </button>
+                      {showArchivedInsuranceChecks && (
+                        <div className="flex items-center gap-2">
+                          <label className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                            Filter by Date:
+                          </label>
+                          <input
+                            type="date"
+                            value={archiveInsuranceChecksDateFilter}
+                            onChange={(e) => setArchiveInsuranceChecksDateFilter(e.target.value)}
+                            className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
+                          />
+                          {archiveInsuranceChecksDateFilter && (
+                            <button
+                              onClick={() => setArchiveInsuranceChecksDateFilter('')}
+                              className="px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
