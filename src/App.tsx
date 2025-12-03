@@ -8514,6 +8514,7 @@ const CourtStreetRCM = () => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const claim = editingItem as ClaimRecord;
+                    const handler = formData.get('handler') as string;
                     const updatedClaim = {
                       patient_id: claim.patientId, // Preserve existing patient_id
                       patient_name: formData.get('patientName') as string,
@@ -8526,7 +8527,7 @@ const CourtStreetRCM = () => {
                       date_submitted: formData.get('dateSubmitted') as string,
                       date_of_service: formData.get('dateOfService') as string,
                       follow_up_date: formData.get('followUpDate') as string,
-                      handler: formData.get('handler') as string,
+                      completed_by: handler,
                       notes: formData.get('notes') as string || null,
                       aging_days: parseInt(formData.get('agingDays') as string),
                     };
@@ -8717,6 +8718,7 @@ const CourtStreetRCM = () => {
                     const dateRequested = formData.get('dateRequested') as string;
                     const followUpDate = formData.get('followUpDate') as string;
                     const agingDays = Math.floor((new Date(followUpDate).getTime() - new Date(dateRequested).getTime()) / (1000 * 60 * 60 * 24));
+                    const handler = formData.get('handler') as string;
                     const updatedPreAuth = {
                       patient_id: preAuth.patientId, // Preserve existing patient_id
                       patient_name: formData.get('patientName') as string,
@@ -8730,7 +8732,7 @@ const CourtStreetRCM = () => {
                       follow_up_date: followUpDate,
                       expiration_date: formData.get('expirationDate') as string,
                       approved_amount: parseFloat(formData.get('approvedAmount') as string),
-                      handler: formData.get('handler') as string,
+                      completed_by: handler,
                       notes: formData.get('notes') as string || null,
                       aging_days: agingDays,
                     };
@@ -8914,11 +8916,11 @@ const CourtStreetRCM = () => {
                       distribution_type: formData.get('distributionType') as 'Bulk' | 'Individual',
                       total_amount: parseFloat(formData.get('totalAmount') as string),
                       aging: parseInt(formData.get('aging') as string),
-                      entered_by: formData.get('enteredBy') as string,
-                      handler: formData.get('handler') as string,
+                      created_by: formData.get('enteredBy') as string,
+                      completed_by: formData.get('handler') as string,
                       status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
                       date_of_service: formData.get('dateOfService') as string || undefined,
-                      date_entered: formData.get('dateEntered') as string || undefined,
+                      date_created: formData.get('dateEntered') as string || undefined,
                     };
 
                     try {
