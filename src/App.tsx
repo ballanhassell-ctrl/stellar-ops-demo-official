@@ -739,7 +739,7 @@ const CourtStreetRCM = () => {
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
   const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: _refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
-  const { data: weeklyScorecardData, refresh: refreshWeekly } = useWeeklyScorecardData(12);
+  const { data: weeklyScorecardData } = useWeeklyScorecardData(12);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
