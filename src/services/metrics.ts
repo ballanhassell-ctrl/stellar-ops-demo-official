@@ -392,3 +392,135 @@ export async function getMetricsForDate(date: string) {
     throw err;
   }
 }
+
+/**
+ * Gets weekly scorecard data for the last N weeks
+ * Aggregates daily metrics into weekly summaries
+ */
+export async function getWeeklyScorecardData(numWeeks: number = 12) {
+  try {
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - (numWeeks * 7));
+
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
+
+    console.log('[getWeeklyScorecardData] Fetching data from', startDateStr, 'to', todayStr);
+
+    // Fetch all relevant scorecard metrics for the date range
+    const { data, error } = await supabase
+      .from('csd_metric_values')
+      .select('field_key, as_of_date, value')
+      .in('field_key', [
+        'scorecard_show_rate_dr',
+        'scorecard_show_rate_hyg',
+        'eod_new_patients',
+        'scorecard_total_tx_presented',
+        'scorecard_total_tx_accepted',
+        'scorecard_tx_acceptance',
+        'collection_rate',
+        'scorecard_five_star_reviews'
+      ])
+      .gte('as_of_date', startDateStr)
+      .lte('as_of_date', todayStr)
+      .order('as_of_date', { ascending: true });
+
+    if (error) {
+      console.error('[getWeeklyScorecardData] Error fetching data:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      console.log('[getWeeklyScorecardData] No data found');
+      return [];
+    }
+
+    // Group data by week
+    // Week starts on Sunday
+    const weeklyData: Map<string, any> = new Map();
+
+    data.forEach((record) => {
+      const date = new Date(record.as_of_date);
+
+      // Get the Sunday of the week this date belongs to
+      const dayOfWeek = date.getDay();
+      const sunday = new Date(date);
+      sunday.setDate(date.getDate() - dayOfWeek);
+      const weekKey = sunday.toISOString().split('T')[0];
+
+      if (!weeklyData.has(weekKey)) {
+        weeklyData.set(weekKey, {
+          weekStartDate: weekKey,
+          showRateDr: [],
+          showRateHyg: [],
+          newPts: [],
+          txPresented: [],
+          txAccepted: [],
+          txAcceptance: [],
+          collectionRate: [],
+          fiveStars: []
+        });
+      }
+
+      const weekData = weeklyData.get(weekKey);
+
+      switch (record.field_key) {
+        case 'scorecard_show_rate_dr':
+          weekData.showRateDr.push(record.value);
+          break;
+        case 'scorecard_show_rate_hyg':
+          weekData.showRateHyg.push(record.value);
+          break;
+        case 'eod_new_patients':
+          weekData.newPts.push(record.value);
+          break;
+        case 'scorecard_total_tx_presented':
+          weekData.txPresented.push(record.value);
+          break;
+        case 'scorecard_total_tx_accepted':
+          weekData.txAccepted.push(record.value);
+          break;
+        case 'scorecard_tx_acceptance':
+          weekData.txAcceptance.push(record.value);
+          break;
+        case 'collection_rate':
+          weekData.collectionRate.push(record.value);
+          break;
+        case 'scorecard_five_star_reviews':
+          weekData.fiveStars.push(record.value);
+          break;
+      }
+    });
+
+    // Calculate weekly averages/sums and format output
+    const result = Array.from(weeklyData.entries())
+      .map(([weekStart, data], index) => {
+        const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+
+        const weekDate = new Date(weekStart);
+        const formattedDate = `${weekDate.getMonth() + 1}/${weekDate.getDate()}/${weekDate.getFullYear()}`;
+
+        return {
+          week: index + 1,
+          date: formattedDate,
+          showRateDr: avg(data.showRateDr),
+          showRateHyg: avg(data.showRateHyg),
+          newPts: sum(data.newPts),
+          txPresented: Math.round(sum(data.txPresented)),
+          txAcceptPct: avg(data.txAcceptance),
+          txAccepted: Math.round(sum(data.txAccepted)),
+          collectionPct: avg(data.collectionRate),
+          fiveStars: sum(data.fiveStars)
+        };
+      })
+      .sort((a, b) => a.week - b.week);
+
+    console.log('[getWeeklyScorecardData] Aggregated', result.length, 'weeks of data');
+    return result;
+  } catch (err) {
+    console.error('[getWeeklyScorecardData] Unexpected error:', err);
+    return [];
+  }
+}

@@ -87,6 +87,18 @@ interface AdvancedMetrics {
   revenueGrowthRate: number;
 }
 
+interface ScorecardMetrics {
+  showRateDr: number;
+  showRateDrTarget: number;
+  showRateHyg: number;
+  showRateHygTarget: number;
+  txAcceptance: number;
+  txAcceptanceTarget: number;
+  totalTxPresented: number;
+  totalTxAccepted: number;
+  fiveStarReviews: number;
+}
+
 export interface MetricsData {
   dashboard: DashboardMetrics;
   payments: PaymentsMetrics;
@@ -95,6 +107,7 @@ export interface MetricsData {
   claims: ClaimsMetrics;
   financing: FinancingMetrics;
   advanced: AdvancedMetrics;
+  scorecard: ScorecardMetrics;
 }
 
 export const useMetrics = (date: string) => {
@@ -137,10 +150,10 @@ export const useMetrics = (date: string) => {
         'unapplied_credits',
         'refunds_pending',
         // Third party financing metrics
-        'cherry_patients',
-        'cherry_amount',
-        'care_credit_patients',
-        'care_credit_amount',
+        'financing_cherry_patients',
+        'financing_cherry_amount',
+        'financing_carecredit_patients',
+        'financing_carecredit_amount',
         // Advanced Business Metrics
         'adv_cac',
         'adv_cash_flow',
@@ -154,6 +167,16 @@ export const useMetrics = (date: string) => {
         'adv_operating_costs',
         'adv_operating_profit_margin',
         'adv_revenue_growth_rate',
+        // Scorecard Metrics
+        'scorecard_show_rate_dr',
+        'scorecard_show_rate_dr_target',
+        'scorecard_show_rate_hyg',
+        'scorecard_show_rate_hyg_target',
+        'scorecard_tx_acceptance',
+        'scorecard_tx_acceptance_target',
+        'scorecard_total_tx_presented',
+        'scorecard_total_tx_accepted',
+        'scorecard_five_star_reviews',
       ];
 
       // Fetch latest values for persistent metrics if they're not in the current date's data
@@ -247,12 +270,12 @@ export const useMetrics = (date: string) => {
           },
         },
         financing: {
-          cherryPatients: getMetricValue('cherry_patients', 0, true),
-          cherryAmount: getMetricValue('cherry_amount', 0, true),
-          careCreditPatients: getMetricValue('care_credit_patients', 0, true),
-          careCreditAmount: getMetricValue('care_credit_amount', 0, true),
-          totalPatients: getMetricValue('cherry_patients', 0, true) + getMetricValue('care_credit_patients', 0, true),
-          totalAmount: getMetricValue('cherry_amount', 0, true) + getMetricValue('care_credit_amount', 0, true),
+          cherryPatients: getMetricValue('financing_cherry_patients', 0, true),
+          cherryAmount: getMetricValue('financing_cherry_amount', 0, true),
+          careCreditPatients: getMetricValue('financing_carecredit_patients', 0, true),
+          careCreditAmount: getMetricValue('financing_carecredit_amount', 0, true),
+          totalPatients: getMetricValue('financing_cherry_patients', 0, true) + getMetricValue('financing_carecredit_patients', 0, true),
+          totalAmount: getMetricValue('financing_cherry_amount', 0, true) + getMetricValue('financing_carecredit_amount', 0, true),
         },
         advanced: {
           cac: getMetricValue('adv_cac', 0, true),
@@ -275,6 +298,17 @@ export const useMetrics = (date: string) => {
           operatingCosts: getMetricValue('adv_operating_costs', 0, true),
           operatingProfitMargin: getMetricValue('adv_operating_profit_margin', 0, true),
           revenueGrowthRate: getMetricValue('adv_revenue_growth_rate', 0, true),
+        },
+        scorecard: {
+          showRateDr: getMetricValue('scorecard_show_rate_dr', 0, true),
+          showRateDrTarget: getMetricValue('scorecard_show_rate_dr_target', 90, true),
+          showRateHyg: getMetricValue('scorecard_show_rate_hyg', 0, true),
+          showRateHygTarget: getMetricValue('scorecard_show_rate_hyg_target', 85, true),
+          txAcceptance: getMetricValue('scorecard_tx_acceptance', 0, true),
+          txAcceptanceTarget: getMetricValue('scorecard_tx_acceptance_target', 50, true),
+          totalTxPresented: getMetricValue('scorecard_total_tx_presented', 0, true),
+          totalTxAccepted: getMetricValue('scorecard_total_tx_accepted', 0, true),
+          fiveStarReviews: getMetricValue('scorecard_five_star_reviews', 0, true),
         },
       };
 

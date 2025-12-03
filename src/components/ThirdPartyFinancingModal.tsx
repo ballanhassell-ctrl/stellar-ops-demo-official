@@ -31,10 +31,10 @@ export const ThirdPartyFinancingModal: React.FC<ThirdPartyFinancingModalProps> =
 
     try {
       const metricsToSave = [
-        { field_key: 'cherry_patients', value: cherryPatients },
-        { field_key: 'cherry_amount', value: cherryAmount },
-        { field_key: 'care_credit_patients', value: careCreditPatients },
-        { field_key: 'care_credit_amount', value: careCreditAmount },
+        { field_key: 'financing_cherry_patients', value: cherryPatients },
+        { field_key: 'financing_cherry_amount', value: cherryAmount },
+        { field_key: 'financing_carecredit_patients', value: careCreditPatients },
+        { field_key: 'financing_carecredit_amount', value: careCreditAmount },
       ];
 
       for (const metric of metricsToSave) {
