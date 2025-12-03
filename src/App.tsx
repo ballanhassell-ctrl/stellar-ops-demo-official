@@ -395,6 +395,7 @@ interface ClaimRecord {
   claimAmount: number;
   status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
   dateSubmitted: string;
+  dateOfService: string;
   followUpDate: string;
   handler: string;
   notes: string;
@@ -485,6 +486,7 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   claimAmount: claim.claim_amount,
   status: claim.status,
   dateSubmitted: claim.date_submitted,
+  dateOfService: claim.date_of_service,
   followUpDate: claim.follow_up_date,
   handler: claim.completed_by,
   notes: claim.notes || '',
@@ -504,6 +506,7 @@ const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated
   claim_amount: record.claimAmount,
   status: record.status,
   date_submitted: record.dateSubmitted,
+  date_of_service: record.dateOfService,
   date_created: record.dateSubmitted,
   follow_up_date: record.followUpDate,
   created_by: record.handler,
@@ -1677,7 +1680,8 @@ const CourtStreetRCM = () => {
       claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
       claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.status.toLowerCase().includes(searchQuery.toLowerCase());
+      claim.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.dateOfService.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Apply archive date filter if viewing archived items and date filter is set
     if (showArchivedClaims && archiveClaimsDateFilter && claim.archivedAt) {
@@ -3146,17 +3150,36 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Summary Bar */}
-              <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Total Outstanding A/R:</span>
-                  <span className="text-xl font-bold" style={{ color: csdGold }}>
-                    ${(
-                      claimsData.arAging.zeroToThirty.amount +
-                      claimsData.arAging.thirtyOneToSixty.amount +
-                      claimsData.arAging.sixtyOneToNinety.amount +
-                      claimsData.arAging.ninetyPlus.amount
-                    ).toLocaleString()}
-                  </span>
+              <div className="mt-6 space-y-3">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Total Outstanding Insurance A/R:</span>
+                    <span className="text-xl font-bold" style={{ color: csdGold }}>
+                      ${(
+                        claimsData.arAging.zeroToThirty.amount +
+                        claimsData.arAging.thirtyOneToSixty.amount +
+                        claimsData.arAging.sixtyOneToNinety.amount +
+                        claimsData.arAging.ninetyPlus.amount
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-amber-800">Insurance A/R 31+ Days (Total Receivables):</span>
+                    <span className="text-xl font-bold text-amber-900">
+                      ${(
+                        claimsData.arAging.thirtyOneToSixty.amount +
+                        claimsData.arAging.sixtyOneToNinety.amount +
+                        claimsData.arAging.ninetyPlus.amount
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs text-amber-700">
+                    31-60: ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()} |
+                    61-90: ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()} |
+                    91+: ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
+                  </div>
                 </div>
               </div>
             </div>
@@ -3192,6 +3215,7 @@ const CourtStreetRCM = () => {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Patient</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Claim #</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date of Service</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Procedure</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
@@ -3204,7 +3228,7 @@ const CourtStreetRCM = () => {
                   <tbody className="divide-y divide-gray-200">
                     {filteredClaims.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                           No claims found matching your search.
                         </td>
                       </tr>
@@ -3219,7 +3243,11 @@ const CourtStreetRCM = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm text-gray-900">{claim.claimNumber}</div>
-                            <div className="text-xs text-gray-500">{claim.dateSubmitted}</div>
+                            <div className="text-xs text-gray-500">Submitted: {claim.dateSubmitted}</div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="text-sm text-gray-900">{claim.dateOfService}</div>
+                            <div className="text-xs text-gray-500">Service Date</div>
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-900">{claim.insuranceCompany}</td>
                           <td className="px-4 py-4">
@@ -3927,6 +3955,40 @@ const CourtStreetRCM = () => {
                       ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
                     </p>
                     <p className="text-xs text-red-600 mt-1">Collections</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary Bar */}
+              <div className="mt-6 space-y-3">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Total Outstanding Patient A/R:</span>
+                    <span className="text-xl font-bold" style={{ color: csdGold }}>
+                      ${(
+                        patientsData.patientARAging.zeroToThirty +
+                        patientsData.patientARAging.thirtyOneToSixty +
+                        patientsData.patientARAging.sixtyOneToNinety +
+                        patientsData.patientARAging.ninetyPlus
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-amber-800">Patient A/R 31+ Days (Total Receivables):</span>
+                    <span className="text-xl font-bold text-amber-900">
+                      ${(
+                        patientsData.patientARAging.thirtyOneToSixty +
+                        patientsData.patientARAging.sixtyOneToNinety +
+                        patientsData.patientARAging.ninetyPlus
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs text-amber-700">
+                    31-60: ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()} |
+                    61-90: ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()} |
+                    91+: ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -4667,6 +4729,7 @@ const CourtStreetRCM = () => {
                       claimAmount: parseFloat(formData.get('claimAmount') as string),
                       status: formData.get('status') as ClaimRecord['status'],
                       dateSubmitted: formData.get('dateSubmitted') as string,
+                      dateOfService: formData.get('dateOfService') as string,
                       followUpDate: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string,
@@ -4725,6 +4788,10 @@ const CourtStreetRCM = () => {
                       <div>
                         <label className="block text-sm font-medium mb-1">Handler</label>
                         <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Date of Service</label>
+                        <input name="dateOfService" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Date Submitted</label>
@@ -8326,6 +8393,7 @@ const CourtStreetRCM = () => {
                       claim_amount: parseFloat(formData.get('claimAmount') as string),
                       status: formData.get('status') as Claim['status'],
                       date_submitted: formData.get('dateSubmitted') as string,
+                      date_of_service: formData.get('dateOfService') as string,
                       follow_up_date: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string || null,
@@ -8427,6 +8495,16 @@ const CourtStreetRCM = () => {
                               <option value="Resubmitted with Attachments">Resubmitted with Attachments</option>
                               <option value="Resubmitted/1st Appeal">Resubmitted/1st Appeal</option>
                             </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date of Service</label>
+                            <input
+                              type="date"
+                              name="dateOfService"
+                              defaultValue={claim.dateOfService}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Date Submitted</label>

@@ -7,26 +7,45 @@
 import { supabase } from '../lib/supabaseClient';
 
 /**
- * Calculate MTD Production based on BAM Current Revenue
- * MTD Production should equal BAM Current Revenue for the current billing cycle
+ * Calculate MTD Production by summing daily production for the full month
+ * MTD Production is calculated from the 1st of the month to the selected date (30-day cycle)
+ * This is different from BAM Current Revenue which is based on ~19 business days
  */
-export async function calculateMTDProduction(_date: string): Promise<number> {
+export async function calculateMTDProduction(date: string): Promise<number> {
   try {
-    // Fetch BAM Current Revenue (this is the authoritative source for monthly production)
+    const targetDate = new Date(date);
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth();
+
+    // First day of current month
+    const monthStart = new Date(year, month, 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
+
+    // Last day of current month or current date, whichever is earlier
+    const monthEnd = new Date(year, month + 1, 0);
+    const currentDate = new Date(date);
+    const endDate = currentDate < monthEnd ? currentDate : monthEnd;
+    const endDateStr = endDate.toISOString().split('T')[0];
+
+    console.log(`Calculating MTD Production from ${monthStartStr} to ${endDateStr}`);
+
+    // Sum all daily production for the month
     const { data, error } = await supabase
       .from('csd_metric_values')
       .select('value')
-      .eq('field_key', 'bam_current_revenue')
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('field_key', 'eod_daily_production')
+      .gte('as_of_date', monthStartStr)
+      .lte('as_of_date', endDateStr);
 
     if (error) {
-      console.error('Error fetching BAM revenue:', error);
+      console.error('Error fetching daily production:', error);
       return 0;
     }
 
-    return data?.value || 0;
+    const total = data?.reduce((sum, record) => sum + (record.value || 0), 0) || 0;
+    console.log(`MTD Production total: ${total}`);
+
+    return total;
   } catch (err) {
     console.error('Error calculating MTD production:', err);
     return 0;
