@@ -3825,7 +3825,7 @@ const CourtStreetRCM = () => {
                                 </div>
                               </td>
                               <td className="px-4 py-4">
-                                <div className="text-sm text-gray-900">{preAuth.preAuthNumber}</div>
+                                <div className="text-sm text-gray-900">{preAuth.preAuthNumber || 'Pending'}</div>
                                 <div className="text-xs text-gray-500">{preAuth.dateRequested}</div>
                               </td>
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.insuranceCompany}</td>
@@ -5052,7 +5052,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientName: formData.get('patientName') as string,
                       insuranceCompany: formData.get('insuranceCompany') as string,
-                      preAuthNumber: formData.get('preAuthNumber') as string,
+                      preAuthNumber: (formData.get('preAuthNumber') as string) || null,
                       procedureCode: formData.get('procedureCode') as string,
                       treatmentDetail: formData.get('treatmentDetail') as string,
                       requestedAmount: parseFloat(formData.get('requestedAmount') as string),
@@ -9081,7 +9081,7 @@ const CourtStreetRCM = () => {
                       patient_id: preAuth.patientId, // Preserve existing patient_id
                       patient_name: formData.get('patientName') as string,
                       insurance_company: formData.get('insuranceCompany') as string,
-                      pre_auth_number: formData.get('preAuthNumber') as string,
+                      pre_auth_number: (formData.get('preAuthNumber') as string) || null,
                       procedure_code: formData.get('procedureCode') as string,
                       treatment_detail: formData.get('treatmentDetail') as string,
                       requested_amount: parseFloat(formData.get('requestedAmount') as string),
@@ -9137,7 +9137,7 @@ const CourtStreetRCM = () => {
                             <input
                               type="text"
                               name="preAuthNumber"
-                              defaultValue={preAuth.preAuthNumber}
+                              defaultValue={preAuth.preAuthNumber || ''}
                               required
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
