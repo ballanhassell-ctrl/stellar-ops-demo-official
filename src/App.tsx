@@ -7014,7 +7014,7 @@ const CourtStreetRCM = () => {
                     <XCircle className={`w-6 h-6 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
                     <div>
                       <p className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Fully Denied Claims</p>
-                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need resubmission</p>
+                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need follow-up</p>
                     </div>
                   </div>
                   <p className={`text-2xl font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
