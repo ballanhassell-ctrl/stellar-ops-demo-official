@@ -481,7 +481,7 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   patientId: claim.patient_id,
   patientName: claim.patient_name,
   insuranceCompany: claim.insurance_company,
-  claimNumber: claim.claim_number,
+  claimNumber: claim.claim_number || '', // Convert null to empty string for display
   procedureCode: claim.procedure_code,
   claimDetail: claim.claim_detail,
   claimAmount: claim.claim_amount,
@@ -501,7 +501,7 @@ const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated
   patient_id: record.patientId,
   patient_name: record.patientName,
   insurance_company: record.insuranceCompany,
-  claim_number: record.claimNumber,
+  claim_number: record.claimNumber || null, // Send null if empty string
   procedure_code: record.procedureCode,
   claim_detail: record.claimDetail,
   claim_amount: record.claimAmount,
@@ -8536,11 +8536,12 @@ const CourtStreetRCM = () => {
                     const formData = new FormData(e.currentTarget);
                     const claim = editingItem as ClaimRecord;
                     const handler = formData.get('handler') as string;
+                    const claimNumber = formData.get('claimNumber') as string;
                     const updatedClaim = {
                       patient_id: claim.patientId, // Preserve existing patient_id
                       patient_name: formData.get('patientName') as string,
                       insurance_company: formData.get('insuranceCompany') as string,
-                      claim_number: formData.get('claimNumber') as string,
+                      claim_number: claimNumber || null, // Convert empty string to null
                       procedure_code: formData.get('procedureCode') as string,
                       claim_detail: formData.get('claimDetail') as string,
                       claim_amount: parseFloat(formData.get('claimAmount') as string),
