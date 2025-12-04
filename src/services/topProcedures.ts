@@ -83,9 +83,10 @@ export async function getTopProceduresForDateRange(
     });
 
     // Convert to array and sort by revenue
+    // Return more than 10 to allow frontend categorization into hygiene/operative
     return Array.from(aggregated.values())
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10); // Top 10
+      .slice(0, 50); // Top 50 to ensure enough for both categories
   } catch (err) {
     console.error('Error in getTopProceduresForDateRange:', err);
     return [];

@@ -7137,20 +7137,40 @@ const CourtStreetRCM = () => {
                     const hygieneRecareCodesArray = ['D1110', 'D1120', 'D4910', 'D1206', 'D1351', 'D4341', 'D4342', 'D4000'];
                     const excludedCodesArray = ['D0150', 'D0180', 'D0140', 'D0277', 'D0274', 'D0220', 'D0230', 'D0210', 'D0120', 'D9987', 'D9986', 'D9150'];
 
+                    // Debug: Log all procedures
+                    console.log('========== TOP PROCEDURES DEBUG ==========');
+                    console.log('Total procedures loaded:', topProcedures.length);
+                    console.log('All procedures:', topProcedures.map((p: any) => ({
+                      code: p.procedure_code,
+                      name: p.procedure_name,
+                      count: p.count,
+                      revenue: p.revenue
+                    })));
+
                     // Categorize procedures
                     const hygieneProcedures = topProcedures
                       .filter((p: any) => {
-                        const code = p.procedure_code?.toUpperCase() || '';
-                        return hygieneRecareCodesArray.includes(code) && !excludedCodesArray.includes(code);
+                        const code = (p.procedure_code || '').toUpperCase().trim();
+                        const isHygiene = hygieneRecareCodesArray.includes(code);
+                        const isExcluded = excludedCodesArray.includes(code);
+                        return isHygiene && !isExcluded;
                       })
                       .slice(0, 10);
 
                     const operativeProcedures = topProcedures
                       .filter((p: any) => {
-                        const code = p.procedure_code?.toUpperCase() || '';
-                        return !hygieneRecareCodesArray.includes(code) && !excludedCodesArray.includes(code);
+                        const code = (p.procedure_code || '').toUpperCase().trim();
+                        const isHygiene = hygieneRecareCodesArray.includes(code);
+                        const isExcluded = excludedCodesArray.includes(code);
+                        return !isHygiene && !isExcluded;
                       })
                       .slice(0, 10);
+
+                    console.log('Hygiene procedures count:', hygieneProcedures.length);
+                    console.log('Hygiene procedures:', hygieneProcedures.map((p: any) => p.procedure_code));
+                    console.log('Operative procedures count:', operativeProcedures.length);
+                    console.log('Operative procedures:', operativeProcedures.map((p: any) => p.procedure_code));
+                    console.log('==========================================');
 
                     return (
                       <>
