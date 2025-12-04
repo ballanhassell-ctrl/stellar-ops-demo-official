@@ -45,6 +45,30 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
     }
   };
 
+  // Helper function to parse CSV line respecting quoted fields
+  const parseCSVLine = (line: string): string[] => {
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        values.push(current.trim().replace(/^["']|["']$/g, ''));
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    // Push the last value
+    values.push(current.trim().replace(/^["']|["']$/g, ''));
+    return values;
+  };
+
   const parseCSV = async (file: File) => {
     setIsProcessing(true);
     setError(null);
@@ -61,7 +85,7 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
 
       // Parse header to find column indices
       const header = lines[0].toLowerCase();
-      const headers = header.split(',').map(h => h.trim());
+      const headers = parseCSVLine(header);
 
       // Debug: Log the headers found
       console.log('CSV Headers found:', headers);
@@ -109,14 +133,14 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         const line = lines[i].trim();
         if (!line) continue;
 
-        const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+        const values = parseCSVLine(line);
 
         if (values.length >= requiredLength) {
           const procedure: Procedure = {
             procedure_name: values[nameIndex] || '',
             procedure_code: values[codeIndex] || '',
-            count: countIndex !== -1 ? (parseInt(values[countIndex]) || 1) : 1, // Default to 1 if Count column missing
-            revenue: parseFloat(values[revenueIndex].replace(/[$,]/g, '')) || 0
+            count: countIndex !== -1 ? (parseInt(values[countIndex]?.replace(/,/g, '') || '1') || 1) : 1, // Default to 1 if Count column missing
+            revenue: parseFloat(values[revenueIndex]?.replace(/[$,]/g, '') || '0') || 0
           };
 
           // Only require procedure_name and procedure_code to be non-empty
