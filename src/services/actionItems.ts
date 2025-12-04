@@ -90,8 +90,8 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       .order('as_of_date', { ascending: false })
       .limit(2);
 
-    const ar6190Count = patientARData?.find(r => r.field_key === 'patient_ar_61_90_count')?.value || 0;
-    const ar90PlusCount = patientARData?.find(r => r.field_key === 'patient_ar_90_plus_count')?.value || 0;
+    const ar6190Count = patientARData?.find((r: any) => r.field_key === 'patient_ar_61_90_count')?.value || 0;
+    const ar90PlusCount = patientARData?.find((r: any) => r.field_key === 'patient_ar_90_plus_count')?.value || 0;
 
     const accountsNeedingFollowUp =
       (oldClaimsCount || 0) +
