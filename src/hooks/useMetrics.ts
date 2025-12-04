@@ -225,7 +225,8 @@ export const useMetrics = (date: string) => {
           practiceGoal: getMetricValue('practice_goal', 300000, true),
           collectionRate: getMetricValue('collection_rate', 0, true),
           activePatients: getMetricValue('active_patients', 0, true),
-          activeClaims: getMetricValue('active_claims'),
+          // AUTO-CALCULATED from claims table - uses same value as claims.totalActive
+          activeClaims: claimsTotals.activeClaims,
           // Outstanding A/R is auto-calculated from Insurance + Patient A/R aging totals
           outstandingAR: 0, // Will be calculated below after aging data is loaded
         },

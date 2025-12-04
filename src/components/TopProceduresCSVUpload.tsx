@@ -178,7 +178,8 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         return;
       }
 
-      // Aggregate existing data by procedure code
+      // Aggregate data by procedure code only (codes are unique identifiers)
+      // This ensures proper aggregation even if procedure names vary slightly
       const aggregatedMap = new Map<string, Procedure>();
 
       // Add existing monthly data
@@ -189,6 +190,7 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
             const existing = aggregatedMap.get(key)!;
             existing.count += proc.count;
             existing.revenue += proc.revenue;
+            // Keep the first procedure name encountered for this code
           } else {
             aggregatedMap.set(key, {
               procedure_name: proc.procedure_name,
@@ -200,13 +202,14 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         });
       }
 
-      // Add new CSV data
+      // Add new CSV data - aggregate by code
       parsedData.forEach(proc => {
         const key = proc.procedure_code;
         if (aggregatedMap.has(key)) {
           const existing = aggregatedMap.get(key)!;
           existing.count += proc.count;
           existing.revenue += proc.revenue;
+          // Keep existing procedure name (from database or earlier in CSV)
         } else {
           aggregatedMap.set(key, { ...proc });
         }
