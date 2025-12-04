@@ -2299,50 +2299,49 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Key Performance Indicators */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
-              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
-                isDayMode
-                  ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300'
-                  : 'bg-gradient-to-br from-green-900 to-green-800 border-2 border-green-600'
-              }`}>
-                <div className="flex flex-col">
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className={`text-xs font-semibold uppercase tracking-wide ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>BAM Cycle Revenue</p>
-                      <p className={`text-xs ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>
+                      <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-emerald-700' : 'text-emerald-300'}`}>BAM Cycle Revenue</p>
+                      <p className={`text-xs ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>
                         {dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
-                    <TrendingUp className={`w-6 h-6 ${isDayMode ? 'text-green-500' : 'text-green-300'}`} />
+                    <div className="p-2 rounded-xl bg-emerald-500/20">
+                      <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    </div>
                   </div>
-                  <div className="mb-2">
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-100'}`}>
+                  <div className="mb-3">
+                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       ${dashboardData.bamCurrentRevenue.toLocaleString()}
                     </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
+                    <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
                       BAM Target: ${dashboardData.bamTargetGoal.toLocaleString()}
                     </p>
-                    <p className={`text-xs ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>
+                    <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                       Practice Goal: ${dashboardData.practiceGoal.toLocaleString()}
                     </p>
                   </div>
-                  <div className={`w-full rounded-full h-2 mb-3 ${isDayMode ? 'bg-green-200' : 'bg-green-950'}`}>
+                  <div className={`w-full rounded-full h-2.5 mb-3 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'} overflow-hidden`}>
                     <div
-                      className={`h-2 rounded-full transition-all ${dashboardData.bamCurrentRevenue >= dashboardData.bamTargetGoal ? 'bg-green-600' : 'bg-green-500'}`}
+                      className={`h-2.5 rounded-full transition-all duration-700 ${dashboardData.bamCurrentRevenue >= dashboardData.bamTargetGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-glow' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
                       style={{
                         width: `${Math.min((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100, 100)}%`
                       }}
                     ></div>
                   </div>
-                  <div className={`border-t pt-2 ${isDayMode ? 'border-green-200' : 'border-green-700'}`}>
+                  <div className={`border-t pt-3 ${isDayMode ? 'border-white/30' : 'border-white/10'}`}>
                     <div className="flex items-center justify-between text-xs">
-                      <span className={`font-medium ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>Days Remaining:</span>
-                      <span className={`font-bold ${isDayMode ? 'text-green-900' : 'text-green-100'}`}>{dashboardData.bamDaysRemaining} business days</span>
+                      <span className={`font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Days Remaining:</span>
+                      <span className={`font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{dashboardData.bamDaysRemaining} business days</span>
                     </div>
-                    <div className="mt-1">
-                      <p className={`text-xs ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>
-                        Next Cycle: {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    <div className="mt-1.5">
+                      <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                        Next: {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
                   </div>
@@ -2350,55 +2349,55 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Collection Rate */}
-              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
-                isDayMode
-                  ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300'
-                  : 'bg-gradient-to-br from-blue-900 to-blue-800 border-2 border-blue-600'
-              }`}>
-                <div className="flex items-start justify-between">
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10 flex items-start justify-between">
                   <div>
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-300'}`}>Collection Rate</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-100'}`}>
+                    <p className={`text-sm font-bold mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-300'}`}>Collection Rate</p>
+                    <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {dashboardData.collectionRate}%
                     </p>
-                    <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>Industry avg: 95%</p>
+                    <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Industry avg: 95%</p>
                   </div>
-                  <Activity className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-300'}`} />
+                  <div className="p-2 rounded-xl bg-primary-500/20">
+                    <Activity className="w-6 h-6 text-primary-600" />
+                  </div>
                 </div>
               </div>
 
               {/* Active Patients */}
-              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
-                isDayMode
-                  ? 'bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300'
-                  : 'bg-gradient-to-br from-purple-900 to-purple-800 border-2 border-purple-600'
-              }`}>
-                <div className="flex items-start justify-between">
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10 flex items-start justify-between">
                   <div>
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>Active Patients</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-100'}`}>
+                    <p className={`text-sm font-bold mb-2 ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>Active Patients</p>
+                    <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {dashboardData.activePatients}
                     </p>
-                    <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>This month</p>
+                    <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>This month</p>
                   </div>
-                  <Users className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-300'}`} />
+                  <div className="p-2 rounded-xl bg-purple-500/20">
+                    <Users className="w-6 h-6 text-purple-600" />
+                  </div>
                 </div>
               </div>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-lg p-5 hover:shadow-lg transition-all ${
-                isDayMode
-                  ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300'
-                  : 'bg-gradient-to-br from-amber-900 to-amber-800 border-2 border-amber-600'
-              }`}>
-                <div className="flex items-start justify-between">
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
-                    <p className={`text-sm font-medium mb-3 ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Outstanding A/R (31+ Days)</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className={`text-sm font-bold ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Outstanding A/R 31+</p>
+                      <div className="p-1.5 rounded-lg bg-amber-500/20">
+                        <DollarSign className="w-5 h-5 text-amber-600" />
+                      </div>
+                    </div>
 
                     {/* Patient A/R 31+ */}
-                    <div className="mb-2">
-                      <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Patient A/R 31+</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
+                    <div className="mb-2.5">
+                      <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient A/R 31+</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                         ${(
                           patientsData.patientARAging.thirtyOneToSixty +
                           patientsData.patientARAging.sixtyOneToNinety +
@@ -2409,8 +2408,8 @@ const CourtStreetRCM = () => {
 
                     {/* Insurance A/R 31+ */}
                     <div className="mb-3">
-                      <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Insurance A/R 31+</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
+                      <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Insurance A/R 31+</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                         ${(
                           claimsData.arAging.thirtyOneToSixty.amount +
                           claimsData.arAging.sixtyOneToNinety.amount +
@@ -2420,9 +2419,9 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Total Outstanding */}
-                    <div className={`pt-3 border-t ${isDayMode ? 'border-amber-300' : 'border-amber-600'}`}>
-                      <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Total Outstanding Receivables</p>
-                      <p className={`text-xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-100'}`}>
+                    <div className={`pt-3 border-t ${isDayMode ? 'border-white/30' : 'border-white/10'}`}>
+                      <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Outstanding</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                         ${(
                           patientsData.patientARAging.thirtyOneToSixty +
                           patientsData.patientARAging.sixtyOneToNinety +
@@ -2434,7 +2433,6 @@ const CourtStreetRCM = () => {
                       </p>
                     </div>
                   </div>
-                  <DollarSign className={`w-8 h-8 flex-shrink-0 ${isDayMode ? 'text-amber-500' : 'text-amber-300'}`} />
                 </div>
               </div>
             </div>
@@ -2442,44 +2440,52 @@ const CourtStreetRCM = () => {
             {/* Claims & Payments Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Claims Status */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Claims Status
                 </h3>
                 <div className="space-y-3">
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-blue-50' : 'bg-blue-900/30'}`}>
+                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-blue-50/80' : 'bg-blue-900/20'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-700/30'} transition-all hover:scale-[1.02]`}>
                     <div className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-blue-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Active Claims</span>
+                      <div className="p-2 rounded-lg bg-blue-500/20">
+                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Active Claims</span>
                     </div>
-                    <span className={`text-lg font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                    <span className={`text-xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
                       {dashboardData.activeClaims}
                     </span>
                   </div>
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-yellow-50' : 'bg-yellow-900/30'}`}>
+                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-yellow-50/80' : 'bg-yellow-900/20'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-700/30'} transition-all hover:scale-[1.02]`}>
                     <div className="flex items-center space-x-3">
-                      <Clock className="w-5 h-5 text-yellow-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Pending Claims</span>
+                      <div className="p-2 rounded-lg bg-yellow-500/20">
+                        <Clock className="w-5 h-5 text-yellow-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Pending Claims</span>
                     </div>
-                    <span className={`text-lg font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
+                    <span className={`text-xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
                       {claimsData.pending}
                     </span>
                   </div>
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-red-50' : 'bg-red-900/30'}`}>
+                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-red-50/80' : 'bg-red-900/20'} border ${isDayMode ? 'border-red-200/50' : 'border-red-700/30'} transition-all hover:scale-[1.02]`}>
                     <div className="flex items-center space-x-3">
-                      <XCircle className="w-5 h-5 text-red-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Fully Denied Claims</span>
+                      <div className="p-2 rounded-lg bg-red-500/20">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Fully Denied Claims</span>
                     </div>
-                    <span className={`text-lg font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
+                    <span className={`text-xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
                       {claimsData.denied}
                     </span>
                   </div>
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${isDayMode ? 'bg-orange-50' : 'bg-orange-900/30'}`}>
+                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-orange-50/80' : 'bg-orange-900/20'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-700/30'} transition-all hover:scale-[1.02]`}>
                     <div className="flex items-center space-x-3">
-                      <AlertCircle className="w-5 h-5 text-orange-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Claims &gt;60 Days</span>
+                      <div className="p-2 rounded-lg bg-orange-500/20">
+                        <AlertCircle className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Claims &gt;60 Days</span>
                     </div>
-                    <span className={`text-lg font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
+                    <span className={`text-xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
                       {claimsData.overSixtyDays}
                     </span>
                   </div>
@@ -2487,77 +2493,85 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => setCurrentView('claims')}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200'
-                        : 'bg-gradient-to-r from-blue-900/30 to-blue-800/30 hover:from-blue-800/40 hover:to-blue-700/40'
+                        ? 'bg-gradient-to-r from-blue-100/60 to-blue-200/60 hover:from-blue-200/80 hover:to-blue-300/80 border border-blue-300/50'
+                        : 'bg-gradient-to-r from-blue-900/30 to-blue-800/30 hover:from-blue-800/50 hover:to-blue-700/50 border border-blue-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <FileText className="w-5 h-5 text-blue-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Review Claims</span>
+                      <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Review Claims</span>
                     </div>
-                    <span className="text-xs text-blue-600">→</span>
+                    <span className="text-lg text-blue-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('payments')}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200'
-                        : 'bg-gradient-to-r from-green-900/30 to-green-800/30 hover:from-green-800/40 hover:to-green-700/40'
+                        ? 'bg-gradient-to-r from-emerald-100/60 to-emerald-200/60 hover:from-emerald-200/80 hover:to-emerald-300/80 border border-emerald-300/50'
+                        : 'bg-gradient-to-r from-emerald-900/30 to-emerald-800/30 hover:from-emerald-800/50 hover:to-emerald-700/50 border border-emerald-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <DollarSign className="w-5 h-5 text-green-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Process Payments</span>
+                      <div className="p-2 rounded-lg bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-colors">
+                        <DollarSign className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Process Payments</span>
                     </div>
-                    <span className="text-xs text-green-600">→</span>
+                    <span className="text-lg text-emerald-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('patients')}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200'
-                        : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/40 hover:to-purple-700/40'
+                        ? 'bg-gradient-to-r from-purple-100/60 to-purple-200/60 hover:from-purple-200/80 hover:to-purple-300/80 border border-purple-300/50'
+                        : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/50 hover:to-purple-700/50 border border-purple-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <Users className="w-5 h-5 text-purple-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Manage Patients</span>
+                      <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-colors">
+                        <Users className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Manage Patients</span>
                     </div>
-                    <span className="text-xs text-purple-600">→</span>
+                    <span className="text-lg text-purple-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('scorecard')}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
+                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200'
-                        : 'bg-gradient-to-r from-amber-900/30 to-amber-800/30 hover:from-amber-800/40 hover:to-amber-700/40'
+                        ? 'bg-gradient-to-r from-amber-100/60 to-amber-200/60 hover:from-amber-200/80 hover:to-amber-300/80 border border-amber-300/50'
+                        : 'bg-gradient-to-r from-amber-900/30 to-amber-800/30 hover:from-amber-800/50 hover:to-amber-700/50 border border-amber-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <Award className="w-5 h-5 text-amber-600" />
-                      <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>View Scorecard</span>
+                      <div className="p-2 rounded-lg bg-amber-500/20 group-hover:bg-amber-500/30 transition-colors">
+                        <Award className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>View Scorecard</span>
                     </div>
-                    <span className="text-xs text-amber-600">→</span>
+                    <span className="text-lg text-amber-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Follow-Up Tracking */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-xl font-bold mb-2 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Follow-Up Tracking
               </h3>
-              <p className={`text-sm mb-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+              <p className={`text-sm mb-5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 Items due for follow-up today ({new Date().toLocaleDateString()})
               </p>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -2566,18 +2580,17 @@ const CourtStreetRCM = () => {
                     setCurrentView('patient-management');
                     setPatientManagementView('claims');
                   }}
-                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
-                    isDayMode
-                      ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 hover:from-blue-100 hover:to-blue-200'
-                      : 'bg-gradient-to-br from-blue-900/30 to-blue-800/30 border-2 border-blue-700 hover:from-blue-800/40 hover:to-blue-700/40'
-                  }`}
+                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="flex flex-col items-center">
-                    <FileText className="w-6 h-6 text-blue-600 mb-2" />
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="p-2.5 rounded-xl bg-primary-500/20 mb-3 group-hover:bg-primary-500/30 transition-colors">
+                      <FileText className="w-6 h-6 text-primary-600" />
+                    </div>
+                    <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {followUpCounts.claims}
                     </p>
-                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>
+                    <p className={`text-xs text-center font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
                       Claims Follow-Up
                     </p>
                   </div>
@@ -2588,18 +2601,17 @@ const CourtStreetRCM = () => {
                     setCurrentView('patient-management');
                     setPatientManagementView('preauths');
                   }}
-                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
-                    isDayMode
-                      ? 'bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 hover:from-purple-100 hover:to-purple-200'
-                      : 'bg-gradient-to-br from-purple-900/30 to-purple-800/30 border-2 border-purple-700 hover:from-purple-800/40 hover:to-purple-700/40'
-                  }`}
+                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="flex flex-col items-center">
-                    <Shield className="w-6 h-6 text-purple-600 mb-2" />
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="p-2.5 rounded-xl bg-purple-500/20 mb-3 group-hover:bg-purple-500/30 transition-colors">
+                      <Shield className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {followUpCounts.preAuths}
                     </p>
-                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>
+                    <p className={`text-xs text-center font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
                       Pre-Auth Follow-Up
                     </p>
                   </div>
@@ -2611,18 +2623,17 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowVipList(true);
                   }}
-                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
-                    isDayMode
-                      ? 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 hover:from-green-100 hover:to-green-200'
-                      : 'bg-gradient-to-br from-green-900/30 to-green-800/30 border-2 border-green-700 hover:from-green-800/40 hover:to-green-700/40'
-                  }`}
+                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="flex flex-col items-center">
-                    <Users className="w-6 h-6 text-green-600 mb-2" />
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/20 mb-3 group-hover:bg-emerald-500/30 transition-colors">
+                      <Users className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {followUpCounts.vip}
                     </p>
-                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>
+                    <p className={`text-xs text-center font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
                       VIP Follow-Up
                     </p>
                   </div>
@@ -2634,18 +2645,17 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowRecareList(true);
                   }}
-                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
-                    isDayMode
-                      ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 hover:from-amber-100 hover:to-amber-200'
-                      : 'bg-gradient-to-br from-amber-900/30 to-amber-800/30 border-2 border-amber-700 hover:from-amber-800/40 hover:to-amber-700/40'
-                  }`}
+                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="flex flex-col items-center">
-                    <Clock className="w-6 h-6 text-amber-600 mb-2" />
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="p-2.5 rounded-xl bg-amber-500/20 mb-3 group-hover:bg-amber-500/30 transition-colors">
+                      <Clock className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {followUpCounts.recare}
                     </p>
-                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>
+                    <p className={`text-xs text-center font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
                       Recare Follow-Up
                     </p>
                   </div>
@@ -2657,18 +2667,17 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowTreatmentList(true);
                   }}
-                  className={`p-4 rounded-lg transition-all hover:shadow-md ${
-                    isDayMode
-                      ? 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 hover:from-red-100 hover:to-red-200'
-                      : 'bg-gradient-to-br from-red-900/30 to-red-800/30 border-2 border-red-700 hover:from-red-800/40 hover:to-red-700/40'
-                  }`}
+                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="flex flex-col items-center">
-                    <Activity className="w-6 h-6 text-red-600 mb-2" />
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="p-2.5 rounded-xl bg-red-500/20 mb-3 group-hover:bg-red-500/30 transition-colors">
+                      <Activity className="w-6 h-6 text-red-600" />
+                    </div>
+                    <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {followUpCounts.treatment}
                     </p>
-                    <p className={`text-xs mt-1 text-center ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>
+                    <p className={`text-xs text-center font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
                       Treatment Follow-Up
                     </p>
                   </div>
@@ -2677,41 +2686,53 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Automated Metrics Analysis */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Automated Metrics Analysis
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-blue-50 border-blue-200' : 'bg-blue-900/30 border-blue-700'}`}>
-                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Avg Claims Aging</p>
-                  <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
-                    {automatedMetrics.avgAgingDays}
-                  </p>
-                  <p className={`text-xs mt-1 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>days</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Avg Claims Aging</p>
+                    <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      {automatedMetrics.avgAgingDays}
+                    </p>
+                    <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>days</p>
+                  </div>
                 </div>
 
-                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/30 border-green-700'}`}>
-                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Collection Rate</p>
-                  <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                    {automatedMetrics.collectionRate}%
-                  </p>
-                  <p className={`text-xs mt-1 ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>collected</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Collection Rate</p>
+                    <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      {automatedMetrics.collectionRate}%
+                    </p>
+                    <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>collected</p>
+                  </div>
                 </div>
 
-                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/30 border-amber-700'}`}>
-                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Active Claims</p>
-                  <p className={`text-3xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
-                    {automatedMetrics.totalActiveClaims}
-                  </p>
-                  <p className={`text-xs mt-1 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>pending</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Active Claims</p>
+                    <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      {automatedMetrics.totalActiveClaims}
+                    </p>
+                    <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>pending</p>
+                  </div>
                 </div>
 
-                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-red-50 border-red-200' : 'bg-red-900/30 border-red-700'}`}>
-                  <p className={`text-xs font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied Claims</p>
-                  <p className={`text-3xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
-                    {automatedMetrics.totalDeniedClaims}
-                  </p>
-                  <p className={`text-xs mt-1 ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>need review</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied Claims</p>
+                    <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      {automatedMetrics.totalDeniedClaims}
+                    </p>
+                    <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>need review</p>
+                  </div>
                 </div>
               </div>
 
@@ -2776,121 +2797,141 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* New Patient Tracker */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-6" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 New Patient Tracker
               </h3>
 
               {/* Current Period Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Per Day */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Per Day</p>
-                      <p className="text-xs text-blue-600 mt-0.5">Today</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-primary-700' : 'text-primary-300'}`}>Per Day</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>Today</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-primary-500/20">
+                        <Users className="w-5 h-5 text-primary-600" />
+                      </div>
                     </div>
-                    <Users className="w-6 h-6 text-blue-500" />
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {newPatientTrackerData.perDay}
+                      </p>
+                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perDayGoal}</p>
+                    </div>
+                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-primary-100/60' : 'bg-primary-950/40'}`}>
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perDay >= newPatientTrackerData.perDayGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-primary-500 to-primary-600'}`}
+                        style={{
+                          width: `${Math.min((newPatientTrackerData.perDay / newPatientTrackerData.perDayGoal) * 100, 100)}%`
+                        }}
+                      ></div>
+                    </div>
+                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perDayGoal} per day</p>
                   </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <p className="text-4xl font-bold text-blue-900">
-                      {newPatientTrackerData.perDay}
-                    </p>
-                    <p className="text-sm text-blue-600">/ {newPatientTrackerData.perDayGoal}</p>
-                  </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.perDay >= newPatientTrackerData.perDayGoal ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{
-                        width: `${Math.min((newPatientTrackerData.perDay / newPatientTrackerData.perDayGoal) * 100, 100)}%`
-                      }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-blue-700 font-medium">Goal: {newPatientTrackerData.perDayGoal} per day</p>
                 </div>
 
                 {/* Per Week */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Per Week</p>
-                      <p className="text-xs text-green-600 mt-0.5">Last 7 days</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-emerald-700' : 'text-emerald-300'}`}>Per Week</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>Last 7 days</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-emerald-500/20">
+                        <Users className="w-5 h-5 text-emerald-600" />
+                      </div>
                     </div>
-                    <Users className="w-6 h-6 text-green-500" />
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {newPatientTrackerData.perWeek}
+                      </p>
+                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perWeekGoal}</p>
+                    </div>
+                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'}`}>
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perWeek >= newPatientTrackerData.perWeekGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
+                        style={{
+                          width: `${Math.min((newPatientTrackerData.perWeek / newPatientTrackerData.perWeekGoal) * 100, 100)}%`
+                        }}
+                      ></div>
+                    </div>
+                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perWeekGoal} per week</p>
                   </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <p className="text-4xl font-bold text-green-900">
-                      {newPatientTrackerData.perWeek}
-                    </p>
-                    <p className="text-sm text-green-600">/ {newPatientTrackerData.perWeekGoal}</p>
-                  </div>
-                  <div className="w-full bg-green-200 rounded-full h-2 mb-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.perWeek >= newPatientTrackerData.perWeekGoal ? 'bg-green-500' : 'bg-green-400'}`}
-                      style={{
-                        width: `${Math.min((newPatientTrackerData.perWeek / newPatientTrackerData.perWeekGoal) * 100, 100)}%`
-                      }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-green-700 font-medium">Goal: {newPatientTrackerData.perWeekGoal} per week</p>
                 </div>
 
                 {/* Per Month */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Per Month</p>
-                      <p className="text-xs text-purple-600 mt-0.5">This month</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>Per Month</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>This month</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-purple-500/20">
+                        <Users className="w-5 h-5 text-purple-600" />
+                      </div>
                     </div>
-                    <Users className="w-6 h-6 text-purple-500" />
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {newPatientTrackerData.perMonth}
+                      </p>
+                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perMonthGoal}</p>
+                    </div>
+                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-purple-100/60' : 'bg-purple-950/40'}`}>
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perMonth >= newPatientTrackerData.perMonthGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`}
+                        style={{
+                          width: `${Math.min((newPatientTrackerData.perMonth / newPatientTrackerData.perMonthGoal) * 100, 100)}%`
+                        }}
+                      ></div>
+                    </div>
+                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perMonthGoal} per month</p>
                   </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <p className="text-4xl font-bold text-purple-900">
-                      {newPatientTrackerData.perMonth}
-                    </p>
-                    <p className="text-sm text-purple-600">/ {newPatientTrackerData.perMonthGoal}</p>
-                  </div>
-                  <div className="w-full bg-purple-200 rounded-full h-2 mb-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.perMonth >= newPatientTrackerData.perMonthGoal ? 'bg-green-500' : 'bg-purple-500'}`}
-                      style={{
-                        width: `${Math.min((newPatientTrackerData.perMonth / newPatientTrackerData.perMonthGoal) * 100, 100)}%`
-                      }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-purple-700 font-medium">Goal: {newPatientTrackerData.perMonthGoal} per month</p>
                 </div>
 
                 {/* Quarterly */}
-                <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Quarterly</p>
-                      <p className="text-xs text-amber-600 mt-0.5">This quarter</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Quarterly</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>This quarter</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-amber-500/20">
+                        <Users className="w-5 h-5 text-amber-600" />
+                      </div>
                     </div>
-                    <Users className="w-6 h-6 text-amber-500" />
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {newPatientTrackerData.quarterly}
+                      </p>
+                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.quarterlyGoal}</p>
+                    </div>
+                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-amber-100/60' : 'bg-amber-950/40'}`}>
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}
+                        style={{
+                          width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
+                        }}
+                      ></div>
+                    </div>
+                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
                   </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <p className="text-4xl font-bold text-amber-900">
-                      {newPatientTrackerData.quarterly}
-                    </p>
-                    <p className="text-sm text-amber-600">/ {newPatientTrackerData.quarterlyGoal}</p>
-                  </div>
-                  <div className="w-full bg-amber-200 rounded-full h-2 mb-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-green-500' : 'bg-amber-500'}`}
-                      style={{
-                        width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
-                      }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-amber-700 font-medium">Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
                 </div>
               </div>
 
               {/* 6-Month Trend */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">6-Month Trend</h4>
+                <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>6-Month Trend</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                   {newPatientTrackerData.monthlyAverages.map((monthData, index) => {
                     const goalPerMonth = newPatientTrackerData.perMonthGoal;
@@ -2898,18 +2939,18 @@ const CourtStreetRCM = () => {
                     const isOnTrack = monthData.count >= goalPerMonth;
 
                     return (
-                      <div key={index} className="bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 rounded-lg p-4 hover:shadow-md transition-all">
-                        <p className="text-xs font-semibold text-slate-600 mb-2 truncate">{monthData.month}</p>
-                        <p className="text-3xl font-bold text-slate-900 mb-2">{monthData.count}</p>
-                        <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2">
+                      <div key={index} className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/30' : 'border-white/10'} rounded-xl p-4 hover-lift transition-all`}>
+                        <p className={`text-xs font-semibold mb-2 truncate ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>{monthData.month}</p>
+                        <p className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{monthData.count}</p>
+                        <div className={`w-full rounded-full h-1.5 mb-2 ${isDayMode ? 'bg-gray-200/60' : 'bg-gray-700/40'}`}>
                           <div
-                            className={`h-1.5 rounded-full transition-all ${isOnTrack ? 'bg-green-500' : percentage >= 75 ? 'bg-blue-500' : percentage >= 50 ? 'bg-yellow-500' : 'bg-red-400'}`}
+                            className={`h-1.5 rounded-full transition-all ${isOnTrack ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : percentage >= 75 ? 'bg-gradient-to-r from-primary-500 to-primary-600' : percentage >= 50 ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-red-400 to-red-500'}`}
                             style={{
                               width: `${Math.min(percentage, 100)}%`
                             }}
                           ></div>
                         </div>
-                        <p className="text-xs text-slate-600">
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                           {percentage >= 100 ? '✓ On track' : `${percentage.toFixed(0)}% of goal`}
                         </p>
                       </div>
