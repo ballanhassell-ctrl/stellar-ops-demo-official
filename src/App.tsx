@@ -6476,21 +6476,21 @@ const CourtStreetRCM = () => {
         ) : currentView === 'eod-report' ? (
           <div className="space-y-6">
             {/* EOD Report Header with Date Picker and Action Buttons */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+                  <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                     End of Day Report
                   </h2>
                   <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <Calendar className={`w-4 h-4 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`} />
                     <input
                       type="date"
                       value={dashboardDate}
                       onChange={(e) => setDashboardDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className={`px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/10 border-white/20 text-white'}`}
                     />
-                    <span className="text-gray-600 text-sm">
+                    <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
                       {(() => {
                         const [year, month, day] = dashboardDate.split('-').map(Number);
                         return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -6501,21 +6501,21 @@ const CourtStreetRCM = () => {
                 <div className="flex gap-3 flex-wrap">
                   <button
                     onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all shadow-md"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-gold-400 rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
                   >
                     <Printer className="w-4 h-4" />
                     Print
                   </button>
                   <button
                     onClick={exportToPDF}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all shadow-md"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all shadow-md hover-lift font-semibold text-sm"
                   >
                     <Download className="w-4 h-4" />
                     Export PDF
                   </button>
                   <button
                     onClick={() => setShowEmailModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-md"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all shadow-md hover-lift font-semibold text-sm"
                   >
                     <Send className="w-4 h-4" />
                     Email Report
