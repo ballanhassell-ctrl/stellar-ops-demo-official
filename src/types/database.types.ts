@@ -53,11 +53,11 @@ export type Claim = {
   patient_id: string;
   patient_name: string;
   insurance_company: string;
-  claim_number: string;
+  claim_number: string | null; // Optional for Pending/Sent status claims
   procedure_code: string;
   claim_detail: string;
   claim_amount: number;
-  status: 'Pending' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
+  status: 'Pending' | 'Sent' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
   date_submitted: string; // ISO date string
   date_of_service: string; // ISO date string
   date_created?: string; // ISO date string
