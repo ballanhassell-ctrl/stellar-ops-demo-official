@@ -17,6 +17,7 @@ import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
 import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
+import { CSDMetricsCSVUpload } from './components/CSDMetricsCSVUpload';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
@@ -738,6 +739,7 @@ const CourtStreetRCM = () => {
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
   const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
+  const [showCSDMetricsModal, setShowCSDMetricsModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
 
   // AI Insights state
@@ -2267,6 +2269,13 @@ const CourtStreetRCM = () => {
                 <ExternalLink className="w-4 h-4" />
                 <span className="text-sm">Task Board</span>
               </a>
+              <button
+                onClick={() => setShowCSDMetricsModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="text-sm">Upload Metrics</span>
+              </button>
               <div className="text-right">
                 <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
                 <p className={`text-xs font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
@@ -9137,6 +9146,17 @@ const CourtStreetRCM = () => {
             refreshEOD();
           }}
           currentDate={dashboardDate}
+        />
+
+        {/* CSD Metrics CSV Upload */}
+        <CSDMetricsCSVUpload
+          isOpen={showCSDMetricsModal}
+          onClose={() => setShowCSDMetricsModal(false)}
+          onSuccess={() => {
+            // Refresh all metrics after upload
+            refreshEOD();
+            refreshMetrics();
+          }}
         />
 
         {/* Edit Modal */}
