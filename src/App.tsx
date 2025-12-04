@@ -1579,7 +1579,7 @@ const CourtStreetRCM = () => {
     fetchRecareList();
   }, []);
 
-  // Fetch Treatment List items from Supabase
+  // Fetch Unscheduled Treatment List items from Supabase
   useEffect(() => {
     const fetchTreatmentList = async () => {
       try {
@@ -1591,7 +1591,7 @@ const CourtStreetRCM = () => {
         const metrics = await calculateSchedulingMetrics('treatment');
         setTreatmentMetrics(metrics);
       } catch (error) {
-        console.error('Error fetching Treatment list:', error);
+        console.error('Error fetching Unscheduled Treatment list:', error);
       }
     };
 
@@ -7694,14 +7694,14 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Recare List Section */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>Recare List</h3>
+                    <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Recare List</h3>
                     <div className="flex gap-2">
                       {showRecareList && (
                         <button
                           onClick={() => setShowAddRecareModal(true)}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Recare
@@ -7709,10 +7709,12 @@ const CourtStreetRCM = () => {
                       )}
                       <button
                         onClick={() => setShowRecareList(!showRecareList)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                           showRecareList
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                            : isDayMode
+                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                         }`}
                       >
                         {showRecareList ? 'Hide' : 'Show'} Recare List
@@ -7724,25 +7726,40 @@ const CourtStreetRCM = () => {
                     <div className="mt-4 space-y-4">
                       {/* Recare Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled Production</p>
-                          <p className="text-xl font-bold text-red-600">${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-green-50 border border-green-200' : 'bg-green-900/20 border border-green-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled Production</p>
-                          <p className="text-xl font-bold text-green-600">${recareMetrics.productionScheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${recareMetrics.productionScheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Total Patients</p>
-                          <p className="text-xl font-bold text-blue-600">{recareMetrics.totalPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{recareMetrics.totalPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled</p>
-                          <p className="text-xl font-bold text-amber-600">{recareMetrics.unscheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{recareMetrics.unscheduledPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled</p>
-                          <p className="text-xl font-bold text-purple-600">{recareMetrics.scheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{recareMetrics.scheduledPatients}</p>
+                          </div>
                         </div>
                       </div>
 
@@ -7832,15 +7849,15 @@ const CourtStreetRCM = () => {
                   )}
                 </div>
 
-                {/* Treatment List Section */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                {/* Unscheduled Treatment List Section */}
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>Treatment List</h3>
+                    <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Unscheduled Treatment List</h3>
                     <div className="flex gap-2">
                       {showTreatmentList && (
                         <button
                           onClick={() => setShowAddTreatmentModal(true)}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Treatment
@@ -7848,13 +7865,15 @@ const CourtStreetRCM = () => {
                       )}
                       <button
                         onClick={() => setShowTreatmentList(!showTreatmentList)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                           showTreatmentList
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                            : isDayMode
+                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                         }`}
                       >
-                        {showTreatmentList ? 'Hide' : 'Show'} Treatment List
+                        {showTreatmentList ? 'Hide' : 'Show'} Unscheduled Treatment List
                       </button>
                     </div>
                   </div>
@@ -7863,29 +7882,44 @@ const CourtStreetRCM = () => {
                     <div className="mt-4 space-y-4">
                       {/* Treatment Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled Production</p>
-                          <p className="text-xl font-bold text-red-600">${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-green-50 border border-green-200' : 'bg-green-900/20 border border-green-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled Production</p>
-                          <p className="text-xl font-bold text-green-600">${treatmentMetrics.productionScheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${treatmentMetrics.productionScheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Total Patients</p>
-                          <p className="text-xl font-bold text-blue-600">{treatmentMetrics.totalPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{treatmentMetrics.totalPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled</p>
-                          <p className="text-xl font-bold text-amber-600">{treatmentMetrics.unscheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{treatmentMetrics.unscheduledPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled</p>
-                          <p className="text-xl font-bold text-purple-600">{treatmentMetrics.scheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{treatmentMetrics.scheduledPatients}</p>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Treatment List Table */}
+                      {/* Unscheduled Treatment List Table */}
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
@@ -7905,7 +7939,7 @@ const CourtStreetRCM = () => {
                             {treatmentListItems.length === 0 ? (
                               <tr>
                                 <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                                  No Treatment list items yet. Click "Add Treatment" to get started.
+                                  No Unscheduled Treatment list items yet. Click "Add Treatment" to get started.
                                 </td>
                               </tr>
                             ) : (
@@ -7971,9 +8005,9 @@ const CourtStreetRCM = () => {
 
             {/* Training View */}
             {administrationView === 'training' && (
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                 <div className="text-center py-12">
-                  <h3 className="text-2xl font-bold mb-4" style={{ color: csdGold }}>Training Module</h3>
+                  <h3 className={`text-2xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Training Module</h3>
                   <p className={`text-lg ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Coming Soon
                   </p>
