@@ -262,7 +262,7 @@ export const useMetrics = (date: string) => {
           expiringThisMonth: getMetricValue('pre_auths_expiring_this_month'),
         },
         claims: {
-          // AUTO-CALCULATED from csd_claims table (Phase 2)
+          // AUTO-CALCULATED from claims table (Phase 2)
           totalActive: claimsTotals.activeClaims,
           pending: claimsTotals.pending,
           denied: claimsTotals.denied,
