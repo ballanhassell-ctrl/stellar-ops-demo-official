@@ -2143,8 +2143,19 @@ const CourtStreetRCM = () => {
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow-primary">
-                <span className="text-2xl font-bold text-white">SC</span>
+              {/* Logo Section - Stellar × CSD */}
+              <div className="flex items-center gap-3">
+                <img
+                  src="/Stellar2 copy.jpg"
+                  alt="Stellar Consults Logo"
+                  className="h-12 w-auto object-contain"
+                />
+                <span className={`text-2xl font-bold ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>×</span>
+                <img
+                  src="/Cris Dental Image.jpg"
+                  alt="Court Street Dental Logo"
+                  className="h-12 w-auto object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">
