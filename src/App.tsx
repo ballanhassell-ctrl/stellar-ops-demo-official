@@ -1033,10 +1033,10 @@ const CourtStreetRCM = () => {
 
         // Fields the app expects
         const expectedFields = {
-          DASHBOARD: ['bam_current_revenue', 'bam_target_goal', 'practice_goal', 'collection_rate', 'active_patients', 'active_claims', 'pending_payments', 'outstanding_ar'],
+          DASHBOARD: ['bam_current_revenue', 'bam_target_goal', 'practice_goal', 'collection_rate', 'active_patients', 'active_claims'],
           PAYMENTS: ['todays_payments', 'weekly_payments', 'monthly_payments', 'pending_deposits', 'insurance_payments', 'patient_payments', 'unapplied_credits', 'refunds_pending'],
           PATIENTS: ['total_patients', 'active_patients', 'patients_with_balance', 'total_patient_ar', 'patient_ar_0_30', 'patient_ar_31_60', 'patient_ar_61_90', 'patient_ar_90_plus', 'payment_plans', 'past_due_accounts'],
-          PRE_AUTHS: ['total_pre_auths', 'pre_auths_pending', 'pre_auths_approved', 'pre_auths_denied', 'pre_auths_expiring_soon', 'pre_auths_expiring_this_month'],
+          PRE_AUTHS: ['total_pre_auths', 'pre_auths_pending', 'pre_auths_approved', 'pre_auths_denied', 'eod_preauths_expiring'],
           EOD_REPORT: ['eod_payment_cherry', 'eod_payment_carecredit']
         };
 

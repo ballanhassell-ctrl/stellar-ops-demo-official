@@ -157,9 +157,7 @@ export const useEODMetrics = (date: string) => {
         patientsSeenToday: getMetricValue('eod_patients_seen'),
         newPatients: getMetricValue('eod_new_patients', 0, true), // Use persistent data
         proceduresCompleted: getMetricValue('eod_procedures_completed'),
-        unbilledProcedures: getMetricValue('eod_unbilled_procedures'),
-        unappliedPayments: getMetricValue('eod_unapplied_payments'),
-        failedTransactions: getMetricValue('eod_failed_transactions'),
+        unappliedPayments: getMetricValue('unapplied_credits'),
 
         // Action Items - Real-time data from RCM Management
         actionItems: {

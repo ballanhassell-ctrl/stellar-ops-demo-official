@@ -133,7 +133,6 @@ export const useMetrics = (date: string) => {
         'practice_goal',
         'active_patients',
         'collection_rate',
-        'outstanding_ar',
         // Claims metrics
         'active_claims',
         'claims_pending',
@@ -224,7 +223,6 @@ export const useMetrics = (date: string) => {
           collectionRate: getMetricValue('collection_rate', 0, true),
           activePatients: getMetricValue('active_patients', 0, true),
           activeClaims: getMetricValue('active_claims'),
-          pendingPayments: getMetricValue('pending_payments'),
           // Outstanding A/R is auto-calculated from Insurance + Patient A/R aging totals
           outstandingAR: 0, // Will be calculated below after aging data is loaded
         },
@@ -258,8 +256,7 @@ export const useMetrics = (date: string) => {
           pending: getMetricValue('pre_auths_pending'),
           approved: getMetricValue('pre_auths_approved'),
           denied: getMetricValue('pre_auths_denied'),
-          expiringSoon: getMetricValue('pre_auths_expiring_soon'),
-          expiringThisMonth: getMetricValue('pre_auths_expiring_this_month'),
+          expiringSoon: getMetricValue('eod_preauths_expiring'),
         },
         claims: {
           // AUTO-CALCULATED from claims table (Phase 2)

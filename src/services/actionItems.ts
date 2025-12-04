@@ -106,37 +106,22 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       ar90Plus: ar90PlusCount
     });
 
-    // 5. Missed Appointments - Get from EOD entry (still manual as it's scheduling system data)
-    const { data: missedApptsData } = await supabase
-      .from('csd_metric_values')
-      .select('value')
-      .eq('field_key', 'eod_missed_appointments')
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // 5. Missed Appointments - AUTO-CALCULATED from appointments table
+    const today = new Date().toISOString().split('T')[0];
+    const { count: missedAppointments } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'no_show')
+      .eq('appointment_date', today);
 
-    const missedAppointments = missedApptsData?.value || 0;
-    console.log('[Action Items] Missed appointments:', missedAppointments);
-
-    // 6. Unbilled Procedures - Get from EOD entry (still manual)
-    const { data: unbilledData } = await supabase
-      .from('csd_metric_values')
-      .select('value')
-      .eq('field_key', 'eod_unbilled_procedures')
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const unbilledProcedures = unbilledData?.value || 0;
-    console.log('[Action Items] Unbilled procedures:', unbilledProcedures);
+    console.log('[Action Items] Missed appointments (automated):', missedAppointments || 0);
 
     const result = {
       claimsToSubmit,
       deniedClaimsToResubmit,
       preAuthsApproved,
       accountsNeedingFollowUp,
-      missedAppointments,
-      unbilledProcedures
+      missedAppointments: missedAppointments || 0,
     };
 
     console.log('[Action Items] Final real-time data:', result);
