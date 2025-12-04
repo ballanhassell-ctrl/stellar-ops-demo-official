@@ -668,6 +668,8 @@ const CourtStreetRCM = () => {
   const [searchQuery, setSearchQuery] = useState('');
   // Unified date state for all dashboard sections (uses local timezone)
   const [dashboardDate, setDashboardDate] = useState(getLocalDateString());
+  // Separate input date state for debounced updates (prevents refresh while typing)
+  const [inputDate, setInputDate] = useState(getLocalDateString());
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState('');
   const [emailSubject, setEmailSubject] = useState('EOD Report - Court Street Dental');
@@ -743,6 +745,16 @@ const CourtStreetRCM = () => {
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
   const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
   const { data: weeklyScorecardData } = useWeeklyScorecardData(12);
+
+  // Debounce date input changes to prevent refresh while user is typing
+  // Waits 3 seconds after user stops typing before triggering data refresh
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDashboardDate(inputDate);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [inputDate]);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
@@ -2257,13 +2269,14 @@ const CourtStreetRCM = () => {
                   <div className="flex items-center gap-2">
                     <input
                       type="date"
-                      value={dashboardDate}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardDate(e.target.value)}
-                      className={`px-3 py-2 rounded border ${
+                      value={inputDate}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputDate(e.target.value)}
+                      className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                         isDayMode
-                          ? 'bg-white border-gray-300 text-gray-900'
-                          : 'bg-gray-700 border-gray-600 text-white'
-                      }`}
+                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40 backdrop-blur-sm'
+                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 backdrop-blur-sm'
+                      } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
+                      title="Date input updates after 3 seconds"
                     />
                     <button
                       onClick={refreshMetrics}
@@ -3130,7 +3143,11 @@ const CourtStreetRCM = () => {
                         type="date"
                         value={archiveClaimsDateFilter}
                         onChange={(e) => setArchiveClaimsDateFilter(e.target.value)}
-                        className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
+                        className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                          isDayMode
+                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40 backdrop-blur-sm'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 backdrop-blur-sm'
+                        } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
                       />
                       {archiveClaimsDateFilter && (
                         <button
@@ -4242,7 +4259,11 @@ const CourtStreetRCM = () => {
                             type="date"
                             value={archiveInsuranceChecksDateFilter}
                             onChange={(e) => setArchiveInsuranceChecksDateFilter(e.target.value)}
-                            className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
+                            className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                              isDayMode
+                                ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40 backdrop-blur-sm'
+                                : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 backdrop-blur-sm'
+                            } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
                           />
                           {archiveInsuranceChecksDateFilter && (
                             <button
@@ -4945,15 +4966,15 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Date of Service</label>
-                        <input name="dateOfService" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="dateOfService" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Date Submitted</label>
-                        <input name="dateSubmitted" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="dateSubmitted" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                     </div>
                     <div>
@@ -5066,11 +5087,11 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Date Added</label>
-                        <input name="dateRequested" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="dateRequested" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-Up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Approved Amount (if applicable)</label>
@@ -5228,13 +5249,13 @@ const CourtStreetRCM = () => {
                           name="dateOfService"
                           type="date"
                           disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className={`w-full px-4 py-2 rounded-xl text-sm transition-all border ${isDayMode ? 'bg-gray-100 border-gray-300 text-gray-400' : 'bg-gray-800/50 border-gray-700 text-gray-500'} disabled:cursor-not-allowed focus:ring-2 focus:ring-gold-400 focus:outline-none`}
                         />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium mb-1">Date Entered</label>
-                        <input name="dateEntered" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="dateEntered" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
 
                       <div>
@@ -6286,9 +6307,14 @@ const CourtStreetRCM = () => {
                   <Calendar className="w-5 h-5 text-gray-500" />
                   <input
                     type="date"
-                    value={dashboardDate}
-                    onChange={(e) => setDashboardDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={inputDate}
+                    onChange={(e) => setInputDate(e.target.value)}
+                    className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                      isDayMode
+                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40 backdrop-blur-sm'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 backdrop-blur-sm'
+                    } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
+                    title="Date input updates after 3 seconds"
                   />
                 </div>
               </div>
@@ -8073,15 +8099,15 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
-                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="firstContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
-                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="secondContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
-                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="thirdContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Total Tx Value</label>
@@ -8089,7 +8115,7 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Employee Initials</label>
@@ -8171,19 +8197,19 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Last Visit Date</label>
-                        <input name="lastVisitDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="lastVisitDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
-                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="firstContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
-                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="secondContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
-                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="thirdContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Total Tx Value</label>
@@ -8191,7 +8217,7 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Employee Initials</label>
@@ -8273,15 +8299,15 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
-                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="firstContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
-                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="secondContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
-                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="thirdContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Total Tx Value</label>
@@ -8289,7 +8315,7 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Employee Initials</label>
