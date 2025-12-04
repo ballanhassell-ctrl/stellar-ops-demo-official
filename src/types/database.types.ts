@@ -78,7 +78,7 @@ export type PreAuth = {
   patient_id: string;
   patient_name: string;
   insurance_company: string;
-  pre_auth_number: string;
+  pre_auth_number: string | null; // Optional for Pending status pre-auths
   procedure_code: string;
   treatment_detail: string;
   requested_amount: number;
