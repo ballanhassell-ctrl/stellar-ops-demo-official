@@ -63,6 +63,9 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
       const header = lines[0].toLowerCase();
       const headers = header.split(',').map(h => h.trim());
 
+      // Debug: Log the headers found
+      console.log('CSV Headers found:', headers);
+
       const nameIndex = headers.findIndex(h =>
         h.includes('procedure') && h.includes('name') || h.includes('description')
       );
@@ -76,15 +79,31 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         h.includes('revenue') || h.includes('amount') || h.includes('total')
       );
 
-      if (nameIndex === -1 || countIndex === -1 || revenueIndex === -1) {
-        setError('CSV must contain columns for: Procedure Name, Count, and Revenue');
+      // Debug: Log which columns were detected
+      console.log('Column detection:', {
+        nameIndex,
+        codeIndex,
+        countIndex,
+        revenueIndex,
+        headers
+      });
+
+      // Validate required columns: Procedure Name, Code, and Revenue
+      if (nameIndex === -1 || codeIndex === -1 || revenueIndex === -1) {
+        const missing = [];
+        if (nameIndex === -1) missing.push('Procedure Name (or Description)');
+        if (codeIndex === -1) missing.push('Code (or CPT/ADA)');
+        if (revenueIndex === -1) missing.push('Revenue (or Amount/Total)');
+
+        setError(`CSV is missing required columns: ${missing.join(', ')}. Found headers: ${headers.join(', ')}`);
         setIsProcessing(false);
         return;
       }
 
       // Parse data rows
       const procedures: Procedure[] = [];
-      const requiredLength = Math.max(nameIndex, countIndex, revenueIndex) + 1;
+      // Calculate required length based on the position of required columns
+      const requiredLength = Math.max(nameIndex, codeIndex, revenueIndex) + 1;
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -95,16 +114,19 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         if (values.length >= requiredLength) {
           const procedure: Procedure = {
             procedure_name: values[nameIndex] || '',
-            procedure_code: codeIndex !== -1 ? (values[codeIndex] || '') : '',
-            count: parseInt(values[countIndex]) || 0,
+            procedure_code: values[codeIndex] || '',
+            count: countIndex !== -1 ? (parseInt(values[countIndex]) || 1) : 1, // Default to 1 if Count column missing
             revenue: parseFloat(values[revenueIndex].replace(/[$,]/g, '')) || 0
           };
 
-          if (procedure.procedure_name && procedure.count > 0) {
+          // Only require procedure_name and procedure_code to be non-empty
+          if (procedure.procedure_name && procedure.procedure_code) {
             procedures.push(procedure);
           }
         }
       }
+
+      console.log('Parsed procedures:', procedures);
 
       if (procedures.length === 0) {
         setError('No valid procedure data found in CSV');
@@ -265,8 +287,9 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
               CSV Format Requirements
             </h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Required columns: <code className="bg-blue-100 px-1 rounded">Procedure Name</code>, <code className="bg-blue-100 px-1 rounded">Count</code>, <code className="bg-blue-100 px-1 rounded">Revenue</code></li>
-              <li>• Optional column: <code className="bg-blue-100 px-1 rounded">Code</code> (for CPT/ADA codes)</li>
+              <li>• Required columns: <code className="bg-blue-100 px-1 rounded">Procedure Name</code>, <code className="bg-blue-100 px-1 rounded">Code</code> (CPT/ADA), <code className="bg-blue-100 px-1 rounded">Revenue</code></li>
+              <li>• Optional column: <code className="bg-blue-100 px-1 rounded">Count</code> (defaults to 1 if not provided)</li>
+              <li>• Column headers are case-insensitive and flexible (e.g., "revenue", "amount", or "total" all work)</li>
               <li>• Data will be aggregated with existing monthly data</li>
               <li>• Procedures with the same code will be combined</li>
             </ul>
