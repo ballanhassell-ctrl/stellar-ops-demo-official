@@ -291,6 +291,9 @@ export async function getNewPatientsAggregates() {
       return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
     };
 
+    // Log raw quarter data to debug
+    console.log('[getNewPatientsAggregates] Raw quarter data:', quarterData?.data);
+
     const perWeek = sumValues(weekData);
     const perMonth = sumValues(monthData);
     const quarterly = sumValues(quarterData);
@@ -303,6 +306,16 @@ export async function getNewPatientsAggregates() {
       monthRecords: monthData?.data?.length || 0,
       quarterRecords: quarterData?.data?.length || 0
     });
+
+    // Detailed breakdown of quarterly sum
+    if (quarterData?.data) {
+      const quarterValues = quarterData.data.map((r: any) => r.value);
+      console.log('[getNewPatientsAggregates] Quarter values breakdown:', {
+        values: quarterValues,
+        sum: quarterValues.reduce((sum: number, val: number) => sum + (val || 0), 0),
+        expectedSum: quarterly
+      });
+    }
 
     return {
       perWeek,
