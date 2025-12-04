@@ -429,6 +429,7 @@ interface SchedulingListRecord {
   patientId: string;
   patientInitials: string;
   treatmentNeeded: string;
+  lastVisitDate: string | null;
   firstContactDate: string | null;
   secondContactDate: string | null;
   thirdContactDate: string | null;
@@ -567,6 +568,7 @@ const schedulingItemToRecord = (item: SchedulingListItem): SchedulingListRecord 
   patientId: item.patient_id,
   patientInitials: item.patient_initials,
   treatmentNeeded: item.treatment_needed,
+  lastVisitDate: item.last_visit_date,
   firstContactDate: item.first_contact_date,
   secondContactDate: item.second_contact_date,
   thirdContactDate: item.third_contact_date,
@@ -583,6 +585,7 @@ const recordToSchedulingItem = (record: SchedulingListRecord): Omit<SchedulingLi
   patient_id: record.patientId,
   patient_initials: record.patientInitials,
   treatment_needed: record.treatmentNeeded,
+  last_visit_date: record.lastVisitDate,
   first_contact_date: record.firstContactDate,
   second_contact_date: record.secondContactDate,
   third_contact_date: record.thirdContactDate,
@@ -7216,7 +7219,18 @@ const CourtStreetRCM = () => {
               <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Claims Management Summary
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Claims Over 60 Days</p>
+                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      {realTimeClaimsStats.overSixtyDays}
+                    </p>
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need follow-up</p>
+                  </div>
+                </div>
+
                 <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="relative z-10">
@@ -7740,6 +7754,7 @@ const CourtStreetRCM = () => {
                               <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Last Visit</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
@@ -7751,7 +7766,7 @@ const CourtStreetRCM = () => {
                           <tbody>
                             {recareListItems.length === 0 ? (
                               <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                                   No Recare list items yet. Click "Add Recare" to get started.
                                 </td>
                               </tr>
@@ -7761,6 +7776,9 @@ const CourtStreetRCM = () => {
                                   <td className="px-4 py-3 text-sm">{item.patientId}</td>
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    {item.lastVisitDate ? new Date(item.lastVisitDate).toLocaleDateString() : <span className="text-gray-400">—</span>}
+                                  </td>
                                   <td className="px-4 py-3 text-xs">
                                     <div className="flex gap-1">
                                       {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
@@ -8082,6 +8100,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,
@@ -8114,6 +8133,10 @@ const CourtStreetRCM = () => {
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium mb-1">Treatment Needed</label>
                         <input name="treatmentNeeded" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="6-Month Cleaning" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Last Visit Date</label>
+                        <input name="lastVisitDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
@@ -8278,6 +8301,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,
@@ -8322,6 +8346,10 @@ const CourtStreetRCM = () => {
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium mb-1">Treatment Needed</label>
                         <input name="treatmentNeeded" type="text" required defaultValue={selectedSchedulingItem.treatmentNeeded} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Last Visit Date</label>
+                        <input name="lastVisitDate" type="date" defaultValue={selectedSchedulingItem.lastVisitDate || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
