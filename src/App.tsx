@@ -409,7 +409,7 @@ interface PreAuthRecord {
   patientId: string;
   patientName: string;
   insuranceCompany: string;
-  preAuthNumber: string;
+  preAuthNumber: string | null; // Optional for Pending status pre-auths
   procedureCode: string;
   treatmentDetail: string;
   requestedAmount: number;
@@ -1746,7 +1746,7 @@ const CourtStreetRCM = () => {
     preAuth.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    preAuth.preAuthNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    preAuth.preAuthNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
