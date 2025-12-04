@@ -358,7 +358,7 @@ export async function getPaymentAggregates() {
  */
 export async function getClaimsTotals() {
   try {
-    console.log('[getClaimsTotals] Auto-calculating from csd_claims table...');
+    console.log('[getClaimsTotals] Auto-calculating from claims table...');
 
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
@@ -367,27 +367,27 @@ export async function getClaimsTotals() {
     const [activeClaimsResult, pendingResult, deniedResult, oldClaimsResult] = await Promise.all([
       // Total active claims (not archived)
       supabase
-        .from('csd_claims')
+        .from('claims')
         .select('id', { count: 'exact', head: true })
         .eq('archived', false),
 
       // Pending claims
       supabase
-        .from('csd_claims')
+        .from('claims')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending')
         .eq('archived', false),
 
       // Denied claims
       supabase
-        .from('csd_claims')
+        .from('claims')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'denied')
         .eq('archived', false),
 
       // Claims over 60 days old
       supabase
-        .from('csd_claims')
+        .from('claims')
         .select('id', { count: 'exact', head: true })
         .lt('date_submitted', sixtyDaysAgoStr)
         .eq('archived', false),

@@ -26,7 +26,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
 
     // 1. Claims to Submit - Query claims table for pending/ready to submit
     const { count: claimsCount } = await supabase
-      .from('csd_claims')
+      .from('claims')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'Pending')
       .eq('archived', false);
@@ -36,7 +36,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
 
     // 2. Denied Claims to Resubmit - Query claims with denied status
     const { count: deniedCount } = await supabase
-      .from('csd_claims')
+      .from('claims')
       .select('*', { count: 'exact', head: true })
       .in('status', ['Denied', 'Denied/2nd Appeal'])
       .eq('archived', false);
@@ -46,7 +46,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
 
     // 3. Pre-Auths Approved - Query pre-auths with approved status
     const { count: preAuthsCount } = await supabase
-      .from('csd_preauths')
+      .from('pre_auths')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'Approved')
       .eq('archived', false);
@@ -68,7 +68,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
 
     // Claims pending > 30 days
     const { count: oldClaimsCount } = await supabase
-      .from('csd_claims')
+      .from('claims')
       .select('*', { count: 'exact', head: true })
       .in('status', ['Pending', 'In Review/2nd Appeal', 'Resubmitted with Attachments', 'Resubmitted/1st Appeal'])
       .lt('date_submitted', thirtyDaysAgoStr)
@@ -76,7 +76,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
 
     // Pre-auths pending > 14 days
     const { count: oldPreAuthsCount } = await supabase
-      .from('csd_preauths')
+      .from('pre_auths')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'Pending')
       .lt('date_submitted', fourteenDaysAgoStr)
@@ -172,7 +172,7 @@ export async function getFollowUpCounts() {
 
     // Claims needing follow-up (pending > 30 days)
     const { count: claimsCount } = await supabase
-      .from('csd_claims')
+      .from('claims')
       .select('*', { count: 'exact', head: true })
       .in('status', ['Pending', 'In Review/2nd Appeal', 'Resubmitted with Attachments', 'Resubmitted/1st Appeal'])
       .lt('date_submitted', thirtyDaysAgoStr)
@@ -180,7 +180,7 @@ export async function getFollowUpCounts() {
 
     // Pre-auths needing follow-up (pending > 14 days)
     const { count: preAuthsCount } = await supabase
-      .from('csd_preauths')
+      .from('pre_auths')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'Pending')
       .lt('date_submitted', fourteenDaysAgoStr)
