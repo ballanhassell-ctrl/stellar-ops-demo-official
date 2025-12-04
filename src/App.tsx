@@ -3655,9 +3655,9 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'preauths' && (
               <>
                 {/* Pre-Auths Header */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Pre-Authorization Management
                     </h2>
 
@@ -3668,10 +3668,12 @@ const CourtStreetRCM = () => {
                       </span>
                       <button
                         onClick={() => setShowArchivedPreAuths(!showArchivedPreAuths)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                           showArchivedPreAuths
-                            ? 'bg-gray-600 text-white hover:bg-gray-700'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                            ? isDayMode
+                              ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                              : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                            : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                         }`}
                       >
                         {showArchivedPreAuths ? (
@@ -3706,83 +3708,98 @@ const CourtStreetRCM = () => {
                   {/* Pre-Auth Statistics Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Total Pre-Auths */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">Total Pre-Auths</p>
-                          <p className="text-3xl font-bold text-blue-900">{preAuths.length}</p>
-                          <p className="text-xs text-blue-600 mt-2">All requests</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Total Pre-Auths</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>{preAuths.length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>All requests</p>
+                          </div>
+                          <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                         </div>
-                        <CheckCircle className="w-8 h-8 text-blue-500" />
                       </div>
                     </div>
 
                     {/* Pending */}
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-yellow-700 mb-1">Pending</p>
-                          <p className="text-3xl font-bold text-yellow-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Pending').length}</p>
-                          <p className="text-xs text-yellow-600 mt-2">Awaiting response</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Pending</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Pending').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Awaiting response</p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
                         </div>
-                        <Clock className="w-8 h-8 text-yellow-500" />
                       </div>
                     </div>
 
                     {/* Approved */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-700 mb-1">Approved</p>
-                          <p className="text-3xl font-bold text-green-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Approved').length}</p>
-                          <p className="text-xs text-green-600 mt-2">Ready to schedule</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Approved</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Approved').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Ready to schedule</p>
+                          </div>
+                          <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                         </div>
-                        <CheckCircle className="w-8 h-8 text-green-500" />
                       </div>
                     </div>
 
                     {/* Scheduled */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 mb-1">Scheduled</p>
-                          <p className="text-3xl font-bold text-purple-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Scheduled').length}</p>
-                          <p className="text-xs text-purple-600 mt-2">Appointment set</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Scheduled</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Scheduled').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>Appointment set</p>
+                          </div>
+                          <Calendar className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                         </div>
-                        <Calendar className="w-8 h-8 text-purple-500" />
                       </div>
                     </div>
 
                     {/* Denied */}
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-red-700 mb-1">Denied</p>
-                          <p className="text-3xl font-bold text-red-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Denied').length}</p>
-                          <p className="text-xs text-red-600 mt-2">Need attention</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Denied').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-red-600' : 'text-red-500'}`}>Need attention</p>
+                          </div>
+                          <XCircle className={`w-8 h-8 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
                         </div>
-                        <XCircle className="w-8 h-8 text-red-500" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Detailed Pre-Auths Table */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Pre-Authorization Details ({filteredPreAuths.length} {filteredPreAuths.length === 1 ? 'request' : 'requests'})
                     </h3>
                     <div className="flex items-center space-x-3">
                       <button
-                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
                         onClick={() => exportToCSV(filteredPreAuths, `pre-auths-export-${getLocalDateString()}.csv`)}
                       >
                         <Download className="w-4 h-4" />
                         <span>Export to CSV</span>
                       </button>
                       <button
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
                         onClick={() => setShowAddPreAuthModal(true)}
                       >
                         <Plus className="w-4 h-4" />
@@ -3923,90 +3940,108 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Pre-Authorization Analytics */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Pre-Authorization Analytics
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Average Aging Days */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            {filteredPreAuths.length > 0
-                              ? Math.round(filteredPreAuths.reduce((sum, pa) => sum + pa.agingDays, 0) / filteredPreAuths.length)
-                              : 0} days
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              {filteredPreAuths.length > 0
+                                ? Math.round(filteredPreAuths.reduce((sum, pa) => sum + pa.agingDays, 0) / filteredPreAuths.length)
+                                : 0} days
+                            </p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'} opacity-50`} />
                         </div>
-                        <Clock className="w-8 h-8 text-blue-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Total Requested Amount */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Requested</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Requested</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'} opacity-50`} />
                         </div>
-                        <DollarSign className="w-8 h-8 text-green-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Total Approved Amount */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Approved</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.reduce((sum, pa) => sum + pa.approvedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Approved</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.reduce((sum, pa) => sum + pa.approvedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'} opacity-50`} />
                         </div>
-                        <CheckCircle className="w-8 h-8 text-green-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Approval Rate */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            {filteredPreAuths.length > 0
-                              ? Math.round((filteredPreAuths.filter(pa => pa.status === 'Approved').length / filteredPreAuths.length) * 100)
-                              : 0}%
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              {filteredPreAuths.length > 0
+                                ? Math.round((filteredPreAuths.filter(pa => pa.status === 'Approved').length / filteredPreAuths.length) * 100)
+                                : 0}%
+                            </p>
+                          </div>
+                          <TrendingUp className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'} opacity-50`} />
                         </div>
-                        <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Treatment Scheduled */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment Scheduled</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.filter(pa => pa.status === 'Scheduled').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment Scheduled</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.filter(pa => pa.status === 'Scheduled').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <Calendar className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'} opacity-50`} />
                         </div>
-                        <Calendar className="w-8 h-8 text-purple-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Potential Production Waiting to be Scheduled */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Potential Production Waiting to be Scheduled</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.filter(pa => pa.status === 'Approved').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Potential Production Waiting to be Scheduled</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.filter(pa => pa.status === 'Approved').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'} opacity-50`} />
                         </div>
-                        <Clock className="w-8 h-8 text-yellow-500 opacity-50" />
                       </div>
                     </div>
                   </div>
@@ -4018,8 +4053,8 @@ const CourtStreetRCM = () => {
               <>
           <div className="space-y-6">
             {/* Patients Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Patient Accounts Receivable Management
               </h2>
 
@@ -4040,103 +4075,127 @@ const CourtStreetRCM = () => {
               {/* Patient Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Patients */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Total Patients</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {patientsData.totalPatients}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">In practice</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Total Patients</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                          {patientsData.totalPatients}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>In practice</p>
+                      </div>
+                      <Users className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                     </div>
-                    <Users className="w-8 h-8 text-blue-500" />
                   </div>
                 </div>
 
                 {/* Active Patients */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-700 mb-1">Active Patients</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        {patientsData.activePatients}
-                      </p>
-                      <p className="text-xs text-green-600 mt-2">Last 12 months</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Active Patients</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                          {patientsData.activePatients}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Last 12 months</p>
+                      </div>
+                      <UserCheck className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                     </div>
-                    <UserCheck className="w-8 h-8 text-green-500" />
                   </div>
                 </div>
 
                 {/* Patients with Balance */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-orange-700 mb-1">Patients w/ Balance</p>
-                      <p className="text-3xl font-bold text-orange-900">
-                        {patientsData.patientsWithBalance}
-                      </p>
-                      <p className="text-xs text-orange-600 mt-2">Require follow-up</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Patients w/ Balance</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
+                          {patientsData.patientsWithBalance}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>Require follow-up</p>
+                      </div>
+                      <AlertCircle className={`w-8 h-8 ${isDayMode ? 'text-orange-500' : 'text-orange-400'}`} />
                     </div>
-                    <AlertCircle className="w-8 h-8 text-orange-500" />
                   </div>
                 </div>
 
                 {/* Total Patient A/R */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-700 mb-1">Total Patient A/R</p>
-                      <p className="text-3xl font-bold text-purple-900">
-                        ${patientsData.totalPatientAR.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-2">Outstanding balance</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Total Patient A/R</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                          ${patientsData.totalPatientAR.toLocaleString()}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>Outstanding balance</p>
+                      </div>
+                      <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                     </div>
-                    <DollarSign className="w-8 h-8 text-purple-500" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Patient A/R Aging */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Patient A/R Aging Analysis
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-green-800 mb-2">0-30 Days</p>
-                    <p className="text-2xl font-bold text-green-900">
-                      ${patientsData.patientARAging.zeroToThirty.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">Current</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="text-center">
+                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-green-800' : 'text-green-400'}`}>0-30 Days</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                        ${patientsData.patientARAging.zeroToThirty.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Current</p>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2">31-60 Days</p>
-                    <p className="text-2xl font-bold text-yellow-900">
-                      ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-yellow-600 mt-1">Follow-up needed</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="text-center">
+                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-yellow-800' : 'text-yellow-400'}`}>31-60 Days</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
+                        ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Follow-up needed</p>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-orange-800 mb-2">61-90 Days</p>
-                    <p className="text-2xl font-bold text-orange-900">
-                      ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-orange-600 mt-1">Action required</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="text-center">
+                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-orange-800' : 'text-orange-400'}`}>61-90 Days</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
+                        ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1 ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>Action required</p>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-red-800 mb-2">90+ Days</p>
-                    <p className="text-2xl font-bold text-red-900">
-                      ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-red-600 mt-1">Collections</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="text-center">
+                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-red-800' : 'text-red-400'}`}>90+ Days</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
+                        ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1 ${isDayMode ? 'text-red-600' : 'text-red-500'}`}>Collections</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4179,8 +4238,8 @@ const CourtStreetRCM = () => {
             {/* Payment Plans & Collections */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Payment Plans */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                   Payment Plans
                 </h3>
                 <div className="space-y-3">
@@ -4200,8 +4259,8 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Past Due Accounts */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                   Collections Status
                 </h3>
                 <div className="space-y-3">
@@ -4240,15 +4299,15 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'insurance-checks' && (
               <>
                 {/* Insurance Checks Header */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Insurance Checks/EFT's
                     </h2>
 
                     <button
                       onClick={() => setShowAddInsuranceCheckModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
                     >
                       <Plus className="w-5 h-5" />
                       Add New Check/EFT
@@ -4272,10 +4331,12 @@ const CourtStreetRCM = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => setShowArchivedInsuranceChecks(!showArchivedInsuranceChecks)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                           showArchivedInsuranceChecks
-                            ? 'bg-orange-500 text-white hover:bg-orange-600'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? isDayMode
+                              ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                              : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                            : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                         }`}
                       >
                         <Archive className="w-4 h-4" />
@@ -4312,58 +4373,67 @@ const CourtStreetRCM = () => {
                   {/* Totals Section */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     {/* Total Checks */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-700 mb-1">Check Payments</p>
-                          <p className="text-3xl font-bold text-green-900">
-                            ${filteredInsuranceChecks
-                              .filter(c => c.paymentType === 'Check')
-                              .reduce((sum, c) => sum + c.totalAmount, 0)
-                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-green-600 mt-2">
-                            {filteredInsuranceChecks.filter(c => c.paymentType === 'Check').length} checks
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Check Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                              ${filteredInsuranceChecks
+                                .filter(c => c.paymentType === 'Check')
+                                .reduce((sum, c) => sum + c.totalAmount, 0)
+                                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>
+                              {filteredInsuranceChecks.filter(c => c.paymentType === 'Check').length} checks
+                            </p>
+                          </div>
+                          <CreditCard className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                         </div>
-                        <CreditCard className="w-8 h-8 text-green-500" />
                       </div>
                     </div>
 
                     {/* Total EFTs */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">EFT Payments</p>
-                          <p className="text-3xl font-bold text-blue-900">
-                            ${filteredInsuranceChecks
-                              .filter(c => c.paymentType === 'EFT')
-                              .reduce((sum, c) => sum + c.totalAmount, 0)
-                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-blue-600 mt-2">
-                            {filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').length} EFTs
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>EFT Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                              ${filteredInsuranceChecks
+                                .filter(c => c.paymentType === 'EFT')
+                                .reduce((sum, c) => sum + c.totalAmount, 0)
+                                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>
+                              {filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').length} EFTs
+                            </p>
+                          </div>
+                          <Download className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                         </div>
-                        <Download className="w-8 h-8 text-blue-500" />
                       </div>
                     </div>
 
                     {/* Grand Total */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 mb-1">Total Payments</p>
-                          <p className="text-3xl font-bold text-purple-900">
-                            ${filteredInsuranceChecks
-                              .reduce((sum, c) => sum + c.totalAmount, 0)
-                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-purple-600 mt-2">
-                            {filteredInsuranceChecks.length} total payments
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Total Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                              ${filteredInsuranceChecks
+                                .reduce((sum, c) => sum + c.totalAmount, 0)
+                                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>
+                              {filteredInsuranceChecks.length} total payments
+                            </p>
+                          </div>
+                          <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                         </div>
-                        <DollarSign className="w-8 h-8 text-purple-500" />
                       </div>
                     </div>
                   </div>
@@ -4657,66 +4727,78 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'payments' && (
               <>
                 {/* Payments Header */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Payment Processing & Reconciliation
                   </h2>
 
                   {/* Payment Summary Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Today's Payments */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-700 mb-1">Today's Payments</p>
-                          <p className="text-3xl font-bold text-green-900">
-                            ${paymentsData.todaysPayments.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-green-600 mt-2">Posted today</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Today's Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                              ${paymentsData.todaysPayments.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Posted today</p>
+                          </div>
+                          <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                         </div>
-                        <DollarSign className="w-8 h-8 text-green-500" />
                       </div>
                     </div>
 
                     {/* Weekly Payments */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">Weekly Payments</p>
-                          <p className="text-3xl font-bold text-blue-900">
-                            ${paymentsData.weeklyPayments.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-blue-600 mt-2">Last 7 days</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Weekly Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                              ${paymentsData.weeklyPayments.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>Last 7 days</p>
+                          </div>
+                          <TrendingUp className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                         </div>
-                        <TrendingUp className="w-8 h-8 text-blue-500" />
                       </div>
                     </div>
 
                     {/* Monthly Payments */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 mb-1">Monthly Payments</p>
-                          <p className="text-3xl font-bold text-purple-900">
-                            ${paymentsData.monthlyPayments.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-purple-600 mt-2">This month</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Monthly Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                              ${paymentsData.monthlyPayments.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>This month</p>
+                          </div>
+                          <Activity className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                         </div>
-                        <Activity className="w-8 h-8 text-purple-500" />
                       </div>
                     </div>
 
                     {/* Pending Deposits */}
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-yellow-700 mb-1">Pending Deposits</p>
-                          <p className="text-3xl font-bold text-yellow-900">
-                            ${paymentsData.pendingDeposits.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-yellow-600 mt-2">Awaiting deposit</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Pending Deposits</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
+                              ${paymentsData.pendingDeposits.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Awaiting deposit</p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
                         </div>
-                        <Clock className="w-8 h-8 text-yellow-500" />
                       </div>
                     </div>
                   </div>
@@ -4725,8 +4807,8 @@ const CourtStreetRCM = () => {
                 {/* Payment Breakdown */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Payment Sources */}
-                  <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                    <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Payment Sources
                     </h3>
                     <div className="space-y-4">
@@ -4758,8 +4840,8 @@ const CourtStreetRCM = () => {
                   </div>
 
                   {/* Payment Actions */}
-                  <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                    <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Action Items
                     </h3>
                     <div className="space-y-3">
@@ -4786,8 +4868,8 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Recent Payment Activity */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Recent Payment Activity
                   </h3>
                   <div className="space-y-3">
@@ -5318,74 +5400,86 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'insurance-networks' && (
               <>
             {/* Insurance Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Insurance Portal Integration
               </h2>
 
               {/* Insurance Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Insurance Providers */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Total Providers</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {insuranceData.totalProviders}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">In network</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Total Providers</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                          {insuranceData.totalProviders}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>In network</p>
+                      </div>
+                      <Shield className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                     </div>
-                    <Shield className="w-8 h-8 text-blue-500" />
                   </div>
                 </div>
 
                 {/* Active Plans */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-700 mb-1">Active Plans</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        {insuranceData.activePlans}
-                      </p>
-                      <p className="text-xs text-green-600 mt-2">Contracted plans</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Active Plans</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                          {insuranceData.activePlans}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Contracted plans</p>
+                      </div>
+                      <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                     </div>
-                    <CheckCircle className="w-8 h-8 text-green-500" />
                   </div>
                 </div>
 
                 {/* Credentialing Pending */}
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-yellow-700 mb-1">Credentialing</p>
-                      <p className="text-3xl font-bold text-yellow-900">
-                        {insuranceData.credentialingPending}
-                      </p>
-                      <p className="text-xs text-yellow-600 mt-2">Pending approval</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Credentialing</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
+                          {insuranceData.credentialingPending}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Pending approval</p>
+                      </div>
+                      <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
                     </div>
-                    <Clock className="w-8 h-8 text-yellow-500" />
                   </div>
                 </div>
 
                 {/* Verifications Pending */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-700 mb-1">Verifications</p>
-                      <p className="text-3xl font-bold text-purple-900">
-                        {insuranceData.verificationsPending}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-2">Need verification</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Verifications</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                          {insuranceData.verificationsPending}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>Need verification</p>
+                      </div>
+                      <AlertCircle className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                     </div>
-                    <AlertCircle className="w-8 h-8 text-purple-500" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* EFT Enrollment & Network Status Table */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 EFT Enrollment & Network Status
               </h3>
               <div className="overflow-x-auto">
@@ -5581,11 +5675,11 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'checklist' && (
               <>
             {/* Checklist Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Daily, Weekly & Monthly Checklists
               </h2>
-              <p className="text-gray-600 text-sm">
+              <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 Stay on track with systematic RCM task management
               </p>
             </div>
@@ -5593,81 +5687,90 @@ const CourtStreetRCM = () => {
             {/* Checklist Progress Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Daily Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-blue-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Daily Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.dailyCompleted}/{checklistData.dailyTotal}
-                    </p>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Daily Tasks</p>
+                      <p className={`text-3xl font-bold mt-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {checklistData.dailyCompleted}/{checklistData.dailyTotal}
+                      </p>
+                    </div>
+                    <List className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                   </div>
-                  <List className="w-8 h-8 text-blue-500" />
+                  <div className={`w-full rounded-full h-2 ${isDayMode ? 'bg-gray-200' : 'bg-gray-700'}`}>
+                    <div
+                      className="bg-blue-500 h-2 rounded-full"
+                      style={{
+                        width: `${(checklistData.dailyCompleted / checklistData.dailyTotal) * 100}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {checklistData.dailyTotal - checklistData.dailyCompleted} remaining
+                  </p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.dailyCompleted / checklistData.dailyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.dailyTotal - checklistData.dailyCompleted} remaining
-                </p>
               </div>
 
               {/* Weekly Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-green-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Weekly Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.weeklyCompleted}/{checklistData.weeklyTotal}
-                    </p>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Weekly Tasks</p>
+                      <p className={`text-3xl font-bold mt-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {checklistData.weeklyCompleted}/{checklistData.weeklyTotal}
+                      </p>
+                    </div>
+                    <ClipboardCheck className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                   </div>
-                  <ClipboardCheck className="w-8 h-8 text-green-500" />
+                  <div className={`w-full rounded-full h-2 ${isDayMode ? 'bg-gray-200' : 'bg-gray-700'}`}>
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{
+                        width: `${(checklistData.weeklyCompleted / checklistData.weeklyTotal) * 100}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {checklistData.weeklyTotal - checklistData.weeklyCompleted} remaining
+                  </p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.weeklyCompleted / checklistData.weeklyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.weeklyTotal - checklistData.weeklyCompleted} remaining
-                </p>
               </div>
 
               {/* Monthly Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-purple-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Monthly Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.monthlyCompleted}/{checklistData.monthlyTotal}
-                    </p>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Monthly Tasks</p>
+                      <p className={`text-3xl font-bold mt-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {checklistData.monthlyCompleted}/{checklistData.monthlyTotal}
+                      </p>
+                    </div>
+                    <Award className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                   </div>
-                  <Award className="w-8 h-8 text-purple-500" />
+                  <div className={`w-full rounded-full h-2 ${isDayMode ? 'bg-gray-200' : 'bg-gray-700'}`}>
+                    <div
+                      className="bg-purple-500 h-2 rounded-full"
+                      style={{
+                        width: `${(checklistData.monthlyCompleted / checklistData.monthlyTotal) * 100}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {checklistData.monthlyTotal - checklistData.monthlyCompleted} remaining
+                  </p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-purple-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.monthlyCompleted / checklistData.monthlyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.monthlyTotal - checklistData.monthlyCompleted} remaining
-                </p>
               </div>
             </div>
 
             {/* Daily Checklist */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Daily RCM Tasks
               </h3>
               <div className="space-y-2">
