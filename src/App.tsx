@@ -315,7 +315,8 @@ const getInitialEODData = () => ({
     deniedClaimsToResubmit: 0,
     preAuthsApproved: 0,
     accountsNeedingFollowUp: 0,
-    missedAppointments: 0
+    missedAppointments: 0,
+    patientsDueForRecall: 0
   },
   payments: [],
   topProcedures: [],
@@ -6994,17 +6995,17 @@ const CourtStreetRCM = () => {
                 Action Items for Tomorrow
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className={`flex items-center justify-between p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className={`flex items-center justify-between p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="flex items-center space-x-3 relative z-10">
-                    <AlertCircle className={`w-6 h-6 ${isDayMode ? 'text-red-600' : 'text-red-400'}`} />
+                    <Users className={`w-6 h-6 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`} />
                     <div>
-                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Claims to Submit</p>
-                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Due tomorrow</p>
+                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Patients Due for Recall</p>
+                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>6+ months</p>
                     </div>
                   </div>
                   <p className={`text-2xl font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                    {eodData.actionItems.claimsToSubmit}
+                    {eodData.actionItems.patientsDueForRecall}
                   </p>
                 </div>
 
@@ -7215,18 +7216,7 @@ const CourtStreetRCM = () => {
               <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Claims Management Summary
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Pending Submission</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.claimsToSubmit}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Ready to submit</p>
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="relative z-10">
@@ -7254,9 +7244,9 @@ const CourtStreetRCM = () => {
                   <div className="relative z-10">
                     <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Active Claims</p>
                     <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.claimsToSubmit + eodData.actionItems.deniedClaimsToResubmit}
+                      {metricsData.dashboard.activeClaims}
                     </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Requiring action</p>
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>In system</p>
                   </div>
                 </div>
               </div>
@@ -7284,7 +7274,7 @@ const CourtStreetRCM = () => {
                   </li>
                   <li className="flex items-start">
                     <span className={`mr-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>•</span>
-                    <span><strong className={isDayMode ? 'text-amber-900' : 'text-amber-300'}>Outstanding Claims:</strong> {eodData.actionItems.claimsToSubmit + eodData.actionItems.deniedClaimsToResubmit} claims require immediate attention</span>
+                    <span><strong className={isDayMode ? 'text-amber-900' : 'text-amber-300'}>Denied Claims:</strong> {eodData.actionItems.deniedClaimsToResubmit} claims need follow-up</span>
                   </li>
                 </ul>
               </div>
@@ -7465,11 +7455,11 @@ const CourtStreetRCM = () => {
                           <div>
                             <p className="text-gray-500">Action Items</p>
                             <p className="font-bold text-gray-900">
-                              {eodData.actionItems.claimsToSubmit +
-                               eodData.actionItems.deniedClaimsToResubmit +
+                              {eodData.actionItems.deniedClaimsToResubmit +
                                eodData.actionItems.preAuthsApproved +
                                eodData.actionItems.accountsNeedingFollowUp +
-                               eodData.actionItems.missedAppointments}
+                               eodData.actionItems.missedAppointments +
+                               eodData.actionItems.patientsDueForRecall}
                             </p>
                           </div>
                         </div>
