@@ -79,7 +79,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       .from('pre_auths')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'Pending')
-      .lt('date_submitted', fourteenDaysAgoStr)
+      .lt('date_requested', fourteenDaysAgoStr)
       .eq('archived', false);
 
     // Get patient AR 61-90 and 90+ days counts from latest metrics
@@ -183,7 +183,7 @@ export async function getFollowUpCounts() {
       .from('pre_auths')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'Pending')
-      .lt('date_submitted', fourteenDaysAgoStr)
+      .lt('date_requested', fourteenDaysAgoStr)
       .eq('archived', false);
 
     return {

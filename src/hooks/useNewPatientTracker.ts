@@ -110,6 +110,7 @@ export const useNewPatientTracker = (dailyCount: number) => {
 
   useEffect(() => {
     fetchNewPatientData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update perDay when dailyCount changes

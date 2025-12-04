@@ -392,6 +392,7 @@ export const useMetrics = (date: string) => {
 
   useEffect(() => {
     fetchMetrics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
   const refresh = () => {

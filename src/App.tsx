@@ -1685,16 +1685,16 @@ const CourtStreetRCM = () => {
 
   // Calculate real-time claims statistics from actual claims data
   const realTimeClaimsStats = {
-    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter(c => !c.archivedAt).length,
+    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter((c: ClaimRecord) => !c.archivedAt).length,
     pending: showArchivedClaims
-      ? filteredClaims.filter(c => c.status === 'Pending').length
-      : claims.filter(c => !c.archivedAt && c.status === 'Pending').length,
+      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Pending').length
+      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.status === 'Pending').length,
     denied: showArchivedClaims
-      ? filteredClaims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
-      : claims.filter(c => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
+      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
+      : claims.filter((c: ClaimRecord) => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
     overSixtyDays: showArchivedClaims
-      ? filteredClaims.filter(c => c.agingDays > 60).length
-      : claims.filter(c => !c.archivedAt && c.agingDays > 60).length
+      ? filteredClaims.filter((c: ClaimRecord) => c.agingDays > 60).length
+      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.agingDays > 60).length
   };
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
@@ -2089,10 +2089,11 @@ const CourtStreetRCM = () => {
   // Loading state - wait for all data to load from Supabase
   if (metricsLoading || eodLoading || providerLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-lg text-gray-600">Loading dashboard data from Supabase...</p>
+      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
+        <div className={`text-center p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} animate-fade-in`}>
+          <RefreshCw className="w-16 h-16 text-primary-500 animate-spin mx-auto mb-6" />
+          <p className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Loading dashboard data...</p>
+          <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fetching from Supabase</p>
         </div>
       </div>
     );
@@ -2101,11 +2102,11 @@ const CourtStreetRCM = () => {
   // Error state
   if (metricsError || eodError || providerError) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Data</h2>
-          <p className="text-gray-600 mb-4">
+      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
+        <div className={`text-center max-w-md p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} animate-scale-in`}>
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
+          <h2 className={`text-2xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Error Loading Data</h2>
+          <p className={`mb-6 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
             {metricsError || eodError || providerError}
           </p>
           <button
@@ -2114,7 +2115,7 @@ const CourtStreetRCM = () => {
               refreshEOD();
               refreshProvider();
             }}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-6 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transform hover:scale-105 transition-all shadow-lg hover:shadow-glow-primary"
           >
             Retry
           </button>
@@ -2126,33 +2127,38 @@ const CourtStreetRCM = () => {
   // Null safety guard - ensure data is loaded
   if (!eodData || !dailyProductionByProvider) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-gray-600">No data available for selected date</p>
-          <p className="text-sm text-gray-500 mt-2">Try selecting a different date or adding data to Supabase</p>
+      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
+        <div className={`text-center p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'}`}>
+          <p className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
+          <p className={`text-sm mt-3 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${isDayMode ? 'bg-gray-100' : 'bg-gray-900'}`}>
+    <div className={`min-h-screen ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 gradient-mesh-dark'}`}>
       {/* Header */}
-      <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} shadow`}>
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className={`sticky top-0 z-50 ${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} animate-slide-down`}>
+        <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold" style={{ color: csdGold }}>
-                Court Street Dental RCM Dashboard
-              </h1>
-              <p className={`text-sm mt-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                Powered by Stellar Consults - Revenue Cycle Management Solutions
-              </p>
-            </div>
             <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow-primary">
+                <span className="text-2xl font-bold text-white">SC</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">
+                  Court Street Dental RCM
+                </h1>
+                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  Powered by Stellar Consults
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsDayMode(!isDayMode)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all shadow-md ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all hover-lift ${
                   isDayMode
                     ? 'bg-gray-800 text-white hover:bg-gray-700'
                     : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
@@ -2174,14 +2180,14 @@ const CourtStreetRCM = () => {
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md font-medium"
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium"
               >
-                <ExternalLink className="w-5 h-5" />
-                <span className="text-sm font-medium">Task Board</span>
+                <ExternalLink className="w-4 h-4" />
+                <span className="text-sm">Task Board</span>
               </a>
               <div className="text-right">
                 <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
-                <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Court Street Dental × Stellar Consults</p>
+                <p className={`text-xs font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
               </div>
             </div>
           </div>
@@ -2189,24 +2195,25 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} shadow mb-6`}>
-        <div className="max-w-7xl mx-auto px-4">
-          <nav className="flex flex-wrap gap-4 py-2">
+      <div className={`${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} mb-8`}>
+        <div className="max-w-7xl mx-auto px-6">
+          <nav className="flex flex-wrap gap-3 py-4">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isActive = currentView === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`flex items-center space-x-2 py-2 px-4 rounded-lg font-medium text-sm transition-colors whitespace-nowrap ${
-                    currentView === item.id
-                      ? 'bg-blue-500 text-white'
+                  className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift ${
+                    isActive
+                      ? 'bg-gradient-primary text-white shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
                   <span>{item.name}</span>
                 </button>
               );
@@ -2216,15 +2223,15 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-6 pb-12">
         {currentView === 'dashboard' ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Dashboard Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <div className="mb-4">
+            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
+              <div className="mb-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    <h2 className={`text-4xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {getGreeting()}, Team! 👋
                     </h2>
                     <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
@@ -2239,7 +2246,7 @@ const CourtStreetRCM = () => {
                     <input
                       type="date"
                       value={dashboardDate}
-                      onChange={(e) => setDashboardDate(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardDate(e.target.value)}
                       className={`px-3 py-2 rounded border ${
                         isDayMode
                           ? 'bg-white border-gray-300 text-gray-900'

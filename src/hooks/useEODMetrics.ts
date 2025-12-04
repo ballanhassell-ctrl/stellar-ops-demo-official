@@ -195,6 +195,7 @@ export const useEODMetrics = (date: string) => {
 
   useEffect(() => {
     fetchEODMetrics(date);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
   const refresh = () => {
