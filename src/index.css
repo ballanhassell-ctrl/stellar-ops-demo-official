@@ -89,4 +89,43 @@ body {
   .hover-glow:hover {
     box-shadow: 0 0 24px rgba(0, 102, 255, 0.4);
   }
+
+  /* Mobile-specific optimizations */
+  @media (max-width: 640px) {
+    /* Reduce hover effects on mobile to improve performance */
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+    }
+
+    /* Ensure touch-friendly scrolling */
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    /* Better scrollbar styling for mobile */
+    .overflow-x-auto::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .overflow-x-auto::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 3px;
+    }
+
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+      background: rgba(0, 102, 255, 0.5);
+      border-radius: 3px;
+    }
+
+    .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 102, 255, 0.7);
+    }
+  }
+
+  /* Touch-friendly button and interactive elements */
+  button, a, input[type="button"], input[type="submit"] {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
 }

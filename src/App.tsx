@@ -4,7 +4,8 @@ import {
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog, ChevronDown, ChevronUp
+  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog, ChevronDown, ChevronUp,
+  Menu
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -744,6 +745,7 @@ const CourtStreetRCM = () => {
   const [showCSDMetricsModal, setShowCSDMetricsModal] = useState(false);
   const [showRCMMetricsModal, setShowRCMMetricsModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // AI Insights state
   const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
@@ -2230,25 +2232,38 @@ const CourtStreetRCM = () => {
     <div className={`min-h-screen ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 gradient-mesh-dark'}`}>
       {/* Header */}
       <div className={`sticky top-0 z-50 ${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} animate-slide-down`}>
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Logo Section - Stellar × CSD */}
-              <div className="flex items-center gap-3">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`sm:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all hover-lift ${
+                isDayMode
+                  ? 'bg-white/60 text-gray-700 hover:bg-white/80'
+                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* Logo Section - Responsive */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Show only CSD logo on mobile, both on larger screens */}
                 <img
                   src="/Stellar2 copy.jpg"
                   alt="Stellar Consults Logo"
-                  className="h-12 w-auto object-contain"
+                  className="hidden sm:block h-8 sm:h-12 w-auto object-contain"
                 />
-                <span className={`text-2xl font-bold ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>×</span>
+                <span className={`hidden sm:block text-xl sm:text-2xl font-bold ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>×</span>
                 <img
                   src="/Cris Dental Image.jpg"
                   alt="Court Street Dental Logo"
-                  className="h-12 w-auto object-contain"
+                  className="h-8 sm:h-12 w-auto object-contain"
                 />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">
+              <div className="hidden sm:block">
+                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">
                   Court Street Dental RCM Dashboard
                 </h1>
                 <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -2256,10 +2271,12 @@ const CourtStreetRCM = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Day/Night Mode Button - Icon only on mobile */}
               <button
                 onClick={() => setIsDayMode(!isDayMode)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all hover-lift ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
                   isDayMode
                     ? 'bg-gray-800 text-white hover:bg-gray-700'
                     : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
@@ -2268,32 +2285,38 @@ const CourtStreetRCM = () => {
                 {isDayMode ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    <span className="text-sm font-medium">Night Mode</span>
+                    <span className="hidden sm:inline text-sm font-medium">Night Mode</span>
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" />
-                    <span className="text-sm font-medium">Day Mode</span>
+                    <span className="hidden sm:inline text-sm font-medium">Day Mode</span>
                   </>
                 )}
               </button>
+
+              {/* Task Board - Hidden on mobile */}
               <a
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium"
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium min-h-[44px]"
               >
                 <ExternalLink className="w-4 h-4" />
                 <span className="text-sm">Task Board</span>
               </a>
+
+              {/* Upload Metrics - Hidden on mobile */}
               <button
                 onClick={() => setShowCSDMetricsModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm min-h-[44px]"
               >
                 <Upload className="w-4 h-4" />
                 <span className="text-sm">Upload Metrics</span>
               </button>
-              <div className="text-right">
+
+              {/* Collaboration text - Hidden on mobile */}
+              <div className="hidden lg:block text-right">
                 <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
                 <p className={`text-xs font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
               </div>
@@ -2303,9 +2326,10 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className={`${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} mb-8`}>
-        <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex flex-wrap gap-3 py-4">
+      <div className={`${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} mb-4 sm:mb-8`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Desktop Navigation */}
+          <nav className="hidden sm:flex flex-wrap gap-3 py-4">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -2313,7 +2337,7 @@ const CourtStreetRCM = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift ${
+                  className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift min-h-[44px] ${
                     isActive
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -2327,25 +2351,83 @@ const CourtStreetRCM = () => {
               );
             })}
           </nav>
+
+          {/* Mobile Navigation - Collapsible */}
+          <div className={`sm:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+            isMobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <nav className="flex flex-col gap-2 py-3">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCurrentView(item.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`group flex items-center space-x-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all hover-lift min-h-[52px] ${
+                      isActive
+                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                        : isDayMode
+                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <Icon className={`w-6 h-6 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                    <span>{item.name}</span>
+                  </button>
+                );
+              })}
+
+              {/* Mobile-only Quick Actions */}
+              <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-white/20' : 'border-white/10'}`}>
+                <a
+                  href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all hover-lift min-h-[52px] ${
+                    isDayMode
+                      ? 'bg-primary-500 text-white hover:bg-primary-600'
+                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                  } shadow-lg font-semibold`}
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  <span>Task Board</span>
+                </a>
+                <button
+                  onClick={() => {
+                    setShowCSDMetricsModal(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full mt-2 flex items-center gap-3 px-4 py-3.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold min-h-[52px]"
+                >
+                  <Upload className="w-5 h-5" />
+                  <span>Upload Metrics</span>
+                </button>
+              </div>
+            </nav>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
         {currentView === 'dashboard' ? (
-          <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-8">
             {/* Dashboard Header */}
-            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
-              <div className="mb-6">
-                <div className="flex justify-between items-start">
+            <div className={`rounded-2xl sm:rounded-3xl p-4 sm:p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
+              <div className="mb-4 sm:mb-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                   <div>
-                    <h2 className={`text-4xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    <h2 className={`text-2xl sm:text-4xl font-bold mb-2 sm:mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {getGreeting()}, Team! 👋
                     </h2>
-                    <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
+                    <h3 className="text-base sm:text-xl font-semibold mb-1" style={{ color: csdGold }}>
                       Practice Overview Dashboard
                     </h3>
-                    <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                    <p className={`text-xs sm:text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
                       Real-time insights into your revenue cycle performance
                     </p>
                   </div>
@@ -2355,7 +2437,7 @@ const CourtStreetRCM = () => {
                       type="date"
                       value={inputDate}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputDate(e.target.value)}
-                      className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                      className={`px-3 sm:px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all hover-lift min-h-[44px] ${
                         isDayMode
                           ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40 backdrop-blur-sm'
                           : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10 backdrop-blur-sm'
@@ -2365,7 +2447,7 @@ const CourtStreetRCM = () => {
                     <button
                       onClick={refreshMetrics}
                       disabled={metricsLoading}
-                      className={`p-2 rounded hover:bg-opacity-80 transition-all ${
+                      className={`p-3 rounded-xl hover:bg-opacity-80 transition-all min-h-[44px] min-w-[44px] ${
                         isDayMode
                           ? 'bg-blue-500 text-white hover:bg-blue-600'
                           : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -2408,9 +2490,9 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Key Performance Indicators */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
@@ -2458,7 +2540,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Collection Rate */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2475,7 +2557,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Active Patients */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2492,7 +2574,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
@@ -2547,9 +2629,9 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Claims & Payments Overview */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                 <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Claims Status
                 </h3>
@@ -2602,14 +2684,14 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => setCurrentView('claims')}
-                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
+                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all hover-lift min-h-[52px] ${
                       isDayMode
                         ? 'bg-gradient-to-r from-blue-100/60 to-blue-200/60 hover:from-blue-200/80 hover:to-blue-300/80 border border-blue-300/50'
                         : 'bg-gradient-to-r from-blue-900/30 to-blue-800/30 hover:from-blue-800/50 hover:to-blue-700/50 border border-blue-700/30'
@@ -2625,7 +2707,7 @@ const CourtStreetRCM = () => {
                   </button>
                   <button
                     onClick={() => setCurrentView('payments')}
-                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
+                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all hover-lift min-h-[52px] ${
                       isDayMode
                         ? 'bg-gradient-to-r from-emerald-100/60 to-emerald-200/60 hover:from-emerald-200/80 hover:to-emerald-300/80 border border-emerald-300/50'
                         : 'bg-gradient-to-r from-emerald-900/30 to-emerald-800/30 hover:from-emerald-800/50 hover:to-emerald-700/50 border border-emerald-700/30'
@@ -2795,11 +2877,11 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Automated Metrics Analysis */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Automated Metrics Analysis
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="relative z-10">
