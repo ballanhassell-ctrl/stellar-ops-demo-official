@@ -4,7 +4,7 @@ import {
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, Settings
+  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -1498,7 +1498,7 @@ const CourtStreetRCM = () => {
     { id: 'patient-management', name: 'RCM Management', icon: Users },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar },
-    { id: 'administration', name: 'Administration', icon: Settings }
+    { id: 'administration', name: 'Administration', icon: UserCog }
   ];
 
   // Sub-navigation for RCM Management tab
