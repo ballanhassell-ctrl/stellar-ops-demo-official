@@ -475,6 +475,33 @@ const getLast5BusinessDays = (): Date[] => {
   return days.reverse();
 };
 
+// Helper function to check if a follow-up is due (today or earlier)
+const isFollowUpDue = (followUpDate: string): boolean => {
+  const today = new Date().toISOString().split('T')[0];
+  return followUpDate <= today;
+};
+
+// Notification Badge Component (iPhone-style)
+const NotificationBadge: React.FC = () => (
+  <div
+    className="flex items-center justify-center"
+    style={{
+      width: '20px',
+      height: '20px',
+      backgroundColor: '#FF3B30',
+      borderRadius: '50%',
+      color: 'white',
+      fontSize: '11px',
+      fontWeight: '600',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+      flexShrink: 0
+    }}
+    title="Follow-up due"
+  >
+    1
+  </div>
+);
+
 // Conversion functions between frontend camelCase and database snake_case
 const claimToRecord = (claim: Claim): ClaimRecord => ({
   id: claim.id,
@@ -3417,9 +3444,12 @@ const CourtStreetRCM = () => {
                       filteredClaims.map((claim) => (
                         <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-4">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{claim.patientName}</div>
-                              <div className="text-xs text-gray-500">{claim.patientId}</div>
+                            <div className="flex items-center gap-3">
+                              {isFollowUpDue(claim.followUpDate) && <NotificationBadge />}
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{claim.patientName}</div>
+                                <div className="text-xs text-gray-500">{claim.patientId}</div>
+                              </div>
                             </div>
                           </td>
                           <td className="px-4 py-4">
@@ -3835,9 +3865,12 @@ const CourtStreetRCM = () => {
                           filteredPreAuths.map((preAuth) => (
                             <tr key={preAuth.id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-4 py-4">
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">{preAuth.patientName}</div>
-                                  <div className="text-xs text-gray-500">{preAuth.patientId}</div>
+                                <div className="flex items-center gap-3">
+                                  {isFollowUpDue(preAuth.followUpDate) && <NotificationBadge />}
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">{preAuth.patientName}</div>
+                                    <div className="text-xs text-gray-500">{preAuth.patientId}</div>
+                                  </div>
                                 </div>
                               </td>
                               <td className="px-4 py-4">
@@ -7799,7 +7832,12 @@ const CourtStreetRCM = () => {
                             ) : (
                               vipListItems.map((item) => (
                                 <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
-                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex items-center gap-3">
+                                      {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
+                                      <span>{item.patientId}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-xs">
@@ -7952,7 +7990,12 @@ const CourtStreetRCM = () => {
                             ) : (
                               recareListItems.map((item) => (
                                 <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
-                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex items-center gap-3">
+                                      {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
+                                      <span>{item.patientId}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-sm">
@@ -8107,7 +8150,12 @@ const CourtStreetRCM = () => {
                             ) : (
                               treatmentListItems.map((item) => (
                                 <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
-                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex items-center gap-3">
+                                      {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
+                                      <span>{item.patientId}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-xs">
