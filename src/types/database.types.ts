@@ -159,12 +159,11 @@ export type InsuranceCheck = {
   distribution_type: 'Bulk' | 'Individual';
   total_amount: number;
   aging: number;
-  created_by: string;
-  completed_by: string;
+  entered_by: string;
+  handler: string;
   status: 'Created' | 'Entered' | 'Pending Review';
   date_of_service?: string; // ISO date string
-  date_created?: string; // ISO date string
-  payment_date?: string; // ISO date string
+  date_entered?: string; // ISO date string
   is_archived?: boolean;
   archived_at?: string;
   archived_by?: string;
