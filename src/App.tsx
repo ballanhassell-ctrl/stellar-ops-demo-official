@@ -496,28 +496,37 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   archivedBy: claim.archived_by || undefined
 });
 
-const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated_at'> => ({
-  id: record.id,
-  patient_id: record.patientId,
-  patient_name: record.patientName,
-  insurance_company: record.insuranceCompany,
-  claim_number: record.claimNumber || null, // Send null if empty string
-  procedure_code: record.procedureCode,
-  claim_detail: record.claimDetail,
-  claim_amount: record.claimAmount,
-  status: record.status,
-  date_submitted: record.dateSubmitted,
-  date_of_service: record.dateOfService,
-  date_created: record.dateSubmitted,
-  follow_up_date: record.followUpDate,
-  created_by: record.handler,
-  completed_by: record.handler,
-  notes: record.notes,
-  aging_days: record.agingDays,
-  archived: false,
-  archived_at: null,
-  archived_by: null
-});
+const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated_at'> => {
+  // Only include id if it exists (for updates), omit for inserts
+  const baseFields: any = {
+    patient_id: record.patientId,
+    patient_name: record.patientName,
+    insurance_company: record.insuranceCompany,
+    claim_number: record.claimNumber || null, // Send null if empty string
+    procedure_code: record.procedureCode,
+    claim_detail: record.claimDetail,
+    claim_amount: record.claimAmount,
+    status: record.status,
+    date_submitted: record.dateSubmitted,
+    date_of_service: record.dateOfService,
+    date_created: record.dateSubmitted,
+    follow_up_date: record.followUpDate,
+    created_by: record.handler,
+    completed_by: record.handler,
+    notes: record.notes || null,
+    aging_days: record.agingDays,
+    archived: false,
+    archived_at: null,
+    archived_by: null
+  };
+
+  // Only add id if it exists and is not empty
+  if (record.id && record.id.trim() !== '') {
+    baseFields.id = record.id;
+  }
+
+  return baseFields;
+};
 
 const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   id: preAuth.id,
@@ -538,29 +547,38 @@ const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   agingDays: calculatePreAuthAging(preAuth)
 });
 
-const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'updated_at'> => ({
-  id: record.id,
-  patient_id: record.patientId,
-  patient_name: record.patientName,
-  insurance_company: record.insuranceCompany,
-  pre_auth_number: record.preAuthNumber,
-  procedure_code: record.procedureCode,
-  treatment_detail: record.treatmentDetail,
-  requested_amount: record.requestedAmount,
-  status: record.status,
-  date_requested: record.dateRequested,
-  date_created: record.dateRequested,
-  follow_up_date: record.followUpDate,
-  expiration_date: record.expirationDate,
-  approved_amount: record.approvedAmount,
-  created_by: record.handler,
-  completed_by: record.handler,
-  notes: record.notes,
-  aging_days: record.agingDays,
-  archived: false,
-  archived_at: null,
-  archived_by: null
-});
+const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'updated_at'> => {
+  // Only include id if it exists (for updates), omit for inserts
+  const baseFields: any = {
+    patient_id: record.patientId,
+    patient_name: record.patientName,
+    insurance_company: record.insuranceCompany,
+    pre_auth_number: record.preAuthNumber,
+    procedure_code: record.procedureCode,
+    treatment_detail: record.treatmentDetail,
+    requested_amount: record.requestedAmount,
+    status: record.status,
+    date_requested: record.dateRequested,
+    date_created: record.dateRequested,
+    follow_up_date: record.followUpDate,
+    expiration_date: record.expirationDate,
+    approved_amount: record.approvedAmount,
+    created_by: record.handler,
+    completed_by: record.handler,
+    notes: record.notes || null,
+    aging_days: record.agingDays,
+    archived: false,
+    archived_at: null,
+    archived_by: null
+  };
+
+  // Only add id if it exists and is not empty
+  if (record.id && record.id.trim() !== '') {
+    baseFields.id = record.id;
+  }
+
+  return baseFields;
+};
 
 const schedulingItemToRecord = (item: SchedulingListItem): SchedulingListRecord => ({
   id: item.id,
@@ -644,23 +662,35 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
   };
 };
 
-const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'> => ({
-  check_eft_number: record.checkEftNumber,
-  payment_type: record.paymentType,
-  insurance_company: record.insuranceCompany,
-  distribution_type: record.distributionType,
-  total_amount: record.totalAmount,
-  aging: record.aging,
-  created_by: record.enteredBy,
-  completed_by: record.handler,
-  status: record.status,
-  date_of_service: record.dateOfService,
-  date_created: record.dateEntered,
-  payment_date: record.dateEntered,
-  is_archived: record.isArchived,
-  archived_at: record.archivedAt,
-  archived_by: record.archivedBy
-});
+const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'created_at' | 'updated_at'> => {
+  // For insurance checks, payment_date should default to dateEntered if not provided
+  const paymentDate = record.dateEntered || new Date().toISOString().split('T')[0];
+
+  const baseFields: any = {
+    check_eft_number: record.checkEftNumber,
+    payment_type: record.paymentType,
+    insurance_company: record.insuranceCompany,
+    distribution_type: record.distributionType,
+    total_amount: record.totalAmount,
+    aging: record.aging,
+    created_by: record.enteredBy,
+    completed_by: record.handler,
+    status: record.status,
+    date_of_service: record.dateOfService || undefined,
+    date_created: record.dateEntered || paymentDate,
+    payment_date: paymentDate,
+    is_archived: record.isArchived || false,
+    archived_at: record.archivedAt || null,
+    archived_by: record.archivedBy || null
+  };
+
+  // Only add id if it exists and is not empty (for updates)
+  if (record.id && record.id.trim() !== '') {
+    baseFields.id = record.id;
+  }
+
+  return baseFields;
+};
 
 
 const CourtStreetRCM = () => {
@@ -4874,8 +4904,9 @@ const CourtStreetRCM = () => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const claimNumber = formData.get('claimNumber') as string;
+                    const dateSubmitted = formData.get('dateSubmitted') as string;
                     const newClaim: ClaimRecord = {
-                      id: `CLM-${String(claims.length + 1).padStart(3, '0')}`,
+                      id: '', // Let database auto-generate the UUID
                       patientId: formData.get('patientId') as string,
                       patientName: formData.get('patientName') as string,
                       insuranceCompany: formData.get('insuranceCompany') as string,
@@ -4884,16 +4915,16 @@ const CourtStreetRCM = () => {
                       claimDetail: formData.get('claimDetail') as string,
                       claimAmount: parseFloat(formData.get('claimAmount') as string),
                       status: formData.get('status') as ClaimRecord['status'],
-                      dateSubmitted: formData.get('dateSubmitted') as string,
+                      dateSubmitted: dateSubmitted,
                       dateOfService: formData.get('dateOfService') as string,
                       followUpDate: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string,
-                      agingDays: Math.floor((new Date().getTime() - new Date(formData.get('dateSubmitted') as string).getTime()) / (1000 * 60 * 60 * 24))
+                      agingDays: Math.floor((new Date().getTime() - new Date(dateSubmitted).getTime()) / (1000 * 60 * 60 * 24))
                     };
 
                     try {
-                      // Save to Supabase
+                      // Save to Supabase (database will auto-generate UUID for id)
                       const savedClaim = await insertClaim(recordToClaim(newClaim));
                       // Update local state with the saved claim
                       setClaims([...claims, claimToRecord(savedClaim)]);
@@ -5016,7 +5047,7 @@ const CourtStreetRCM = () => {
                     const followUpDate = formData.get('followUpDate') as string;
                     const agingDays = Math.floor((new Date(followUpDate).getTime() - new Date(dateRequested).getTime()) / (1000 * 60 * 60 * 24));
                     const newPreAuth: PreAuthRecord = {
-                      id: `PA-${String(preAuths.length + 1).padStart(3, '0')}`,
+                      id: '', // Let database auto-generate the UUID
                       patientId: formData.get('patientId') as string,
                       patientName: formData.get('patientName') as string,
                       insuranceCompany: formData.get('insuranceCompany') as string,
@@ -5035,7 +5066,7 @@ const CourtStreetRCM = () => {
                     };
 
                     try {
-                      // Save to Supabase
+                      // Save to Supabase (database will auto-generate UUID for id)
                       const savedPreAuth = await insertPreAuth(recordToPreAuth(newPreAuth));
                       // Update local state with the saved pre-auth
                       setPreAuths([...preAuths, preAuthToRecord(savedPreAuth)]);
@@ -5133,8 +5164,10 @@ const CourtStreetRCM = () => {
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
+                    // Use dateEntered if provided, otherwise use today's date
+                    const dateEntered = formData.get('dateEntered') as string || new Date().toISOString().split('T')[0];
                     const newCheck: InsuranceCheckRecord = {
-                      id: '',
+                      id: '', // Let database auto-generate the UUID
                       checkEftNumber: formData.get('checkEftNumber') as string,
                       paymentType: formData.get('paymentType') as 'Check' | 'EFT',
                       insuranceCompany: formData.get('insuranceCompany') as string,
@@ -5145,11 +5178,11 @@ const CourtStreetRCM = () => {
                       handler: formData.get('handler') as string,
                       status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
                       dateOfService: formData.get('dateOfService') as string || undefined,
-                      dateEntered: formData.get('dateEntered') as string || undefined
+                      dateEntered: dateEntered
                     };
 
                     try {
-                      // Save to Supabase
+                      // Save to Supabase (database will auto-generate UUID for id)
                       const savedCheck = await insertInsuranceCheck(recordToInsuranceCheck(newCheck));
                       // Update local state with the saved check
                       setInsuranceChecks([...insuranceChecks, insuranceCheckToRecord(savedCheck)]);
@@ -9233,6 +9266,7 @@ const CourtStreetRCM = () => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const check = editingItem as InsuranceCheckRecord;
+                    const dateEntered = formData.get('dateEntered') as string || undefined;
                     const updatedCheck = {
                       check_eft_number: formData.get('checkEftNumber') as string,
                       payment_type: formData.get('paymentType') as 'Check' | 'EFT',
@@ -9240,11 +9274,11 @@ const CourtStreetRCM = () => {
                       distribution_type: formData.get('distributionType') as 'Bulk' | 'Individual',
                       total_amount: parseFloat(formData.get('totalAmount') as string),
                       aging: parseInt(formData.get('aging') as string),
-                      created_by: formData.get('enteredBy') as string,
                       completed_by: formData.get('handler') as string,
                       status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
                       date_of_service: formData.get('dateOfService') as string || undefined,
-                      date_created: formData.get('dateEntered') as string || undefined,
+                      date_created: dateEntered,
+                      payment_date: dateEntered,
                     };
 
                     try {
