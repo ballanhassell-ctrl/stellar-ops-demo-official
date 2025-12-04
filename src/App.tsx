@@ -2983,88 +2983,88 @@ const CourtStreetRCM = () => {
         ) : currentView === 'patient-management' ? (
           <div className="space-y-6">
             {/* Sub-navigation tabs */}
-            <div className={`rounded-lg shadow p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <div className="flex space-x-2">
+            <div className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setPatientManagementView('claims')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'claims'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Claims
                 </button>
                 <button
                   onClick={() => setPatientManagementView('preauths')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'preauths'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Pre-Auths
                 </button>
                 <button
                   onClick={() => setPatientManagementView('patients')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'patients'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Patient A/R
                 </button>
                 <button
                   onClick={() => setPatientManagementView('insurance-checks')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'insurance-checks'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Insurance Checks/EFT's
                 </button>
                 <button
                   onClick={() => setPatientManagementView('payments')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'payments'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Payments
                 </button>
                 <button
                   onClick={() => setPatientManagementView('insurance-networks')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'insurance-networks'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Insurance Networks
                 </button>
                 <button
                   onClick={() => setPatientManagementView('checklist')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'checklist'
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   Checklist
@@ -3075,9 +3075,9 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'claims' && (
               <>
             {/* Claims Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
+                <h2 className={`text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Claims Management
                 </h2>
 
@@ -3088,23 +3088,16 @@ const CourtStreetRCM = () => {
                   </span>
                   <button
                     onClick={() => setShowArchivedClaims(!showArchivedClaims)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift flex items-center gap-2 ${
                       showArchivedClaims
-                        ? 'bg-gray-600 text-white hover:bg-gray-700'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? isDayMode
+                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                        : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                     }`}
                   >
-                    {showArchivedClaims ? (
-                      <span className="flex items-center gap-2">
-                        <Archive className="w-4 h-4" />
-                        View Active
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Archive className="w-4 h-4" />
-                        View Archived
-                      </span>
-                    )}
+                    <Archive className="w-4 h-4" />
+                    {showArchivedClaims ? 'View Active' : 'View Archived'}
                   </button>
                   {showArchivedClaims && (
                     <div className="flex items-center gap-2">
