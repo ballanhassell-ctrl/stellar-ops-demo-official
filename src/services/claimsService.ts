@@ -35,7 +35,7 @@ export async function getClaimById(id: string) {
   return data as Claim;
 }
 
-export async function insertClaim(claim: Omit<Claim, 'id' | 'created_at' | 'updated_at'>) {
+export async function insertClaim(claim: Omit<Claim, 'created_at' | 'updated_at'>) {
   const { data, error } = await supabase
     .from('claims')
     .insert(claim)
@@ -44,8 +44,6 @@ export async function insertClaim(claim: Omit<Claim, 'id' | 'created_at' | 'upda
 
   if (error) {
     console.error('Error inserting claim:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
-    console.error('Claim data being inserted:', JSON.stringify(claim, null, 2));
     throw error;
   }
 
@@ -145,7 +143,7 @@ export async function getPreAuthById(id: string) {
   return data as PreAuth;
 }
 
-export async function insertPreAuth(preAuth: Omit<PreAuth, 'id' | 'created_at' | 'updated_at'>) {
+export async function insertPreAuth(preAuth: Omit<PreAuth, 'created_at' | 'updated_at'>) {
   const { data, error } = await supabase
     .from('pre_auths')
     .insert(preAuth)
@@ -154,8 +152,6 @@ export async function insertPreAuth(preAuth: Omit<PreAuth, 'id' | 'created_at' |
 
   if (error) {
     console.error('Error inserting pre-auth:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
-    console.error('PreAuth data being inserted:', JSON.stringify(preAuth, null, 2));
     throw error;
   }
 
@@ -762,8 +758,6 @@ export async function insertInsuranceCheck(check: Omit<InsuranceCheck, 'id' | 'c
 
   if (error) {
     console.error('Error inserting insurance check:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
-    console.error('Check data being inserted:', JSON.stringify(check, null, 2));
     throw error;
   }
 
