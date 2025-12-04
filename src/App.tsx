@@ -2146,7 +2146,7 @@ const CourtStreetRCM = () => {
               {/* Logo Section - Stellar × CSD */}
               <div className="flex items-center gap-3">
                 <img
-                  src="/stellar2 copy.jpg"
+                  src="/Stellar2 copy.jpg"
                   alt="Stellar Consults Logo"
                   className="h-12 w-auto object-contain"
                 />
