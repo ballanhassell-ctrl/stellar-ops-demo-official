@@ -13,7 +13,6 @@ export interface ActionItemsData {
   preAuthsApproved: number;
   accountsNeedingFollowUp: number;
   missedAppointments: number;
-  unbilledProcedures: number;
 }
 
 /**

@@ -28,9 +28,7 @@ export interface EODData {
   patientsSeenToday: number;
   newPatients: number;
   proceduresCompleted: number;
-  unbilledProcedures: number;
   unappliedPayments: number;
-  failedTransactions: number;
   actionItems: {
     claimsToSubmit: number;
     deniedClaimsToResubmit: number;

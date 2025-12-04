@@ -8,7 +8,6 @@ interface DashboardMetrics {
   collectionRate: number;
   activePatients: number;
   activeClaims: number;
-  pendingPayments: number;
   outstandingAR: number;
 }
 
@@ -44,7 +43,6 @@ interface PreAuthsMetrics {
   approved: number;
   denied: number;
   expiringSoon: number;
-  expiringThisMonth: number;
 }
 
 interface ClaimsMetrics {
