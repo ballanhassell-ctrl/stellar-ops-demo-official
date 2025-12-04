@@ -3140,115 +3140,123 @@ const CourtStreetRCM = () => {
               {/* Claims Statistics Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {/* Total Active Claims */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="flex items-start justify-between relative z-10">
                     <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Total Active Claims</p>
-                      <p className="text-3xl font-bold text-blue-900">{realTimeClaimsStats.totalActive}</p>
-                      <p className="text-xs text-blue-600 mt-2">In process</p>
+                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Total Active Claims</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.totalActive}</p>
+                      <p className={`text-xs mt-2 ${isDayMode ? 'text-primary-600' : 'text-primary-300'}`}>In process</p>
                     </div>
-                    <CheckCircle className="w-8 h-8 text-blue-500" />
+                    <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-primary-500' : 'text-primary-400'}`} />
                   </div>
                 </div>
 
                 {/* Pending Claims */}
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="flex items-start justify-between relative z-10">
                     <div>
-                      <p className="text-sm font-medium text-yellow-700 mb-1">Pending Claims</p>
-                      <p className="text-3xl font-bold text-yellow-900">{realTimeClaimsStats.pending}</p>
-                      <p className="text-xs text-yellow-600 mt-2">Awaiting response</p>
+                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Pending Claims</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.pending}</p>
+                      <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-300'}`}>Awaiting response</p>
                     </div>
-                    <Clock className="w-8 h-8 text-yellow-500" />
+                    <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
                   </div>
                 </div>
 
                 {/* Fully Denied Claims */}
-                <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="flex items-start justify-between relative z-10">
                     <div>
-                      <p className="text-sm font-medium text-red-700 mb-1">Fully Denied Claims</p>
-                      <p className="text-3xl font-bold text-red-900">{realTimeClaimsStats.denied}</p>
-                      <p className="text-xs text-red-600 mt-2">Need attention</p>
+                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Fully Denied Claims</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.denied}</p>
+                      <p className={`text-xs mt-2 ${isDayMode ? 'text-red-600' : 'text-red-300'}`}>Need attention</p>
                     </div>
-                    <XCircle className="w-8 h-8 text-red-500" />
+                    <XCircle className={`w-8 h-8 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
                   </div>
                 </div>
 
                 {/* Claims >60 Days */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="flex items-start justify-between relative z-10">
                     <div>
-                      <p className="text-sm font-medium text-orange-700 mb-1">Claims &gt;60 Days</p>
-                      <p className="text-3xl font-bold text-orange-900">{realTimeClaimsStats.overSixtyDays}</p>
-                      <p className="text-xs text-orange-600 mt-2">Priority follow-up</p>
+                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Claims &gt;60 Days</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.overSixtyDays}</p>
+                      <p className={`text-xs mt-2 ${isDayMode ? 'text-orange-600' : 'text-orange-300'}`}>Priority follow-up</p>
                     </div>
-                    <AlertCircle className="w-8 h-8 text-orange-500" />
+                    <AlertCircle className={`w-8 h-8 ${isDayMode ? 'text-orange-500' : 'text-orange-400'}`} />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* AR Aging Analysis */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Analysis
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 0-30 Days */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-green-800 mb-2">0-30 Days</p>
-                    <p className="text-2xl font-bold text-green-900 mb-1">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="text-center relative z-10">
+                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-emerald-800' : 'text-emerald-400'}`}>0-30 Days</p>
+                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       ${claimsData.arAging.zeroToThirty.amount.toLocaleString()}
                     </p>
-                    <p className="text-lg font-medium text-green-700">
+                    <p className={`text-lg font-medium ${isDayMode ? 'text-emerald-700' : 'text-emerald-300'}`}>
                       {claimsData.arAging.zeroToThirty.count}
                     </p>
-                    <p className="text-xs text-green-600 mt-1">Claims</p>
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>Claims</p>
                   </div>
                 </div>
 
                 {/* 31-60 Days */}
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2">31-60 Days</p>
-                    <p className="text-2xl font-bold text-yellow-900 mb-1">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="text-center relative z-10">
+                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-yellow-800' : 'text-yellow-400'}`}>31-60 Days</p>
+                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()}
                     </p>
-                    <p className="text-lg font-medium text-yellow-700">
+                    <p className={`text-lg font-medium ${isDayMode ? 'text-yellow-700' : 'text-yellow-300'}`}>
                       {claimsData.arAging.thirtyOneToSixty.count}
                     </p>
-                    <p className="text-xs text-yellow-600 mt-1">Claims</p>
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-yellow-600' : 'text-yellow-400'}`}>Claims</p>
                   </div>
                 </div>
 
                 {/* 61-90 Days */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-orange-800 mb-2">61-90 Days</p>
-                    <p className="text-2xl font-bold text-orange-900 mb-1">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="text-center relative z-10">
+                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-orange-800' : 'text-orange-400'}`}>61-90 Days</p>
+                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()}
                     </p>
-                    <p className="text-lg font-medium text-orange-700">
+                    <p className={`text-lg font-medium ${isDayMode ? 'text-orange-700' : 'text-orange-300'}`}>
                       {claimsData.arAging.sixtyOneToNinety.count}
                     </p>
-                    <p className="text-xs text-orange-600 mt-1">Claims</p>
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`}>Claims</p>
                   </div>
                 </div>
 
                 {/* 90+ Days */}
-                <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-red-800 mb-2">90+ Days</p>
-                    <p className="text-2xl font-bold text-red-900 mb-1">
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="text-center relative z-10">
+                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-red-800' : 'text-red-400'}`}>90+ Days</p>
+                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
                     </p>
-                    <p className="text-lg font-medium text-red-700">
+                    <p className={`text-lg font-medium ${isDayMode ? 'text-red-700' : 'text-red-300'}`}>
                       {claimsData.arAging.ninetyPlus.count}
                     </p>
-                    <p className="text-xs text-red-600 mt-1">Claims</p>
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>Claims</p>
                   </div>
                 </div>
               </div>
