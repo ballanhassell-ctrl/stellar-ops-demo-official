@@ -124,7 +124,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
 
     const { count: recallCount } = await supabase
       .from('patients')
-      .select('id', { count: 'exact', head: true })
+      .select('patient_id', { count: 'exact', head: true })
       .eq('status', 'active')
       .lt('last_visit_date', sixMonthsAgoStr);
 
