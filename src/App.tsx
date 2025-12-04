@@ -496,9 +496,9 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   archivedBy: claim.archived_by || undefined
 });
 
-const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated_at'> => {
-  // Only include id if it exists (for updates), omit for inserts
-  const baseFields: any = {
+const recordToClaim = (record: ClaimRecord): any => {
+  // Build base fields without id (for inserts)
+  const baseFields = {
     patient_id: record.patientId,
     patient_name: record.patientName,
     insurance_company: record.insuranceCompany,
@@ -520,9 +520,9 @@ const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated
     archived_by: null
   };
 
-  // Only add id if it exists and is not empty
+  // Only add id if it exists and is not empty (for updates)
   if (record.id && record.id.trim() !== '') {
-    baseFields.id = record.id;
+    return { ...baseFields, id: record.id };
   }
 
   return baseFields;
@@ -547,9 +547,9 @@ const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   agingDays: calculatePreAuthAging(preAuth)
 });
 
-const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'updated_at'> => {
-  // Only include id if it exists (for updates), omit for inserts
-  const baseFields: any = {
+const recordToPreAuth = (record: PreAuthRecord): any => {
+  // Build base fields without id (for inserts)
+  const baseFields = {
     patient_id: record.patientId,
     patient_name: record.patientName,
     insurance_company: record.insuranceCompany,
@@ -572,9 +572,9 @@ const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'u
     archived_by: null
   };
 
-  // Only add id if it exists and is not empty
+  // Only add id if it exists and is not empty (for updates)
   if (record.id && record.id.trim() !== '') {
-    baseFields.id = record.id;
+    return { ...baseFields, id: record.id };
   }
 
   return baseFields;
@@ -662,11 +662,12 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
   };
 };
 
-const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'created_at' | 'updated_at'> => {
+const recordToInsuranceCheck = (record: InsuranceCheckRecord): any => {
   // For insurance checks, payment_date should default to dateEntered if not provided
   const paymentDate = record.dateEntered || new Date().toISOString().split('T')[0];
 
-  const baseFields: any = {
+  // Build base fields without id (for inserts)
+  const baseFields = {
     check_eft_number: record.checkEftNumber,
     payment_type: record.paymentType,
     insurance_company: record.insuranceCompany,
@@ -680,13 +681,13 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceChe
     date_created: record.dateEntered || paymentDate,
     payment_date: paymentDate,
     is_archived: record.isArchived || false,
-    archived_at: record.archivedAt || null,
-    archived_by: record.archivedBy || null
+    archived_at: record.archivedAt || undefined,
+    archived_by: record.archivedBy || undefined
   };
 
   // Only add id if it exists and is not empty (for updates)
   if (record.id && record.id.trim() !== '') {
-    baseFields.id = record.id;
+    return { ...baseFields, id: record.id };
   }
 
   return baseFields;
