@@ -5736,53 +5736,72 @@ const CourtStreetRCM = () => {
 
               {/* COGS Breakdown */}
               <div className="mb-8">
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Cost of Goods Sold (COGS)</h4>
+                <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Cost of Goods Sold (COGS)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-orange-700 mb-1">Dental Supplies</p>
-                    <p className="text-2xl font-bold text-orange-900">
-                      ${advancedMetrics.cogs.dentalSupplies.toLocaleString()}
-                    </p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Dental Supplies</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cogs.dentalSupplies.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-amber-700 mb-1">Lab Fees</p>
-                    <p className="text-2xl font-bold text-amber-900">
-                      ${advancedMetrics.cogs.labFees.toLocaleString()}
-                    </p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Lab Fees</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cogs.labFees.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-yellow-700 mb-1">Associate Doctor Expense</p>
-                    <p className="text-2xl font-bold text-yellow-900">
-                      ${advancedMetrics.cogs.associateDoctorExpense.toLocaleString()}
-                    </p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Associate Doctor Expense</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cogs.associateDoctorExpense.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-lime-50 to-lime-100 border-2 border-lime-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-lime-700 mb-1">Hygiene Payroll</p>
-                    <p className="text-2xl font-bold text-lime-900">
-                      ${advancedMetrics.cogs.hygienePayroll.toLocaleString()}
-                    </p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-lime-200/50' : 'border-lime-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-lime-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-lime-700' : 'text-lime-400'}`}>Hygiene Payroll</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cogs.hygienePayroll.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-green-700 mb-1">Assistant Payroll</p>
-                    <p className="text-2xl font-bold text-green-900">
-                      ${advancedMetrics.cogs.assistantPayroll.toLocaleString()}
-                    </p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Assistant Payroll</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cogs.assistantPayroll.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-400 rounded-lg p-4">
-                    <p className="text-xs font-medium text-emerald-700 mb-1 font-semibold">Total COGS</p>
-                    <p className="text-2xl font-bold text-emerald-900">
-                      ${advancedMetrics.cogs.totalCOGS.toLocaleString()}
-                    </p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Total COGS</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cogs.totalCOGS.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-4">
-                  <div className="bg-gradient-to-br from-rose-50 to-rose-100 border-2 border-rose-300 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-rose-200/50' : 'border-rose-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10 flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-rose-700 mb-1">Operating Costs</p>
-                        <p className="text-xs text-rose-600">Total operational expenses</p>
+                        <p className={`text-sm font-bold mb-1 ${isDayMode ? 'text-rose-700' : 'text-rose-300'}`}>Operating Costs</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total operational expenses</p>
                       </div>
-                      <p className="text-3xl font-bold text-rose-900">
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                         ${advancedMetrics.operatingCosts.toLocaleString()}
                       </p>
                     </div>
@@ -5793,106 +5812,139 @@ const CourtStreetRCM = () => {
               {/* Patient Lifecycle & Churn Metrics */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Patient Lifecycle & Retention</h4>
+                  <h4 className={`text-sm font-bold uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Patient Lifecycle & Retention</h4>
                   <button
                     onClick={() => setShowLifecycleModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-gold-400 rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
                   >
                     <Upload className="w-4 h-4" />
                     <span>Manage Data & Details</span>
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-purple-700 mb-1">Churned Patients</p>
-                    <p className="text-2xl font-bold text-purple-900">
-                      {advancedMetrics.churnedPatientsPerMonth}
-                    </p>
-                    <p className="text-xs text-purple-600 mt-1">Per month</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Churned Patients</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.churnedPatientsPerMonth}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Per month</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 border-2 border-fuchsia-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-fuchsia-700 mb-1">Churn Rate</p>
-                    <p className="text-2xl font-bold text-fuchsia-900">
-                      {advancedMetrics.churnRate}%
-                    </p>
-                    <p className="text-xs text-fuchsia-600 mt-1">Monthly rate</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-fuchsia-200/50' : 'border-fuchsia-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-fuchsia-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-fuchsia-700' : 'text-fuchsia-400'}`}>Churn Rate</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.churnRate}%
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Monthly rate</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-pink-50 to-pink-100 border-2 border-pink-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-pink-700 mb-1">Patient Lifecycle</p>
-                    <p className="text-xl font-bold text-pink-900">
-                      {advancedMetrics.patientLifeCycleMonths}m / {advancedMetrics.patientLifeCycleYears}y
-                    </p>
-                    <p className="text-xs text-pink-600 mt-1">Average duration</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-pink-200/50' : 'border-pink-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-pink-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-pink-700' : 'text-pink-400'}`}>Patient Lifecycle</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.patientLifeCycleMonths}m / {advancedMetrics.patientLifeCycleYears}y
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Average duration</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-violet-50 to-violet-100 border-2 border-violet-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-violet-700 mb-1">Active Pts (Prior Month)</p>
-                    <p className="text-2xl font-bold text-violet-900">
-                      {advancedMetrics.activePtsFirstOfPriorMonth}
-                    </p>
-                    <p className="text-xs text-violet-600 mt-1">Beginning of last month</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-violet-200/50' : 'border-violet-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-violet-700' : 'text-violet-400'}`}>Active Pts (Prior Month)</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.activePtsFirstOfPriorMonth}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Beginning of last month</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-indigo-700 mb-1">Avg Retention Period</p>
-                    <p className="text-2xl font-bold text-indigo-900">
-                      {advancedMetrics.avgRetentionPeriod}
-                    </p>
-                    <p className="text-xs text-indigo-600 mt-1">Months</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Avg Retention Period</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.avgRetentionPeriod}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Months</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Revenue & Value Metrics */}
               <div className="mb-8">
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Revenue & Customer Value</h4>
+                <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Revenue & Customer Value</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-sky-700 mb-1">Average Revenue Per Client</p>
-                    <p className="text-2xl font-bold text-sky-900">
-                      ${advancedMetrics.averageRevenuePerClient.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-sky-600 mt-1">ARPC</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-sky-200/50' : 'border-sky-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-sky-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-sky-700' : 'text-sky-400'}`}>Average Revenue Per Client</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.averageRevenuePerClient.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>ARPC</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-400 rounded-lg p-4">
-                    <p className="text-xs font-medium text-blue-700 mb-1 font-semibold">Lifetime Value (LTV)</p>
-                    <p className="text-3xl font-bold text-blue-900">
-                      ${advancedMetrics.ltv.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">ARPC × Avg Retention Period</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Lifetime Value (LTV)</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.ltv.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>ARPC × Avg Retention Period</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-cyan-700 mb-1">LTV:CAC Ratio</p>
-                    <p className="text-2xl font-bold text-cyan-900">
-                      {advancedMetrics.cac > 0 ? (advancedMetrics.ltv / advancedMetrics.cac).toFixed(2) : '0.00'}:1
-                    </p>
-                    <p className="text-xs text-cyan-600 mt-1">Customer value efficiency</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>LTV:CAC Ratio</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.cac > 0 ? (advancedMetrics.ltv / advancedMetrics.cac).toFixed(2) : '0.00'}:1
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Customer value efficiency</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Satisfaction & Employee Metrics */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Satisfaction & Employee Performance</h4>
+                <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Satisfaction & Employee Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-green-700 mb-1">Net Promoter Score</p>
-                    <p className="text-3xl font-bold text-green-900">
-                      {advancedMetrics.nps}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">Patient satisfaction</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Net Promoter Score</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.nps}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient satisfaction</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-teal-700 mb-1">Employee NPS (eNPS)</p>
-                    <p className="text-3xl font-bold text-teal-900">
-                      {advancedMetrics.enps}
-                    </p>
-                    <p className="text-xs text-teal-600 mt-1">Employee satisfaction</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Employee NPS (eNPS)</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.enps}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Employee satisfaction</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-emerald-700 mb-1">Employee Utilization Rate</p>
-                    <p className="text-3xl font-bold text-emerald-900">
-                      {advancedMetrics.employeeUtilizationRate}%
-                    </p>
-                    <p className="text-xs text-emerald-600 mt-1">Productivity metric</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Employee Utilization Rate</p>
+                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.employeeUtilizationRate}%
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Productivity metric</p>
+                    </div>
                   </div>
                 </div>
               </div>
