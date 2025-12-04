@@ -18,16 +18,24 @@ export type MetricWithValue = {
 /**
  * Fetches the most recent value for a specific metric field_key
  * This is used for persistent metrics that should not reset on a new day
+ * For financing metrics, gets the last non-zero value
  */
-export async function getLatestMetricValue(fieldKey: string): Promise<number | null> {
+export async function getLatestMetricValue(fieldKey: string, skipZeros: boolean = false): Promise<number | null> {
   try {
-    const { data, error } = await supabase
+    const query = supabase
       .from('csd_metric_values')
       .select('value, as_of_date')
       .eq('field_key', fieldKey)
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .single();
+      .order('as_of_date', { ascending: false });
+
+    // For financing amounts, skip zero values to get last meaningful amount
+    if (skipZeros) {
+      query.gt('value', 0).limit(1);
+    } else {
+      query.limit(1);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
       console.warn(`No data found for ${fieldKey}:`, error.message);
@@ -44,20 +52,31 @@ export async function getLatestMetricValue(fieldKey: string): Promise<number | n
 /**
  * Fetches the latest values for multiple metric field_keys
  * Returns a map of field_key -> value
+ * For financing amount metrics, skips zero values to get last meaningful amount
  */
 export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<string, number>> {
   const results = new Map<string, number>();
 
+  // Financing amount metrics should skip zero values
+  const financingAmountKeys = ['financing_cherry_amount', 'financing_carecredit_amount'];
+
   try {
     // Fetch all the latest values in parallel
     const promises = fieldKeys.map(async (fieldKey) => {
-      const { data, error } = await supabase
+      const skipZeros = financingAmountKeys.includes(fieldKey);
+
+      const query = supabase
         .from('csd_metric_values')
         .select('value, as_of_date')
         .eq('field_key', fieldKey)
-        .order('as_of_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('as_of_date', { ascending: false });
+
+      // For financing amounts, skip zero values to get last meaningful amount
+      if (skipZeros) {
+        query.gt('value', 0);
+      }
+
+      const { data, error } = await query.limit(1).maybeSingle();
 
       if (!error && data) {
         results.set(fieldKey, data.value || 0);
@@ -78,6 +97,8 @@ export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<st
  */
 export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number; goal: number }>> {
   try {
+    console.log(`[getMonthlyTrends] Fetching ${numMonths} months of data for ${fieldKey}`);
+
     const { data, error } = await supabase
       .from('monthly_metric_trends')
       .select('year, month, month_name, value, goal_value')
@@ -85,6 +106,9 @@ export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6):
       .order('year', { ascending: false })
       .order('month', { ascending: false })
       .limit(numMonths);
+
+    console.log('[getMonthlyTrends] Raw data from database:', data);
+    console.log('[getMonthlyTrends] Data length:', data?.length);
 
     if (error) {
       console.warn('Error fetching monthly trends, falling back to daily aggregation:', error);
@@ -97,12 +121,15 @@ export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6):
     }
 
     // Reverse to get chronological order (oldest to newest)
-    return data.reverse().map((record: any) => ({
+    const result = data.reverse().map((record: any) => ({
       month: record.month_name,
       year: record.year,
       count: record.value || 0,
       goal: record.goal_value || 0
     }));
+
+    console.log('[getMonthlyTrends] Formatted result:', result);
+    return result;
   } catch (err) {
     console.error('Error in getMonthlyTrends:', err);
     return [];
@@ -272,6 +299,9 @@ export async function getNewPatientsAggregates() {
       return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
     };
 
+    // Log raw quarter data to debug
+    console.log('[getNewPatientsAggregates] Raw quarter data:', quarterData?.data);
+
     const perWeek = sumValues(weekData);
     const perMonth = sumValues(monthData);
     const quarterly = sumValues(quarterData);
@@ -284,6 +314,16 @@ export async function getNewPatientsAggregates() {
       monthRecords: monthData?.data?.length || 0,
       quarterRecords: quarterData?.data?.length || 0
     });
+
+    // Detailed breakdown of quarterly sum
+    if (quarterData?.data) {
+      const quarterValues = quarterData.data.map((r: any) => r.value);
+      console.log('[getNewPatientsAggregates] Quarter values breakdown:', {
+        values: quarterValues,
+        sum: quarterValues.reduce((sum: number, val: number) => sum + (val || 0), 0),
+        expectedSum: quarterly
+      });
+    }
 
     return {
       perWeek,

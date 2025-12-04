@@ -203,6 +203,7 @@ export type SchedulingListItem = {
   patient_id: string;
   patient_initials: string;
   treatment_needed: string;
+  last_visit_date: string | null; // ISO date string
   first_contact_date: string | null; // ISO date string
   second_contact_date: string | null; // ISO date string
   third_contact_date: string | null; // ISO date string

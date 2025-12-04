@@ -39,6 +39,8 @@ export const useNewPatientTracker = (dailyCount: number) => {
       // Try to fetch from monthly_metric_trends table first (faster)
       let monthlyData = await getMonthlyTrends('eod_new_patients', 6);
       console.log('[NP Tracker] Monthly trends data:', monthlyData);
+      console.log('[NP Tracker] Monthly trends data length:', monthlyData?.length);
+      console.log('[NP Tracker] Monthly trends data details:', JSON.stringify(monthlyData, null, 2));
 
       // If monthly trends table doesn't have data, fall back to daily aggregation
       if (monthlyData.length === 0) {
@@ -99,6 +101,8 @@ export const useNewPatientTracker = (dailyCount: number) => {
       };
 
       console.log('[NP Tracker] Final data to display:', finalData);
+      console.log('[NP Tracker] monthlyAverages array length:', finalData.monthlyAverages.length);
+      console.log('[NP Tracker] monthlyAverages content:', JSON.stringify(finalData.monthlyAverages, null, 2));
       setData(finalData);
     } catch (err) {
       console.error('Error fetching new patient tracker data:', err);

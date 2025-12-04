@@ -13,6 +13,7 @@ export interface ActionItemsData {
   preAuthsApproved: number;
   accountsNeedingFollowUp: number;
   missedAppointments: number;
+  patientsDueForRecall: number;
 }
 
 /**
@@ -89,8 +90,8 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       .order('as_of_date', { ascending: false })
       .limit(2);
 
-    const ar6190Count = patientARData?.find(r => r.field_key === 'patient_ar_61_90_count')?.value || 0;
-    const ar90PlusCount = patientARData?.find(r => r.field_key === 'patient_ar_90_plus_count')?.value || 0;
+    const ar6190Count = patientARData?.find((r: any) => r.field_key === 'patient_ar_61_90_count')?.value || 0;
+    const ar90PlusCount = patientARData?.find((r: any) => r.field_key === 'patient_ar_90_plus_count')?.value || 0;
 
     const accountsNeedingFollowUp =
       (oldClaimsCount || 0) +
@@ -115,12 +116,28 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
 
     console.log('[Action Items] Missed appointments (automated):', missedAppointments || 0);
 
+    // 6. Patients Due for Recall - AUTO-CALCULATED from patients table
+    // Patients who haven't been seen in 6+ months
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
+
+    const { count: recallCount } = await supabase
+      .from('patients')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .lt('last_visit_date', sixMonthsAgoStr);
+
+    const patientsDueForRecall = recallCount || 0;
+    console.log('[Action Items] Patients due for recall (automated):', patientsDueForRecall);
+
     const result = {
       claimsToSubmit,
       deniedClaimsToResubmit,
       preAuthsApproved,
       accountsNeedingFollowUp,
       missedAppointments: missedAppointments || 0,
+      patientsDueForRecall,
     };
 
     console.log('[Action Items] Final real-time data:', result);
@@ -135,6 +152,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       preAuthsApproved: 0,
       accountsNeedingFollowUp: 0,
       missedAppointments: 0,
+      patientsDueForRecall: 0,
     };
   }
 }
