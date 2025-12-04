@@ -728,7 +728,7 @@ export async function getInsuranceChecks() {
   const { data, error } = await supabase
     .from('insurance_checks')
     .select('*')
-    .order('payment_date', { ascending: false });
+    .order('date_entered', { ascending: false });
 
   if (error) {
     console.error('Error fetching insurance checks:', error);
@@ -923,7 +923,7 @@ export async function getInsuranceChecksByDate(date: string) {
   const { data, error } = await supabase
     .from('insurance_checks')
     .select('*')
-    .eq('payment_date', date)
+    .eq('date_entered', date)
     .order('check_eft_number', { ascending: true });
 
   if (error) {
