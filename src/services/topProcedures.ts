@@ -62,16 +62,19 @@ export async function getTopProceduresForDateRange(
       return [];
     }
 
-    // Aggregate by procedure name and code
+    // Aggregate by procedure code only (codes are unique identifiers)
+    // This fixes issues where the same code might have slightly different names
     const aggregated = new Map<string, { procedure_name: string; procedure_code: string; count: number; revenue: number }>();
 
     data.forEach(proc => {
-      const key = `${proc.procedure_name}|${proc.procedure_code}`;
+      // Use procedure code as the key since that's the unique identifier
+      const key = proc.procedure_code;
       const existing = aggregated.get(key);
 
       if (existing) {
         existing.count += proc.count || 0;
         existing.revenue += proc.revenue || 0;
+        // Keep the first procedure name encountered for this code
       } else {
         aggregated.set(key, {
           procedure_name: proc.procedure_name,
