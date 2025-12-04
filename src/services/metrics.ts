@@ -18,16 +18,24 @@ export type MetricWithValue = {
 /**
  * Fetches the most recent value for a specific metric field_key
  * This is used for persistent metrics that should not reset on a new day
+ * For financing metrics, gets the last non-zero value
  */
-export async function getLatestMetricValue(fieldKey: string): Promise<number | null> {
+export async function getLatestMetricValue(fieldKey: string, skipZeros: boolean = false): Promise<number | null> {
   try {
-    const { data, error } = await supabase
+    const query = supabase
       .from('csd_metric_values')
       .select('value, as_of_date')
       .eq('field_key', fieldKey)
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .single();
+      .order('as_of_date', { ascending: false });
+
+    // For financing amounts, skip zero values to get last meaningful amount
+    if (skipZeros) {
+      query.gt('value', 0).limit(1);
+    } else {
+      query.limit(1);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
       console.warn(`No data found for ${fieldKey}:`, error.message);
@@ -44,20 +52,31 @@ export async function getLatestMetricValue(fieldKey: string): Promise<number | n
 /**
  * Fetches the latest values for multiple metric field_keys
  * Returns a map of field_key -> value
+ * For financing amount metrics, skips zero values to get last meaningful amount
  */
 export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<string, number>> {
   const results = new Map<string, number>();
 
+  // Financing amount metrics should skip zero values
+  const financingAmountKeys = ['financing_cherry_amount', 'financing_carecredit_amount'];
+
   try {
     // Fetch all the latest values in parallel
     const promises = fieldKeys.map(async (fieldKey) => {
-      const { data, error } = await supabase
+      const skipZeros = financingAmountKeys.includes(fieldKey);
+
+      const query = supabase
         .from('csd_metric_values')
         .select('value, as_of_date')
         .eq('field_key', fieldKey)
-        .order('as_of_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('as_of_date', { ascending: false });
+
+      // For financing amounts, skip zero values to get last meaningful amount
+      if (skipZeros) {
+        query.gt('value', 0);
+      }
+
+      const { data, error } = await query.limit(1).maybeSingle();
 
       if (!error && data) {
         results.set(fieldKey, data.value || 0);
