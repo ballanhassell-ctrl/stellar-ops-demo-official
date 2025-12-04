@@ -5649,72 +5649,87 @@ const CourtStreetRCM = () => {
         ) : currentView === 'scorecard' ? (
           <div className="space-y-6">
             {/* Scorecard Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
+              <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Practice Scorecard Metrics
               </h2>
-              <p className="text-gray-600 text-sm">
+              <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 Track your practice performance against goals
               </p>
             </div>
 
             {/* Advanced Business Metrics */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-xl font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Advanced Business Metrics
               </h3>
 
               {/* Experimental Data Disclaimer */}
-              <div className="mb-6 bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+              <div className={`mb-6 ${isDayMode ? 'bg-amber-50/80' : 'bg-amber-900/20'} border-l-4 border-amber-400 p-4 rounded-xl`}>
                 <div className="flex items-start">
-                  <svg className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-amber-600 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium text-amber-800">Calculated Metrics</p>
-                    <p className="text-xs text-amber-700 mt-1">These metrics are calculated estimates based on available data. Please review for accuracy and adjust assumptions as needed.</p>
+                    <p className={`text-sm font-bold ${isDayMode ? 'text-amber-800' : 'text-amber-300'}`}>Calculated Metrics</p>
+                    <p className={`text-xs mt-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>These metrics are calculated estimates based on available data. Please review for accuracy and adjust assumptions as needed.</p>
                   </div>
                 </div>
               </div>
 
               {/* Financial Performance */}
               <div className="mb-8">
-                <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Financial Performance</h4>
+                <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Financial Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-emerald-700 mb-1">CAC</p>
-                    <p className="text-2xl font-bold text-emerald-900">
-                      ${advancedMetrics.cac.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-emerald-600 mt-1">Customer Acquisition Cost</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>CAC</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cac.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Customer Acquisition Cost</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-blue-700 mb-1">Gross Profit Margin</p>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {advancedMetrics.grossProfitMargin}%
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">Profitability ratio</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Gross Profit Margin</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.grossProfitMargin}%
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Profitability ratio</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-indigo-700 mb-1">Operating Profit Margin</p>
-                    <p className="text-2xl font-bold text-indigo-900">
-                      {advancedMetrics.operatingProfitMargin}%
-                    </p>
-                    <p className="text-xs text-indigo-600 mt-1">Operational efficiency</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Operating Profit Margin</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.operatingProfitMargin}%
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Operational efficiency</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-teal-700 mb-1">Cash Flow</p>
-                    <p className="text-2xl font-bold text-teal-900">
-                      ${advancedMetrics.cashFlow.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-teal-600 mt-1">Current period</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Cash Flow</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${advancedMetrics.cashFlow.toLocaleString()}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Current period</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-300 rounded-lg p-4">
-                    <p className="text-xs font-medium text-cyan-700 mb-1">Revenue Growth Rate</p>
-                    <p className="text-2xl font-bold text-cyan-900">
-                      {advancedMetrics.revenueGrowthRate}%
-                    </p>
-                    <p className="text-xs text-cyan-600 mt-1">Year over year</p>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>Revenue Growth Rate</p>
+                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {advancedMetrics.revenueGrowthRate}%
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Year over year</p>
+                    </div>
                   </div>
                 </div>
               </div>
