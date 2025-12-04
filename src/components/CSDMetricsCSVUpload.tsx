@@ -14,14 +14,12 @@ interface CSDMetricsCSVUploadProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  currentDate?: string;
 }
 
 export const CSDMetricsCSVUpload: React.FC<CSDMetricsCSVUploadProps> = ({
   isOpen,
   onClose,
-  onSuccess,
-  currentDate
+  onSuccess
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<MetricValue[]>([]);

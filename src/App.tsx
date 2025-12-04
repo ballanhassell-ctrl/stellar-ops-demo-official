@@ -9109,7 +9109,6 @@ const CourtStreetRCM = () => {
             refreshEOD();
             refreshMetrics();
           }}
-          currentDate={dashboardDate}
         />
 
         {/* Edit Modal */}
