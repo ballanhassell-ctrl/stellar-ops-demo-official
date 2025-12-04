@@ -159,6 +159,11 @@ export const useMetrics = (date: string) => {
         'patient_payments',
         'unapplied_credits',
         'refunds_pending',
+        // Patient metrics (persistent - should show last available data)
+        'total_patients',
+        'patients_with_balance',
+        'past_due_accounts',
+        'total_patient_ar',
         // Third party financing metrics
         'financing_cherry_patients',
         'financing_cherry_amount',
