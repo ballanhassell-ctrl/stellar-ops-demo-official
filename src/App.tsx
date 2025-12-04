@@ -2206,7 +2206,7 @@ const CourtStreetRCM = () => {
                   onClick={() => setCurrentView(item.id)}
                   className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift ${
                     isActive
-                      ? 'bg-gradient-primary text-white shadow-glow-primary'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
                       ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
                       : 'bg-white/5 text-gray-300 hover:bg-white/10'
