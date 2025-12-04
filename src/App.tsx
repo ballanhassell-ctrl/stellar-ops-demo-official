@@ -7258,7 +7258,7 @@ const CourtStreetRCM = () => {
                   <div className="relative z-10">
                     <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Active Claims</p>
                     <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {metricsData.dashboard.activeClaims}
+                      {metricsData?.dashboard.activeClaims ?? 0}
                     </p>
                     <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>In system</p>
                   </div>
@@ -8003,6 +8003,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,
@@ -8202,6 +8203,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,

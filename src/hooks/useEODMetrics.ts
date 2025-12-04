@@ -35,6 +35,7 @@ export interface EODData {
     preAuthsApproved: number;
     accountsNeedingFollowUp: number;
     missedAppointments: number;
+    patientsDueForRecall: number;
   };
   payments: any[]; // Keep as array for now (not stored in Supabase)
   topProcedures: any[]; // Keep as array for now (not stored in Supabase)
