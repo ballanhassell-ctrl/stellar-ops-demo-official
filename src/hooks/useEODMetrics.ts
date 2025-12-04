@@ -165,6 +165,7 @@ export const useEODMetrics = (date: string) => {
           preAuthsApproved: realTimeActionItems.preAuthsApproved,
           accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
           missedAppointments: realTimeActionItems.missedAppointments,
+          patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
         },
 
         // Arrays (not stored in Supabase for now)
