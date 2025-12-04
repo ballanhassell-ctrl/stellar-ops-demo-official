@@ -242,6 +242,7 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
 /**
  * Aggregates new patient counts for various time periods
  * AUTO-CALCULATED from daily eod_new_patients values (Phase 2)
+ * Quarterly calculation uses monthly_metric_trends for consistency with monthly display
  */
 export async function getNewPatientsAggregates() {
   try {
@@ -261,14 +262,18 @@ export async function getNewPatientsAggregates() {
     const quarterStart = new Date(today.getFullYear(), quarterStartMonth, 1);
     const quarterEnd = new Date(today.getFullYear(), quarterStartMonth + 3, 0); // Last day of quarter
 
+    // Get the months in the current quarter (0-indexed)
+    const quarterMonths = [quarterStartMonth, quarterStartMonth + 1, quarterStartMonth + 2];
+
     console.log('[getNewPatientsAggregates] Calendar quarter:', {
       start: quarterStart.toISOString().split('T')[0],
       end: quarterEnd.toISOString().split('T')[0],
-      quarter: `Q${Math.floor(currentMonth / 3) + 1}`
+      quarter: `Q${Math.floor(currentMonth / 3) + 1}`,
+      months: quarterMonths.map(m => m + 1) // 1-indexed for display
     });
 
     // Fetch daily new patient data for different time ranges
-    const [weekData, monthData, quarterData] = await Promise.all([
+    const [weekData, monthData, quarterMonthlyData, quarterDailyFallback] = await Promise.all([
       // Last 7 days
       supabase
         .from('csd_metric_values')
@@ -285,10 +290,18 @@ export async function getNewPatientsAggregates() {
         .gte('as_of_date', monthStart.toISOString().split('T')[0])
         .lte('as_of_date', today.toISOString().split('T')[0]),
 
-      // Current calendar quarter (from start of quarter to today)
+      // Current quarter from monthly_metric_trends (preferred method for consistency)
+      supabase
+        .from('monthly_metric_trends')
+        .select('value, month, year, month_name')
+        .eq('field_key', 'eod_new_patients')
+        .eq('year', today.getFullYear())
+        .in('month', quarterMonths.map(m => m + 1)), // monthly_metric_trends uses 1-indexed months
+
+      // Fallback: Current quarter from daily values (in case monthly trends are not populated)
       supabase
         .from('csd_metric_values')
-        .select('value')
+        .select('value, as_of_date')
         .eq('field_key', 'eod_new_patients')
         .gte('as_of_date', quarterStart.toISOString().split('T')[0])
         .lte('as_of_date', today.toISOString().split('T')[0]),
@@ -299,30 +312,53 @@ export async function getNewPatientsAggregates() {
       return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
     };
 
-    // Log raw quarter data to debug
-    console.log('[getNewPatientsAggregates] Raw quarter data:', quarterData?.data);
-
     const perWeek = sumValues(weekData);
     const perMonth = sumValues(monthData);
-    const quarterly = sumValues(quarterData);
 
-    console.log('[getNewPatientsAggregates] Auto-calculated from daily values:', {
+    // Calculate quarterly: prefer monthly_metric_trends, fallback to daily aggregation
+    let quarterly = 0;
+    let quarterlySource = 'unknown';
+
+    if (quarterMonthlyData?.data && quarterMonthlyData.data.length > 0) {
+      // Use monthly aggregates (preferred - consistent with monthly display)
+      quarterly = sumValues(quarterMonthlyData);
+      quarterlySource = 'monthly_metric_trends';
+
+      console.log('[getNewPatientsAggregates] Using monthly_metric_trends for quarterly:', {
+        monthsFound: quarterMonthlyData.data.length,
+        monthDetails: quarterMonthlyData.data.map((m: any) => ({
+          month: m.month_name,
+          value: m.value
+        })),
+        quarterlyTotal: quarterly
+      });
+    } else {
+      // Fallback to daily aggregation
+      quarterly = sumValues(quarterDailyFallback);
+      quarterlySource = 'daily_aggregation';
+
+      console.log('[getNewPatientsAggregates] Falling back to daily aggregation for quarterly:', {
+        dailyRecords: quarterDailyFallback?.data?.length || 0,
+        quarterlyTotal: quarterly
+      });
+    }
+
+    console.log('[getNewPatientsAggregates] Auto-calculated aggregates:', {
       perWeek,
       perMonth,
       quarterly,
+      quarterlySource,
       weekRecords: weekData?.data?.length || 0,
-      monthRecords: monthData?.data?.length || 0,
-      quarterRecords: quarterData?.data?.length || 0
+      monthRecords: monthData?.data?.length || 0
     });
 
-    // Detailed breakdown of quarterly sum
-    if (quarterData?.data) {
-      const quarterValues = quarterData.data.map((r: any) => r.value);
-      console.log('[getNewPatientsAggregates] Quarter values breakdown:', {
-        values: quarterValues,
-        sum: quarterValues.reduce((sum: number, val: number) => sum + (val || 0), 0),
-        expectedSum: quarterly
-      });
+    // Detailed breakdown for debugging
+    if (quarterlySource === 'daily_aggregation' && quarterDailyFallback?.data) {
+      const dateValuePairs = quarterDailyFallback.data.map((r: any) => ({
+        date: r.as_of_date,
+        value: r.value
+      }));
+      console.log('[getNewPatientsAggregates] Daily breakdown for quarter:', dateValuePairs);
     }
 
     return {
