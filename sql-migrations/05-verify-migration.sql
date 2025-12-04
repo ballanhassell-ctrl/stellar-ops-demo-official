@@ -198,12 +198,12 @@ LIMIT 20;
 -- =====================================================
 -- This is what your team should use for daily data entry
 SELECT
-  display_order,
-  field_key,
-  field_name,
-  category,
-  data_type,
-  description_notes,
+  c.display_order,
+  c.field_key,
+  c.field_name,
+  c.category,
+  c.data_type,
+  c.description_notes,
   COALESCE(v.value, 0) as current_value
 FROM csd_metric_catalog c
 LEFT JOIN csd_metric_values v ON c.field_key = v.field_key
