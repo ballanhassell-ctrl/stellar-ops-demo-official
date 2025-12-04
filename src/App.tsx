@@ -4,7 +4,7 @@ import {
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog
+  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -721,6 +721,7 @@ const CourtStreetRCM = () => {
 
   // Top Procedures state
   const [topProcedures, setTopProcedures] = useState<any[]>([]);
+  const [showProcedureDetails, setShowProcedureDetails] = useState(false);
 
   // Insurance Provider state
   const [insuranceProviders, setInsuranceProviders] = useState<InsuranceProvider[]>([]);
@@ -7131,69 +7132,193 @@ const CourtStreetRCM = () => {
               </div>
               {topProcedures.length > 0 ? (
                 <>
-                  {/* Bar Chart Visualization */}
-                  <div className={`mb-6 p-5 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/30' : 'border-white/10'}`}>
-                    <p className={`text-sm font-medium mb-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
-                      Revenue by Procedure
-                    </p>
-                    <div className="space-y-3">
-                      {topProcedures.slice(0, 5).map((procedure: any, index: number) => {
-                        const maxRevenue = Math.max(...topProcedures.map((p: any) => p.revenue));
-                        const widthPercent = (procedure.revenue / maxRevenue) * 100;
-                        const colors = [
-                          'bg-purple-500',
-                          'bg-blue-500',
-                          'bg-green-500',
-                          'bg-yellow-500',
-                          'bg-orange-500'
-                        ];
-                        return (
-                          <div key={index}>
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className={`font-medium truncate max-w-[60%] ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
-                                {procedure.procedure_name}
-                              </span>
-                              <span className={`font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                                ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                              </span>
-                            </div>
-                            <div className={`w-full rounded-full h-6 ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} overflow-hidden`}>
-                              <div
-                                className={`${colors[index]} h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
-                                style={{ width: `${widthPercent}%` }}
-                              >
-                                <span className="text-xs font-semibold text-white">{procedure.count}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  {(() => {
+                    // Define code categories
+                    const hygieneRecareCodesArray = ['D1110', 'D1120', 'D4910', 'D1206', 'D1351', 'D4341', 'D4342', 'D4000'];
+                    const excludedCodesArray = ['D0150', 'D0180', 'D0140', 'D0277', 'D0274', 'D0220', 'D0230', 'D0210', 'D0120', 'D9987', 'D9986', 'D9150'];
 
-                  {/* Procedures List */}
-                  <div className="space-y-3">
-                    {topProcedures.map((procedure: any, index: number) => (
-                      <div key={index} className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} hover-lift relative overflow-hidden group`}>
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                        <div className="flex items-center space-x-4 relative z-10">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDayMode ? 'bg-purple-500/20 border border-purple-300/50' : 'bg-purple-500/20 border border-purple-500/30'}`}>
-                            <span className={`text-sm font-bold ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>{index + 1}</span>
+                    // Categorize procedures
+                    const hygieneProcedures = topProcedures
+                      .filter((p: any) => {
+                        const code = p.procedure_code?.toUpperCase() || '';
+                        return hygieneRecareCodesArray.includes(code) && !excludedCodesArray.includes(code);
+                      })
+                      .slice(0, 10);
+
+                    const operativeProcedures = topProcedures
+                      .filter((p: any) => {
+                        const code = p.procedure_code?.toUpperCase() || '';
+                        return !hygieneRecareCodesArray.includes(code) && !excludedCodesArray.includes(code);
+                      })
+                      .slice(0, 10);
+
+                    return (
+                      <>
+                        {/* Two Column Chart Layout */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                          {/* Hygiene/Recare Chart */}
+                          <div className={`p-5 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-400/20'}`}>
+                            <h4 className={`text-sm font-bold mb-4 ${isDayMode ? 'text-blue-700' : 'text-blue-400'} flex items-center gap-2`}>
+                              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                              Hygiene/Recare Procedures
+                            </h4>
+                            {hygieneProcedures.length > 0 ? (
+                              <div className="space-y-3">
+                                {hygieneProcedures.map((procedure: any, index: number) => {
+                                  const maxRevenue = Math.max(...hygieneProcedures.map((p: any) => p.revenue));
+                                  const heightPercent = (procedure.revenue / maxRevenue) * 100;
+                                  return (
+                                    <div key={index}>
+                                      <div className="flex items-center justify-between text-xs mb-1">
+                                        <span className={`font-medium truncate max-w-[60%] ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                          {procedure.procedure_code || procedure.procedure_name}
+                                        </span>
+                                        <span className={`font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                          ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </span>
+                                      </div>
+                                      <div className={`w-full rounded-full h-6 ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} overflow-hidden`}>
+                                        <div
+                                          className="bg-blue-500 h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                                          style={{ width: `${heightPercent}%` }}
+                                        >
+                                          <span className="text-xs font-semibold text-white">{procedure.count}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className={`text-xs text-center py-4 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                No hygiene/recare procedures this month
+                              </p>
+                            )}
                           </div>
-                          <div>
-                            <p className={`font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                              {procedure.procedure_name}
-                              {procedure.procedure_code && <span className={`text-xs ml-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>({procedure.procedure_code})</span>}
-                            </p>
-                            <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{procedure.count} procedure{procedure.count !== 1 ? 's' : ''}</p>
+
+                          {/* Operative/Major Treatment Chart */}
+                          <div className={`p-5 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'}`}>
+                            <h4 className={`text-sm font-bold mb-4 ${isDayMode ? 'text-purple-700' : 'text-purple-400'} flex items-center gap-2`}>
+                              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                              Operative/Major Treatment
+                            </h4>
+                            {operativeProcedures.length > 0 ? (
+                              <div className="space-y-3">
+                                {operativeProcedures.map((procedure: any, index: number) => {
+                                  const maxRevenue = Math.max(...operativeProcedures.map((p: any) => p.revenue));
+                                  const heightPercent = (procedure.revenue / maxRevenue) * 100;
+                                  return (
+                                    <div key={index}>
+                                      <div className="flex items-center justify-between text-xs mb-1">
+                                        <span className={`font-medium truncate max-w-[60%] ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                          {procedure.procedure_code || procedure.procedure_name}
+                                        </span>
+                                        <span className={`font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                          ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </span>
+                                      </div>
+                                      <div className={`w-full rounded-full h-6 ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} overflow-hidden`}>
+                                        <div
+                                          className="bg-purple-500 h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                                          style={{ width: `${heightPercent}%` }}
+                                        >
+                                          <span className="text-xs font-semibold text-white">{procedure.count}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className={`text-xs text-center py-4 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                No operative procedures this month
+                              </p>
+                            )}
                           </div>
                         </div>
-                        <p className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                          ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+
+                        {/* See Details Button */}
+                        <div className="flex justify-center mb-4">
+                          <button
+                            onClick={() => setShowProcedureDetails(!showProcedureDetails)}
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all ${isDayMode ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                          >
+                            <span className="text-sm font-medium">
+                              {showProcedureDetails ? 'Hide Details' : 'See Details'}
+                            </span>
+                            {showProcedureDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                        </div>
+
+                        {/* Collapsible Detailed List */}
+                        {showProcedureDetails && (
+                          <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
+                            {/* Hygiene/Recare Details */}
+                            {hygieneProcedures.length > 0 && (
+                              <div>
+                                <h4 className={`text-sm font-bold mb-3 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>
+                                  Hygiene/Recare Procedures ({hygieneProcedures.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {hygieneProcedures.map((procedure: any, index: number) => (
+                                    <div key={index} className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-400/20'} hover-lift relative overflow-hidden group`}>
+                                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                                      <div className="flex items-center space-x-4 relative z-10">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDayMode ? 'bg-blue-500/20 border border-blue-300/50' : 'bg-blue-500/20 border border-blue-500/30'}`}>
+                                          <span className={`text-sm font-bold ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>{index + 1}</span>
+                                        </div>
+                                        <div>
+                                          <p className={`font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                            {procedure.procedure_name}
+                                            {procedure.procedure_code && <span className={`text-xs ml-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>({procedure.procedure_code})</span>}
+                                          </p>
+                                          <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{procedure.count} procedure{procedure.count !== 1 ? 's' : ''}</p>
+                                        </div>
+                                      </div>
+                                      <p className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                        ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Operative/Major Treatment Details */}
+                            {operativeProcedures.length > 0 && (
+                              <div>
+                                <h4 className={`text-sm font-bold mb-3 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>
+                                  Operative/Major Treatment ({operativeProcedures.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {operativeProcedures.map((procedure: any, index: number) => (
+                                    <div key={index} className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} hover-lift relative overflow-hidden group`}>
+                                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                                      <div className="flex items-center space-x-4 relative z-10">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDayMode ? 'bg-purple-500/20 border border-purple-300/50' : 'bg-purple-500/20 border border-purple-500/30'}`}>
+                                          <span className={`text-sm font-bold ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>{index + 1}</span>
+                                        </div>
+                                        <div>
+                                          <p className={`font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                            {procedure.procedure_name}
+                                            {procedure.procedure_code && <span className={`text-xs ml-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>({procedure.procedure_code})</span>}
+                                          </p>
+                                          <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{procedure.count} procedure{procedure.count !== 1 ? 's' : ''}</p>
+                                        </div>
+                                      </div>
+                                      <p className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                        ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </>
               ) : (
                 <div className={`text-center py-8 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
