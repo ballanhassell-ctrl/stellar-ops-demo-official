@@ -739,7 +739,7 @@ const CourtStreetRCM = () => {
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
-  const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: _refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
+  const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
   const { data: weeklyScorecardData } = useWeeklyScorecardData(12);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
@@ -2809,9 +2809,18 @@ const CourtStreetRCM = () => {
 
             {/* New Patient Tracker */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                New Patient Tracker
-              </h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                  New Patient Tracker
+                </h3>
+                <button
+                  onClick={refreshNewPatients}
+                  className={`p-2 rounded-lg transition-colors ${isDayMode ? 'hover:bg-gray-100 text-gray-600 hover:text-gray-900' : 'hover:bg-gray-700 text-gray-400 hover:text-white'}`}
+                  title="Refresh tracker data"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </button>
+              </div>
 
               {/* Current Period Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
