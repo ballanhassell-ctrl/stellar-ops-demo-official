@@ -2147,7 +2147,7 @@ const CourtStreetRCM = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">
-                  Court Street Dental RCM
+                  Court Street Dental RCM Dashboard
                 </h1>
                 <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                   Powered by Stellar Consults
