@@ -309,9 +309,7 @@ const getInitialEODData = () => ({
   patientsSeenToday: 0,
   newPatients: 0,
   proceduresCompleted: 0,
-  unbilledProcedures: 0,
   unappliedPayments: 0,
-  failedTransactions: 0,
   actionItems: {
     claimsToSubmit: 0,
     deniedClaimsToResubmit: 0,
@@ -1251,7 +1249,6 @@ const CourtStreetRCM = () => {
     collectionRate: metricsData?.dashboard.collectionRate ?? 73,
     activePatients: metricsData?.dashboard.activePatients ?? 1935,
     activeClaims: metricsData?.dashboard.activeClaims ?? 284,
-    pendingPayments: metricsData?.dashboard.pendingPayments ?? 0,
     outstandingAR: metricsData?.dashboard.outstandingAR ?? 186357.25
   };
 

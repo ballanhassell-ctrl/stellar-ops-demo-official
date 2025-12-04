@@ -135,7 +135,6 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       preAuthsApproved: 0,
       accountsNeedingFollowUp: 0,
       missedAppointments: 0,
-      unbilledProcedures: 0
     };
   }
 }
