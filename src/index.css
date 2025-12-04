@@ -10,3 +10,77 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Glassmorphism utility classes */
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .glass-dark {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  }
+
+  .glass-card-dark {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%);
+  }
+
+  .gradient-gold {
+    background: linear-gradient(135deg, #FFB800 0%, #FF9500 100%);
+  }
+
+  .gradient-mesh {
+    background: radial-gradient(at 40% 20%, rgba(0, 102, 255, 0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(255, 184, 0, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgba(0, 212, 170, 0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 80%, rgba(0, 102, 255, 0.1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(255, 184, 0, 0.1) 0px, transparent 50%);
+  }
+
+  .gradient-mesh-dark {
+    background: radial-gradient(at 40% 20%, rgba(0, 102, 255, 0.2) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(255, 184, 0, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgba(0, 212, 170, 0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 80%, rgba(0, 102, 255, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(255, 184, 0, 0.1) 0px, transparent 50%);
+  }
+
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 48px 0 rgba(31, 38, 135, 0.25);
+  }
+
+  .hover-glow {
+    transition: box-shadow 0.3s ease;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 24px rgba(0, 102, 255, 0.4);
+  }
+}
