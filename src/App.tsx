@@ -18,10 +18,12 @@ import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
 import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
 import { CSDMetricsCSVUpload } from './components/CSDMetricsCSVUpload';
+import { RCMMetricsCSVUpload } from './components/RCMMetricsCSVUpload';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
+import { getLatestMetricValue } from './services/metrics';
 import {
   getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, unarchiveClaim, getClaimAuditHistory,
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
@@ -740,6 +742,7 @@ const CourtStreetRCM = () => {
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
   const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
   const [showCSDMetricsModal, setShowCSDMetricsModal] = useState(false);
+  const [showRCMMetricsModal, setShowRCMMetricsModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
 
   // AI Insights state
@@ -763,6 +766,7 @@ const CourtStreetRCM = () => {
   const [newClaimStatus, setNewClaimStatus] = useState<ClaimRecord['status']>('Pending');
   const [_claimsLoading, setClaimsLoading] = useState(true);
   const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
+  const [claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -925,6 +929,20 @@ const CourtStreetRCM = () => {
 
     fetchClaims();
   }, [showArchivedClaims]);
+
+  // Fetch latest RCM metrics from Supabase
+  useEffect(() => {
+    const fetchRCMMetrics = async () => {
+      try {
+        const claimsOver60 = await getLatestMetricValue('rcm_claims_over_60_days');
+        setClaimsOver60Days(claimsOver60);
+      } catch (error) {
+        console.error('Error fetching RCM metrics:', error);
+      }
+    };
+
+    fetchRCMMetrics();
+  }, []);
 
   // Fetch pre-auths from Supabase (refetch when toggle changes)
   useEffect(() => {
@@ -1765,9 +1783,8 @@ const CourtStreetRCM = () => {
     denied: showArchivedClaims
       ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
       : claims.filter((c: ClaimRecord) => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
-    overSixtyDays: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.agingDays > 60).length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.agingDays > 60).length
+    // Use static metric value from database (most recent entry), never show 0 if data exists
+    overSixtyDays: claimsOver60Days ?? 0
   };
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
@@ -7565,9 +7582,18 @@ const CourtStreetRCM = () => {
 
             {/* Claims Summary Section */}
             <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                Claims Management Summary
-              </h3>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                  Claims Management Summary
+                </h3>
+                <button
+                  onClick={() => setShowRCMMetricsModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span className="text-sm">Upload RCM Metrics</span>
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
@@ -9156,6 +9182,17 @@ const CourtStreetRCM = () => {
             // Refresh all metrics after upload
             refreshEOD();
             refreshMetrics();
+          }}
+        />
+
+        {/* RCM Metrics CSV Upload */}
+        <RCMMetricsCSVUpload
+          isOpen={showRCMMetricsModal}
+          onClose={() => setShowRCMMetricsModal(false)}
+          onSuccess={async () => {
+            // Refresh RCM metrics after upload
+            const claimsOver60 = await getLatestMetricValue('rcm_claims_over_60_days');
+            setClaimsOver60Days(claimsOver60);
           }}
         />
 
