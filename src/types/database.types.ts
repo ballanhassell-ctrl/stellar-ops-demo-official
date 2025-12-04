@@ -53,7 +53,7 @@ export type Claim = {
   patient_id: string;
   patient_name: string;
   insurance_company: string;
-  claim_number: string;
+  claim_number: string | null; // Optional for Pending/Sent status claims
   procedure_code: string;
   claim_detail: string;
   claim_amount: number;
