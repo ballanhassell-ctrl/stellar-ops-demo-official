@@ -1684,16 +1684,16 @@ const CourtStreetRCM = () => {
 
   // Calculate real-time claims statistics from actual claims data
   const realTimeClaimsStats = {
-    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter(c => !c.archivedAt).length,
+    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter((c: ClaimRecord) => !c.archivedAt).length,
     pending: showArchivedClaims
-      ? filteredClaims.filter(c => c.status === 'Pending').length
-      : claims.filter(c => !c.archivedAt && c.status === 'Pending').length,
+      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Pending').length
+      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.status === 'Pending').length,
     denied: showArchivedClaims
-      ? filteredClaims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
-      : claims.filter(c => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
+      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
+      : claims.filter((c: ClaimRecord) => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
     overSixtyDays: showArchivedClaims
-      ? filteredClaims.filter(c => c.agingDays > 60).length
-      : claims.filter(c => !c.archivedAt && c.agingDays > 60).length
+      ? filteredClaims.filter((c: ClaimRecord) => c.agingDays > 60).length
+      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.agingDays > 60).length
   };
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
@@ -2238,7 +2238,7 @@ const CourtStreetRCM = () => {
                     <input
                       type="date"
                       value={dashboardDate}
-                      onChange={(e) => setDashboardDate(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardDate(e.target.value)}
                       className={`px-3 py-2 rounded border ${
                         isDayMode
                           ? 'bg-white border-gray-300 text-gray-900'
