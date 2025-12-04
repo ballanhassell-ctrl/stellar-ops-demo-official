@@ -97,6 +97,8 @@ export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<st
  */
 export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number; goal: number }>> {
   try {
+    console.log(`[getMonthlyTrends] Fetching ${numMonths} months of data for ${fieldKey}`);
+
     const { data, error } = await supabase
       .from('monthly_metric_trends')
       .select('year, month, month_name, value, goal_value')
@@ -104,6 +106,9 @@ export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6):
       .order('year', { ascending: false })
       .order('month', { ascending: false })
       .limit(numMonths);
+
+    console.log('[getMonthlyTrends] Raw data from database:', data);
+    console.log('[getMonthlyTrends] Data length:', data?.length);
 
     if (error) {
       console.warn('Error fetching monthly trends, falling back to daily aggregation:', error);
@@ -116,12 +121,15 @@ export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6):
     }
 
     // Reverse to get chronological order (oldest to newest)
-    return data.reverse().map((record: any) => ({
+    const result = data.reverse().map((record: any) => ({
       month: record.month_name,
       year: record.year,
       count: record.value || 0,
       goal: record.goal_value || 0
     }));
+
+    console.log('[getMonthlyTrends] Formatted result:', result);
+    return result;
   } catch (err) {
     console.error('Error in getMonthlyTrends:', err);
     return [];
