@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals, getBAMCycleRevenue } from '../services/metrics';
 
 interface DashboardMetrics {
   bamCurrentRevenue: number;
+  bamPreviousRevenue: number;
   bamTargetGoal: number;
   practiceGoal: number;
   collectionRate: number;
@@ -112,7 +113,15 @@ export interface MetricsData {
   scorecard: ScorecardMetrics;
 }
 
-export const useMetrics = (date: string) => {
+export const useMetrics = (
+  date: string,
+  bamCycleDates?: {
+    currentCycleStart: Date;
+    currentCycleEnd: Date;
+    previousCycleStart: Date | null;
+    previousCycleEnd: Date | null;
+  }
+) => {
   const [data, setData] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,8 +134,8 @@ export const useMetrics = (date: string) => {
       const metrics = await getMetricsForDate(date);
 
       // Define persistent metrics that should use latest values if not found for current date
+      // NOTE: bam_current_revenue is now calculated dynamically based on cycle dates
       const persistentMetrics = [
-        'bam_current_revenue',
         'bam_target_goal',
         'practice_goal',
         'active_patients',
@@ -217,10 +226,33 @@ export const useMetrics = (date: string) => {
         return currentValue || defaultValue;
       };
 
+      // Fetch BAM cycle revenue data (filtered by cycle dates)
+      let bamCurrentRevenue = 0;
+      let bamPreviousRevenue = 0;
+
+      if (bamCycleDates) {
+        // Fetch revenue for current cycle
+        bamCurrentRevenue = await getBAMCycleRevenue(
+          bamCycleDates.currentCycleStart,
+          bamCycleDates.currentCycleEnd
+        );
+
+        // Fetch revenue for previous cycle (if available)
+        bamPreviousRevenue = await getBAMCycleRevenue(
+          bamCycleDates.previousCycleStart,
+          bamCycleDates.previousCycleEnd
+        );
+      } else {
+        // Fallback to old behavior if no cycle dates provided
+        console.warn('[useMetrics] No BAM cycle dates provided, using legacy persistent metric');
+        bamCurrentRevenue = getMetricValue('bam_current_revenue', 0, true);
+      }
+
       // Map the flat metrics array to structured dashboard data
       const mappedData: MetricsData = {
         dashboard: {
-          bamCurrentRevenue: getMetricValue('bam_current_revenue', 0, true),
+          bamCurrentRevenue: bamCurrentRevenue,
+          bamPreviousRevenue: bamPreviousRevenue,
           bamTargetGoal: getMetricValue('bam_target_goal', 224548, true),
           practiceGoal: getMetricValue('practice_goal', 300000, true),
           collectionRate: getMetricValue('collection_rate', 0, true),
