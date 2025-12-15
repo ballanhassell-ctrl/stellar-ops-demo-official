@@ -157,6 +157,8 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
 
   let cycleStart = new Date(referenceStartDate);
   cycleStart.setHours(0, 0, 0, 0);
+  let previousCycleStart: Date | null = null;
+  let previousCycleEnd: Date | null = null;
 
   // Find the current cycle by iterating forward
   while (cycleStart < today) {
@@ -175,9 +177,15 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
         currentCycleEnd: cycleEnd,
         daysRemaining: businessDaysRemaining,
         nextCycleStart: nextCycleStart,
-        nextCycleEnd: nextCycleEnd
+        nextCycleEnd: nextCycleEnd,
+        previousCycleStart: previousCycleStart,
+        previousCycleEnd: previousCycleEnd
       };
     }
+
+    // Store this as the previous cycle before moving to next
+    previousCycleStart = new Date(cycleStart);
+    previousCycleEnd = new Date(cycleEnd);
 
     // Move to next cycle (next calendar day after cycle ends)
     cycleStart = new Date(cycleEnd);
@@ -197,7 +205,9 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
     currentCycleEnd: cycleEnd,
     daysRemaining: businessDaysRemaining,
     nextCycleStart: nextCycleStart,
-    nextCycleEnd: nextCycleEnd
+    nextCycleEnd: nextCycleEnd,
+    previousCycleStart: null,
+    previousCycleEnd: null
   };
 };
 
@@ -805,8 +815,17 @@ const CourtStreetRCM = () => {
   const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
   const [showArchivedInsuranceChecks, setShowArchivedInsuranceChecks] = useState(false);
 
+  // Calculate BAM cycle dates (needed for metrics hook)
+  const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
+  const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
+
   // Fetch all metrics from Supabase using unified date
-  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
+  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate, {
+    currentCycleStart: bamCycle.currentCycleStart,
+    currentCycleEnd: bamCycle.currentCycleEnd,
+    previousCycleStart: bamCycle.previousCycleStart,
+    previousCycleEnd: bamCycle.previousCycleEnd
+  });
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
   const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
@@ -1322,20 +1341,29 @@ const CourtStreetRCM = () => {
     }
   };
 
-  // BAM Cycle Configuration & Calculation
-  const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
-  const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
-
   // Historical BAM Cycle Data (for trend graph)
+  // Now dynamically pulls from Supabase filtered by cycle dates
   const historicalBAMData = [
-    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 17', revenue: 202259.69, goal: 224548 }, // Previous cycle (Sept 23 - Oct 17, 2025)
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 223235.05, goal: 224548 }, // Current cycle (Oct 18 - Nov 13, 2025)
+    {
+      cycle: 'Previous',
+      startDate: bamCycle.previousCycleStart?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) || 'N/A',
+      endDate: bamCycle.previousCycleEnd?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) || 'N/A',
+      revenue: metricsData?.dashboard.bamPreviousRevenue ?? 0,
+      goal: metricsData?.dashboard.bamTargetGoal ?? 224548
+    },
+    {
+      cycle: 'Current',
+      startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      revenue: metricsData?.dashboard.bamCurrentRevenue ?? 0,
+      goal: metricsData?.dashboard.bamTargetGoal ?? 224548
+    },
   ];
 
   // Dashboard data - using Supabase data when available, fallback to defaults
   const dashboardData = {
-    bamCurrentRevenue: metricsData?.dashboard.bamCurrentRevenue ?? 223235.05,
-    bamTargetGoal: metricsData?.dashboard.bamTargetGoal ?? 224548,
+    bamCurrentRevenue: metricsData?.dashboard.bamCurrentRevenue ?? 0, // Now filtered by current cycle dates, defaults to $0 for new cycles
+    bamTargetGoal: metricsData?.dashboard.bamTargetGoal ?? 224548, // BAM goal stays static across cycles
     practiceGoal: metricsData?.dashboard.practiceGoal ?? 300000,
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
