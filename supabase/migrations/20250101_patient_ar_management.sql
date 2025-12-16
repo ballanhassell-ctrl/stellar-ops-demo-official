@@ -26,16 +26,9 @@ CREATE TABLE IF NOT EXISTS patient_ar (
   current_balance DECIMAL(10,2) NOT NULL CHECK (current_balance >= 0),
   balance_created_date DATE NOT NULL,
 
-  -- Aging Calculations (Generated Columns)
-  aging_days INTEGER GENERATED ALWAYS AS (CURRENT_DATE - dos) STORED,
-  aging_bucket VARCHAR(10) GENERATED ALWAYS AS (
-    CASE
-      WHEN (CURRENT_DATE - dos) <= 30 THEN '0-30'
-      WHEN (CURRENT_DATE - dos) <= 60 THEN '31-60'
-      WHEN (CURRENT_DATE - dos) <= 90 THEN '61-90'
-      ELSE '90+'
-    END
-  ) STORED,
+  -- Aging Calculations (Computed on read via view)
+  -- Note: aging_days and aging_bucket are calculated dynamically
+  -- to avoid immutability issues with CURRENT_DATE in generated columns
 
   -- Status Tracking
   status VARCHAR(30) NOT NULL DEFAULT 'active'
@@ -59,11 +52,27 @@ CREATE TABLE IF NOT EXISTS patient_ar (
 
 -- Indexes for patient_ar
 CREATE INDEX IF NOT EXISTS idx_patient_ar_status ON patient_ar(status);
-CREATE INDEX IF NOT EXISTS idx_patient_ar_aging_bucket ON patient_ar(aging_bucket);
+CREATE INDEX IF NOT EXISTS idx_patient_ar_dos ON patient_ar(dos);
 CREATE INDEX IF NOT EXISTS idx_patient_ar_next_contact ON patient_ar(next_contact_due_date);
 CREATE INDEX IF NOT EXISTS idx_patient_ar_patient_id ON patient_ar(patient_id) WHERE patient_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_patient_ar_write_off_suggested
   ON patient_ar(write_off_suggested_date) WHERE status = 'write_off_suggested';
+
+-- =====================================================
+-- VIEW: patient_ar_with_aging
+-- Provides aging calculations dynamically
+-- =====================================================
+CREATE OR REPLACE VIEW patient_ar_with_aging AS
+SELECT
+  *,
+  (CURRENT_DATE - dos) AS aging_days,
+  CASE
+    WHEN (CURRENT_DATE - dos) <= 30 THEN '0-30'::VARCHAR(10)
+    WHEN (CURRENT_DATE - dos) <= 60 THEN '31-60'::VARCHAR(10)
+    WHEN (CURRENT_DATE - dos) <= 90 THEN '61-90'::VARCHAR(10)
+    ELSE '90+'::VARCHAR(10)
+  END AS aging_bucket
+FROM patient_ar;
 
 -- =====================================================
 -- TABLE: patient_ar_contacts
@@ -316,7 +325,7 @@ BEGIN
     END,
     pa.current_balance,
     pa.aging_days
-  FROM patient_ar pa
+  FROM patient_ar_with_aging pa
   CROSS JOIN write_off_rules wr
   WHERE wr.is_active = true
     AND pa.status IN ('active', 'collections')
