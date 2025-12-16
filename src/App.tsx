@@ -831,6 +831,14 @@ const CourtStreetRCM = () => {
   const [showRecordPaymentModal, setShowRecordPaymentModal] = useState(false);
   const [selectedPatientAR, setSelectedPatientAR] = useState<PatientAR | null>(null);
 
+  // Filter state
+  const [patientARSearchQuery, setPatientARSearchQuery] = useState('');
+  const [patientARAgingFilter, setPatientARAgingFilter] = useState<string>('all');
+  const [patientARStatusFilter, setPatientARStatusFilter] = useState<string>('all');
+
+  // Bulk selection state
+  const [selectedPatientARIds, setSelectedPatientARIds] = useState<string[]>([]);
+
   // Calculate BAM cycle dates (needed for metrics hook)
   const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
@@ -1041,6 +1049,53 @@ const CourtStreetRCM = () => {
 
     fetchPatientARData();
   }, []);
+
+  // Clear selections when switching between Patient A/R tabs
+  useEffect(() => {
+    setSelectedPatientARIds([]);
+  }, [patientARView]);
+
+  // Filtered Patient A/R data
+  const filteredActivePatientAR = useMemo(() => {
+    return activePatientAR.filter((record) => {
+      // Search filter
+      const searchLower = patientARSearchQuery.toLowerCase();
+      const matchesSearch = !patientARSearchQuery ||
+        record.patient_name.toLowerCase().includes(searchLower) ||
+        (record.patient_id && record.patient_id.toLowerCase().includes(searchLower));
+
+      // Aging filter
+      const matchesAging = patientARAgingFilter === 'all' || record.aging_bucket === patientARAgingFilter;
+
+      // Status filter (for Active tab, status is always 'active', but keeping for consistency)
+      const matchesStatus = patientARStatusFilter === 'all' || record.status === patientARStatusFilter;
+
+      return matchesSearch && matchesAging && matchesStatus;
+    });
+  }, [activePatientAR, patientARSearchQuery, patientARAgingFilter, patientARStatusFilter]);
+
+  const filteredCollectionsPatientAR = useMemo(() => {
+    return collectionsPatientAR.filter((record) => {
+      // Search filter
+      const searchLower = patientARSearchQuery.toLowerCase();
+      const matchesSearch = !patientARSearchQuery ||
+        record.patient_name.toLowerCase().includes(searchLower) ||
+        (record.patient_id && record.patient_id.toLowerCase().includes(searchLower));
+
+      // Aging filter
+      const matchesAging = patientARAgingFilter === 'all' || record.aging_bucket === patientARAgingFilter;
+
+      return matchesSearch && matchesAging;
+    });
+  }, [collectionsPatientAR, patientARSearchQuery, patientARAgingFilter]);
+
+  const filteredWriteOffSuggestions = useMemo(() => {
+    return writeOffSuggestions.filter((suggestion) => {
+      // Search filter (if we had patient name in suggestions, we'd filter here)
+      // For now, no filtering on write-off suggestions
+      return suggestion.status === 'pending';
+    });
+  }, [writeOffSuggestions]);
 
   // Set up real-time subscriptions for claims, pre-auths, and insurance checks
   useEffect(() => {
@@ -4364,22 +4419,198 @@ const CourtStreetRCM = () => {
                       Active Patient A/R
                     </h3>
 
+                    {/* Filter Panel */}
+                    <div className={`mb-6 p-4 rounded-xl ${isDayMode ? 'bg-white/50 border border-gray-200' : 'bg-white/5 border border-white/10'}`}>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {/* Search Input */}
+                        <div className="md:col-span-2">
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Search Patient
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Search by name or ID..."
+                            value={patientARSearchQuery}
+                            onChange={(e) => setPatientARSearchQuery(e.target.value)}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Aging Bucket Filter */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Aging Bucket
+                          </label>
+                          <select
+                            value={patientARAgingFilter}
+                            onChange={(e) => setPatientARAgingFilter(e.target.value)}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          >
+                            <option value="all">All Ages</option>
+                            <option value="0-30">0-30 days</option>
+                            <option value="31-60">31-60 days</option>
+                            <option value="61-90">61-90 days</option>
+                            <option value="90+">90+ days</option>
+                          </select>
+                        </div>
+
+                        {/* Status Filter */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Status
+                          </label>
+                          <select
+                            value={patientARStatusFilter}
+                            onChange={(e) => setPatientARStatusFilter(e.target.value)}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          >
+                            <option value="all">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="collections">Collections</option>
+                            <option value="paid">Paid</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Clear Filters Button */}
+                      {(patientARSearchQuery || patientARAgingFilter !== 'all' || patientARStatusFilter !== 'all') && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => {
+                              setPatientARSearchQuery('');
+                              setPatientARAgingFilter('all');
+                              setPatientARStatusFilter('all');
+                            }}
+                            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                              isDayMode
+                                ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Clear Filters
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     {patientARLoading ? (
                       <div className="text-center py-12">
                         <RefreshCw className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
                         <p className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Loading Patient A/R...</p>
                       </div>
-                    ) : activePatientAR.length === 0 ? (
+                    ) : filteredActivePatientAR.length === 0 ? (
                       <div className="text-center py-12">
                         <CheckCircle className={`w-16 h-16 mx-auto mb-4 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
-                        <p className={`text-lg font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>No active patient A/R</p>
-                        <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>All caught up!</p>
+                        <p className={`text-lg font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                          {activePatientAR.length === 0 ? 'No active patient A/R' : 'No matching records'}
+                        </p>
+                        <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {activePatientAR.length === 0 ? 'All caught up!' : 'Try adjusting your filters'}
+                        </p>
                       </div>
                     ) : (
+                      <>
+                        {/* Bulk Actions Bar */}
+                        {selectedPatientARIds.length > 0 && (
+                        <div className={`mb-4 p-4 rounded-xl flex items-center justify-between ${
+                          isDayMode ? 'bg-primary-50 border border-primary-200' : 'bg-primary-900/20 border border-primary-400/30'
+                        }`}>
+                          <div className={`font-semibold ${isDayMode ? 'text-primary-900' : 'text-primary-300'}`}>
+                            {selectedPatientARIds.length} item{selectedPatientARIds.length > 1 ? 's' : ''} selected
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Move ${selectedPatientARIds.length} record(s) to collections?`)) {
+                                  try {
+                                    // Import the service function at the top if not already imported
+                                    const { batchMoveToCollections } = await import('./services/patientARService.new');
+                                    await batchMoveToCollections(selectedPatientARIds, 'System');
+                                    // Refresh data
+                                    const [activeData, collectionsData] = await Promise.all([
+                                      getActivePatientAR(),
+                                      getCollectionsPatientAR()
+                                    ]);
+                                    setActivePatientAR(activeData);
+                                    setCollectionsPatientAR(collectionsData);
+                                    setSelectedPatientARIds([]);
+                                    alert('Successfully moved to collections!');
+                                  } catch (error) {
+                                    console.error('Error moving to collections:', error);
+                                    alert('Failed to move to collections. Please try again.');
+                                  }
+                                }
+                              }}
+                              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                isDayMode ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-orange-900/30 text-orange-400 hover:bg-orange-900/50'
+                              }`}
+                            >
+                              Move to Collections
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Export to CSV
+                                const selectedRecords = filteredActivePatientAR.filter(r => selectedPatientARIds.includes(r.id));
+                                const csvContent = [
+                                  ['Patient Name', 'Patient ID', 'DOS', 'Balance', 'Aging', 'Status', 'Next Contact'].join(','),
+                                  ...selectedRecords.map(r => [
+                                    r.patient_name,
+                                    r.patient_id || '',
+                                    r.dos,
+                                    r.current_balance,
+                                    r.aging_bucket,
+                                    r.status,
+                                    r.next_contact_due_date || ''
+                                  ].join(','))
+                                ].join('\n');
+                                const blob = new Blob([csvContent], { type: 'text/csv' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `patient-ar-export-${new Date().toISOString().split('T')[0]}.csv`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              }}
+                              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                isDayMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
+                              }`}
+                            >
+                              Export to CSV
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
                             <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
+                              <th className={`px-4 py-3 text-left ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={filteredActivePatientAR.length > 0 && selectedPatientARIds.length === filteredActivePatientAR.length}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedPatientARIds(filteredActivePatientAR.map(r => r.id));
+                                    } else {
+                                      setSelectedPatientARIds([]);
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                                />
+                              </th>
                               <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient</th>
                               <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>DOS</th>
                               <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Balance</th>
@@ -4389,8 +4620,22 @@ const CourtStreetRCM = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {activePatientAR.map((record) => (
+                            {filteredActivePatientAR.map((record) => (
                               <tr key={record.id} className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800/50'} transition-colors`}>
+                                <td className="px-4 py-4">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedPatientARIds.includes(record.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedPatientARIds([...selectedPatientARIds, record.id]);
+                                      } else {
+                                        setSelectedPatientARIds(selectedPatientARIds.filter(id => id !== record.id));
+                                      }
+                                    }}
+                                    className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                                  />
+                                </td>
                                 <td className={`px-4 py-4 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
                                   <div className="font-semibold">{record.patient_name}</div>
                                   {record.patient_contact && <div className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{record.patient_contact}</div>}
@@ -4450,6 +4695,7 @@ const CourtStreetRCM = () => {
                           </tbody>
                         </table>
                       </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -4461,36 +4707,204 @@ const CourtStreetRCM = () => {
                       Collections
                     </h3>
 
+                    {/* Filter Panel */}
+                    <div className={`mb-6 p-4 rounded-xl ${isDayMode ? 'bg-white/50 border border-gray-200' : 'bg-white/5 border border-white/10'}`}>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Search Input */}
+                        <div className="md:col-span-2">
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Search Patient
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Search by name or ID..."
+                            value={patientARSearchQuery}
+                            onChange={(e) => setPatientARSearchQuery(e.target.value)}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Aging Bucket Filter */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Aging Bucket
+                          </label>
+                          <select
+                            value={patientARAgingFilter}
+                            onChange={(e) => setPatientARAgingFilter(e.target.value)}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          >
+                            <option value="all">All Ages</option>
+                            <option value="0-30">0-30 days</option>
+                            <option value="31-60">31-60 days</option>
+                            <option value="61-90">61-90 days</option>
+                            <option value="90+">90+ days</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Clear Filters Button */}
+                      {(patientARSearchQuery || patientARAgingFilter !== 'all') && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => {
+                              setPatientARSearchQuery('');
+                              setPatientARAgingFilter('all');
+                            }}
+                            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                              isDayMode
+                                ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Clear Filters
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     {patientARLoading ? (
                       <div className="text-center py-12">
                         <RefreshCw className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
                         <p className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Loading Collections...</p>
                       </div>
-                    ) : collectionsPatientAR.length === 0 ? (
+                    ) : filteredCollectionsPatientAR.length === 0 ? (
                       <div className="text-center py-12">
                         <CheckCircle className={`w-16 h-16 mx-auto mb-4 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
-                        <p className={`text-lg font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>No records in collections</p>
+                        <p className={`text-lg font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                          {collectionsPatientAR.length === 0 ? 'No records in collections' : 'No matching records'}
+                        </p>
+                        <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {collectionsPatientAR.length === 0 ? '' : 'Try adjusting your filters'}
+                        </p>
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
-                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient</th>
-                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Balance</th>
-                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Moved to Collections</th>
-                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Days in Collections</th>
-                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {collectionsPatientAR.map((record) => {
+                      <>
+                        {/* Bulk Actions Bar */}
+                        {selectedPatientARIds.length > 0 && (
+                          <div className={`mb-4 p-4 rounded-xl flex items-center justify-between ${
+                            isDayMode ? 'bg-primary-50 border border-primary-200' : 'bg-primary-900/20 border border-primary-400/30'
+                          }`}>
+                            <div className={`font-semibold ${isDayMode ? 'text-primary-900' : 'text-primary-300'}`}>
+                              {selectedPatientARIds.length} item{selectedPatientARIds.length > 1 ? 's' : ''} selected
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  if (confirm(`Archive ${selectedPatientARIds.length} record(s)?`)) {
+                                    try {
+                                      const { batchArchivePatientAR } = await import('./services/patientARService.new');
+                                      await batchArchivePatientAR(selectedPatientARIds);
+                                      // Refresh data
+                                      const collectionsData = await getCollectionsPatientAR();
+                                      setCollectionsPatientAR(collectionsData);
+                                      setSelectedPatientARIds([]);
+                                      alert('Successfully archived!');
+                                    } catch (error) {
+                                      console.error('Error archiving records:', error);
+                                      alert('Failed to archive records. Please try again.');
+                                    }
+                                  }
+                                }}
+                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                  isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-900/30 text-gray-400 hover:bg-gray-900/50'
+                                }`}
+                              >
+                                Archive
+                              </button>
+                              <button
+                                onClick={() => {
+                                  // Export to CSV
+                                  const selectedRecords = filteredCollectionsPatientAR.filter(r => selectedPatientARIds.includes(r.id));
+                                  const csvContent = [
+                                    ['Patient Name', 'Patient ID', 'Balance', 'Moved to Collections', 'Days in Collections', 'Status'].join(','),
+                                    ...selectedRecords.map(r => {
+                                      const daysInCollections = r.moved_to_collections_date
+                                        ? Math.floor((new Date().getTime() - new Date(r.moved_to_collections_date).getTime()) / (1000 * 60 * 60 * 24))
+                                        : 0;
+                                      return [
+                                        r.patient_name,
+                                        r.patient_id || '',
+                                        r.current_balance,
+                                        r.moved_to_collections_date || '',
+                                        daysInCollections,
+                                        r.status
+                                      ].join(',');
+                                    })
+                                  ].join('\n');
+                                  const blob = new Blob([csvContent], { type: 'text/csv' });
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = `collections-export-${new Date().toISOString().split('T')[0]}.csv`;
+                                  a.click();
+                                  URL.revokeObjectURL(url);
+                                }}
+                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                  isDayMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
+                                }`}
+                              >
+                                Export to CSV
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
+                                <th className={`px-4 py-3 text-left ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={filteredCollectionsPatientAR.length > 0 && selectedPatientARIds.length === filteredCollectionsPatientAR.length}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedPatientARIds(filteredCollectionsPatientAR.map(r => r.id));
+                                      } else {
+                                        setSelectedPatientARIds([]);
+                                      }
+                                    }}
+                                    className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                                  />
+                                </th>
+                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient</th>
+                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Balance</th>
+                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Moved to Collections</th>
+                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Days in Collections</th>
+                                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredCollectionsPatientAR.map((record) => {
                               const daysInCollections = record.moved_to_collections_date
                                 ? Math.floor((new Date().getTime() - new Date(record.moved_to_collections_date).getTime()) / (1000 * 60 * 60 * 24))
                                 : 0;
 
                               return (
                                 <tr key={record.id} className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800/50'} transition-colors`}>
+                                  <td className="px-4 py-4">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedPatientARIds.includes(record.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedPatientARIds([...selectedPatientARIds, record.id]);
+                                        } else {
+                                          setSelectedPatientARIds(selectedPatientARIds.filter(id => id !== record.id));
+                                        }
+                                      }}
+                                      className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                                    />
+                                  </td>
                                   <td className={`px-4 py-4 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
                                     <div className="font-semibold">{record.patient_name}</div>
                                     {record.patient_contact && <div className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{record.patient_contact}</div>}
@@ -4530,6 +4944,7 @@ const CourtStreetRCM = () => {
                           </tbody>
                         </table>
                       </div>
+                      </>
                     )}
                   </div>
                 )}
