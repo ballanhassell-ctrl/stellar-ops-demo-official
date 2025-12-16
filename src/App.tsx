@@ -41,7 +41,7 @@ import {
 } from './services/schedulingService';
 import {
   getActivePatientAR, getCollectionsPatientAR, getPendingWriteOffSuggestions,
-  approveWriteOffSuggestion, rejectWriteOffSuggestion
+  insertPatientAR, approveWriteOffSuggestion, rejectWriteOffSuggestion
 } from './services/patientARService.new';
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion } from './types/database.types';
 
@@ -825,6 +825,7 @@ const CourtStreetRCM = () => {
   const [collectionsPatientAR, setCollectionsPatientAR] = useState<PatientAR[]>([]);
   const [writeOffSuggestions, setWriteOffSuggestions] = useState<WriteOffSuggestion[]>([]);
   const [patientARLoading, setPatientARLoading] = useState(true);
+  const [showAddPatientARModal, setShowAddPatientARModal] = useState(false);
 
   // Calculate BAM cycle dates (needed for metrics hook)
   const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
@@ -4256,9 +4257,18 @@ const CourtStreetRCM = () => {
               <>
                 {/* Patient A/R Header */}
                 <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                  <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                    Patient A/R Management
-                  </h2>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                      Patient A/R Management
+                    </h2>
+                    <button
+                      onClick={() => setShowAddPatientARModal(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Add Patient A/R
+                    </button>
+                  </div>
 
                   {/* Sub-tabs for Patient A/R */}
                   <div className="flex flex-wrap gap-2 mb-6">
@@ -4598,6 +4608,198 @@ const CourtStreetRCM = () => {
                         </table>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Add Patient A/R Modal */}
+                {showAddPatientARModal && (
+                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+                      <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
+                        <div className="flex items-center justify-between">
+                          <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Add Patient A/R</h3>
+                          <button
+                            onClick={() => setShowAddPatientARModal(false)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'
+                            }`}
+                          >
+                            <X className="w-6 h-6" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+
+                          try {
+                            const newPatientAR = await insertPatientAR({
+                              patient_name: formData.get('patient_name') as string,
+                              patient_contact: formData.get('patient_contact') as string || null,
+                              dos: formData.get('dos') as string,
+                              original_balance: parseFloat(formData.get('original_balance') as string),
+                              current_balance: parseFloat(formData.get('current_balance') as string),
+                              balance_created_date: formData.get('balance_created_date') as string,
+                              status: 'active',
+                              created_by: 'System',
+                              updated_by: 'System',
+                              patient_id: null,
+                              moved_to_collections_date: null,
+                              next_contact_due_date: null,
+                              assigned_to_staff_id: null,
+                              write_off_suggested_date: null,
+                              write_off_suggestion_reason: null
+                            });
+
+                            // Refresh data
+                            const [activeData, collectionsData, writeOffsData] = await Promise.all([
+                              getActivePatientAR(),
+                              getCollectionsPatientAR(),
+                              getPendingWriteOffSuggestions()
+                            ]);
+                            setActivePatientAR(activeData);
+                            setCollectionsPatientAR(collectionsData);
+                            setWriteOffSuggestions(writeOffsData);
+
+                            setShowAddPatientARModal(false);
+                            alert('Patient A/R record added successfully!');
+                          } catch (error) {
+                            console.error('Error adding Patient A/R:', error);
+                            alert('Failed to add Patient A/R record. Please try again.');
+                          }
+                        }}
+                        className="p-6 space-y-6"
+                      >
+                        {/* Patient Information */}
+                        <div className="space-y-4">
+                          <h4 className={`font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Patient Information</h4>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Patient Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              name="patient_name"
+                              required
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                              placeholder="John Doe"
+                            />
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Patient Contact (Phone/Email)
+                            </label>
+                            <input
+                              type="text"
+                              name="patient_contact"
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                              placeholder="(555) 123-4567 or email@example.com"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Financial Information */}
+                        <div className="space-y-4">
+                          <h4 className={`font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Financial Information</h4>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                Date of Service <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                name="dos"
+                                required
+                                className={`w-full px-4 py-2 rounded-lg border ${
+                                  isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                              />
+                            </div>
+
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                Balance Created Date <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                name="balance_created_date"
+                                required
+                                defaultValue={new Date().toISOString().split('T')[0]}
+                                className={`w-full px-4 py-2 rounded-lg border ${
+                                  isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                Original Balance <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="number"
+                                name="original_balance"
+                                required
+                                min="0"
+                                step="0.01"
+                                className={`w-full px-4 py-2 rounded-lg border ${
+                                  isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                                placeholder="0.00"
+                              />
+                            </div>
+
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                Current Balance <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="number"
+                                name="current_balance"
+                                required
+                                min="0"
+                                step="0.01"
+                                className={`w-full px-4 py-2 rounded-lg border ${
+                                  isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Form Actions */}
+                        <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => setShowAddPatientARModal(false)}
+                            className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                              isDayMode
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover-lift"
+                          >
+                            Add Patient A/R
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 )}
               </>
