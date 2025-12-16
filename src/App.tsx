@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
@@ -44,7 +44,7 @@ import {
   insertPatientAR, insertPatientARContact, insertPatientARPayment,
   approveWriteOffSuggestion, rejectWriteOffSuggestion
 } from './services/patientARService.new';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion, PatientARContact, PatientARPayment } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -4562,10 +4562,10 @@ const CourtStreetRCM = () => {
                             <button
                               onClick={() => {
                                 // Export to CSV
-                                const selectedRecords = filteredActivePatientAR.filter(r => selectedPatientARIds.includes(r.id));
+                                const selectedRecords = filteredActivePatientAR.filter((r: PatientAR) => selectedPatientARIds.includes(r.id));
                                 const csvContent = [
                                   ['Patient Name', 'Patient ID', 'DOS', 'Balance', 'Aging', 'Status', 'Next Contact'].join(','),
-                                  ...selectedRecords.map(r => [
+                                  ...selectedRecords.map((r: PatientAR) => [
                                     r.patient_name,
                                     r.patient_id || '',
                                     r.dos,
@@ -4603,7 +4603,7 @@ const CourtStreetRCM = () => {
                                   checked={filteredActivePatientAR.length > 0 && selectedPatientARIds.length === filteredActivePatientAR.length}
                                   onChange={(e) => {
                                     if (e.target.checked) {
-                                      setSelectedPatientARIds(filteredActivePatientAR.map(r => r.id));
+                                      setSelectedPatientARIds(filteredActivePatientAR.map((r: PatientAR) => r.id));
                                     } else {
                                       setSelectedPatientARIds([]);
                                     }
@@ -4620,7 +4620,7 @@ const CourtStreetRCM = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredActivePatientAR.map((record) => (
+                            {filteredActivePatientAR.map((record: PatientAR) => (
                               <tr key={record.id} className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800/50'} transition-colors`}>
                                 <td className="px-4 py-4">
                                   <input
@@ -4823,10 +4823,10 @@ const CourtStreetRCM = () => {
                               <button
                                 onClick={() => {
                                   // Export to CSV
-                                  const selectedRecords = filteredCollectionsPatientAR.filter(r => selectedPatientARIds.includes(r.id));
+                                  const selectedRecords = filteredCollectionsPatientAR.filter((r: PatientAR) => selectedPatientARIds.includes(r.id));
                                   const csvContent = [
                                     ['Patient Name', 'Patient ID', 'Balance', 'Moved to Collections', 'Days in Collections', 'Status'].join(','),
-                                    ...selectedRecords.map(r => {
+                                    ...selectedRecords.map((r: PatientAR) => {
                                       const daysInCollections = r.moved_to_collections_date
                                         ? Math.floor((new Date().getTime() - new Date(r.moved_to_collections_date).getTime()) / (1000 * 60 * 60 * 24))
                                         : 0;
@@ -4868,7 +4868,7 @@ const CourtStreetRCM = () => {
                                     checked={filteredCollectionsPatientAR.length > 0 && selectedPatientARIds.length === filteredCollectionsPatientAR.length}
                                     onChange={(e) => {
                                       if (e.target.checked) {
-                                        setSelectedPatientARIds(filteredCollectionsPatientAR.map(r => r.id));
+                                        setSelectedPatientARIds(filteredCollectionsPatientAR.map((r: PatientAR) => r.id));
                                       } else {
                                         setSelectedPatientARIds([]);
                                       }
@@ -4884,7 +4884,7 @@ const CourtStreetRCM = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {filteredCollectionsPatientAR.map((record) => {
+                              {filteredCollectionsPatientAR.map((record: PatientAR) => {
                               const daysInCollections = record.moved_to_collections_date
                                 ? Math.floor((new Date().getTime() - new Date(record.moved_to_collections_date).getTime()) / (1000 * 60 * 60 * 24))
                                 : 0;
@@ -4979,7 +4979,7 @@ const CourtStreetRCM = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {writeOffSuggestions.filter((s) => s.status === 'pending').map((suggestion) => (
+                            {filteredWriteOffSuggestions.map((suggestion) => (
                               <tr key={suggestion.id} className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800/50'} transition-colors`}>
                                 <td className={`px-4 py-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
                                   {new Date(suggestion.suggested_date).toLocaleDateString()}
@@ -5269,7 +5269,7 @@ const CourtStreetRCM = () => {
                               contact_date: formData.get('contact_date') as string,
                               staff_initials: formData.get('staff_initials') as string,
                               notes: formData.get('notes') as string,
-                              outcome: (formData.get('outcome') as string) || null,
+                              outcome: (formData.get('outcome') as 'promise_to_pay' | 'payment_plan_setup' | 'dispute' | 'no_answer' | 'no_response' | 'other') || null,
                               created_by: formData.get('staff_initials') as string
                             });
 
