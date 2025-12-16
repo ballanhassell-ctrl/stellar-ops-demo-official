@@ -5,7 +5,7 @@ import {
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
   Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog, ChevronDown, ChevronUp,
-  Menu
+  Menu, AlertTriangle
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -43,9 +43,10 @@ import {
   getActivePatientAR, getCollectionsPatientAR, getPendingWriteOffSuggestions,
   insertPatientAR, insertPatientARContact, insertPatientARPayment,
   updatePatientAR, insertPaymentPlan,
-  approveWriteOffSuggestion, rejectWriteOffSuggestion
+  approveWriteOffSuggestion, rejectWriteOffSuggestion,
+  getPatientARMetrics, generateWriteOffSuggestions, getWriteOffRules, updateWriteOffRule
 } from './services/patientARService.new';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion, WriteOffRule } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -834,7 +835,9 @@ const CourtStreetRCM = () => {
   const [showViewDetailsModal, setShowViewDetailsModal] = useState(false);
   const [showWriteOffModal, setShowWriteOffModal] = useState(false);
   const [showPaymentPlanModal, setShowPaymentPlanModal] = useState(false);
+  const [showConfigureRulesModal, setShowConfigureRulesModal] = useState(false);
   const [selectedPatientAR, setSelectedPatientAR] = useState<PatientAR | null>(null);
+  const [writeOffRules, setWriteOffRules] = useState<WriteOffRule[]>([]);
 
   // Filter state
   const [patientARSearchQuery, setPatientARSearchQuery] = useState('');
@@ -843,6 +846,18 @@ const CourtStreetRCM = () => {
 
   // Bulk selection state
   const [selectedPatientARIds, setSelectedPatientARIds] = useState<string[]>([]);
+
+  // Patient A/R Metrics state (for dashboard)
+  const [patientARMetrics, setPatientARMetrics] = useState<{
+    totalActive: number;
+    totalActiveBalance: number;
+    totalCollections: number;
+    totalCollectionsBalance: number;
+    pendingSuggestionsCount: number;
+    overdueContacts: number;
+    contactsDueSoon: number;
+    agingBuckets: { '0-30': number; '31-60': number; '61-90': number; '90+': number };
+  } | null>(null);
 
   // Calculate BAM cycle dates (needed for metrics hook)
   const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
@@ -1054,6 +1069,38 @@ const CourtStreetRCM = () => {
 
     fetchPatientARData();
   }, []);
+
+  // Fetch Patient A/R Metrics for dashboard
+  useEffect(() => {
+    const fetchPatientARMetrics = async () => {
+      try {
+        const metrics = await getPatientARMetrics();
+        setPatientARMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching Patient A/R metrics:', error);
+      }
+    };
+
+    fetchPatientARMetrics();
+    // Refresh metrics every 5 minutes
+    const intervalId = setInterval(fetchPatientARMetrics, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Fetch Write-Off Rules when configure modal is opened
+  useEffect(() => {
+    if (showConfigureRulesModal) {
+      const fetchRules = async () => {
+        try {
+          const rules = await getWriteOffRules();
+          setWriteOffRules(rules);
+        } catch (error) {
+          console.error('Error fetching write-off rules:', error);
+        }
+      };
+      fetchRules();
+    }
+  }, [showConfigureRulesModal]);
 
   // Clear selections when switching between Patient A/R tabs
   useEffect(() => {
@@ -4374,8 +4421,8 @@ const CourtStreetRCM = () => {
                     </button>
                   </div>
 
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Summary Stats - Row 1 */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift`}>
                       <div className="flex items-start justify-between">
                         <div>
@@ -4415,6 +4462,63 @@ const CourtStreetRCM = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Enhanced Statistics - Row 2 */}
+                  {patientARMetrics && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Overdue Contacts</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.overdueContacts}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-red-600' : 'text-red-300'}`}>
+                              Require attention
+                            </p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
+                        </div>
+                      </div>
+
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Due Soon</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.contactsDueSoon}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-300'}`}>
+                              Next 7 days
+                            </p>
+                          </div>
+                          <Calendar className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
+                        </div>
+                      </div>
+
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>0-30 Days</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.agingBuckets['0-30']}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-emerald-600' : 'text-emerald-300'}`}>
+                              Current aging
+                            </p>
+                          </div>
+                          <TrendingUp className={`w-8 h-8 ${isDayMode ? 'text-emerald-500' : 'text-emerald-400'}`} />
+                        </div>
+                      </div>
+
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>90+ Days</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.agingBuckets['90+']}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-300'}`}>
+                              High risk
+                            </p>
+                          </div>
+                          <AlertTriangle className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Active A/R Tab */}
@@ -5031,9 +5135,53 @@ const CourtStreetRCM = () => {
                 {/* Write-Off Suggestions Tab */}
                 {patientARView === 'writeoffs' && (
                   <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
-                    <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                      Write-Off Suggestions
-                    </h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                        Write-Off Suggestions
+                      </h3>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={async () => {
+                            if (confirm('Run write-off evaluation now? This will generate suggestions for all eligible A/R records based on configured rules.')) {
+                              try {
+                                setPatientARLoading(true);
+                                await generateWriteOffSuggestions();
+
+                                // Refresh write-off suggestions
+                                const writeOffsData = await getPendingWriteOffSuggestions();
+                                setWriteOffSuggestions(writeOffsData);
+
+                                alert(`Write-off evaluation complete! ${writeOffsData.length} suggestion(s) generated.`);
+                              } catch (error) {
+                                console.error('Error generating write-off suggestions:', error);
+                                alert('Failed to generate write-off suggestions. Please try again.');
+                              } finally {
+                                setPatientARLoading(false);
+                              }
+                            }
+                          }}
+                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all hover-lift flex items-center gap-2 ${
+                            isDayMode ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-amber-900/30 text-amber-400 hover:bg-amber-900/50'
+                          }`}
+                          disabled={patientARLoading}
+                        >
+                          <RefreshCw className={`w-4 h-4 ${patientARLoading ? 'animate-spin' : ''}`} />
+                          Run Evaluation
+                        </button>
+                        <button
+                          onClick={() => setShowConfigureRulesModal(true)}
+                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all hover-lift flex items-center gap-2 ${
+                            isDayMode ? 'bg-gradient-primary text-white' : 'bg-gradient-primary-dark text-white'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Configure Rules
+                        </button>
+                      </div>
+                    </div>
 
                     {patientARLoading ? (
                       <div className="text-center py-12">
@@ -6295,6 +6443,266 @@ const CourtStreetRCM = () => {
                           </button>
                         </div>
                       </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* Configure Write-Off Rules Modal */}
+                {showConfigureRulesModal && (
+                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto`}>
+                      <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
+                        <div className="flex items-center justify-between">
+                          <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            Configure Write-Off Rules
+                          </h3>
+                          <button
+                            onClick={() => setShowConfigureRulesModal(false)}
+                            className={`p-2 rounded-lg transition-all ${
+                              isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'
+                            }`}
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className={`mt-2 text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                          Manage automated write-off rules and their priorities. Rules are evaluated in priority order.
+                        </p>
+                      </div>
+
+                      <div className="p-6">
+                        {writeOffRules.length === 0 ? (
+                          <div className="text-center py-12">
+                            <p className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>No write-off rules configured</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {writeOffRules.map((rule) => (
+                              <div
+                                key={rule.id}
+                                className={`p-6 rounded-xl border-2 ${
+                                  rule.is_active
+                                    ? isDayMode ? 'border-green-200 bg-green-50' : 'border-green-600/30 bg-green-900/10'
+                                    : isDayMode ? 'border-gray-200 bg-gray-50' : 'border-gray-700 bg-gray-800/50'
+                                }`}
+                              >
+                                <form
+                                  onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.currentTarget);
+
+                                    try {
+                                      const updates: Partial<typeof rule> = {
+                                        is_active: formData.get(`is_active_${rule.id}`) === 'true',
+                                        priority: parseInt(formData.get(`priority_${rule.id}`) as string),
+                                        auto_suggest: formData.get(`auto_suggest_${rule.id}`) === 'true',
+                                        require_manual_approval: formData.get(`require_manual_approval_${rule.id}`) === 'true'
+                                      };
+
+                                      // Add thresholds based on rule type
+                                      if (rule.rule_type === 'small_balance' || rule.rule_type === 'aged_out') {
+                                        const balanceThreshold = formData.get(`balance_threshold_${rule.id}`) as string;
+                                        updates.balance_threshold = balanceThreshold ? parseFloat(balanceThreshold) : null;
+                                      }
+                                      if (rule.rule_type === 'aged_out' || rule.rule_type === 'collections_exhausted') {
+                                        const agingThreshold = formData.get(`aging_days_threshold_${rule.id}`) as string;
+                                        updates.aging_days_threshold = agingThreshold ? parseInt(agingThreshold) : null;
+                                      }
+                                      if (rule.rule_type === 'collections_exhausted') {
+                                        const contactsMin = formData.get(`contacts_minimum_${rule.id}`) as string;
+                                        updates.contacts_minimum = contactsMin ? parseInt(contactsMin) : null;
+                                        const collectionsThreshold = formData.get(`collections_days_threshold_${rule.id}`) as string;
+                                        updates.collections_days_threshold = collectionsThreshold ? parseInt(collectionsThreshold) : null;
+                                      }
+
+                                      await updateWriteOffRule(rule.id, updates);
+
+                                      // Refresh rules
+                                      const updatedRules = await getWriteOffRules();
+                                      setWriteOffRules(updatedRules);
+
+                                      alert('Rule updated successfully!');
+                                    } catch (error) {
+                                      console.error('Error updating write-off rule:', error);
+                                      alert('Failed to update rule. Please try again.');
+                                    }
+                                  }}
+                                >
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                      <h4 className={`text-lg font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                                        {rule.rule_name}
+                                      </h4>
+                                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                                        isDayMode ? 'bg-purple-100 text-purple-700' : 'bg-purple-900/30 text-purple-400'
+                                      }`}>
+                                        {rule.rule_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                      <label className="flex items-center gap-2 cursor-pointer">
+                                        <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                          Active
+                                        </span>
+                                        <input
+                                          type="checkbox"
+                                          name={`is_active_${rule.id}`}
+                                          value="true"
+                                          defaultChecked={rule.is_active}
+                                          className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    {/* Priority */}
+                                    <div>
+                                      <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                        Priority
+                                      </label>
+                                      <input
+                                        type="number"
+                                        name={`priority_${rule.id}`}
+                                        defaultValue={rule.priority}
+                                        min="1"
+                                        required
+                                        className={`w-full px-4 py-2 rounded-lg border ${
+                                          isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                        } focus:ring-2 focus:ring-primary-500`}
+                                      />
+                                    </div>
+
+                                    {/* Balance Threshold (for small_balance and aged_out) */}
+                                    {(rule.rule_type === 'small_balance' || rule.rule_type === 'aged_out') && (
+                                      <div>
+                                        <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                          Balance Threshold ($)
+                                        </label>
+                                        <input
+                                          type="number"
+                                          name={`balance_threshold_${rule.id}`}
+                                          defaultValue={rule.balance_threshold || ''}
+                                          step="0.01"
+                                          min="0"
+                                          className={`w-full px-4 py-2 rounded-lg border ${
+                                            isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                          } focus:ring-2 focus:ring-primary-500`}
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Aging Days Threshold (for aged_out and collections_exhausted) */}
+                                    {(rule.rule_type === 'aged_out' || rule.rule_type === 'collections_exhausted') && (
+                                      <div>
+                                        <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                          Aging Days Threshold
+                                        </label>
+                                        <input
+                                          type="number"
+                                          name={`aging_days_threshold_${rule.id}`}
+                                          defaultValue={rule.aging_days_threshold || ''}
+                                          min="0"
+                                          className={`w-full px-4 py-2 rounded-lg border ${
+                                            isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                          } focus:ring-2 focus:ring-primary-500`}
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Collections Days Threshold (for collections_exhausted) */}
+                                    {rule.rule_type === 'collections_exhausted' && (
+                                      <div>
+                                        <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                          Collections Days Threshold
+                                        </label>
+                                        <input
+                                          type="number"
+                                          name={`collections_days_threshold_${rule.id}`}
+                                          defaultValue={rule.collections_days_threshold || ''}
+                                          min="0"
+                                          className={`w-full px-4 py-2 rounded-lg border ${
+                                            isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                          } focus:ring-2 focus:ring-primary-500`}
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Contacts Minimum (for collections_exhausted) */}
+                                    {rule.rule_type === 'collections_exhausted' && (
+                                      <div>
+                                        <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                          Minimum Contacts
+                                        </label>
+                                        <input
+                                          type="number"
+                                          name={`contacts_minimum_${rule.id}`}
+                                          defaultValue={rule.contacts_minimum || ''}
+                                          min="0"
+                                          className={`w-full px-4 py-2 rounded-lg border ${
+                                            isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                                          } focus:ring-2 focus:ring-primary-500`}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex gap-6 mb-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        name={`auto_suggest_${rule.id}`}
+                                        value="true"
+                                        defaultChecked={rule.auto_suggest}
+                                        className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                      />
+                                      <span className={`text-sm ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                        Auto-suggest write-offs
+                                      </span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        name={`require_manual_approval_${rule.id}`}
+                                        value="true"
+                                        defaultChecked={rule.require_manual_approval}
+                                        className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                      />
+                                      <span className={`text-sm ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                        Require manual approval
+                                      </span>
+                                    </label>
+                                  </div>
+
+                                  <div className="flex justify-end">
+                                    <button
+                                      type="submit"
+                                      className={`px-6 py-2 rounded-lg font-semibold transition-all hover-lift ${
+                                        isDayMode ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-primary-700 text-white hover:bg-primary-600'
+                                      }`}
+                                    >
+                                      Save Changes
+                                    </button>
+                                  </div>
+                                </form>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
+                          <button
+                            onClick={() => setShowConfigureRulesModal(false)}
+                            className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                              isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -8849,6 +9257,107 @@ const CourtStreetRCM = () => {
                 </div>
               </div>
             </div>
+
+            {/* Patient A/R Summary */}
+            {patientARMetrics && (
+              <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                    Patient A/R Overview
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setCurrentView('patient-management');
+                      setPatientManagementView('patient-ar');
+                    }}
+                    className="text-sm text-primary-500 hover:text-primary-600 font-semibold transition-colors"
+                  >
+                    View All →
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Active A/R */}
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Active A/R</p>
+                      <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${patientARMetrics.totalActiveBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className={`text-xs ${isDayMode ? 'text-blue-600' : 'text-blue-300'}`}>
+                        {patientARMetrics.totalActive} accounts
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Collections */}
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>In Collections</p>
+                      <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        ${patientARMetrics.totalCollectionsBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className={`text-xs ${isDayMode ? 'text-orange-600' : 'text-orange-300'}`}>
+                        {patientARMetrics.totalCollections} accounts
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Overdue Contacts */}
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Overdue Contacts</p>
+                      <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {patientARMetrics.overdueContacts}
+                      </p>
+                      <p className={`text-xs ${isDayMode ? 'text-red-600' : 'text-red-300'}`}>
+                        Requires immediate attention
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Write-Off Suggestions */}
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative z-10">
+                      <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Write-Off Suggestions</p>
+                      <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {patientARMetrics.pendingSuggestionsCount}
+                      </p>
+                      <p className={`text-xs ${isDayMode ? 'text-purple-600' : 'text-purple-300'}`}>
+                        Pending review
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Aging Breakdown */}
+                <div className="mt-6">
+                  <h4 className={`text-sm font-bold mb-3 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Aging Breakdown</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-lg p-3`}>
+                      <p className={`text-xs font-semibold ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>0-30 Days</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>{patientARMetrics.agingBuckets['0-30']}</p>
+                    </div>
+                    <div className={`${isDayMode ? 'bg-yellow-50' : 'bg-yellow-900/20'} rounded-lg p-3`}>
+                      <p className={`text-xs font-semibold ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>31-60 Days</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>{patientARMetrics.agingBuckets['31-60']}</p>
+                    </div>
+                    <div className={`${isDayMode ? 'bg-orange-50' : 'bg-orange-900/20'} rounded-lg p-3`}>
+                      <p className={`text-xs font-semibold ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>61-90 Days</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>{patientARMetrics.agingBuckets['61-90']}</p>
+                    </div>
+                    <div className={`${isDayMode ? 'bg-red-50' : 'bg-red-900/20'} rounded-lg p-3`}>
+                      <p className={`text-xs font-semibold ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>90+ Days</p>
+                      <p className={`text-xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>{patientARMetrics.agingBuckets['90+']}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* BAM Cycle Summary */}
             <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
