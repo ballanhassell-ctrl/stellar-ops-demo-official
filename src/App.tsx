@@ -46,7 +46,7 @@ import {
   approveWriteOffSuggestion, rejectWriteOffSuggestion,
   getPatientARMetrics, generateWriteOffSuggestions, getWriteOffRules, updateWriteOffRule
 } from './services/patientARService.new';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion, WriteOffRule } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
