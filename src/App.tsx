@@ -5,7 +5,7 @@ import {
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
   Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog, ChevronDown, ChevronUp,
-  Menu
+  Menu, AlertTriangle
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -4421,8 +4421,8 @@ const CourtStreetRCM = () => {
                     </button>
                   </div>
 
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Summary Stats - Row 1 */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift`}>
                       <div className="flex items-start justify-between">
                         <div>
@@ -4462,6 +4462,63 @@ const CourtStreetRCM = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Enhanced Statistics - Row 2 */}
+                  {patientARMetrics && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Overdue Contacts</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.overdueContacts}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-red-600' : 'text-red-300'}`}>
+                              Require attention
+                            </p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
+                        </div>
+                      </div>
+
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Due Soon</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.contactsDueSoon}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-300'}`}>
+                              Next 7 days
+                            </p>
+                          </div>
+                          <Calendar className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
+                        </div>
+                      </div>
+
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>0-30 Days</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.agingBuckets['0-30']}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-emerald-600' : 'text-emerald-300'}`}>
+                              Current aging
+                            </p>
+                          </div>
+                          <TrendingUp className={`w-8 h-8 ${isDayMode ? 'text-emerald-500' : 'text-emerald-400'}`} />
+                        </div>
+                      </div>
+
+                      <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift`}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>90+ Days</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{patientARMetrics.agingBuckets['90+']}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-300'}`}>
+                              High risk
+                            </p>
+                          </div>
+                          <AlertTriangle className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Active A/R Tab */}
