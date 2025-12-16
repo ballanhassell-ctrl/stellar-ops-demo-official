@@ -41,9 +41,10 @@ import {
 } from './services/schedulingService';
 import {
   getActivePatientAR, getCollectionsPatientAR, getPendingWriteOffSuggestions,
-  insertPatientAR, approveWriteOffSuggestion, rejectWriteOffSuggestion
+  insertPatientAR, insertPatientARContact, insertPatientARPayment,
+  approveWriteOffSuggestion, rejectWriteOffSuggestion
 } from './services/patientARService.new';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion } from './types/database.types';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion, PatientARContact, PatientARPayment } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -826,6 +827,9 @@ const CourtStreetRCM = () => {
   const [writeOffSuggestions, setWriteOffSuggestions] = useState<WriteOffSuggestion[]>([]);
   const [patientARLoading, setPatientARLoading] = useState(true);
   const [showAddPatientARModal, setShowAddPatientARModal] = useState(false);
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
+  const [showRecordPaymentModal, setShowRecordPaymentModal] = useState(false);
+  const [selectedPatientAR, setSelectedPatientAR] = useState<PatientAR | null>(null);
 
   // Calculate BAM cycle dates (needed for metrics hook)
   const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
@@ -4416,6 +4420,10 @@ const CourtStreetRCM = () => {
                                 <td className="px-4 py-4">
                                   <div className="flex gap-2">
                                     <button
+                                      onClick={() => {
+                                        setSelectedPatientAR(record);
+                                        setShowAddContactModal(true);
+                                      }}
                                       className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
                                         isDayMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
                                       }`}
@@ -4424,6 +4432,10 @@ const CourtStreetRCM = () => {
                                       Contact
                                     </button>
                                     <button
+                                      onClick={() => {
+                                        setSelectedPatientAR(record);
+                                        setShowRecordPaymentModal(true);
+                                      }}
                                       className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
                                         isDayMode ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
                                       }`}
@@ -4500,6 +4512,10 @@ const CourtStreetRCM = () => {
                                   </td>
                                   <td className="px-4 py-4">
                                     <button
+                                      onClick={() => {
+                                        setSelectedPatientAR(record);
+                                        setShowRecordPaymentModal(true);
+                                      }}
                                       className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
                                         isDayMode ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
                                       }`}
@@ -4796,6 +4812,382 @@ const CourtStreetRCM = () => {
                             className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover-lift"
                           >
                             Add Patient A/R
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Contact Modal */}
+                {showAddContactModal && selectedPatientAR && (
+                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+                      <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
+                        <div className="flex items-center justify-between">
+                          <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            Add Contact - {selectedPatientAR.patient_name}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setShowAddContactModal(false);
+                              setSelectedPatientAR(null);
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${
+                              isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'
+                            }`}
+                          >
+                            <X className="w-6 h-6" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+
+                          try {
+                            await insertPatientARContact({
+                              patient_ar_id: selectedPatientAR.id,
+                              contact_type: formData.get('contact_type') as 'manual' | '1st_contact' | '2nd_contact' | 'final_contact' | 'collections_activity',
+                              contact_date: formData.get('contact_date') as string,
+                              staff_initials: formData.get('staff_initials') as string,
+                              notes: formData.get('notes') as string,
+                              outcome: (formData.get('outcome') as string) || null,
+                              created_by: formData.get('staff_initials') as string
+                            });
+
+                            // Refresh data
+                            const [activeData, collectionsData] = await Promise.all([
+                              getActivePatientAR(),
+                              getCollectionsPatientAR()
+                            ]);
+                            setActivePatientAR(activeData);
+                            setCollectionsPatientAR(collectionsData);
+
+                            setShowAddContactModal(false);
+                            setSelectedPatientAR(null);
+                            alert('Contact recorded successfully!');
+                          } catch (error) {
+                            console.error('Error adding contact:', error);
+                            alert('Failed to record contact. Please try again.');
+                          }
+                        }}
+                        className="p-6 space-y-6"
+                      >
+                        <div className="space-y-4">
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Contact Type <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              name="contact_type"
+                              required
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            >
+                              <option value="1st_contact">1st Contact</option>
+                              <option value="2nd_contact">2nd Contact</option>
+                              <option value="final_contact">Final Contact</option>
+                              <option value="collections_activity">Collections Activity</option>
+                              <option value="manual">Manual Entry</option>
+                            </select>
+                            <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                              Next contact will be automatically scheduled (1st=14 days, 2nd=21 days, Final=30 days)
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Contact Date <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              name="contact_date"
+                              required
+                              defaultValue={new Date().toISOString().split('T')[0]}
+                              max={new Date().toISOString().split('T')[0]}
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Staff Initials <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              name="staff_initials"
+                              required
+                              placeholder="JD"
+                              maxLength={50}
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Outcome
+                            </label>
+                            <select
+                              name="outcome"
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            >
+                              <option value="">Select outcome...</option>
+                              <option value="promise_to_pay">Promise to Pay</option>
+                              <option value="payment_plan_setup">Payment Plan Setup</option>
+                              <option value="dispute">Dispute</option>
+                              <option value="no_answer">No Answer</option>
+                              <option value="no_response">No Response</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Notes <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                              name="notes"
+                              required
+                              rows={4}
+                              placeholder="Enter contact notes..."
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddContactModal(false);
+                              setSelectedPatientAR(null);
+                            }}
+                            className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                              isDayMode
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover-lift"
+                          >
+                            Record Contact
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* Record Payment Modal */}
+                {showRecordPaymentModal && selectedPatientAR && (
+                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+                      <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
+                        <div className="flex items-center justify-between">
+                          <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            Record Payment - {selectedPatientAR.patient_name}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setShowRecordPaymentModal(false);
+                              setSelectedPatientAR(null);
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${
+                              isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'
+                            }`}
+                          >
+                            <X className="w-6 h-6" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          const paymentAmount = parseFloat(formData.get('payment_amount') as string);
+
+                          if (paymentAmount > selectedPatientAR.current_balance) {
+                            alert(`Payment amount cannot exceed current balance ($${selectedPatientAR.current_balance.toFixed(2)})`);
+                            return;
+                          }
+
+                          try {
+                            await insertPatientARPayment({
+                              patient_ar_id: selectedPatientAR.id,
+                              payment_date: formData.get('payment_date') as string,
+                              payment_amount: paymentAmount,
+                              payment_method: formData.get('payment_method') as 'cash' | 'check' | 'credit_card' | 'debit_card' | 'ach' | 'online_portal' | 'other',
+                              reference_number: (formData.get('reference_number') as string) || null,
+                              notes: (formData.get('notes') as string) || null,
+                              recorded_by: formData.get('recorded_by') as string
+                            });
+
+                            // Refresh data
+                            const [activeData, collectionsData] = await Promise.all([
+                              getActivePatientAR(),
+                              getCollectionsPatientAR()
+                            ]);
+                            setActivePatientAR(activeData);
+                            setCollectionsPatientAR(collectionsData);
+
+                            setShowRecordPaymentModal(false);
+                            setSelectedPatientAR(null);
+                            alert('Payment recorded successfully!');
+                          } catch (error) {
+                            console.error('Error recording payment:', error);
+                            alert('Failed to record payment. Please try again.');
+                          }
+                        }}
+                        className="p-6 space-y-6"
+                      >
+                        <div className={`p-4 rounded-lg ${isDayMode ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
+                          <div className="flex justify-between items-center">
+                            <span className={`font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Current Balance:</span>
+                            <span className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${selectedPatientAR.current_balance.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Payment Date <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              name="payment_date"
+                              required
+                              defaultValue={new Date().toISOString().split('T')[0]}
+                              max={new Date().toISOString().split('T')[0]}
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Payment Amount <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              name="payment_amount"
+                              required
+                              min="0.01"
+                              max={selectedPatientAR.current_balance}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                              placeholder="0.00"
+                            />
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Payment Method <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              name="payment_method"
+                              required
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            >
+                              <option value="">Select method...</option>
+                              <option value="cash">Cash</option>
+                              <option value="check">Check</option>
+                              <option value="credit_card">Credit Card</option>
+                              <option value="debit_card">Debit Card</option>
+                              <option value="ach">ACH</option>
+                              <option value="online_portal">Online Portal</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Reference Number
+                            </label>
+                            <input
+                              type="text"
+                              name="reference_number"
+                              placeholder="Check #, Transaction ID, etc."
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Recorded By <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              name="recorded_by"
+                              required
+                              placeholder="Staff Initials"
+                              maxLength={50}
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Notes
+                            </label>
+                            <textarea
+                              name="notes"
+                              rows={3}
+                              placeholder="Payment notes (optional)"
+                              className={`w-full px-4 py-2 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowRecordPaymentModal(false);
+                              setSelectedPatientAR(null);
+                            }}
+                            className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                              isDayMode
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover-lift"
+                          >
+                            Record Payment
                           </button>
                         </div>
                       </form>
