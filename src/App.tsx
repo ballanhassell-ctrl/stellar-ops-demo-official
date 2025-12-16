@@ -42,7 +42,7 @@ import {
 import {
   getActivePatientAR, getCollectionsPatientAR, getPendingWriteOffSuggestions,
   insertPatientAR, insertPatientARContact, insertPatientARPayment,
-  updatePatientAR, getPatientARContacts, getPatientARPayments, insertPaymentPlan,
+  updatePatientAR, insertPaymentPlan,
   approveWriteOffSuggestion, rejectWriteOffSuggestion
 } from './services/patientARService.new';
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion } from './types/database.types';
@@ -5934,7 +5934,7 @@ const CourtStreetRCM = () => {
                             <div><span className={`font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>DOS:</span> {new Date(selectedPatientAR.dos).toLocaleDateString()}</div>
                             <div><span className={`font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Original Balance:</span> ${selectedPatientAR.original_balance.toFixed(2)}</div>
                             <div><span className={`font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Next Contact:</span> {selectedPatientAR.next_contact_due_date ? new Date(selectedPatientAR.next_contact_due_date).toLocaleDateString() : 'N/A'}</div>
-                            <div><span className={`font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Created:</span> {new Date(selectedPatientAR.created_at).toLocaleDateString()}</div>
+                            <div><span className={`font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Created:</span> {selectedPatientAR.created_at ? new Date(selectedPatientAR.created_at).toLocaleDateString() : 'N/A'}</div>
                           </div>
                         </div>
 
@@ -6170,7 +6170,9 @@ const CourtStreetRCM = () => {
                               total_amount: totalAmount,
                               monthly_payment: monthlyPayment,
                               number_of_payments: numberOfPayments,
+                              payments_made: 0,
                               next_payment_due: formData.get('next_payment_due') as string,
+                              status: 'active',
                               setup_by: formData.get('setup_by') as string
                             });
 
