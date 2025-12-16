@@ -4635,7 +4635,7 @@ const CourtStreetRCM = () => {
                           const formData = new FormData(e.currentTarget);
 
                           try {
-                            const newPatientAR = await insertPatientAR({
+                            await insertPatientAR({
                               patient_name: formData.get('patient_name') as string,
                               patient_contact: formData.get('patient_contact') as string || null,
                               dos: formData.get('dos') as string,
