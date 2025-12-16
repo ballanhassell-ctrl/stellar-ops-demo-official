@@ -215,6 +215,105 @@ export type SchedulingListItem = {
   updated_at?: string;
 };
 
+// =====================================================
+// Patient A/R Management Types
+// =====================================================
+
+export type PatientAR = {
+  id: string;
+  patient_id: string | null;
+  patient_name: string;
+  patient_contact: string | null;
+  dos: string; // ISO date string
+  original_balance: number;
+  current_balance: number;
+  balance_created_date: string; // ISO date string
+  aging_days: number; // Generated column
+  aging_bucket: '0-30' | '31-60' | '61-90' | '90+'; // Generated column
+  status: 'active' | 'collections' | 'paid' | 'written_off' | 'uncollectible' | 'write_off_suggested' | 'archived';
+  moved_to_collections_date: string | null; // ISO date string
+  next_contact_due_date: string | null; // ISO date string
+  assigned_to_staff_id: string | null;
+  write_off_suggested_date: string | null; // ISO date string
+  write_off_suggestion_reason: string | null;
+  created_by: string;
+  created_at?: string;
+  updated_at?: string;
+  updated_by: string;
+};
+
+export type PatientARContact = {
+  id: string;
+  patient_ar_id: string;
+  contact_type: '1st_contact' | '2nd_contact' | 'final_contact' | 'collections_activity' | 'manual';
+  contact_date: string; // ISO date string
+  staff_initials: string;
+  notes: string | null;
+  outcome: 'promise_to_pay' | 'payment_plan_setup' | 'dispute' | 'no_answer' | 'no_response' | 'other' | null;
+  next_action_date: string | null; // ISO date string
+  created_at?: string;
+  created_by: string;
+};
+
+export type PatientARPayment = {
+  id: string;
+  patient_ar_id: string;
+  payment_date: string; // ISO date string
+  payment_amount: number;
+  payment_method: 'cash' | 'check' | 'credit_card' | 'debit_card' | 'ach' | 'online_portal' | 'other';
+  reference_number: string | null;
+  notes: string | null;
+  recorded_by: string;
+  created_at?: string;
+};
+
+export type PatientPaymentPlan = {
+  id: string;
+  patient_ar_id: string;
+  setup_date: string; // ISO date string
+  total_amount: number;
+  monthly_payment: number;
+  number_of_payments: number;
+  payments_made: number;
+  next_payment_due: string; // ISO date string
+  status: 'active' | 'completed' | 'defaulted' | 'cancelled';
+  setup_by: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type WriteOffRule = {
+  id: string;
+  rule_name: string;
+  rule_type: 'small_balance' | 'aged_out' | 'collections_exhausted' | 'cost_to_collect';
+  is_active: boolean;
+  priority: number;
+  balance_threshold: number | null;
+  aging_days_threshold: number | null;
+  contacts_minimum: number | null;
+  collections_days_threshold: number | null;
+  auto_suggest: boolean;
+  require_manual_approval: boolean;
+  created_at?: string;
+  updated_at?: string;
+  created_by: string | null;
+};
+
+export type WriteOffSuggestion = {
+  id: string;
+  patient_ar_id: string;
+  rule_id: string | null;
+  suggested_date: string; // ISO date string
+  suggestion_reason: string;
+  balance_at_suggestion: number;
+  aging_days_at_suggestion: number;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  reviewed_by: string | null;
+  reviewed_date: string | null; // ISO date string
+  review_notes: string | null;
+  created_at?: string;
+};
+
 export type Database = {
   patients: Patient;
   appointments: Appointment;
@@ -230,4 +329,10 @@ export type Database = {
   insurance_checks_audit_history: InsuranceCheckAuditHistory;
   insurance_check_updates: InsuranceCheckUpdate;
   scheduling_list_items: SchedulingListItem;
+  patient_ar: PatientAR;
+  patient_ar_contacts: PatientARContact;
+  patient_ar_payments: PatientARPayment;
+  patient_payment_plans: PatientPaymentPlan;
+  write_off_rules: WriteOffRule;
+  write_off_suggestions: WriteOffSuggestion;
 };
