@@ -4802,7 +4802,7 @@ const CourtStreetRCM = () => {
                                   if (confirm(`Archive ${selectedPatientARIds.length} record(s)?`)) {
                                     try {
                                       const { batchArchivePatientAR } = await import('./services/patientARService.new');
-                                      await batchArchivePatientAR(selectedPatientARIds);
+                                      await batchArchivePatientAR(selectedPatientARIds, 'System');
                                       // Refresh data
                                       const collectionsData = await getCollectionsPatientAR();
                                       setCollectionsPatientAR(collectionsData);
