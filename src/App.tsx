@@ -9267,7 +9267,7 @@ const CourtStreetRCM = () => {
                   </h3>
                   <button
                     onClick={() => {
-                      setActiveView('patient-management');
+                      setCurrentView('patient-management');
                       setPatientManagementView('patient-ar');
                     }}
                     className="text-sm text-primary-500 hover:text-primary-600 font-semibold transition-colors"
