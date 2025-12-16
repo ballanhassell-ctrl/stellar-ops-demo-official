@@ -836,6 +836,7 @@ const CourtStreetRCM = () => {
   const [showWriteOffModal, setShowWriteOffModal] = useState(false);
   const [showPaymentPlanModal, setShowPaymentPlanModal] = useState(false);
   const [showConfigureRulesModal, setShowConfigureRulesModal] = useState(false);
+  const [showCSVUploadModal, setShowCSVUploadModal] = useState(false);
   const [selectedPatientAR, setSelectedPatientAR] = useState<PatientAR | null>(null);
   const [writeOffRules, setWriteOffRules] = useState<WriteOffRule[]>([]);
 
@@ -843,6 +844,9 @@ const CourtStreetRCM = () => {
   const [patientARSearchQuery, setPatientARSearchQuery] = useState('');
   const [patientARAgingFilter, setPatientARAgingFilter] = useState<string>('all');
   const [patientARStatusFilter, setPatientARStatusFilter] = useState<string>('all');
+  const [patientARBalanceMin, setPatientARBalanceMin] = useState<string>('');
+  const [patientARBalanceMax, setPatientARBalanceMax] = useState<string>('');
+  const [patientARSortBy, setPatientARSortBy] = useState<'date' | 'balance-high' | 'balance-low'>('date');
 
   // Bulk selection state
   const [selectedPatientARIds, setSelectedPatientARIds] = useState<string[]>([]);
@@ -1109,7 +1113,7 @@ const CourtStreetRCM = () => {
 
   // Filtered Patient A/R data
   const filteredActivePatientAR = useMemo(() => {
-    return activePatientAR.filter((record) => {
+    let filtered = activePatientAR.filter((record) => {
       // Search filter
       const searchLower = patientARSearchQuery.toLowerCase();
       const matchesSearch = !patientARSearchQuery ||
@@ -1122,12 +1126,28 @@ const CourtStreetRCM = () => {
       // Status filter (for Active tab, status is always 'active', but keeping for consistency)
       const matchesStatus = patientARStatusFilter === 'all' || record.status === patientARStatusFilter;
 
-      return matchesSearch && matchesAging && matchesStatus;
+      // Balance range filter
+      const minBalance = patientARBalanceMin ? parseFloat(patientARBalanceMin) : null;
+      const maxBalance = patientARBalanceMax ? parseFloat(patientARBalanceMax) : null;
+      const matchesBalanceRange =
+        (minBalance === null || record.current_balance >= minBalance) &&
+        (maxBalance === null || record.current_balance <= maxBalance);
+
+      return matchesSearch && matchesAging && matchesStatus && matchesBalanceRange;
     });
-  }, [activePatientAR, patientARSearchQuery, patientARAgingFilter, patientARStatusFilter]);
+
+    // Apply sorting
+    if (patientARSortBy === 'balance-high') {
+      filtered = [...filtered].sort((a, b) => b.current_balance - a.current_balance);
+    } else if (patientARSortBy === 'balance-low') {
+      filtered = [...filtered].sort((a, b) => a.current_balance - b.current_balance);
+    }
+
+    return filtered;
+  }, [activePatientAR, patientARSearchQuery, patientARAgingFilter, patientARStatusFilter, patientARBalanceMin, patientARBalanceMax, patientARSortBy]);
 
   const filteredCollectionsPatientAR = useMemo(() => {
-    return collectionsPatientAR.filter((record) => {
+    let filtered = collectionsPatientAR.filter((record) => {
       // Search filter
       const searchLower = patientARSearchQuery.toLowerCase();
       const matchesSearch = !patientARSearchQuery ||
@@ -1137,9 +1157,25 @@ const CourtStreetRCM = () => {
       // Aging filter
       const matchesAging = patientARAgingFilter === 'all' || record.aging_bucket === patientARAgingFilter;
 
-      return matchesSearch && matchesAging;
+      // Balance range filter
+      const minBalance = patientARBalanceMin ? parseFloat(patientARBalanceMin) : null;
+      const maxBalance = patientARBalanceMax ? parseFloat(patientARBalanceMax) : null;
+      const matchesBalanceRange =
+        (minBalance === null || record.current_balance >= minBalance) &&
+        (maxBalance === null || record.current_balance <= maxBalance);
+
+      return matchesSearch && matchesAging && matchesBalanceRange;
     });
-  }, [collectionsPatientAR, patientARSearchQuery, patientARAgingFilter]);
+
+    // Apply sorting
+    if (patientARSortBy === 'balance-high') {
+      filtered = [...filtered].sort((a, b) => b.current_balance - a.current_balance);
+    } else if (patientARSortBy === 'balance-low') {
+      filtered = [...filtered].sort((a, b) => a.current_balance - b.current_balance);
+    }
+
+    return filtered;
+  }, [collectionsPatientAR, patientARSearchQuery, patientARAgingFilter, patientARBalanceMin, patientARBalanceMax, patientARSortBy]);
 
   const filteredWriteOffSuggestions = useMemo(() => {
     return writeOffSuggestions.filter((suggestion) => {
@@ -4372,13 +4408,22 @@ const CourtStreetRCM = () => {
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Patient A/R Management
                     </h2>
-                    <button
-                      onClick={() => setShowAddPatientARModal(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
-                    >
-                      <Plus className="w-5 h-5" />
-                      Add Patient A/R
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowCSVUploadModal(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
+                      >
+                        <Upload className="w-5 h-5" />
+                        Import CSV
+                      </button>
+                      <button
+                        onClick={() => setShowAddPatientARModal(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
+                      >
+                        <Plus className="w-5 h-5" />
+                        Add Patient A/R
+                      </button>
+                    </div>
                   </div>
 
                   {/* Sub-tabs for Patient A/R */}
@@ -4530,7 +4575,7 @@ const CourtStreetRCM = () => {
 
                     {/* Filter Panel */}
                     <div className={`mb-6 p-4 rounded-xl ${isDayMode ? 'bg-white/50 border border-gray-200' : 'bg-white/5 border border-white/10'}`}>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                         {/* Search Input */}
                         <div className="md:col-span-2">
                           <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
@@ -4591,16 +4636,79 @@ const CourtStreetRCM = () => {
                             <option value="paid">Paid</option>
                           </select>
                         </div>
+
+                        {/* Min Balance */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Min Balance ($)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={patientARBalanceMin}
+                            onChange={(e) => setPatientARBalanceMin(e.target.value)}
+                            min="0"
+                            step="0.01"
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Max Balance */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Max Balance ($)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Any"
+                            value={patientARBalanceMax}
+                            onChange={(e) => setPatientARBalanceMax(e.target.value)}
+                            min="0"
+                            step="0.01"
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Sort By */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Sort By
+                          </label>
+                          <select
+                            value={patientARSortBy}
+                            onChange={(e) => setPatientARSortBy(e.target.value as 'date' | 'balance-high' | 'balance-low')}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          >
+                            <option value="date">Date (Default)</option>
+                            <option value="balance-high">Balance: High to Low</option>
+                            <option value="balance-low">Balance: Low to High</option>
+                          </select>
+                        </div>
                       </div>
 
                       {/* Clear Filters Button */}
-                      {(patientARSearchQuery || patientARAgingFilter !== 'all' || patientARStatusFilter !== 'all') && (
+                      {(patientARSearchQuery || patientARAgingFilter !== 'all' || patientARStatusFilter !== 'all' || patientARBalanceMin || patientARBalanceMax || patientARSortBy !== 'date') && (
                         <div className="mt-4">
                           <button
                             onClick={() => {
                               setPatientARSearchQuery('');
                               setPatientARAgingFilter('all');
                               setPatientARStatusFilter('all');
+                              setPatientARBalanceMin('');
+                              setPatientARBalanceMax('');
+                              setPatientARSortBy('date');
                             }}
                             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
                               isDayMode
@@ -4608,7 +4716,7 @@ const CourtStreetRCM = () => {
                                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                             }`}
                           >
-                            Clear Filters
+                            Clear All Filters
                           </button>
                         </div>
                       )}
@@ -4842,7 +4950,7 @@ const CourtStreetRCM = () => {
 
                     {/* Filter Panel */}
                     <div className={`mb-6 p-4 rounded-xl ${isDayMode ? 'bg-white/50 border border-gray-200' : 'bg-white/5 border border-white/10'}`}>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         {/* Search Input */}
                         <div className="md:col-span-2">
                           <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
@@ -4882,15 +4990,80 @@ const CourtStreetRCM = () => {
                             <option value="90+">90+ days</option>
                           </select>
                         </div>
+
+                        {/* Min Balance */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Min Balance ($)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={patientARBalanceMin}
+                            onChange={(e) => setPatientARBalanceMin(e.target.value)}
+                            min="0"
+                            step="0.01"
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Max Balance */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Max Balance ($)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Any"
+                            value={patientARBalanceMax}
+                            onChange={(e) => setPatientARBalanceMax(e.target.value)}
+                            min="0"
+                            step="0.01"
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
+                        {/* Sort By */}
+                        <div>
+                          <label className={`block text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                            Sort By
+                          </label>
+                          <select
+                            value={patientARSortBy}
+                            onChange={(e) => setPatientARSortBy(e.target.value as 'date' | 'balance-high' | 'balance-low')}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                              isDayMode
+                                ? 'bg-white border-gray-300 text-gray-900 focus:border-primary-500 focus:ring-primary-500'
+                                : 'bg-gray-900/50 border-gray-700 text-white focus:border-primary-400 focus:ring-primary-400'
+                            }`}
+                          >
+                            <option value="date">Date (Default)</option>
+                            <option value="balance-high">Balance: High to Low</option>
+                            <option value="balance-low">Balance: Low to High</option>
+                          </select>
+                        </div>
                       </div>
 
                       {/* Clear Filters Button */}
-                      {(patientARSearchQuery || patientARAgingFilter !== 'all') && (
+                      {(patientARSearchQuery || patientARAgingFilter !== 'all' || patientARBalanceMin || patientARBalanceMax || patientARSortBy !== 'date') && (
                         <div className="mt-4">
                           <button
                             onClick={() => {
                               setPatientARSearchQuery('');
                               setPatientARAgingFilter('all');
+                              setPatientARBalanceMin('');
+                              setPatientARBalanceMax('');
+                              setPatientARSortBy('date');
                             }}
                             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all hover-lift ${
                               isDayMode
@@ -4898,7 +5071,7 @@ const CourtStreetRCM = () => {
                                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                             }`}
                           >
-                            Clear Filters
+                            Clear All Filters
                           </button>
                         </div>
                       )}
@@ -6702,6 +6875,200 @@ const CourtStreetRCM = () => {
                             Close
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* CSV Upload Modal */}
+                {showCSVUploadModal && (
+                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto`}>
+                      <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
+                        <div className="flex items-center justify-between">
+                          <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            Import Patient A/R from CSV
+                          </h3>
+                          <button
+                            onClick={() => setShowCSVUploadModal(false)}
+                            className={`p-2 rounded-lg transition-all ${
+                              isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'
+                            }`}
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className={`mt-2 text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                          Upload a CSV file to bulk import patient A/R records. Required columns: patient_name, dos, original_balance, current_balance, balance_created_date
+                        </p>
+                      </div>
+
+                      <div className="p-6">
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.currentTarget);
+                            const file = formData.get('csv_file') as File;
+
+                            if (!file) {
+                              alert('Please select a CSV file');
+                              return;
+                            }
+
+                            try {
+                              const text = await file.text();
+                              const lines = text.split('\n').filter(line => line.trim());
+
+                              if (lines.length < 2) {
+                                alert('CSV file is empty or has no data rows');
+                                return;
+                              }
+
+                              // Parse header
+                              const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                              const requiredColumns = ['patient_name', 'dos', 'original_balance', 'current_balance', 'balance_created_date'];
+                              const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+
+                              if (missingColumns.length > 0) {
+                                alert(`Missing required columns: ${missingColumns.join(', ')}`);
+                                return;
+                              }
+
+                              // Parse data rows
+                              const records: Array<Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>> = [];
+                              for (let i = 1; i < lines.length; i++) {
+                                const values = lines[i].split(',').map(v => v.trim());
+                                if (values.length !== headers.length) continue;
+
+                                const row: Record<string, string> = {};
+                                headers.forEach((header, index) => {
+                                  row[header] = values[index];
+                                });
+
+                                records.push({
+                                  patient_name: row.patient_name,
+                                  patient_contact: row.patient_contact || null,
+                                  dos: row.dos,
+                                  original_balance: parseFloat(row.original_balance),
+                                  current_balance: parseFloat(row.current_balance),
+                                  balance_created_date: row.balance_created_date,
+                                  status: 'active',
+                                  created_by: 'CSV Import',
+                                  updated_by: 'CSV Import',
+                                  patient_id: row.patient_id || null,
+                                  moved_to_collections_date: null,
+                                  next_contact_due_date: row.next_contact_due_date || null,
+                                  assigned_to_staff_id: row.assigned_to_staff_id || null,
+                                  write_off_suggested_date: null,
+                                  write_off_suggestion_reason: null
+                                });
+                              }
+
+                              if (records.length === 0) {
+                                alert('No valid records found in CSV');
+                                return;
+                              }
+
+                              if (!confirm(`Import ${records.length} patient A/R records?`)) {
+                                return;
+                              }
+
+                              setPatientARLoading(true);
+
+                              // Import records one by one
+                              let successCount = 0;
+                              let errorCount = 0;
+
+                              for (const record of records) {
+                                try {
+                                  await insertPatientAR(record);
+                                  successCount++;
+                                } catch (error) {
+                                  console.error('Error inserting record:', error);
+                                  errorCount++;
+                                }
+                              }
+
+                              // Refresh data
+                              const [activeData, collectionsData, writeOffsData] = await Promise.all([
+                                getActivePatientAR(),
+                                getCollectionsPatientAR(),
+                                getPendingWriteOffSuggestions()
+                              ]);
+                              setActivePatientAR(activeData);
+                              setCollectionsPatientAR(collectionsData);
+                              setWriteOffSuggestions(writeOffsData);
+                              setPatientARLoading(false);
+
+                              setShowCSVUploadModal(false);
+                              alert(`Import complete!\nSuccessfully imported: ${successCount}\nFailed: ${errorCount}`);
+                            } catch (error) {
+                              console.error('Error processing CSV:', error);
+                              alert('Failed to process CSV file. Please check the format and try again.');
+                              setPatientARLoading(false);
+                            }
+                          }}
+                          className="space-y-6"
+                        >
+                          {/* File Input */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                              Select CSV File <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="file"
+                              name="csv_file"
+                              accept=".csv"
+                              required
+                              className={`w-full px-4 py-3 rounded-lg border ${
+                                isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-gray-600 bg-gray-700 text-white'
+                              } focus:ring-2 focus:ring-primary-500`}
+                            />
+                          </div>
+
+                          {/* CSV Format Instructions */}
+                          <div className={`p-4 rounded-lg ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-400/30'}`}>
+                            <h4 className={`font-semibold mb-2 ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>CSV Format</h4>
+                            <p className={`text-sm mb-2 ${isDayMode ? 'text-blue-800' : 'text-blue-400'}`}>Your CSV file must include these columns:</p>
+                            <ul className={`text-sm space-y-1 list-disc list-inside ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>
+                              <li><strong>patient_name</strong> - Patient full name (required)</li>
+                              <li><strong>dos</strong> - Date of service in YYYY-MM-DD format (required)</li>
+                              <li><strong>original_balance</strong> - Original balance amount (required)</li>
+                              <li><strong>current_balance</strong> - Current balance amount (required)</li>
+                              <li><strong>balance_created_date</strong> - Date in YYYY-MM-DD format (required)</li>
+                              <li><strong>patient_contact</strong> - Phone/email (optional)</li>
+                              <li><strong>patient_id</strong> - Patient ID (optional)</li>
+                              <li><strong>next_contact_due_date</strong> - Date in YYYY-MM-DD format (optional)</li>
+                              <li><strong>assigned_to_staff_id</strong> - Staff ID (optional)</li>
+                            </ul>
+                            <p className={`text-xs mt-3 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>
+                              Example: patient_name,dos,original_balance,current_balance,balance_created_date
+                            </p>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                            <button
+                              type="button"
+                              onClick={() => setShowCSVUploadModal(false)}
+                              className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                                isDayMode
+                                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                              }`}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover-lift"
+                            >
+                              Import CSV
+                            </button>
+                          </div>
+                        </form>
                       </div>
                     </div>
                   </div>
