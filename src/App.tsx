@@ -39,7 +39,11 @@ import {
   getSchedulingListItems, insertSchedulingListItem, updateSchedulingListItem, deleteSchedulingListItem,
   calculateSchedulingMetrics
 } from './services/schedulingService';
-import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem } from './types/database.types';
+import {
+  getActivePatientAR, getCollectionsPatientAR, getPendingWriteOffSuggestions,
+  approveWriteOffSuggestion, rejectWriteOffSuggestion
+} from './services/patientARService.new';
+import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem, PatientAR, WriteOffSuggestion } from './types/database.types';
 
 // BAM Cycle Helper Functions
 // Get local date string in YYYY-MM-DD format (respects user's timezone)
@@ -815,6 +819,13 @@ const CourtStreetRCM = () => {
   const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
   const [showArchivedInsuranceChecks, setShowArchivedInsuranceChecks] = useState(false);
 
+  // Patient A/R state
+  const [patientARView, setPatientARView] = useState<'active' | 'collections' | 'writeoffs'>('active');
+  const [activePatientAR, setActivePatientAR] = useState<PatientAR[]>([]);
+  const [collectionsPatientAR, setCollectionsPatientAR] = useState<PatientAR[]>([]);
+  const [writeOffSuggestions, setWriteOffSuggestions] = useState<WriteOffSuggestion[]>([]);
+  const [patientARLoading, setPatientARLoading] = useState(true);
+
   // Calculate BAM cycle dates (needed for metrics hook)
   const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
   const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
@@ -1002,6 +1013,29 @@ const CourtStreetRCM = () => {
 
     fetchInsuranceChecks();
   }, [showArchivedInsuranceChecks]);
+
+  // Fetch Patient A/R data from Supabase
+  useEffect(() => {
+    const fetchPatientARData = async () => {
+      try {
+        setPatientARLoading(true);
+        const [activeData, collectionsData, writeOffsData] = await Promise.all([
+          getActivePatientAR(),
+          getCollectionsPatientAR(),
+          getPendingWriteOffSuggestions()
+        ]);
+        setActivePatientAR(activeData);
+        setCollectionsPatientAR(collectionsData);
+        setWriteOffSuggestions(writeOffsData);
+      } catch (error) {
+        console.error('Error fetching Patient A/R data:', error);
+      } finally {
+        setPatientARLoading(false);
+      }
+    };
+
+    fetchPatientARData();
+  }, []);
 
   // Set up real-time subscriptions for claims, pre-auths, and insurance checks
   useEffect(() => {
@@ -4220,250 +4254,354 @@ const CourtStreetRCM = () => {
 
             {patientManagementView === 'patients' && (
               <>
-          <div className="space-y-6">
-            {/* Patients Header */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                Patient Accounts Receivable Management
-              </h2>
+                {/* Patient A/R Header */}
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                    Patient A/R Management
+                  </h2>
 
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search patients by name, ID, or phone number..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+                  {/* Sub-tabs for Patient A/R */}
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    <button
+                      onClick={() => setPatientARView('active')}
+                      className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                        patientARView === 'active'
+                          ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                          : isDayMode
+                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                      }`}
+                    >
+                      Active A/R
+                    </button>
+                    <button
+                      onClick={() => setPatientARView('collections')}
+                      className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                        patientARView === 'collections'
+                          ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                          : isDayMode
+                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                      }`}
+                    >
+                      Collections
+                    </button>
+                    <button
+                      onClick={() => setPatientARView('writeoffs')}
+                      className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                        patientARView === 'writeoffs'
+                          ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                          : isDayMode
+                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                      }`}
+                    >
+                      Write-Off Suggestions
+                    </button>
+                  </div>
 
-              {/* Patient Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Total Patients */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Total Patients</p>
-                        <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
-                          {patientsData.totalPatients}
-                        </p>
-                        <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>In practice</p>
-                      </div>
-                      <Users className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Active Patients */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Active Patients</p>
-                        <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                          {patientsData.activePatients}
-                        </p>
-                        <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Last 12 months</p>
-                      </div>
-                      <UserCheck className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Patients with Balance */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Patients w/ Balance</p>
-                        <p className={`text-3xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
-                          {patientsData.patientsWithBalance}
-                        </p>
-                        <p className={`text-xs mt-2 ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>Require follow-up</p>
-                      </div>
-                      <AlertCircle className={`w-8 h-8 ${isDayMode ? 'text-orange-500' : 'text-orange-400'}`} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Total Patient A/R */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Total Patient A/R</p>
-                        <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
-                          ${patientsData.totalPatientAR.toLocaleString()}
-                        </p>
-                        <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>Outstanding balance</p>
-                      </div>
-                      <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Patient A/R Aging */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                Patient A/R Aging Analysis
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="text-center">
-                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-green-800' : 'text-green-400'}`}>0-30 Days</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                        ${patientsData.patientARAging.zeroToThirty.toLocaleString()}
-                      </p>
-                      <p className={`text-xs mt-1 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Current</p>
-                    </div>
-                  </div>
-                </div>
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="text-center">
-                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-yellow-800' : 'text-yellow-400'}`}>31-60 Days</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
-                        ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()}
-                      </p>
-                      <p className={`text-xs mt-1 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Follow-up needed</p>
-                    </div>
-                  </div>
-                </div>
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="text-center">
-                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-orange-800' : 'text-orange-400'}`}>61-90 Days</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
-                        ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()}
-                      </p>
-                      <p className={`text-xs mt-1 ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>Action required</p>
-                    </div>
-                  </div>
-                </div>
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <div className="text-center">
-                      <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-red-800' : 'text-red-400'}`}>90+ Days</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
-                        ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
-                      </p>
-                      <p className={`text-xs mt-1 ${isDayMode ? 'text-red-600' : 'text-red-500'}`}>Collections</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Summary Bar */}
-              <div className="mt-6 space-y-3">
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">Total Outstanding Patient A/R:</span>
-                    <span className="text-xl font-bold" style={{ color: csdGold }}>
-                      ${(
-                        patientsData.patientARAging.zeroToThirty +
-                        patientsData.patientARAging.thirtyOneToSixty +
-                        patientsData.patientARAging.sixtyOneToNinety +
-                        patientsData.patientARAging.ninetyPlus
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-amber-800">Patient A/R 31+ Days (Total Receivables):</span>
-                    <span className="text-xl font-bold text-amber-900">
-                      ${(
-                        patientsData.patientARAging.thirtyOneToSixty +
-                        patientsData.patientARAging.sixtyOneToNinety +
-                        patientsData.patientARAging.ninetyPlus
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs text-amber-700">
-                    31-60: ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()} |
-                    61-90: ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()} |
-                    91+: ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Plans & Collections */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Payment Plans */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                  Payment Plans
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Active Payment Plans</p>
-                        <p className="text-xs text-gray-500">Patients on scheduled payments</p>
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift`}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Active A/R</p>
+                          <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{activePatientAR.length}</p>
+                          <p className={`text-xs mt-2 ${isDayMode ? 'text-primary-600' : 'text-primary-300'}`}>
+                            ${activePatientAR.reduce((sum, r) => sum + r.current_balance, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-primary-500' : 'text-primary-400'}`} />
                       </div>
                     </div>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {patientsData.paymentPlans}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Past Due Accounts */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                  Collections Status
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center space-x-3">
-                      <XCircle className="w-6 h-6 text-red-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Past Due Accounts</p>
-                        <p className="text-xs text-gray-500">Require immediate attention</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift`}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>In Collections</p>
+                          <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{collectionsPatientAR.length}</p>
+                          <p className={`text-xs mt-2 ${isDayMode ? 'text-orange-600' : 'text-orange-300'}`}>
+                            ${collectionsPatientAR.reduce((sum, r) => sum + r.current_balance, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <AlertCircle className={`w-8 h-8 ${isDayMode ? 'text-orange-500' : 'text-orange-400'}`} />
                       </div>
                     </div>
-                    <p className="text-2xl font-bold text-red-900">
-                      {patientsData.pastDueAccounts}
-                    </p>
+
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift`}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Write-Off Suggestions</p>
+                          <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{writeOffSuggestions.length}</p>
+                          <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-300'}`}>
+                            Pending review
+                          </p>
+                        </div>
+                        <FileText className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Recent Patient Activity */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Recent Patient Activity
-              </h3>
-              <div className="p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">
-                  Patient activity and recent transactions will appear here
-                </p>
-              </div>
-            </div>
-          </div>
+                {/* Active A/R Tab */}
+                {patientARView === 'active' && (
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+                    <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                      Active Patient A/R
+                    </h3>
+
+                    {patientARLoading ? (
+                      <div className="text-center py-12">
+                        <RefreshCw className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
+                        <p className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Loading Patient A/R...</p>
+                      </div>
+                    ) : activePatientAR.length === 0 ? (
+                      <div className="text-center py-12">
+                        <CheckCircle className={`w-16 h-16 mx-auto mb-4 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
+                        <p className={`text-lg font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>No active patient A/R</p>
+                        <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>All caught up!</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>DOS</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Balance</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Aging</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Next Contact</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {activePatientAR.map((record) => (
+                              <tr key={record.id} className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800/50'} transition-colors`}>
+                                <td className={`px-4 py-4 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                  <div className="font-semibold">{record.patient_name}</div>
+                                  {record.patient_contact && <div className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{record.patient_contact}</div>}
+                                </td>
+                                <td className={`px-4 py-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                  {new Date(record.dos).toLocaleDateString()}
+                                </td>
+                                <td className={`px-4 py-4 font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                                  ${record.current_balance.toFixed(2)}
+                                </td>
+                                <td className="px-4 py-4">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                    record.aging_bucket === '0-30'
+                                      ? isDayMode ? 'bg-green-100 text-green-800' : 'bg-green-900/30 text-green-400'
+                                      : record.aging_bucket === '31-60'
+                                      ? isDayMode ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-900/30 text-yellow-400'
+                                      : record.aging_bucket === '61-90'
+                                      ? isDayMode ? 'bg-orange-100 text-orange-800' : 'bg-orange-900/30 text-orange-400'
+                                      : isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-900/30 text-red-400'
+                                  }`}>
+                                    {record.aging_bucket} days
+                                  </span>
+                                </td>
+                                <td className={`px-4 py-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                  {record.next_contact_due_date ? new Date(record.next_contact_due_date).toLocaleDateString() : 'N/A'}
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex gap-2">
+                                    <button
+                                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                        isDayMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
+                                      }`}
+                                      title="Log Contact"
+                                    >
+                                      Contact
+                                    </button>
+                                    <button
+                                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                        isDayMode ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
+                                      }`}
+                                      title="Record Payment"
+                                    >
+                                      Payment
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Collections Tab */}
+                {patientARView === 'collections' && (
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+                    <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                      Collections
+                    </h3>
+
+                    {patientARLoading ? (
+                      <div className="text-center py-12">
+                        <RefreshCw className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
+                        <p className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Loading Collections...</p>
+                      </div>
+                    ) : collectionsPatientAR.length === 0 ? (
+                      <div className="text-center py-12">
+                        <CheckCircle className={`w-16 h-16 mx-auto mb-4 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
+                        <p className={`text-lg font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>No records in collections</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Balance</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Moved to Collections</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Days in Collections</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {collectionsPatientAR.map((record) => {
+                              const daysInCollections = record.moved_to_collections_date
+                                ? Math.floor((new Date().getTime() - new Date(record.moved_to_collections_date).getTime()) / (1000 * 60 * 60 * 24))
+                                : 0;
+
+                              return (
+                                <tr key={record.id} className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800/50'} transition-colors`}>
+                                  <td className={`px-4 py-4 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
+                                    <div className="font-semibold">{record.patient_name}</div>
+                                    {record.patient_contact && <div className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{record.patient_contact}</div>}
+                                  </td>
+                                  <td className={`px-4 py-4 font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                                    ${record.current_balance.toFixed(2)}
+                                  </td>
+                                  <td className={`px-4 py-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                    {record.moved_to_collections_date ? new Date(record.moved_to_collections_date).toLocaleDateString() : 'N/A'}
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                      daysInCollections < 90
+                                        ? isDayMode ? 'bg-yellow-100 text-yellow-800' : 'bg-yellow-900/30 text-yellow-400'
+                                        : isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-900/30 text-red-400'
+                                    }`}>
+                                      {daysInCollections} days
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <button
+                                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                        isDayMode ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
+                                      }`}
+                                      title="Record Payment"
+                                    >
+                                      Payment
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Write-Off Suggestions Tab */}
+                {patientARView === 'writeoffs' && (
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+                    <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                      Write-Off Suggestions
+                    </h3>
+
+                    {patientARLoading ? (
+                      <div className="text-center py-12">
+                        <RefreshCw className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
+                        <p className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Loading Write-Off Suggestions...</p>
+                      </div>
+                    ) : writeOffSuggestions.length === 0 ? (
+                      <div className="text-center py-12">
+                        <CheckCircle className={`w-16 h-16 mx-auto mb-4 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
+                        <p className={`text-lg font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>No pending write-off suggestions</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Suggested Date</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Balance</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Aging Days</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Reason</th>
+                              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {writeOffSuggestions.filter((s) => s.status === 'pending').map((suggestion) => (
+                              <tr key={suggestion.id} className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800/50'} transition-colors`}>
+                                <td className={`px-4 py-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                  {new Date(suggestion.suggested_date).toLocaleDateString()}
+                                </td>
+                                <td className={`px-4 py-4 font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                                  ${suggestion.balance_at_suggestion.toFixed(2)}
+                                </td>
+                                <td className="px-4 py-4">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                    isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-900/30 text-red-400'
+                                  }`}>
+                                    {suggestion.aging_days_at_suggestion} days
+                                  </span>
+                                </td>
+                                <td className={`px-4 py-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                                  <div className="max-w-xs truncate" title={suggestion.suggestion_reason}>
+                                    {suggestion.suggestion_reason}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm('Approve this write-off?')) {
+                                          await approveWriteOffSuggestion(suggestion.id, 'System', 'Approved from dashboard');
+                                          // Refresh data
+                                          const writeOffsData = await getPendingWriteOffSuggestions();
+                                          setWriteOffSuggestions(writeOffsData);
+                                        }
+                                      }}
+                                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                        isDayMode ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
+                                      }`}
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm('Reject this write-off suggestion?')) {
+                                          await rejectWriteOffSuggestion(suggestion.id, 'System', 'Rejected from dashboard');
+                                          // Refresh data
+                                          const writeOffsData = await getPendingWriteOffSuggestions();
+                                          setWriteOffSuggestions(writeOffsData);
+                                        }
+                                      }}
+                                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all hover-lift ${
+                                        isDayMode ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                                      }`}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )}
-
             {/* Insurance Checks/EFT's View */}
             {patientManagementView === 'insurance-checks' && (
               <>
