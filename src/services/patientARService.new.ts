@@ -22,7 +22,7 @@ import type {
  */
 export async function getPatientARRecords(): Promise<PatientAR[]> {
   const { data, error } = await supabase
-    .from('patient_ar')
+    .from('patient_ar_with_aging')
     .select('*')
     .order('next_contact_due_date', { ascending: true, nullsFirst: false });
 
@@ -39,7 +39,7 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
  */
 export async function getActivePatientAR(): Promise<PatientAR[]> {
   const { data, error } = await supabase
-    .from('patient_ar')
+    .from('patient_ar_with_aging')
     .select('*')
     .eq('status', 'active')
     .order('aging_days', { ascending: false });
@@ -57,7 +57,7 @@ export async function getActivePatientAR(): Promise<PatientAR[]> {
  */
 export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
   const { data, error } = await supabase
-    .from('patient_ar')
+    .from('patient_ar_with_aging')
     .select('*')
     .eq('status', 'collections')
     .order('moved_to_collections_date', { ascending: true });
