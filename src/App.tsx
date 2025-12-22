@@ -3773,7 +3773,7 @@ const CourtStreetRCM = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm text-gray-900">{claim.claimNumber}</div>
-                            <div className="text-xs text-gray-500">Submitted: {claim.dateSubmitted}</div>
+                            <div className="text-xs text-gray-500">Resubmitted: {claim.dateSubmitted}</div>
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm text-gray-900">{claim.dateOfService}</div>
@@ -7768,6 +7768,7 @@ const CourtStreetRCM = () => {
                     const formData = new FormData(e.currentTarget);
                     const claimNumber = formData.get('claimNumber') as string;
                     const dateSubmitted = formData.get('dateSubmitted') as string;
+                    const dateOfService = formData.get('dateOfService') as string;
                     const newClaim: ClaimRecord = {
                       id: '', // Let database auto-generate the UUID
                       patientId: formData.get('patientId') as string,
@@ -7779,11 +7780,11 @@ const CourtStreetRCM = () => {
                       claimAmount: parseFloat(formData.get('claimAmount') as string),
                       status: formData.get('status') as ClaimRecord['status'],
                       dateSubmitted: dateSubmitted,
-                      dateOfService: formData.get('dateOfService') as string,
+                      dateOfService: dateOfService,
                       followUpDate: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string,
-                      agingDays: Math.floor((new Date().getTime() - new Date(dateSubmitted).getTime()) / (1000 * 60 * 60 * 24))
+                      agingDays: Math.floor((new Date().getTime() - new Date(dateOfService).getTime()) / (1000 * 60 * 60 * 24))
                     };
 
                     try {
@@ -7863,7 +7864,7 @@ const CourtStreetRCM = () => {
                         <input name="dateOfService" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Date Submitted</label>
+                        <label className="block text-sm font-medium mb-1">Date Resubmitted</label>
                         <input name="dateSubmitted" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
@@ -12171,7 +12172,7 @@ const CourtStreetRCM = () => {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Submitted</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Resubmitted</label>
                             <input
                               type="date"
                               name="dateSubmitted"
