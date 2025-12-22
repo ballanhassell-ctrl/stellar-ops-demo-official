@@ -88,5 +88,5 @@ CREATE TRIGGER update_pre_auths_updated_at
 COMMENT ON TABLE claims IS 'Stores insurance claim records for patient management';
 COMMENT ON TABLE pre_auths IS 'Stores pre-authorization requests for patient treatments';
 
-COMMENT ON COLUMN claims.aging_days IS 'Number of days since claim was submitted';
+COMMENT ON COLUMN claims.aging_days IS 'Number of days since date of service (DOS)';
 COMMENT ON COLUMN pre_auths.approved_amount IS 'Amount approved by insurance (0 if not yet approved)';
