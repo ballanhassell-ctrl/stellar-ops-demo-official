@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals, getBAMCycleRevenue } from '../services/metrics';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleMetricsData } from '../data/sampleData';
 
 interface DashboardMetrics {
   bamCurrentRevenue: number;
@@ -130,6 +132,13 @@ export const useMetrics = (
     try {
       setLoading(true);
       setError(null);
+
+      // Return static sample data if in static mode
+      if (isStaticDataMode()) {
+        setData(sampleMetricsData as MetricsData);
+        setLoading(false);
+        return;
+      }
 
       const metrics = await getMetricsForDate(date);
 

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
 import { getRealTimeActionItems } from '../services/actionItems';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleEODData } from '../data/sampleData';
 
 export interface EODData {
   reportDate: string;
@@ -57,6 +59,13 @@ export const useEODMetrics = (date: string) => {
     try {
       setLoading(true);
       setError(null);
+
+      // Return static sample data if in static mode
+      if (isStaticDataMode()) {
+        setData({ ...sampleEODData, reportDate: targetDate } as EODData);
+        setLoading(false);
+        return;
+      }
 
       const metrics = await getMetricsForDate(targetDate);
 

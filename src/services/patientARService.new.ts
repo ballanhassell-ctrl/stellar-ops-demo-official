@@ -12,6 +12,15 @@ import type {
   WriteOffRule,
   WriteOffSuggestion
 } from '../types/database.types';
+import { isStaticDataMode } from '../config/dataMode';
+import {
+  samplePatientAR,
+  samplePatientARContacts,
+  samplePatientARPayments,
+  samplePatientPaymentPlans,
+  sampleWriteOffRules,
+  sampleWriteOffSuggestions
+} from '../data/sampleData';
 
 // =====================================================
 // PATIENT A/R - CRUD OPERATIONS
@@ -21,6 +30,10 @@ import type {
  * Get all patient A/R records
  */
 export async function getPatientARRecords(): Promise<PatientAR[]> {
+  if (isStaticDataMode()) {
+    return [...samplePatientAR];
+  }
+
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
     .select('*')
@@ -38,6 +51,10 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
  * Get active patient A/R records
  */
 export async function getActivePatientAR(): Promise<PatientAR[]> {
+  if (isStaticDataMode()) {
+    return samplePatientAR.filter(ar => ar.status === 'active');
+  }
+
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
     .select('*')
@@ -56,6 +73,10 @@ export async function getActivePatientAR(): Promise<PatientAR[]> {
  * Get collections patient A/R records
  */
 export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
+  if (isStaticDataMode()) {
+    return samplePatientAR.filter(ar => ar.status === 'collections');
+  }
+
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
     .select('*')
@@ -261,6 +282,10 @@ export async function insertPaymentPlan(
  * Get all write-off rules
  */
 export async function getWriteOffRules(): Promise<WriteOffRule[]> {
+  if (isStaticDataMode()) {
+    return [...sampleWriteOffRules];
+  }
+
   const { data, error } = await supabase
     .from('write_off_rules')
     .select('*')
@@ -324,6 +349,10 @@ export async function updateWriteOffRule(
  * Get pending write-off suggestions with related data
  */
 export async function getPendingWriteOffSuggestions(): Promise<WriteOffSuggestion[]> {
+  if (isStaticDataMode()) {
+    return sampleWriteOffSuggestions.filter(s => s.status === 'pending');
+  }
+
   const { data, error } = await supabase
     .from('write_off_suggestions')
     .select('*')
