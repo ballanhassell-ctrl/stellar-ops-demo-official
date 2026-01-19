@@ -1250,11 +1250,11 @@ export const sampleMetricsData = {
     lifecycleMonths: 28.56, // 2.38 years * 12 months
     ltv: 22500.00,
     averagePatientValue: 18750.00,
-    activePtsFirstOfPriorMonth: 145,
+    activePtsFirstOfPriorMonth: 2850, // Typical single-location practice (2000-4000 patients)
     avgRetentionPeriod: 28.56, // Average retention period in months
     averageRevenuePerClient: 18750.00,
-    nps: 78, // Net Promoter Score (0-100)
-    enps: 72, // Employee Net Promoter Score (0-100)
+    nps: 98, // Net Promoter Score (0-100)
+    enps: 82, // Employee Net Promoter Score (0-100)
     employeeUtilizationRate: 87.5, // Employee utilization percentage
     cogs: {
       dentalSupplies: 18500.00,

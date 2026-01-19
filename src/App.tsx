@@ -837,6 +837,7 @@ const CourtStreetRCM = () => {
   const [showPaymentPlanModal, setShowPaymentPlanModal] = useState(false);
   const [showConfigureRulesModal, setShowConfigureRulesModal] = useState(false);
   const [showCSVUploadModal, setShowCSVUploadModal] = useState(false);
+  const [showWeeklyDetailsModal, setShowWeeklyDetailsModal] = useState(false);
   const [selectedPatientAR, setSelectedPatientAR] = useState<PatientAR | null>(null);
   const [writeOffRules, setWriteOffRules] = useState<WriteOffRule[]>([]);
 
@@ -9092,9 +9093,21 @@ const CourtStreetRCM = () => {
 
             {/* Weekly Data Table */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Weekly Performance Data
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Weekly Performance Data
+                </h3>
+                <button
+                  onClick={() => setShowWeeklyDetailsModal(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    isDayMode
+                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
+                  }`}
+                >
+                  View All Weeks →
+                </button>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -9112,7 +9125,7 @@ const CourtStreetRCM = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {scorecardData.weeklyData.map((week: any) => (
+                    {scorecardData.weeklyData.slice(-4).map((week: any) => (
                       <tr key={week.week} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="p-3 font-medium text-gray-900">{week.week}</td>
                         <td className="p-3 text-gray-700">{week.date}</td>
@@ -9149,15 +9162,27 @@ const CourtStreetRCM = () => {
 
             {/* Weekly Trends Visualization */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Weekly Trends
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Weekly Trends
+                </h3>
+                <button
+                  onClick={() => setShowWeeklyDetailsModal(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    isDayMode
+                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
+                  }`}
+                >
+                  View All Weeks →
+                </button>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Show Rates Trends */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Show Rates</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week: any) => (
+                    {scorecardData.weeklyData.slice(-4).map((week: any) => (
                       <div key={`show-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
@@ -9192,7 +9217,7 @@ const CourtStreetRCM = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Treatment Acceptance</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week: any) => (
+                    {scorecardData.weeklyData.slice(-4).map((week: any) => (
                       <div key={`tx-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
@@ -13134,6 +13159,171 @@ const CourtStreetRCM = () => {
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Weekly Details Modal */}
+        {showWeeklyDetailsModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto`}>
+              <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
+                <div className="flex items-center justify-between">
+                  <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    Complete Weekly Performance Data
+                  </h3>
+                  <button
+                    onClick={() => setShowWeeklyDetailsModal(false)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Weekly Data Table */}
+                <div>
+                  <h4 className={`text-lg font-bold mb-4 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    All Weeks Performance Data
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className={`border-b-2 ${isDayMode ? 'bg-gray-100 border-gray-200' : 'bg-gray-700 border-gray-600'}`}>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Week</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Date</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Dr</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Hyg</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>New Pts</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>TX Presented</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>TX Accept %</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>TX Accepted</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Collection %</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>5★</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scorecardData.weeklyData.map((week: any) => (
+                          <tr key={week.week} className={`border-b ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{week.week}</td>
+                            <td className={`p-3 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>{week.date}</td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.showRateDr >= 90 ? 'text-green-600' : week.showRateDr >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {week.showRateDr}%
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.showRateHyg >= 85 ? 'text-green-600' : week.showRateHyg >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {week.showRateHyg}%
+                              </span>
+                            </td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{week.newPts}</td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>${week.txPresented.toLocaleString()}</td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.txAcceptPct >= 50 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                {week.txAcceptPct}%
+                              </span>
+                            </td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>${week.txAccepted.toLocaleString()}</td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.collectionPct >= 95 ? 'text-green-600' : week.collectionPct >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {week.collectionPct}%
+                              </span>
+                            </td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{week.fiveStars}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Weekly Trends Visualization */}
+                <div>
+                  <h4 className={`text-lg font-bold mb-4 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    All Weeks Trends
+                  </h4>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Show Rates Trends */}
+                    <div className={`${isDayMode ? 'bg-gray-50' : 'bg-gray-700/50'} rounded-lg p-4`}>
+                      <h5 className={`text-md font-semibold mb-3 ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rates</h5>
+                      <div className="space-y-3">
+                        {scorecardData.weeklyData.map((week: any) => (
+                          <div key={`show-${week.week}`}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Week {week.week}</span>
+                              <span className={`${isDayMode ? 'text-gray-700' : 'text-gray-300'} font-medium`}>Dr: {week.showRateDr}% | Hyg: {week.showRateHyg}%</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <div className={`w-full ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} rounded-full h-2`}>
+                                  <div
+                                    className={`h-2 rounded-full ${week.showRateDr >= 90 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                    style={{ width: `${week.showRateDr}%` }}
+                                  ></div>
+                                </div>
+                                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>Dr</p>
+                              </div>
+                              <div>
+                                <div className={`w-full ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} rounded-full h-2`}>
+                                  <div
+                                    className={`h-2 rounded-full ${week.showRateHyg >= 85 ? 'bg-green-500' : 'bg-purple-500'}`}
+                                    style={{ width: `${week.showRateHyg}%` }}
+                                  ></div>
+                                </div>
+                                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>Hyg</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Treatment Acceptance Trends */}
+                    <div className={`${isDayMode ? 'bg-gray-50' : 'bg-gray-700/50'} rounded-lg p-4`}>
+                      <h5 className={`text-md font-semibold mb-3 ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Treatment Acceptance</h5>
+                      <div className="space-y-3">
+                        {scorecardData.weeklyData.map((week: any) => (
+                          <div key={`tx-${week.week}`}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Week {week.week}</span>
+                              <span className={`${isDayMode ? 'text-gray-700' : 'text-gray-300'} font-medium`}>{week.txAcceptPct}%</span>
+                            </div>
+                            <div className={`w-full ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} rounded-full h-4`}>
+                              <div
+                                className={`h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                                  week.txAcceptPct >= 70 ? 'bg-green-500' : week.txAcceptPct >= 50 ? 'bg-blue-500' : 'bg-yellow-500'
+                                }`}
+                                style={{ width: `${week.txAcceptPct}%` }}
+                              >
+                                {week.txAcceptPct}%
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`flex justify-end pt-4 border-t ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
+                  <button
+                    onClick={() => setShowWeeklyDetailsModal(false)}
+                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                      isDayMode
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
