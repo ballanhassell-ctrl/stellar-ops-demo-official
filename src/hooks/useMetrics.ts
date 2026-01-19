@@ -350,8 +350,15 @@ export const useMetrics = (
           // PHASE 3: AUTO-CALCULATED ADVANCED METRICS
           churnRate: 0, // Will be calculated below
           lifecycleYears: 0, // Will be calculated below
+          lifecycleMonths: getMetricValue('adv_lifecycle_months', 0, true),
           ltv: 0, // Will be calculated below
           averagePatientValue: getMetricValue('adv_average_patient_value', 0, true),
+          activePtsFirstOfPriorMonth: getMetricValue('adv_active_pts_prior_month', 0, true),
+          avgRetentionPeriod: getMetricValue('adv_avg_retention_period', 0, true),
+          averageRevenuePerClient: getMetricValue('adv_average_revenue_per_client', 0, true),
+          nps: getMetricValue('adv_nps', 0, true),
+          enps: getMetricValue('adv_enps', 0, true),
+          employeeUtilizationRate: getMetricValue('adv_employee_utilization_rate', 0, true),
           cogs: {
             assistantPayroll: getMetricValue('adv_cogs_assistant_payroll', 0, true),
             associateDoctorExpense: getMetricValue('adv_cogs_associate_doctor', 0, true),
