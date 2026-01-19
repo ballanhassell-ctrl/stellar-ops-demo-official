@@ -2,7 +2,7 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Patient, Appointment, PatientRevenue, LifecycleMetrics } from '../types/database.types';
 import { isStaticDataMode } from '../config/dataMode';
-import { samplePatients, sampleAppointments, samplePatientRevenue, sampleLifecycleMetrics } from '../data/sampleData';
+import { samplePatients } from '../data/sampleData';
 
 // =====================================================
 // PATIENT CRUD OPERATIONS

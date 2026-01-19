@@ -15,9 +15,6 @@ import type {
 import { isStaticDataMode } from '../config/dataMode';
 import {
   samplePatientAR,
-  samplePatientARContacts,
-  samplePatientARPayments,
-  samplePatientPaymentPlans,
   sampleWriteOffRules,
   sampleWriteOffSuggestions
 } from '../data/sampleData';
