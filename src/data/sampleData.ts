@@ -1326,3 +1326,38 @@ export const sampleEODData = {
     newPatients: 18,
   },
 };
+
+// ===== WEEKLY SCORECARD DATA =====
+// 12 weeks of historical scorecard data for trends
+export const sampleWeeklyScorecardData = [
+  { week: 1, date: daysAgo(77), showRateDr: 91.2, showRateHyg: 86.5, newPts: 3, txPresented: 28500, txAcceptPct: 75.2, txAccepted: 21426, collectionPct: 92.8, fiveStars: 2 },
+  { week: 2, date: daysAgo(70), showRateDr: 93.5, showRateHyg: 88.1, newPts: 4, txPresented: 32100, txAcceptPct: 77.8, txAccepted: 24974, collectionPct: 94.1, fiveStars: 3 },
+  { week: 3, date: daysAgo(63), showRateDr: 89.8, showRateHyg: 85.9, newPts: 2, txPresented: 26800, txAcceptPct: 73.5, txAccepted: 19698, collectionPct: 91.5, fiveStars: 1 },
+  { week: 4, date: daysAgo(56), showRateDr: 94.2, showRateHyg: 89.3, newPts: 5, txPresented: 35200, txAcceptPct: 79.1, txAccepted: 27843, collectionPct: 95.3, fiveStars: 4 },
+  { week: 5, date: daysAgo(49), showRateDr: 92.1, showRateHyg: 87.4, newPts: 3, txPresented: 30500, txAcceptPct: 76.4, txAccepted: 23302, collectionPct: 93.2, fiveStars: 2 },
+  { week: 6, date: daysAgo(42), showRateDr: 90.5, showRateHyg: 86.8, newPts: 4, txPresented: 29400, txAcceptPct: 74.9, txAccepted: 22021, collectionPct: 92.1, fiveStars: 3 },
+  { week: 7, date: daysAgo(35), showRateDr: 93.8, showRateHyg: 88.7, newPts: 5, txPresented: 33800, txAcceptPct: 78.5, txAccepted: 26533, collectionPct: 94.7, fiveStars: 4 },
+  { week: 8, date: daysAgo(28), showRateDr: 91.9, showRateHyg: 87.2, newPts: 3, txPresented: 31200, txAcceptPct: 77.2, txAccepted: 24086, collectionPct: 93.5, fiveStars: 3 },
+  { week: 9, date: daysAgo(21), showRateDr: 92.7, showRateHyg: 88.4, newPts: 4, txPresented: 32600, txAcceptPct: 78.9, txAccepted: 25721, collectionPct: 94.2, fiveStars: 5 },
+  { week: 10, date: daysAgo(14), showRateDr: 94.5, showRateHyg: 89.6, newPts: 5, txPresented: 36100, txAcceptPct: 80.3, txAccepted: 28988, collectionPct: 95.8, fiveStars: 4 },
+  { week: 11, date: daysAgo(7), showRateDr: 93.2, showRateHyg: 88.9, newPts: 4, txPresented: 34500, txAcceptPct: 79.7, txAccepted: 27497, collectionPct: 94.9, fiveStars: 3 },
+  { week: 12, date: daysAgo(0), showRateDr: 92.5, showRateHyg: 88.3, newPts: 3, txPresented: 33200, txAcceptPct: 78.5, txAccepted: 26062, collectionPct: 94.5, fiveStars: 4 },
+];
+
+// ===== NEW PATIENT TRACKER DATA =====
+// Monthly new patient data for the last 6 months
+export const sampleMonthlyNewPatients = [
+  { month: 'Aug 2025', year: 2025, count: 12, goal: 40 },
+  { month: 'Sep 2025', year: 2025, count: 15, goal: 40 },
+  { month: 'Oct 2025', year: 2025, count: 14, goal: 40 },
+  { month: 'Nov 2025', year: 2025, count: 18, goal: 40 },
+  { month: 'Dec 2025', year: 2025, count: 16, goal: 40 },
+  { month: 'Jan 2026', year: 2026, count: 18, goal: 40 },
+];
+
+// New patient aggregates (week, month, quarter)
+export const sampleNewPatientAggregates = {
+  perWeek: 8,      // New patients this week
+  perMonth: 18,    // New patients this month
+  quarterly: 52,   // New patients this quarter (Oct + Nov + Dec)
+};

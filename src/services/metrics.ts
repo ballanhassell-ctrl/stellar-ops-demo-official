@@ -1,5 +1,11 @@
 // src/services/metrics.ts
 import { supabase } from '../lib/supabaseClient';
+import { isStaticDataMode } from '../config/dataMode';
+import {
+  sampleWeeklyScorecardData,
+  sampleMonthlyNewPatients,
+  sampleNewPatientAggregates
+} from '../data/sampleData';
 
 export type MetricWithValue = {
   field_key: string;
@@ -96,6 +102,16 @@ export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<st
  * This is faster than aggregating from daily values
  */
 export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number; goal: number }>> {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    // For new patients, return the sample monthly data
+    if (fieldKey === 'eod_new_patients') {
+      return sampleMonthlyNewPatients.slice(-numMonths);
+    }
+    // For other fields, return empty array (can be extended later if needed)
+    return [];
+  }
+
   try {
     console.log(`[getMonthlyTrends] Fetching ${numMonths} months of data for ${fieldKey}`);
 
@@ -245,6 +261,11 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
  * Quarterly calculation uses monthly_metric_trends for consistency with monthly display
  */
 export async function getNewPatientsAggregates() {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    return sampleNewPatientAggregates;
+  }
+
   try {
     console.log('[getNewPatientsAggregates] Auto-calculating from daily eod_new_patients values...');
 
@@ -603,6 +624,11 @@ export async function getMetricsForDate(date: string) {
  * Aggregates daily metrics into weekly summaries
  */
 export async function getWeeklyScorecardData(numWeeks: number = 12) {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    return sampleWeeklyScorecardData.slice(-numWeeks);
+  }
+
   try {
     const today = new Date();
     const startDate = new Date(today);
