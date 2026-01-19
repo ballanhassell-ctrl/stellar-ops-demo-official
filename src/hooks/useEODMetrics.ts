@@ -62,7 +62,7 @@ export const useEODMetrics = (date: string) => {
 
       // Return static sample data if in static mode
       if (isStaticDataMode()) {
-        setData({ ...sampleEODData, reportDate: targetDate } as EODData);
+        setData({ ...sampleEODData, reportDate: targetDate });
         setLoading(false);
         return;
       }

@@ -135,7 +135,7 @@ export const useMetrics = (
 
       // Return static sample data if in static mode
       if (isStaticDataMode()) {
-        setData(sampleMetricsData as MetricsData);
+        setData(sampleMetricsData);
         setLoading(false);
         return;
       }

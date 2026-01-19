@@ -1248,6 +1248,7 @@ export const sampleMetricsData = {
     churnRate: 0.075,
     lifecycleYears: 2.38,
     ltv: 22500.00,
+    averagePatientValue: 18750.00,
     cogs: {
       dentalSupplies: 18500.00,
       labFees: 12300.00,
@@ -1276,60 +1277,52 @@ export const sampleMetricsData = {
 
 // ===== EOD REPORT DATA =====
 export const sampleEODData = {
-  date: new Date().toISOString().split('T')[0],
-  production: {
-    drGajjar: 4850.00,
-    drJudge: 3920.00,
-    drStrachan: 2650.00,
-    hygiene: 1280.00,
-    total: 12700.00,
-    goal: 15000.00,
+  reportDate: new Date().toISOString().split('T')[0],
+  dailyProduction: 12700.00,
+  dailyProductionGoal: 15000.00,
+  paymentsCollected: 12650.00,
+  collectionRate: 99.61, // (12650 / 12700) * 100
+  insurancePayments: 8450.00,
+  patientPayments: 4200.00,
+  productionCollectedDifference: -50.00, // 12650 - 12700
+  paymentMethods: {
+    visa: 1850.00,
+    mastercard: 980.00,
+    americanExpress: 620.00,
+    discover: 350.00,
+    cherry: 1200.00,
+    careCredit: 800.00,
+    weave: 0.00,
+    insuranceCheck: 3500.00,
+    otherCheck: 1850.00,
+    cash: 650.00,
+    eft: 850.00,
   },
-  payments: {
-    insurance: 8450.00,
-    patient: 4200.00,
-    total: 12650.00,
-    byMethod: {
-      visa: 1850.00,
-      mastercard: 980.00,
-      amex: 620.00,
-      discover: 350.00,
-      cherry: 1200.00,
-      careCredit: 800.00,
-      check: 1850.00,
-      cash: 650.00,
-      eft: 4350.00,
-    },
-  },
-  patients: {
-    seen: 28,
-    newPatients: 3,
-    noShows: 2,
-    cancellations: 1,
-  },
-  procedures: {
-    completed: 42,
-    topProcedures: [
-      { code: 'D1110', description: 'Prophylaxis - Adult', count: 8, revenue: 1440.00 },
-      { code: 'D2740', description: 'Crown - PFM', count: 4, revenue: 4800.00 },
-      { code: 'D2391', description: 'Composite - 1 Surface', count: 6, revenue: 1110.00 },
-      { code: 'D2950', description: 'Core Buildup', count: 3, revenue: 885.00 },
-      { code: 'D0150', description: 'Comprehensive Exam', count: 5, revenue: 375.00 },
-    ],
-  },
+  patientsSeenToday: 28,
+  newPatients: 3,
+  proceduresCompleted: 42,
   unappliedPayments: 2850.00,
   actionItems: {
     claimsToSubmit: 2,
-    deniedClaims: 2,
+    deniedClaimsToResubmit: 2,
     preAuthsApproved: 1,
     accountsNeedingFollowUp: 8,
     missedAppointments: 2,
-    recallsDue: 15,
+    patientsDueForRecall: 15,
   },
-  mtdSummary: {
+  payments: [], // Empty array for payment details
+  topProcedures: [
+    { code: 'D1110', description: 'Prophylaxis - Adult', count: 8, revenue: 1440.00 },
+    { code: 'D2740', description: 'Crown - PFM', count: 4, revenue: 4800.00 },
+    { code: 'D2391', description: 'Composite - 1 Surface', count: 6, revenue: 1110.00 },
+    { code: 'D2950', description: 'Core Buildup', count: 3, revenue: 885.00 },
+    { code: 'D0150', description: 'Comprehensive Exam', count: 5, revenue: 375.00 },
+  ],
+  monthToDateSummary: {
     production: 285400.00,
-    collections: 268800.00,
+    productionGoal: 300000.00,
+    collected: 268800.00,
+    collectionRate: 94.18, // (268800 / 285400) * 100
     newPatients: 18,
-    activePatients: 148,
   },
 };
