@@ -1,12 +1,18 @@
 // src/services/claimsService.ts
 import { supabase } from '../lib/supabaseClient';
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate } from '../types/database.types';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleClaims, samplePreAuths, sampleInsuranceChecks } from '../data/sampleData';
 
 // =====================================================
 // CLAIMS CRUD OPERATIONS
 // =====================================================
 
 export async function getClaims() {
+  if (isStaticDataMode()) {
+    return [...sampleClaims];
+  }
+
   const { data, error } = await supabase
     .from('claims')
     .select('*')
@@ -117,6 +123,10 @@ export async function getClaimsByPatient(patientId: string) {
 // =====================================================
 
 export async function getPreAuths() {
+  if (isStaticDataMode()) {
+    return [...samplePreAuths];
+  }
+
   const { data, error } = await supabase
     .from('pre_auths')
     .select('*')
@@ -282,6 +292,10 @@ export async function getArchivedClaims() {
 }
 
 export async function getActiveClaims() {
+  if (isStaticDataMode()) {
+    return sampleClaims.filter(c => !c.archived);
+  }
+
   const { data, error } = await supabase
     .from('claims')
     .select('*')
@@ -356,6 +370,10 @@ export async function getArchivedPreAuths() {
 }
 
 export async function getActivePreAuths() {
+  if (isStaticDataMode()) {
+    return samplePreAuths.filter(p => !p.archived);
+  }
+
   const { data, error } = await supabase
     .from('pre_auths')
     .select('*')
@@ -725,6 +743,10 @@ export async function addPreAuthUpdate(update: Omit<PreAuthUpdate, 'update_id' |
 // =====================================================
 
 export async function getInsuranceChecks() {
+  if (isStaticDataMode()) {
+    return [...sampleInsuranceChecks];
+  }
+
   const { data, error } = await supabase
     .from('insurance_checks')
     .select('*')
@@ -860,6 +882,10 @@ export async function unarchiveInsuranceCheck(id: string) {
 }
 
 export async function getActiveInsuranceChecks() {
+  if (isStaticDataMode()) {
+    return sampleInsuranceChecks.filter(c => !c.is_archived);
+  }
+
   const { data, error } = await supabase
     .from('insurance_checks')
     .select('*')
