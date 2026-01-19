@@ -76,8 +76,15 @@ interface AdvancedMetrics {
   churnedPatientsMonth: number;
   churnRate: number; // AUTO-CALCULATED (Phase 3)
   lifecycleYears: number; // AUTO-CALCULATED (Phase 3)
+  lifecycleMonths: number;
   ltv: number; // AUTO-CALCULATED (Phase 3)
   averagePatientValue: number; // Used in LTV calculation
+  activePtsFirstOfPriorMonth: number;
+  avgRetentionPeriod: number;
+  averageRevenuePerClient: number;
+  nps: number; // Net Promoter Score
+  enps: number; // Employee NPS
+  employeeUtilizationRate: number;
   cogs: {
     assistantPayroll: number;
     associateDoctorExpense: number;
@@ -343,8 +350,15 @@ export const useMetrics = (
           // PHASE 3: AUTO-CALCULATED ADVANCED METRICS
           churnRate: 0, // Will be calculated below
           lifecycleYears: 0, // Will be calculated below
+          lifecycleMonths: getMetricValue('adv_lifecycle_months', 0, true),
           ltv: 0, // Will be calculated below
           averagePatientValue: getMetricValue('adv_average_patient_value', 0, true),
+          activePtsFirstOfPriorMonth: getMetricValue('adv_active_pts_prior_month', 0, true),
+          avgRetentionPeriod: getMetricValue('adv_avg_retention_period', 0, true),
+          averageRevenuePerClient: getMetricValue('adv_average_revenue_per_client', 0, true),
+          nps: getMetricValue('adv_nps', 0, true),
+          enps: getMetricValue('adv_enps', 0, true),
+          employeeUtilizationRate: getMetricValue('adv_employee_utilization_rate', 0, true),
           cogs: {
             assistantPayroll: getMetricValue('adv_cogs_assistant_payroll', 0, true),
             associateDoctorExpense: getMetricValue('adv_cogs_associate_doctor', 0, true),
