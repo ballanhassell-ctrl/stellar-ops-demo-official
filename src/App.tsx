@@ -2528,8 +2528,12 @@ const CourtStreetRCM = () => {
 
               {/* Collaboration text - Hidden on mobile */}
               <div className="hidden lg:block text-right">
-                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
-                <p className={`text-xs font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
+                <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                  Designed for <span className="font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">Court Street Dental</span>
+                </p>
+                <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                  by the <span className="font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">Stellar Consults</span> team
+                </p>
               </div>
             </div>
           </div>
