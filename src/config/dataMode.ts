@@ -12,7 +12,7 @@
  * 2. Restart the development server
  */
 
-export const USE_STATIC_DATA = true; // Set to false to use live Supabase data
+export const USE_STATIC_DATA = false; // Set to true to use static sample data
 
 export const getDataMode = () => {
   return USE_STATIC_DATA ? 'static' : 'live';
