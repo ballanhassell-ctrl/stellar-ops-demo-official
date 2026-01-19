@@ -554,6 +554,16 @@ export async function getClaimsTotals() {
 }
 
 export async function getMetricsForDate(date: string) {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    const { sampleProviderMetrics } = await import('../data/sampleData');
+    // Update the date to match the requested date
+    return sampleProviderMetrics.map(metric => ({
+      ...metric,
+      as_of_date: date
+    }));
+  }
+
   console.log('Fetching metrics for date:', date);
 
   try {

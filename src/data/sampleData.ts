@@ -1247,8 +1247,15 @@ export const sampleMetricsData = {
     churnedPatientsMonth: 2,
     churnRate: 0.075,
     lifecycleYears: 2.38,
+    lifecycleMonths: 28.56, // 2.38 years * 12 months
     ltv: 22500.00,
     averagePatientValue: 18750.00,
+    activePtsFirstOfPriorMonth: 145,
+    avgRetentionPeriod: 28.56, // Average retention period in months
+    averageRevenuePerClient: 18750.00,
+    nps: 78, // Net Promoter Score (0-100)
+    enps: 72, // Employee Net Promoter Score (0-100)
+    employeeUtilizationRate: 87.5, // Employee utilization percentage
     cogs: {
       dentalSupplies: 18500.00,
       labFees: 12300.00,
@@ -1272,6 +1279,19 @@ export const sampleMetricsData = {
     totalTxPresented: 145000.00,
     totalTxAccepted: 113825.00,
     fiveStarReviews: 42,
+  },
+  // Daily production by individual providers
+  providers: {
+    drGajjar: 4250.00,
+    drJudge: 3850.00,
+    drStrachan: 4100.00,
+    doctorTotal: 12200.00, // Sum of all doctors
+    farah: 1850.00,
+    olga: 1650.00,
+    jissel: 1750.00,
+    tempHyg: 0.00,
+    hygienistTotal: 5250.00, // Sum of all hygienists
+    combinedTotal: 17450.00, // Doctor total + Hygienist total
   },
 };
 
@@ -1361,3 +1381,100 @@ export const sampleNewPatientAggregates = {
   perMonth: 18,    // New patients this month
   quarterly: 52,   // New patients this quarter (Oct + Nov + Dec)
 };
+
+// ===== PROVIDER METRICS DATA =====
+// Sample provider production metrics that match the MetricWithValue interface
+// Used by getMetricsForDate() when in static data mode
+export const sampleProviderMetrics = [
+  {
+    field_key: 'provider_dr_gajjar',
+    as_of_date: new Date().toISOString().split('T')[0],
+    value: 4250.00,
+    source: 'manual',
+    notes: null,
+    csd_metric_catalog: {
+      section: 'Provider Production',
+      field_name: 'Dr. Gajjar Production',
+      data_type: 'currency',
+      description_notes: 'Daily production for Dr. Gajjar'
+    }
+  },
+  {
+    field_key: 'provider_dr_judge',
+    as_of_date: new Date().toISOString().split('T')[0],
+    value: 3850.00,
+    source: 'manual',
+    notes: null,
+    csd_metric_catalog: {
+      section: 'Provider Production',
+      field_name: 'Dr. Judge Production',
+      data_type: 'currency',
+      description_notes: 'Daily production for Dr. Judge'
+    }
+  },
+  {
+    field_key: 'provider_dr_strachan',
+    as_of_date: new Date().toISOString().split('T')[0],
+    value: 4100.00,
+    source: 'manual',
+    notes: null,
+    csd_metric_catalog: {
+      section: 'Provider Production',
+      field_name: 'Dr. Strachan Production',
+      data_type: 'currency',
+      description_notes: 'Daily production for Dr. Strachan'
+    }
+  },
+  {
+    field_key: 'provider_farah',
+    as_of_date: new Date().toISOString().split('T')[0],
+    value: 1850.00,
+    source: 'manual',
+    notes: null,
+    csd_metric_catalog: {
+      section: 'Provider Production',
+      field_name: 'Farah Production',
+      data_type: 'currency',
+      description_notes: 'Daily production for hygienist Farah'
+    }
+  },
+  {
+    field_key: 'provider_olga',
+    as_of_date: new Date().toISOString().split('T')[0],
+    value: 1650.00,
+    source: 'manual',
+    notes: null,
+    csd_metric_catalog: {
+      section: 'Provider Production',
+      field_name: 'Olga Production',
+      data_type: 'currency',
+      description_notes: 'Daily production for hygienist Olga'
+    }
+  },
+  {
+    field_key: 'provider_jissel',
+    as_of_date: new Date().toISOString().split('T')[0],
+    value: 1750.00,
+    source: 'manual',
+    notes: null,
+    csd_metric_catalog: {
+      section: 'Provider Production',
+      field_name: 'Jissel Production',
+      data_type: 'currency',
+      description_notes: 'Daily production for hygienist Jissel'
+    }
+  },
+  {
+    field_key: 'provider_temp_hyg',
+    as_of_date: new Date().toISOString().split('T')[0],
+    value: 0.00,
+    source: 'manual',
+    notes: null,
+    csd_metric_catalog: {
+      section: 'Provider Production',
+      field_name: 'Temp Hygienist Production',
+      data_type: 'currency',
+      description_notes: 'Daily production for temporary hygienist'
+    }
+  },
+];
