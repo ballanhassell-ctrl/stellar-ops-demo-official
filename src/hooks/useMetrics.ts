@@ -76,8 +76,15 @@ interface AdvancedMetrics {
   churnedPatientsMonth: number;
   churnRate: number; // AUTO-CALCULATED (Phase 3)
   lifecycleYears: number; // AUTO-CALCULATED (Phase 3)
+  lifecycleMonths: number;
   ltv: number; // AUTO-CALCULATED (Phase 3)
   averagePatientValue: number; // Used in LTV calculation
+  activePtsFirstOfPriorMonth: number;
+  avgRetentionPeriod: number;
+  averageRevenuePerClient: number;
+  nps: number; // Net Promoter Score
+  enps: number; // Employee NPS
+  employeeUtilizationRate: number;
   cogs: {
     assistantPayroll: number;
     associateDoctorExpense: number;

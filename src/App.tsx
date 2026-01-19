@@ -1725,22 +1725,22 @@ const CourtStreetRCM = () => {
 
     // Customer Metrics
     churnedPatientsPerMonth: metricsData?.advanced.churnedPatientsMonth ?? 0,
-    churnRate: 13.2, // Calculated or hardcoded
-    patientLifeCycleMonths: 0, // Calculated
-    patientLifeCycleYears: 0, // Calculated
-    activePtsFirstOfPriorMonth: 0, // TODO: Add to Supabase
+    churnRate: metricsData?.advanced.churnRate ?? 0,
+    patientLifeCycleMonths: metricsData?.advanced.lifecycleMonths ?? 0,
+    patientLifeCycleYears: metricsData?.advanced.lifecycleYears ?? 0,
+    activePtsFirstOfPriorMonth: metricsData?.advanced.activePtsFirstOfPriorMonth ?? 0,
 
     // Revenue Metrics
-    averageRevenuePerClient: 0, // TODO: Calculate or add to Supabase
-    ltv: 0, // TODO: Calculate (ARPC x Avg Retention Period)
-    avgRetentionPeriod: 0, // TODO: Calculate
+    averageRevenuePerClient: metricsData?.advanced.averageRevenuePerClient ?? 0,
+    ltv: metricsData?.advanced.ltv ?? 0,
+    avgRetentionPeriod: metricsData?.advanced.avgRetentionPeriod ?? 0,
 
     // Satisfaction Metrics
-    nps: 99, // TODO: Add to Supabase or calculate
-    enps: 0, // TODO: Add to Supabase
+    nps: metricsData?.advanced.nps ?? 0,
+    enps: metricsData?.advanced.enps ?? 0,
 
     // Employee Metrics
-    employeeUtilizationRate: 0 // TODO: Calculate or add to Supabase
+    employeeUtilizationRate: metricsData?.advanced.employeeUtilizationRate ?? 0
   };
 
   // Checklist data
