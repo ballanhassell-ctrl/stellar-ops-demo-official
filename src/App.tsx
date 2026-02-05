@@ -1290,7 +1290,7 @@ const CourtStreetRCM = () => {
       checkDateData: async (date: string) => {
         console.log(`🔍 Checking Supabase data for ${date}...`);
         try {
-          const { getMetricsForDate, type MetricWithValue } = await import('./services/metrics');
+          const { getMetricsForDate } = await import('./services/metrics');
           const metrics = await getMetricsForDate(date);
 
           if (metrics.length === 0) {
