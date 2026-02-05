@@ -8,6 +8,17 @@ import type { InsuranceIssue } from '../types/database.types';
 import { isStaticDataMode } from '../config/dataMode';
 import { sampleInsuranceIssues } from '../data/sampleData';
 
+/** Check if error indicates the table doesn't exist in Supabase */
+function isTableNotFoundError(error: any): boolean {
+  return (
+    error?.code === '42P01' ||        // PostgreSQL: undefined_table
+    error?.code === 'PGRST204' ||     // PostgREST: relation not found
+    error?.message?.includes('404') ||
+    error?.message?.includes('relation') ||
+    error?.status === 404
+  );
+}
+
 // =====================================================
 // CRUD OPERATIONS
 // =====================================================
@@ -24,6 +35,11 @@ export async function getInsuranceIssues(): Promise<InsuranceIssue[]> {
 
   if (error) {
     console.error('Error fetching insurance issues:', error);
+    // Table may not exist yet in Supabase - fall back to sample data
+    if (isTableNotFoundError(error)) {
+      console.warn('insurance_issues table not found in Supabase. Using sample data. Create the table in Supabase to use live data.');
+      return [...sampleInsuranceIssues];
+    }
     throw error;
   }
 
@@ -95,6 +111,9 @@ export async function getIssuesByProvider(inCharge: string): Promise<InsuranceIs
 
   if (error) {
     console.error('Error fetching issues by provider:', error);
+    if (isTableNotFoundError(error)) {
+      return sampleInsuranceIssues.filter(i => i.in_charge === inCharge);
+    }
     throw error;
   }
 
@@ -116,6 +135,11 @@ export async function getOpenIssues(): Promise<InsuranceIssue[]> {
 
   if (error) {
     console.error('Error fetching open issues:', error);
+    if (isTableNotFoundError(error)) {
+      return sampleInsuranceIssues.filter(i =>
+        !i.status || !i.status.toLowerCase().includes('corrected')
+      );
+    }
     throw error;
   }
 
