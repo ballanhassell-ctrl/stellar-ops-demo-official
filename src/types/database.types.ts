@@ -314,6 +314,156 @@ export type WriteOffSuggestion = {
   created_at?: string;
 };
 
+// =====================================================
+// Insurance A/R Report Types (mirrors Insurance A/R spreadsheet)
+// =====================================================
+
+export type InsuranceARClaimStatus =
+  | 'Pending Review'
+  | 'Resubmitted - 1st'
+  | 'Resubmitted - 2nd'
+  | 'Final Review'
+  | 'Consultant Review'
+  | 'Closed/Paid'
+  | 'Closed/Unpaid'
+  | 'Appeal Filed'
+  | 'Denied'
+  | 'Waiting for Info'
+  | 'Lori Review'
+  | 'Paid/Check or EFT Pending'
+  | 'SEE NOTES';
+
+export type InsuranceARAgingStatus =
+  | '0-30 Days'
+  | '31-60 Days'
+  | '61-90 Days'
+  | '91-120 Days'
+  | '121+ Days';
+
+export type InsuranceARClaim = {
+  id: string;
+  patient_name: string;
+  patient_id: string | null;
+  date_of_service: string; // ISO date string
+  insurance_company: string;
+  pri_sec: 'Primary' | 'Secondary';
+  total_claim: number;
+  collected: number;
+  outstanding: number;
+  claim_status: InsuranceARClaimStatus;
+  aging_status: InsuranceARAgingStatus;
+  assigned_to: string; // team member initials
+  procedure_types: string; // e.g. "Prophy: Adult", "Perio: SRP", "Veneers"
+  rep_name: string | null;
+  reference_number: string | null;
+  notes: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// =====================================================
+// Insurance Issues Tracker Types (mirrors Issues Report spreadsheet)
+// =====================================================
+
+export type InsuranceIssueType =
+  | 'Needs Perio Chart'
+  | 'Invalid Tooth Code for Carrier'
+  | 'Invalid Number of Surfaces'
+  | 'Invalid Surface Code for Carrier'
+  | 'Tooth Code Required by Carrier'
+  | 'Oral Cavity Code Required by Carrier'
+  | 'Needs Narrative'
+  | 'Need Provider Change'
+  | 'Invalid Tooth/Surface Code'
+  | 'Pre-Auth Required'
+  | 'Other';
+
+export type InsuranceIssue = {
+  id: string;
+  patient_id: string | null;
+  patient_name: string;
+  date_of_service: string; // ISO date string
+  procedure_codes: string; // e.g. "D4342", "D2392, D2393"
+  in_charge: string; // provider code e.g. "DDS1", "HYG2", "DMD1", "Daniely"
+  issue_type: InsuranceIssueType;
+  in_vyne: boolean;
+  status: string | null; // free-text: "corrected & rebatched", etc.
+  submission_status: string | null; // e.g. "Submitted - BH", "Submitted - LP"
+  notes: string | null;
+  is_pre_auth: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// =====================================================
+// A/R Snapshot Types (bi-monthly aggregates on 1st and 15th)
+// =====================================================
+
+export type ARSnapshotType = 'patient_ar' | 'insurance_ar' | 'combined';
+
+export type ARSnapshot = {
+  id: string;
+  snapshot_date: string; // ISO date string (1st or 15th of month)
+  snapshot_type: ARSnapshotType;
+
+  // Patient A/R metrics
+  patient_ar_total: number;
+  patient_ar_collectible_count: number;
+  patient_ar_collectible_balance: number;
+  patient_ar_non_collectible_count: number;
+  patient_ar_non_collectible_balance: number;
+  patient_ar_collected_since_last: number;
+  patient_ar_written_off_since_last: number;
+
+  // Insurance A/R metrics
+  insurance_ar_total: number;
+  insurance_ar_total_claims: number;
+  insurance_ar_total_collected: number;
+  insurance_ar_total_outstanding: number;
+
+  // Aging buckets (patient)
+  patient_aging_0_30: number;
+  patient_aging_31_60: number;
+  patient_aging_61_90: number;
+  patient_aging_91_plus: number;
+
+  // Aging buckets (insurance)
+  insurance_aging_0_30: number;
+  insurance_aging_31_60: number;
+  insurance_aging_61_90: number;
+  insurance_aging_91_120: number;
+  insurance_aging_121_plus: number;
+
+  // Status breakdowns (insurance)
+  insurance_pending_review: number;
+  insurance_resubmitted: number;
+  insurance_final_review: number;
+  insurance_consultant_review: number;
+  insurance_closed_paid: number;
+  insurance_closed_unpaid: number;
+  insurance_appeal_filed: number;
+  insurance_denied: number;
+
+  // Team workload (insurance)
+  team_workload: Record<string, { count: number; outstanding: number }>;
+
+  notes: string | null;
+  created_at?: string;
+};
+
+// =====================================================
+// Enhanced Patient A/R fields (additional columns from spreadsheet)
+// =====================================================
+
+export type PatientAREnhanced = PatientAR & {
+  related_family: string | null;
+  background_notes: string | null;
+  team_discussion_notes: string | null;
+  action_needed: string | null;
+  is_collectible: boolean; // true = collectible, false = non-collectible (potential write-off)
+  doctor_decision: string | null; // Dr. Gajjar's decision on non-collectible accounts
+};
+
 export type Database = {
   patients: Patient;
   appointments: Appointment;
@@ -335,4 +485,7 @@ export type Database = {
   patient_payment_plans: PatientPaymentPlan;
   write_off_rules: WriteOffRule;
   write_off_suggestions: WriteOffSuggestion;
+  insurance_ar_claims: InsuranceARClaim;
+  insurance_issues: InsuranceIssue;
+  ar_snapshots: ARSnapshot;
 };
