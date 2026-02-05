@@ -242,31 +242,58 @@ export type SchedulingListItem = {
 
 // =====================================================
 // Patient A/R Management Types
+// Matches the Weekly A/R Review spreadsheet layout
 // =====================================================
+
+export type PatientARStatus =
+  | 'not_started'
+  | '1st_contact_made'
+  | '2nd_contact_made'
+  | 'final_contact_made'
+  | 'paid'
+  | 'pending_writeoff'
+  | 'high_balance_alert'
+  | 'completed';
 
 export type PatientAR = {
   id: string;
   patient_id: string | null;
   patient_name: string;
-  patient_contact: string | null;
+  related_family: string | null;
   dos: string; // ISO date string
-  original_balance: number;
+  original_balance: number | null; // Optional starting balance
   current_balance: number;
-  balance_created_date: string; // ISO date string
   aging_days: number; // Generated column
   aging_bucket: '0-30' | '31-60' | '61-90' | '90+'; // Generated column
-  status: 'active' | 'collections' | 'paid' | 'written_off' | 'uncollectible' | 'write_off_suggested' | 'archived';
-  moved_to_collections_date: string | null; // ISO date string
-  next_contact_due_date: string | null; // ISO date string
-  assigned_to_staff_id: string | null;
+  is_collectible: boolean; // true = Collectible, false = Non-Collectible (Write-Off)
+  status: PatientARStatus;
+  background_notes: string | null;
+  team_discussion_notes: string | null;
+  action_needed: string | null;
+  dr_decision: string | null; // Only used for non-collectible accounts
+
+  // Contact tracking - inline date + initials
+  first_contact_date: string | null; // ISO date string
+  first_contact_initials: string | null;
+  second_contact_date: string | null; // ISO date string
+  second_contact_initials: string | null;
+  final_contact_date: string | null; // ISO date string
+  final_contact_initials: string | null;
+
+  // Write-off fields
   write_off_suggested_date: string | null; // ISO date string
-  write_off_suggestion_reason: string | null;
+  write_off_reason: string | null;
+
+  // Collected amount (when marked as paid)
+  collected_amount: number;
+
   created_by: string;
   created_at?: string;
   updated_at?: string;
   updated_by: string;
 };
 
+// Legacy types kept for backwards compatibility with existing service layer
 export type PatientARContact = {
   id: string;
   patient_ar_id: string;
