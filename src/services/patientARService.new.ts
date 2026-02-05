@@ -34,7 +34,7 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
     .select('*')
-    .order('next_contact_due_date', { ascending: true, nullsFirst: false });
+    .order('aging_days', { ascending: false });
 
   if (error) {
     console.error('Error fetching patient A/R records:', error);
@@ -49,13 +49,13 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
  */
 export async function getActivePatientAR(): Promise<PatientAR[]> {
   if (isStaticDataMode()) {
-    return samplePatientAR.filter(ar => ar.status === 'active');
+    return samplePatientAR.filter(ar => ar.is_collectible === true);
   }
 
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
     .select('*')
-    .eq('status', 'active')
+    .eq('is_collectible', true)
     .order('aging_days', { ascending: false });
 
   if (error) {
@@ -71,14 +71,14 @@ export async function getActivePatientAR(): Promise<PatientAR[]> {
  */
 export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
   if (isStaticDataMode()) {
-    return samplePatientAR.filter(ar => ar.status === 'collections');
+    return samplePatientAR.filter(ar => ar.is_collectible === false);
   }
 
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
     .select('*')
-    .eq('status', 'collections')
-    .order('moved_to_collections_date', { ascending: true });
+    .eq('is_collectible', false)
+    .order('aging_days', { ascending: false });
 
   if (error) {
     console.error('Error fetching collections patient A/R:', error);
@@ -400,11 +400,11 @@ export async function approveWriteOffSuggestion(
     throw updateSuggestionError;
   }
 
-  // Update the patient_ar record to written_off
+  // Update the patient_ar record to completed
   const { error: updateARError } = await supabase
     .from('patient_ar')
     .update({
-      status: 'written_off',
+      status: 'completed',
       updated_by: reviewedBy
     })
     .eq('id', suggestion.patient_ar_id);
@@ -451,11 +451,12 @@ export async function rejectWriteOffSuggestion(
     throw updateSuggestionError;
   }
 
-  // Return patient_ar to collections status
+  // Return patient_ar to collectible status
   const { error: updateARError } = await supabase
     .from('patient_ar')
     .update({
-      status: 'collections',
+      status: 'not_started',
+      is_collectible: true,
       write_off_suggested_date: null,
       write_off_suggestion_reason: null,
       updated_by: reviewedBy
@@ -496,8 +497,8 @@ export async function batchMoveToCollections(
   const { data, error } = await supabase
     .from('patient_ar')
     .update({
-      status: 'collections',
-      moved_to_collections_date: new Date().toISOString().split('T')[0],
+      status: 'pending_writeoff',
+      is_collectible: false,
       updated_by: movedBy
     })
     .in('id', ids)
@@ -521,7 +522,7 @@ export async function batchArchivePatientAR(
   const { data, error } = await supabase
     .from('patient_ar')
     .update({
-      status: 'archived',
+      status: 'completed',
       updated_by: archivedBy
     })
     .in('id', ids)
@@ -547,8 +548,6 @@ export interface PatientARMetrics {
   totalWriteOffSuggested: number;
   totalWriteOffSuggestedBalance: number;
   pendingSuggestionsCount: number;
-  overdueContacts: number;
-  contactsDueSoon: number;
   agingBuckets: {
     '0-30': number;
     '31-60': number;
@@ -567,10 +566,14 @@ export async function getPatientARMetrics(): Promise<PatientARMetrics> {
       getPendingWriteOffSuggestions()
     ]);
 
-    const activeRecords = allRecords.filter((r: PatientAR) => r.status === 'active');
-    const collectionsRecords = allRecords.filter((r: PatientAR) => r.status === 'collections');
+    const activeRecords = allRecords.filter(
+      (r: PatientAR) => r.is_collectible === true && r.status !== 'paid' && r.status !== 'completed'
+    );
+    const collectionsRecords = allRecords.filter(
+      (r: PatientAR) => r.is_collectible === false && r.status !== 'completed'
+    );
     const writeOffSuggestedRecords = allRecords.filter(
-      (r: PatientAR) => r.status === 'write_off_suggested'
+      (r: PatientAR) => r.status === 'pending_writeoff'
     );
 
     const totalActiveBalance = activeRecords.reduce(
@@ -586,44 +589,23 @@ export async function getPatientARMetrics(): Promise<PatientARMetrics> {
       0
     );
 
-    // Count overdue contacts
-    const today = new Date().toISOString().split('T')[0];
-    const overdueContacts = allRecords.filter(
-      (r: PatientAR) =>
-        r.next_contact_due_date &&
-        r.next_contact_due_date < today &&
-        r.status !== 'paid' &&
-        r.status !== 'written_off'
-    ).length;
-
-    // Count contacts due soon
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    const contactsDueSoon = allRecords.filter(
-      (r: PatientAR) =>
-        r.next_contact_due_date &&
-        r.next_contact_due_date >= today &&
-        r.next_contact_due_date <= tomorrowStr
-    ).length;
-
-    // Aging buckets
+    // Aging buckets (exclude paid and completed records)
     const agingBuckets = {
       '0-30': allRecords.filter(
         (r: PatientAR) =>
-          r.aging_bucket === '0-30' && r.status !== 'paid' && r.status !== 'written_off'
+          r.aging_bucket === '0-30' && r.status !== 'paid' && r.status !== 'completed'
       ).length,
       '31-60': allRecords.filter(
         (r: PatientAR) =>
-          r.aging_bucket === '31-60' && r.status !== 'paid' && r.status !== 'written_off'
+          r.aging_bucket === '31-60' && r.status !== 'paid' && r.status !== 'completed'
       ).length,
       '61-90': allRecords.filter(
         (r: PatientAR) =>
-          r.aging_bucket === '61-90' && r.status !== 'paid' && r.status !== 'written_off'
+          r.aging_bucket === '61-90' && r.status !== 'paid' && r.status !== 'completed'
       ).length,
       '90+': allRecords.filter(
         (r: PatientAR) =>
-          r.aging_bucket === '90+' && r.status !== 'paid' && r.status !== 'written_off'
+          r.aging_bucket === '90+' && r.status !== 'paid' && r.status !== 'completed'
       ).length
     };
 
@@ -635,8 +617,6 @@ export async function getPatientARMetrics(): Promise<PatientARMetrics> {
       totalWriteOffSuggested: writeOffSuggestedRecords.length,
       totalWriteOffSuggestedBalance,
       pendingSuggestionsCount: pendingSuggestions.length,
-      overdueContacts,
-      contactsDueSoon,
       agingBuckets
     };
   } catch (err) {
@@ -649,8 +629,6 @@ export async function getPatientARMetrics(): Promise<PatientARMetrics> {
       totalWriteOffSuggested: 0,
       totalWriteOffSuggestedBalance: 0,
       pendingSuggestionsCount: 0,
-      overdueContacts: 0,
-      contactsDueSoon: 0,
       agingBuckets: { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 }
     };
   }
