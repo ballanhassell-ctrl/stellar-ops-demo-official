@@ -865,16 +865,19 @@ const CourtStreetRCM = () => {
   } | null>(null);
 
   // Calculate BAM cycle dates (needed for metrics hook)
-  const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
-  const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
+  const bamCycleReferenceStart = useMemo(() => new Date(2025, 8, 23), []); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
+  const bamCycle = useMemo(() => calculateBAMCycle(bamCycleReferenceStart), [bamCycleReferenceStart]);
 
-  // Fetch all metrics from Supabase using unified date
-  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate, {
+  // Memoize BAM cycle dates object to prevent unnecessary re-renders
+  const bamCycleDates = useMemo(() => ({
     currentCycleStart: bamCycle.currentCycleStart,
     currentCycleEnd: bamCycle.currentCycleEnd,
     previousCycleStart: bamCycle.previousCycleStart,
     previousCycleEnd: bamCycle.previousCycleEnd
-  });
+  }), [bamCycle.currentCycleStart, bamCycle.currentCycleEnd, bamCycle.previousCycleStart, bamCycle.previousCycleEnd]);
+
+  // Fetch all metrics from Supabase using unified date
+  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate, bamCycleDates);
   const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
   const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);

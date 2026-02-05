@@ -41,7 +41,7 @@ export async function getLatestMetricValue(fieldKey: string, skipZeros: boolean 
       query.limit(1);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       console.warn(`No data found for ${fieldKey}:`, error.message);
