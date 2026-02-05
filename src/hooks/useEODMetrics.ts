@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues, type MetricWithValue } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
 import { getRealTimeActionItems } from '../services/actionItems';
 import { isStaticDataMode } from '../config/dataMode';
@@ -83,7 +83,7 @@ export const useEODMetrics = (date: string) => {
 
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
-        const metric = metrics.find(m => m.field_key === fieldKey);
+        const metric = metrics.find((m: MetricWithValue) => m.field_key === fieldKey);
         const currentValue = metric ? metric.value : 0;
 
         // If this is a persistent metric and we don't have data for the current date, use latest

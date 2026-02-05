@@ -1290,7 +1290,7 @@ const CourtStreetRCM = () => {
       checkDateData: async (date: string) => {
         console.log(`🔍 Checking Supabase data for ${date}...`);
         try {
-          const { getMetricsForDate } = await import('./services/metrics');
+          const { getMetricsForDate, type MetricWithValue } = await import('./services/metrics');
           const metrics = await getMetricsForDate(date);
 
           if (metrics.length === 0) {
@@ -1303,7 +1303,7 @@ const CourtStreetRCM = () => {
 
           // Group by section
           const bySection: Record<string, any[]> = {};
-          metrics.forEach(m => {
+          metrics.forEach((m: any) => {
             const section = m.csd_metric_catalog?.section || 'UNKNOWN';
             if (!bySection[section]) bySection[section] = [];
             bySection[section].push({
@@ -1342,7 +1342,7 @@ const CourtStreetRCM = () => {
         try {
           const { getMetricsForDate } = await import('./services/metrics');
           const metrics = await getMetricsForDate(date);
-          const foundFields = new Set(metrics.map(m => m.field_key));
+          const foundFields = new Set(metrics.map((m: any) => m.field_key));
 
           console.log('\n📊 Field Comparison Results:\n');
 
