@@ -23,6 +23,7 @@ import { RCMMetricsCSVUpload } from './components/RCMMetricsCSVUpload';
 import InsuranceARReport from './components/InsuranceARReport';
 import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
 import ARAgingChart from './components/ARAgingChart';
+import OpenDentalImport from './components/OpenDentalImport';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
@@ -417,7 +418,7 @@ interface ClaimRecord {
   procedureCode: string;
   claimDetail: string;
   claimAmount: number;
-  status: 'Pending' | 'Sent' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
+  status: string; // UnifiedClaimStatus - all claim and A/R statuses
   dateSubmitted: string;
   dateOfService: string;
   followUpDate: string;
@@ -426,6 +427,16 @@ interface ClaimRecord {
   agingDays: number;
   archivedAt?: string;
   archivedBy?: string;
+  // A/R financial tracking fields
+  collected: number;
+  outstanding: number;
+  priSec: 'Primary' | 'Secondary' | null;
+  procedureTypes: string | null;
+  assignedTo: string | null;
+  repName: string | null;
+  referenceNumber: string | null;
+  agingStatus: string | null;
+  carrierPhone: string | null;
 }
 
 interface PreAuthRecord {
@@ -544,7 +555,16 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   notes: claim.notes || '',
   agingDays: calculateClaimAging(claim),
   archivedAt: claim.archived_at || undefined,
-  archivedBy: claim.archived_by || undefined
+  archivedBy: claim.archived_by || undefined,
+  collected: claim.collected || 0,
+  outstanding: claim.outstanding || 0,
+  priSec: claim.pri_sec || null,
+  procedureTypes: claim.procedure_types || null,
+  assignedTo: claim.assigned_to || null,
+  repName: claim.rep_name || null,
+  referenceNumber: claim.reference_number || null,
+  agingStatus: claim.aging_status || null,
+  carrierPhone: claim.carrier_phone || null,
 });
 
 const recordToClaim = (record: ClaimRecord): any => {
@@ -568,7 +588,15 @@ const recordToClaim = (record: ClaimRecord): any => {
     aging_days: record.agingDays,
     archived: false,
     archived_at: null,
-    archived_by: null
+    archived_by: null,
+    collected: record.collected || 0,
+    outstanding: record.outstanding || 0,
+    pri_sec: record.priSec || null,
+    procedure_types: record.procedureTypes || null,
+    assigned_to: record.assignedTo || null,
+    rep_name: record.repName || null,
+    reference_number: record.referenceNumber || null,
+    carrier_phone: record.carrierPhone || null,
   };
 
   // Only add id if it exists and is not empty (for updates)
@@ -3526,6 +3554,18 @@ const CourtStreetRCM = () => {
                   }`}
                 >
                   A/R Trends
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('od-import')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'od-import'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Open Dental Import
                 </button>
               </div>
             </div>
@@ -7831,7 +7871,16 @@ const CourtStreetRCM = () => {
                       followUpDate: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string,
-                      agingDays: Math.floor((new Date().getTime() - new Date(dateOfService).getTime()) / (1000 * 60 * 60 * 24))
+                      agingDays: Math.floor((new Date().getTime() - new Date(dateOfService).getTime()) / (1000 * 60 * 60 * 24)),
+                      collected: 0,
+                      outstanding: parseFloat(formData.get('claimAmount') as string) || 0,
+                      priSec: null,
+                      procedureTypes: null,
+                      assignedTo: null,
+                      repName: null,
+                      referenceNumber: null,
+                      agingStatus: null,
+                      carrierPhone: null,
                     };
 
                     try {
@@ -8685,6 +8734,10 @@ const CourtStreetRCM = () => {
 
             {patientManagementView === 'ar-trends' && (
               <ARAgingChart isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'od-import' && (
+              <OpenDentalImport isDayMode={isDayMode} />
             )}
           </div>
         ) : currentView === 'scorecard' ? (
