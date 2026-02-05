@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals, getBAMCycleRevenue } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals, getBAMCycleRevenue, type MetricWithValue } from '../services/metrics';
 import { isStaticDataMode } from '../config/dataMode';
 import { sampleMetricsData } from '../data/sampleData';
 
@@ -231,7 +231,7 @@ export const useMetrics = (
       // Helper function to find metric value by field_key
       // For persistent metrics, use latest value if current date doesn't have data
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
-        const metric = metrics.find(m => m.field_key === fieldKey);
+        const metric = metrics.find((m: MetricWithValue) => m.field_key === fieldKey);
         const currentValue = metric ? metric.value : 0;
 
         // If this is a persistent metric and we don't have data for the current date, use latest

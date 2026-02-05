@@ -7,6 +7,10 @@ import {
   sampleNewPatientAggregates
 } from '../data/sampleData';
 
+// Cache for getMetricsForDate to prevent redundant fetches within the same session
+const metricsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 60000; // 1 minute cache
+
 export type MetricWithValue = {
   field_key: string;
   as_of_date: string;
@@ -554,14 +558,29 @@ export async function getClaimsTotals() {
 }
 
 export async function getMetricsForDate(date: string) {
+  // Include data mode in cache key to prevent stale data when switching modes
+  const dataMode = isStaticDataMode() ? 'static' : 'live';
+  const cacheKey = `${date}-${dataMode}`;
+
+  // Check cache first
+  const cached = metricsCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log(`Using cached ${dataMode} metrics for date:`, date);
+    return cached.data;
+  }
+
   // Return static sample data if in static mode
   if (isStaticDataMode()) {
     const { sampleProviderMetrics } = await import('../data/sampleData');
     // Update the date to match the requested date
-    return sampleProviderMetrics.map(metric => ({
+    const staticData = sampleProviderMetrics.map(metric => ({
       ...metric,
       as_of_date: date
     }));
+
+    // Cache the static data
+    metricsCache.set(cacheKey, { data: staticData, timestamp: Date.now() });
+    return staticData;
   }
 
   console.log('Fetching metrics for date:', date);
@@ -622,6 +641,10 @@ export async function getMetricsForDate(date: string) {
     }));
 
     console.log('Client-side joined data:', joined.length, 'records');
+
+    // Cache the result with data mode in key
+    metricsCache.set(cacheKey, { data: joined, timestamp: Date.now() });
+
     return joined;
   } catch (err) {
     console.error('Unexpected error in getMetricsForDate:', err);
