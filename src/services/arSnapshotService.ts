@@ -10,6 +10,17 @@ import { sampleARSnapshots } from '../data/sampleData';
 import { getPatientARMetrics } from './patientARService.new';
 import { getInsuranceARClaims, calculateInsuranceARSummary } from './insuranceARService';
 
+/** Check if error indicates the table doesn't exist in Supabase */
+function isTableNotFoundError(error: any): boolean {
+  return (
+    error?.code === '42P01' ||        // PostgreSQL: undefined_table
+    error?.code === 'PGRST204' ||     // PostgREST: relation not found
+    error?.message?.includes('404') ||
+    error?.message?.includes('relation') ||
+    error?.status === 404
+  );
+}
+
 // =====================================================
 // CRUD OPERATIONS
 // =====================================================
@@ -26,6 +37,11 @@ export async function getARSnapshots(): Promise<ARSnapshot[]> {
 
   if (error) {
     console.error('Error fetching A/R snapshots:', error);
+    // Table may not exist yet in Supabase - fall back to sample data
+    if (isTableNotFoundError(error)) {
+      console.warn('ar_snapshots table not found in Supabase. Using sample data. Create the table in Supabase to use live data.');
+      return [...sampleARSnapshots];
+    }
     throw error;
   }
 
@@ -51,6 +67,11 @@ export async function getSnapshotsByDateRange(
 
   if (error) {
     console.error('Error fetching snapshots by date range:', error);
+    if (isTableNotFoundError(error)) {
+      return sampleARSnapshots.filter(s =>
+        s.snapshot_date >= startDate && s.snapshot_date <= endDate
+      );
+    }
     throw error;
   }
 
@@ -71,6 +92,9 @@ export async function getLatestSnapshot(): Promise<ARSnapshot | null> {
 
   if (error) {
     if (error.code === 'PGRST116') return null; // No rows
+    if (isTableNotFoundError(error)) {
+      return sampleARSnapshots.length > 0 ? sampleARSnapshots[0] : null;
+    }
     console.error('Error fetching latest snapshot:', error);
     throw error;
   }
@@ -187,6 +211,9 @@ export async function snapshotExistsForDate(date: string): Promise<boolean> {
     .limit(1);
 
   if (error) {
+    if (isTableNotFoundError(error)) {
+      return sampleARSnapshots.some(s => s.snapshot_date === date);
+    }
     console.error('Error checking snapshot existence:', error);
     return false;
   }

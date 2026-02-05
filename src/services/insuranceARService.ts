@@ -8,6 +8,17 @@ import type { InsuranceARClaim, InsuranceARClaimStatus, InsuranceARAgingStatus }
 import { isStaticDataMode } from '../config/dataMode';
 import { sampleInsuranceARClaims } from '../data/sampleData';
 
+/** Check if error indicates the table doesn't exist in Supabase */
+function isTableNotFoundError(error: any): boolean {
+  return (
+    error?.code === '42P01' ||        // PostgreSQL: undefined_table
+    error?.code === 'PGRST204' ||     // PostgREST: relation not found
+    error?.message?.includes('404') ||
+    error?.message?.includes('relation') ||
+    error?.status === 404
+  );
+}
+
 // =====================================================
 // CRUD OPERATIONS
 // =====================================================
@@ -24,6 +35,11 @@ export async function getInsuranceARClaims(): Promise<InsuranceARClaim[]> {
 
   if (error) {
     console.error('Error fetching insurance A/R claims:', error);
+    // Table may not exist yet in Supabase - fall back to sample data
+    if (isTableNotFoundError(error)) {
+      console.warn('insurance_ar_claims table not found in Supabase. Using sample data. Create the table in Supabase to use live data.');
+      return [...sampleInsuranceARClaims];
+    }
     throw error;
   }
 
@@ -95,6 +111,9 @@ export async function getInsuranceARByStatus(status: InsuranceARClaimStatus): Pr
 
   if (error) {
     console.error('Error fetching insurance A/R by status:', error);
+    if (isTableNotFoundError(error)) {
+      return sampleInsuranceARClaims.filter(c => c.claim_status === status);
+    }
     throw error;
   }
 
@@ -114,6 +133,9 @@ export async function getInsuranceARByAging(aging: InsuranceARAgingStatus): Prom
 
   if (error) {
     console.error('Error fetching insurance A/R by aging:', error);
+    if (isTableNotFoundError(error)) {
+      return sampleInsuranceARClaims.filter(c => c.aging_status === aging);
+    }
     throw error;
   }
 
@@ -133,6 +155,9 @@ export async function getInsuranceARByAssignee(assignedTo: string): Promise<Insu
 
   if (error) {
     console.error('Error fetching insurance A/R by assignee:', error);
+    if (isTableNotFoundError(error)) {
+      return sampleInsuranceARClaims.filter(c => c.assigned_to === assignedTo);
+    }
     throw error;
   }
 
