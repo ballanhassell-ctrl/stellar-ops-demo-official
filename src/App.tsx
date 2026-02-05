@@ -20,6 +20,9 @@ import { AIInsightsPanel } from './components/AIInsightsPanel';
 import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
 import { CSDMetricsCSVUpload } from './components/CSDMetricsCSVUpload';
 import { RCMMetricsCSVUpload } from './components/RCMMetricsCSVUpload';
+import InsuranceARReport from './components/InsuranceARReport';
+import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
+import ARAgingChart from './components/ARAgingChart';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
@@ -3487,6 +3490,42 @@ const CourtStreetRCM = () => {
                   }`}
                 >
                   Checklist
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-ar')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'insurance-ar'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Insurance A/R
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-issues')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'insurance-issues'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Insurance Issues
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('ar-trends')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'ar-trends'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  A/R Trends
                 </button>
               </div>
             </div>
@@ -8634,6 +8673,18 @@ const CourtStreetRCM = () => {
               </div>
             </div>
               </>
+            )}
+
+            {patientManagementView === 'insurance-ar' && (
+              <InsuranceARReport isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'insurance-issues' && (
+              <InsuranceIssuesTracker isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'ar-trends' && (
+              <ARAgingChart isDayMode={isDayMode} />
             )}
           </div>
         ) : currentView === 'scorecard' ? (
