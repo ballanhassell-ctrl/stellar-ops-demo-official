@@ -48,6 +48,20 @@ export type LifecycleMetrics = {
   created_at?: string;
 };
 
+// Unified claim status - covers both submission pipeline and A/R follow-up
+export type UnifiedClaimStatus =
+  // Phase 1: Submission pipeline
+  | 'Pending' | 'Sent' | 'Entered'
+  | 'Approved/Awaiting Payment' | 'Denied'
+  | 'In Review/2nd Appeal' | 'Resubmitted with Attachments'
+  | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal'
+  // Phase 2: A/R follow-up pipeline
+  | 'Pending Review' | 'Resubmitted - 1st' | 'Resubmitted - 2nd'
+  | 'Final Review' | 'Consultant Review'
+  | 'Closed/Paid' | 'Closed/Unpaid'
+  | 'Appeal Filed' | 'Waiting for Info'
+  | 'Lori Review' | 'Paid/Check or EFT Pending' | 'SEE NOTES';
+
 export type Claim = {
   id: string;
   patient_id: string;
@@ -57,7 +71,7 @@ export type Claim = {
   procedure_code: string;
   claim_detail: string;
   claim_amount: number;
-  status: 'Pending' | 'Sent' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
+  status: UnifiedClaimStatus;
   date_submitted: string; // ISO date string
   date_of_service: string; // ISO date string
   date_created?: string; // ISO date string
@@ -69,6 +83,17 @@ export type Claim = {
   archived: boolean;
   archived_at: string | null;
   archived_by: string | null;
+  // A/R financial tracking fields
+  collected: number;
+  outstanding: number;
+  pri_sec: 'Primary' | 'Secondary' | null;
+  procedure_types: string | null;
+  assigned_to: string | null;
+  rep_name: string | null;
+  reference_number: string | null;
+  aging_status: '0-30 Days' | '31-60 Days' | '61-90 Days' | '91-120 Days' | '121+ Days' | null;
+  carrier_phone: string | null;
+  date_sent_orig: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -315,9 +340,13 @@ export type WriteOffSuggestion = {
 };
 
 // =====================================================
-// Insurance A/R Report Types (mirrors Insurance A/R spreadsheet)
+// Insurance A/R Report Types
+// @deprecated - These types are kept for backwards compatibility.
+// The Insurance A/R tab now reads from the unified `claims` table.
+// Use `Claim` type with A/R fields (collected, outstanding, etc.) instead.
 // =====================================================
 
+/** @deprecated Use UnifiedClaimStatus instead */
 export type InsuranceARClaimStatus =
   | 'Pending Review'
   | 'Resubmitted - 1st'
@@ -340,6 +369,7 @@ export type InsuranceARAgingStatus =
   | '91-120 Days'
   | '121+ Days';
 
+/** @deprecated Use Claim type instead - Insurance A/R now reads from claims table */
 export type InsuranceARClaim = {
   id: string;
   patient_name: string;

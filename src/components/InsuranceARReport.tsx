@@ -16,24 +16,24 @@ import {
   Clock,
 } from 'lucide-react';
 import type {
-  InsuranceARClaim,
-  InsuranceARClaimStatus,
-  InsuranceARAgingStatus,
+  Claim,
+  UnifiedClaimStatus,
 } from '../types/database.types';
 import {
-  getInsuranceARClaims,
-  insertInsuranceARClaim,
-  updateInsuranceARClaim,
-  deleteInsuranceARClaim,
-  calculateInsuranceARSummary,
-} from '../services/insuranceARService';
-import type { InsuranceARSummary } from '../services/insuranceARService';
+  getClaims,
+  insertClaim,
+  updateClaim,
+  deleteClaim,
+  calculateInsuranceARSummaryFromClaims,
+} from '../services/claimsService';
+import type { InsuranceARSummary } from '../services/claimsService';
 
 // =====================================================
 // CONSTANTS
 // =====================================================
 
-const ALL_STATUSES: InsuranceARClaimStatus[] = [
+// A/R-specific statuses (subset of UnifiedClaimStatus used in this report)
+const ALL_STATUSES: UnifiedClaimStatus[] = [
   'Pending Review',
   'Resubmitted - 1st',
   'Resubmitted - 2nd',
@@ -49,7 +49,9 @@ const ALL_STATUSES: InsuranceARClaimStatus[] = [
   'SEE NOTES',
 ];
 
-const ALL_AGING_STATUSES: InsuranceARAgingStatus[] = [
+type AgingStatus = '0-30 Days' | '31-60 Days' | '61-90 Days' | '91-120 Days' | '121+ Days';
+
+const ALL_AGING_STATUSES: AgingStatus[] = [
   '0-30 Days',
   '31-60 Days',
   '61-90 Days',
@@ -63,10 +65,10 @@ const EMPTY_CLAIM_FORM: ClaimFormData = {
   date_of_service: '',
   insurance_company: '',
   pri_sec: 'Primary',
-  total_claim: 0,
+  claim_amount: 0,
   collected: 0,
   outstanding: 0,
-  claim_status: 'Pending Review',
+  status: 'Pending Review',
   aging_status: '0-30 Days',
   assigned_to: '',
   procedure_types: '',
@@ -89,11 +91,11 @@ type ClaimFormData = {
   date_of_service: string;
   insurance_company: string;
   pri_sec: 'Primary' | 'Secondary';
-  total_claim: number;
+  claim_amount: number;
   collected: number;
   outstanding: number;
-  claim_status: InsuranceARClaimStatus;
-  aging_status: InsuranceARAgingStatus;
+  status: UnifiedClaimStatus;
+  aging_status: AgingStatus;
   assigned_to: string;
   procedure_types: string;
   rep_name: string;
@@ -101,14 +103,14 @@ type ClaimFormData = {
   notes: string;
 };
 
-type SortField = keyof InsuranceARClaim;
+type SortField = keyof Claim;
 type SortDirection = 'asc' | 'desc';
 
 // =====================================================
 // STYLE HELPERS
 // =====================================================
 
-function getStatusColor(status: InsuranceARClaimStatus): string {
+function getStatusColor(status: UnifiedClaimStatus): string {
   switch (status) {
     case 'Pending Review':
       return 'bg-amber-100 text-amber-800 border-amber-300';
@@ -139,7 +141,7 @@ function getStatusColor(status: InsuranceARClaimStatus): string {
   }
 }
 
-function getAgingColor(aging: InsuranceARAgingStatus): string {
+function getAgingColor(aging: AgingStatus): string {
   switch (aging) {
     case '0-30 Days':
       return 'bg-green-100 text-green-800 border-green-300';
@@ -189,14 +191,14 @@ function formatDate(dateStr: string): string {
 
 export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps) {
   // State
-  const [claims, setClaims] = useState<InsuranceARClaim[]>([]);
+  const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<InsuranceARClaimStatus | 'All'>('All');
-  const [agingFilter, setAgingFilter] = useState<InsuranceARAgingStatus | 'All'>('All');
+  const [statusFilter, setStatusFilter] = useState<UnifiedClaimStatus | 'All'>('All');
+  const [agingFilter, setAgingFilter] = useState<AgingStatus | 'All'>('All');
   const [insuranceFilter, setInsuranceFilter] = useState<string>('All');
   const [assignedToFilter, setAssignedToFilter] = useState<string>('All');
   const [showFilters, setShowFilters] = useState(false);
@@ -207,7 +209,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingClaim, setEditingClaim] = useState<InsuranceARClaim | null>(null);
+  const [editingClaim, setEditingClaim] = useState<Claim | null>(null);
   const [formData, setFormData] = useState<ClaimFormData>({ ...EMPTY_CLAIM_FORM });
   const [formSubmitting, setFormSubmitting] = useState(false);
 
@@ -222,7 +224,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     try {
       setLoading(true);
       setError(null);
-      const data = await getInsuranceARClaims();
+      const data = await getClaims();
       setClaims(data);
     } catch (err) {
       console.error('Error loading insurance A/R claims:', err);
@@ -242,7 +244,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   const summary: InsuranceARSummary | null = useMemo(() => {
     if (claims.length === 0) return null;
-    return calculateInsuranceARSummary(claims);
+    return calculateInsuranceARSummaryFromClaims(claims);
   }, [claims]);
 
   const uniqueInsuranceCompanies = useMemo(() => {
@@ -271,7 +273,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
     // Status filter
     if (statusFilter !== 'All') {
-      result = result.filter((c) => c.claim_status === statusFilter);
+      result = result.filter((c) => c.status === statusFilter);
     }
 
     // Aging filter
@@ -346,21 +348,21 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     setShowAddModal(true);
   };
 
-  const openEditModal = (claim: InsuranceARClaim) => {
+  const openEditModal = (claim: Claim) => {
     setEditingClaim(claim);
     setFormData({
       patient_name: claim.patient_name,
       patient_id: claim.patient_id || '',
       date_of_service: claim.date_of_service,
       insurance_company: claim.insurance_company,
-      pri_sec: claim.pri_sec,
-      total_claim: claim.total_claim,
+      pri_sec: claim.pri_sec || 'Primary',
+      claim_amount: claim.claim_amount,
       collected: claim.collected,
       outstanding: claim.outstanding,
-      claim_status: claim.claim_status,
-      aging_status: claim.aging_status,
-      assigned_to: claim.assigned_to,
-      procedure_types: claim.procedure_types,
+      status: claim.status,
+      aging_status: (claim.aging_status as AgingStatus) || '0-30 Days',
+      assigned_to: claim.assigned_to || '',
+      procedure_types: claim.procedure_types || '',
       rep_name: claim.rep_name || '',
       reference_number: claim.reference_number || '',
       notes: claim.notes || '',
@@ -380,9 +382,9 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   ) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
-      // Auto-calculate outstanding when total_claim or collected changes
-      if (field === 'total_claim' || field === 'collected') {
-        const total = field === 'total_claim' ? Number(value) : prev.total_claim;
+      // Auto-calculate outstanding when claim_amount or collected changes
+      if (field === 'claim_amount' || field === 'collected') {
+        const total = field === 'claim_amount' ? Number(value) : prev.claim_amount;
         const collected = field === 'collected' ? Number(value) : prev.collected;
         updated.outstanding = Math.max(0, total - collected);
       }
@@ -399,26 +401,40 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       setFormSubmitting(true);
       const payload = {
         patient_name: formData.patient_name.trim(),
-        patient_id: formData.patient_id.trim() || null,
+        patient_id: formData.patient_id.trim() || '',
         date_of_service: formData.date_of_service,
         insurance_company: formData.insurance_company.trim(),
-        pri_sec: formData.pri_sec,
-        total_claim: Number(formData.total_claim),
+        pri_sec: formData.pri_sec as 'Primary' | 'Secondary',
+        claim_amount: Number(formData.claim_amount),
         collected: Number(formData.collected),
         outstanding: Number(formData.outstanding),
-        claim_status: formData.claim_status,
-        aging_status: formData.aging_status,
-        assigned_to: formData.assigned_to.trim(),
-        procedure_types: formData.procedure_types.trim(),
+        status: formData.status as UnifiedClaimStatus,
+        aging_status: formData.aging_status as AgingStatus,
+        assigned_to: formData.assigned_to.trim() || null,
+        procedure_types: formData.procedure_types.trim() || null,
         rep_name: formData.rep_name.trim() || null,
         reference_number: formData.reference_number.trim() || null,
         notes: formData.notes.trim() || null,
+        // Required Claim fields with defaults
+        procedure_code: formData.procedure_types.trim() || '',
+        claim_detail: '',
+        claim_number: null,
+        date_submitted: formData.date_of_service,
+        follow_up_date: formData.date_of_service,
+        created_by: '',
+        completed_by: formData.assigned_to.trim() || '',
+        aging_days: 0,
+        archived: false,
+        archived_at: null,
+        archived_by: null,
+        carrier_phone: null,
+        date_sent_orig: null,
       };
 
       if (editingClaim) {
-        await updateInsuranceARClaim(editingClaim.id, payload);
+        await updateClaim(editingClaim.id, payload);
       } else {
-        await insertInsuranceARClaim(payload);
+        await insertClaim(payload);
       }
 
       closeModal();
@@ -433,7 +449,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteInsuranceARClaim(id);
+      await deleteClaim(id);
       setDeletingClaimId(null);
       await loadClaims();
     } catch (err) {
@@ -734,7 +750,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   <div className="relative">
                     <select
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value as InsuranceARClaimStatus | 'All')}
+                      onChange={(e) => setStatusFilter(e.target.value as UnifiedClaimStatus | 'All')}
                       className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     >
                       <option value="All">All Statuses</option>
@@ -752,7 +768,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   <div className="relative">
                     <select
                       value={agingFilter}
-                      onChange={(e) => setAgingFilter(e.target.value as InsuranceARAgingStatus | 'All')}
+                      onChange={(e) => setAgingFilter(e.target.value as AgingStatus | 'All')}
                       className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     >
                       <option value="All">All Aging</option>
@@ -793,7 +809,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     >
                       <option value="All">All Team Members</option>
                       {uniqueAssignees.map((a) => (
-                        <option key={a} value={a}>{a}</option>
+                        <option key={String(a)} value={String(a)}>{a}</option>
                       ))}
                     </select>
                     <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 ${textMuted} pointer-events-none`} />
@@ -849,10 +865,10 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   { field: 'date_of_service' as SortField, label: 'DOS' },
                   { field: 'insurance_company' as SortField, label: 'Insurance Co' },
                   { field: 'pri_sec' as SortField, label: 'Pri/Sec' },
-                  { field: 'total_claim' as SortField, label: 'Total Claim' },
+                  { field: 'claim_amount' as SortField, label: 'Total Claim' },
                   { field: 'collected' as SortField, label: 'Collected' },
                   { field: 'outstanding' as SortField, label: 'Outstanding' },
-                  { field: 'claim_status' as SortField, label: 'Status' },
+                  { field: 'status' as SortField, label: 'Status' },
                   { field: 'aging_status' as SortField, label: 'Aging' },
                   { field: 'assigned_to' as SortField, label: 'Assigned To' },
                   { field: 'procedure_types' as SortField, label: 'Procedures' },
@@ -916,7 +932,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                       </span>
                     </td>
                     <td className={`px-3 py-3 whitespace-nowrap text-right font-medium ${textPrimary}`}>
-                      {formatCurrency(claim.total_claim)}
+                      {formatCurrency(claim.claim_amount)}
                     </td>
                     <td className={`px-3 py-3 whitespace-nowrap text-right ${textSecondary}`}>
                       {formatCurrency(claim.collected)}
@@ -927,20 +943,22 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                       {formatCurrency(claim.outstanding)}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claim_status)}`}>
-                        {claim.claim_status}
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.status)}`}>
+                        {claim.status}
                       </span>
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getAgingColor(claim.aging_status)}`}>
-                        {claim.aging_status}
-                      </span>
+                      {claim.aging_status && (
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getAgingColor(claim.aging_status)}`}>
+                          {claim.aging_status}
+                        </span>
+                      )}
                     </td>
                     <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`}>
-                      {claim.assigned_to}
+                      {claim.assigned_to || '-'}
                     </td>
-                    <td className={`px-3 py-3 max-w-[160px] truncate ${textSecondary}`} title={claim.procedure_types}>
-                      {claim.procedure_types}
+                    <td className={`px-3 py-3 max-w-[160px] truncate ${textSecondary}`} title={claim.procedure_types || ''}>
+                      {claim.procedure_types || '-'}
                     </td>
                     <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`}>
                       {claim.rep_name || '-'}
@@ -1094,8 +1112,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.total_claim}
-                    onChange={(e) => handleFormChange('total_claim', parseFloat(e.target.value) || 0)}
+                    value={formData.claim_amount}
+                    onChange={(e) => handleFormChange('claim_amount', parseFloat(e.target.value) || 0)}
                     className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
                 </div>
@@ -1129,8 +1147,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Claim Status</label>
                   <div className="relative">
                     <select
-                      value={formData.claim_status}
-                      onChange={(e) => handleFormChange('claim_status', e.target.value)}
+                      value={formData.status}
+                      onChange={(e) => handleFormChange('status', e.target.value)}
                       className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     >
                       {ALL_STATUSES.map((s) => (

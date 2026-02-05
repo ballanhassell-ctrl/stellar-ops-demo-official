@@ -1023,3 +1023,75 @@ export async function addInsuranceCheckUpdate(update: Omit<InsuranceCheckUpdate,
 
   return data as InsuranceCheckUpdate;
 }
+
+// =====================================================
+// INSURANCE A/R SUMMARY CALCULATIONS
+// =====================================================
+
+export interface InsuranceARSummary {
+  totalClaims: number;
+  totalClaimValue: number;
+  totalCollected: number;
+  totalOutstanding: number;
+  statusBreakdown: {
+    pendingReview: number;
+    resubmitted: number;
+    finalReview: number;
+    consultantReview: number;
+    closedPaid: number;
+    closedUnpaid: number;
+    appealFiled: number;
+    denied: number;
+  };
+  agingBreakdown: Record<string, { count: number; outstanding: number }>;
+  teamWorkload: Record<string, { count: number; outstanding: number }>;
+}
+
+export function calculateInsuranceARSummaryFromClaims(claims: Claim[]): InsuranceARSummary {
+  const totalClaims = claims.length;
+  const totalClaimValue = claims.reduce((sum, c) => sum + (c.claim_amount || 0), 0);
+  const totalCollected = claims.reduce((sum, c) => sum + (c.collected || 0), 0);
+  const totalOutstanding = claims.reduce((sum, c) => sum + (c.outstanding || 0), 0);
+
+  const statusBreakdown = {
+    pendingReview: claims.filter(c => c.status === 'Pending Review').length,
+    resubmitted: claims.filter(c => c.status === 'Resubmitted - 1st' || c.status === 'Resubmitted - 2nd').length,
+    finalReview: claims.filter(c => c.status === 'Final Review').length,
+    consultantReview: claims.filter(c => c.status === 'Consultant Review').length,
+    closedPaid: claims.filter(c => c.status === 'Closed/Paid').length,
+    closedUnpaid: claims.filter(c => c.status === 'Closed/Unpaid').length,
+    appealFiled: claims.filter(c => c.status === 'Appeal Filed').length,
+    denied: claims.filter(c => c.status === 'Denied').length,
+  };
+
+  const agingBuckets = ['0-30 Days', '31-60 Days', '61-90 Days', '91-120 Days', '121+ Days'] as const;
+  const agingBreakdown: Record<string, { count: number; outstanding: number }> = {};
+  for (const bucket of agingBuckets) {
+    const key = bucket.replace(' Days', '').replace('+', '+');
+    const matching = claims.filter(c => c.aging_status === bucket);
+    agingBreakdown[key] = {
+      count: matching.length,
+      outstanding: matching.reduce((sum, c) => sum + (c.outstanding || 0), 0),
+    };
+  }
+
+  const teamWorkload: Record<string, { count: number; outstanding: number }> = {};
+  for (const claim of claims) {
+    const assignee = claim.assigned_to || 'Unassigned';
+    if (!teamWorkload[assignee]) {
+      teamWorkload[assignee] = { count: 0, outstanding: 0 };
+    }
+    teamWorkload[assignee].count++;
+    teamWorkload[assignee].outstanding += claim.outstanding || 0;
+  }
+
+  return {
+    totalClaims,
+    totalClaimValue,
+    totalCollected,
+    totalOutstanding,
+    statusBreakdown,
+    agingBreakdown,
+    teamWorkload,
+  };
+}

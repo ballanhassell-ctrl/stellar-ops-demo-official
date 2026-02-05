@@ -1,263 +1,107 @@
 // =====================================================
-// Insurance A/R Report - Service Layer
-// Mirrors the "Stellar X Court Street Dental - Insurance A/R Report" spreadsheet
+// Insurance A/R Report - Service Layer (Wrapper)
+// @deprecated - This service now delegates to claimsService.
+// The Insurance A/R tab reads from the unified `claims` table.
+// These wrapper functions are kept for backwards compatibility
+// with arSnapshotService.ts and other consumers.
 // =====================================================
 
-import { supabase } from '../lib/supabaseClient';
-import type { InsuranceARClaim, InsuranceARClaimStatus, InsuranceARAgingStatus } from '../types/database.types';
-import { isStaticDataMode } from '../config/dataMode';
-import { sampleInsuranceARClaims } from '../data/sampleData';
+import type { Claim, InsuranceARClaim } from '../types/database.types';
+import {
+  getClaims,
+  calculateInsuranceARSummaryFromClaims,
+  type InsuranceARSummary,
+} from './claimsService';
 
-/** Check if error indicates the table doesn't exist in Supabase */
-function isTableNotFoundError(error: any): boolean {
-  return (
-    error?.code === '42P01' ||        // PostgreSQL: undefined_table
-    error?.code === 'PGRST204' ||     // PostgREST: relation not found
-    error?.message?.includes('404') ||
-    error?.message?.includes('relation') ||
-    error?.status === 404
-  );
-}
+// Re-export the summary type for consumers
+export type { InsuranceARSummary };
 
 // =====================================================
-// CRUD OPERATIONS
+// WRAPPER FUNCTIONS - delegate to claimsService
 // =====================================================
 
+/**
+ * @deprecated Use getClaims() from claimsService instead.
+ * Returns claims data mapped to the legacy InsuranceARClaim shape
+ * for backwards compatibility with arSnapshotService.
+ */
 export async function getInsuranceARClaims(): Promise<InsuranceARClaim[]> {
-  if (isStaticDataMode()) {
-    return [...sampleInsuranceARClaims];
-  }
-
-  const { data, error } = await supabase
-    .from('insurance_ar_claims')
-    .select('*')
-    .order('date_of_service', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching insurance A/R claims:', error);
-    // Table may not exist yet in Supabase - fall back to sample data
-    if (isTableNotFoundError(error)) {
-      console.warn('insurance_ar_claims table not found in Supabase. Using sample data. Create the table in Supabase to use live data.');
-      return [...sampleInsuranceARClaims];
-    }
-    throw error;
-  }
-
-  return data || [];
+  const claims = await getClaims();
+  return claims.map(claimToInsuranceARClaim);
 }
 
-export async function insertInsuranceARClaim(
-  claim: Omit<InsuranceARClaim, 'id' | 'created_at' | 'updated_at'>
-): Promise<InsuranceARClaim> {
-  const { data, error } = await supabase
-    .from('insurance_ar_claims')
-    .insert(claim)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error inserting insurance A/R claim:', error);
-    throw error;
-  }
-
-  return data;
-}
-
-export async function updateInsuranceARClaim(
-  id: string,
-  updates: Partial<Omit<InsuranceARClaim, 'id' | 'created_at' | 'updated_at'>>
-): Promise<InsuranceARClaim> {
-  const { data, error } = await supabase
-    .from('insurance_ar_claims')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating insurance A/R claim:', error);
-    throw error;
-  }
-
-  return data;
-}
-
-export async function deleteInsuranceARClaim(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('insurance_ar_claims')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    console.error('Error deleting insurance A/R claim:', error);
-    throw error;
-  }
-}
-
-// =====================================================
-// FILTERING
-// =====================================================
-
-export async function getInsuranceARByStatus(status: InsuranceARClaimStatus): Promise<InsuranceARClaim[]> {
-  if (isStaticDataMode()) {
-    return sampleInsuranceARClaims.filter(c => c.claim_status === status);
-  }
-
-  const { data, error } = await supabase
-    .from('insurance_ar_claims')
-    .select('*')
-    .eq('claim_status', status)
-    .order('date_of_service', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching insurance A/R by status:', error);
-    if (isTableNotFoundError(error)) {
-      return sampleInsuranceARClaims.filter(c => c.claim_status === status);
-    }
-    throw error;
-  }
-
-  return data || [];
-}
-
-export async function getInsuranceARByAging(aging: InsuranceARAgingStatus): Promise<InsuranceARClaim[]> {
-  if (isStaticDataMode()) {
-    return sampleInsuranceARClaims.filter(c => c.aging_status === aging);
-  }
-
-  const { data, error } = await supabase
-    .from('insurance_ar_claims')
-    .select('*')
-    .eq('aging_status', aging)
-    .order('outstanding', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching insurance A/R by aging:', error);
-    if (isTableNotFoundError(error)) {
-      return sampleInsuranceARClaims.filter(c => c.aging_status === aging);
-    }
-    throw error;
-  }
-
-  return data || [];
-}
-
-export async function getInsuranceARByAssignee(assignedTo: string): Promise<InsuranceARClaim[]> {
-  if (isStaticDataMode()) {
-    return sampleInsuranceARClaims.filter(c => c.assigned_to === assignedTo);
-  }
-
-  const { data, error } = await supabase
-    .from('insurance_ar_claims')
-    .select('*')
-    .eq('assigned_to', assignedTo)
-    .order('outstanding', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching insurance A/R by assignee:', error);
-    if (isTableNotFoundError(error)) {
-      return sampleInsuranceARClaims.filter(c => c.assigned_to === assignedTo);
-    }
-    throw error;
-  }
-
-  return data || [];
-}
-
-// =====================================================
-// METRICS & SUMMARY DASHBOARD
-// =====================================================
-
-export interface InsuranceARSummary {
-  totalClaims: number;
-  totalClaimValue: number;
-  totalCollected: number;
-  totalOutstanding: number;
-
-  statusBreakdown: {
-    pendingReview: number;
-    resubmitted: number;
-    finalReview: number;
-    consultantReview: number;
-    closedPaid: number;
-    closedUnpaid: number;
-    appealFiled: number;
-    denied: number;
-  };
-
-  agingBreakdown: {
-    '0-30': { count: number; outstanding: number };
-    '31-60': { count: number; outstanding: number };
-    '61-90': { count: number; outstanding: number };
-    '91-120': { count: number; outstanding: number };
-    '121+': { count: number; outstanding: number };
-  };
-
-  teamWorkload: Record<string, { count: number; outstanding: number }>;
-}
-
+/**
+ * @deprecated Use calculateInsuranceARSummaryFromClaims() from claimsService instead.
+ */
 export function calculateInsuranceARSummary(claims: InsuranceARClaim[]): InsuranceARSummary {
-  const totalClaims = claims.length;
-  const totalClaimValue = claims.reduce((sum, c) => sum + c.total_claim, 0);
-  const totalCollected = claims.reduce((sum, c) => sum + c.collected, 0);
-  const totalOutstanding = claims.reduce((sum, c) => sum + c.outstanding, 0);
+  // Convert InsuranceARClaim[] back to Claim-compatible shape for the new function
+  const asClaims: Claim[] = claims.map(c => ({
+    id: c.id,
+    patient_id: c.patient_id || '',
+    patient_name: c.patient_name,
+    insurance_company: c.insurance_company,
+    claim_number: null,
+    procedure_code: c.procedure_types || '',
+    claim_detail: '',
+    claim_amount: c.total_claim,
+    status: c.claim_status,
+    date_submitted: c.date_of_service,
+    date_of_service: c.date_of_service,
+    follow_up_date: c.date_of_service,
+    created_by: '',
+    completed_by: c.assigned_to || '',
+    notes: c.notes,
+    aging_days: 0,
+    archived: false,
+    archived_at: null,
+    archived_by: null,
+    collected: c.collected,
+    outstanding: c.outstanding,
+    pri_sec: c.pri_sec || null,
+    procedure_types: c.procedure_types,
+    assigned_to: c.assigned_to,
+    rep_name: c.rep_name,
+    reference_number: c.reference_number,
+    aging_status: c.aging_status,
+    carrier_phone: null,
+    date_sent_orig: null,
+  }));
+  return calculateInsuranceARSummaryFromClaims(asClaims);
+}
 
-  // Status breakdown
-  const statusCounts = (status: InsuranceARClaimStatus) =>
-    claims.filter(c => c.claim_status === status).length;
+// =====================================================
+// HELPER: Convert Claim to legacy InsuranceARClaim shape
+// =====================================================
 
-  const statusBreakdown = {
-    pendingReview: statusCounts('Pending Review'),
-    resubmitted: claims.filter(c =>
-      c.claim_status === 'Resubmitted - 1st' || c.claim_status === 'Resubmitted - 2nd'
-    ).length,
-    finalReview: statusCounts('Final Review'),
-    consultantReview: statusCounts('Consultant Review'),
-    closedPaid: statusCounts('Closed/Paid'),
-    closedUnpaid: statusCounts('Closed/Unpaid'),
-    appealFiled: statusCounts('Appeal Filed'),
-    denied: statusCounts('Denied'),
-  };
-
-  // Aging breakdown
-  const agingGroup = (aging: InsuranceARAgingStatus) => {
-    const filtered = claims.filter(c => c.aging_status === aging);
-    return {
-      count: filtered.length,
-      outstanding: filtered.reduce((sum, c) => sum + c.outstanding, 0),
-    };
-  };
-
-  const agingBreakdown = {
-    '0-30': agingGroup('0-30 Days'),
-    '31-60': agingGroup('31-60 Days'),
-    '61-90': agingGroup('61-90 Days'),
-    '91-120': agingGroup('91-120 Days'),
-    '121+': agingGroup('121+ Days'),
-  };
-
-  // Team workload
-  const teamWorkload: Record<string, { count: number; outstanding: number }> = {};
-  claims.forEach(c => {
-    if (!teamWorkload[c.assigned_to]) {
-      teamWorkload[c.assigned_to] = { count: 0, outstanding: 0 };
-    }
-    teamWorkload[c.assigned_to].count++;
-    teamWorkload[c.assigned_to].outstanding += c.outstanding;
-  });
+function claimToInsuranceARClaim(claim: Claim): InsuranceARClaim {
+  // Map aging_days to aging_status if not already set
+  let agingStatus = claim.aging_status;
+  if (!agingStatus && claim.aging_days != null) {
+    if (claim.aging_days <= 30) agingStatus = '0-30 Days';
+    else if (claim.aging_days <= 60) agingStatus = '31-60 Days';
+    else if (claim.aging_days <= 90) agingStatus = '61-90 Days';
+    else if (claim.aging_days <= 120) agingStatus = '91-120 Days';
+    else agingStatus = '121+ Days';
+  }
 
   return {
-    totalClaims,
-    totalClaimValue,
-    totalCollected,
-    totalOutstanding,
-    statusBreakdown,
-    agingBreakdown,
-    teamWorkload,
+    id: claim.id,
+    patient_name: claim.patient_name,
+    patient_id: claim.patient_id || null,
+    date_of_service: claim.date_of_service,
+    insurance_company: claim.insurance_company,
+    pri_sec: (claim.pri_sec as 'Primary' | 'Secondary') || 'Primary',
+    total_claim: claim.claim_amount,
+    collected: claim.collected || 0,
+    outstanding: claim.outstanding || 0,
+    claim_status: (claim.status as InsuranceARClaim['claim_status']) || 'Pending Review',
+    aging_status: (agingStatus as InsuranceARClaim['aging_status']) || '0-30 Days',
+    assigned_to: claim.assigned_to || '',
+    procedure_types: claim.procedure_types || claim.procedure_code || '',
+    rep_name: claim.rep_name || null,
+    reference_number: claim.reference_number || null,
+    notes: claim.notes,
+    created_at: claim.created_at,
+    updated_at: claim.updated_at,
   };
-}
-
-export async function getInsuranceARSummary(): Promise<InsuranceARSummary> {
-  const claims = await getInsuranceARClaims();
-  return calculateInsuranceARSummary(claims);
 }
