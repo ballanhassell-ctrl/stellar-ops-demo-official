@@ -28,6 +28,7 @@ import {
 } from '../services/claimsService';
 import type { InsuranceARSummary } from '../services/claimsService';
 import { supabase } from '../lib/supabaseClient';
+import { sanitizePatientName } from '../utils/sanitizePatientName';
 
 // =====================================================
 // CONSTANTS
@@ -422,7 +423,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     try {
       setFormSubmitting(true);
       const payload = {
-        patient_name: formData.patient_name.trim(),
+        patient_name: sanitizePatientName(formData.patient_name.trim()),
         patient_id: formData.patient_id.trim() || '',
         date_of_service: formData.date_of_service,
         insurance_company: formData.insurance_company.trim(),

@@ -31,6 +31,7 @@ import {
 } from '../services/patientARService.new';
 import { isStaticDataMode } from '../config/dataMode';
 import { supabase } from '../lib/supabaseClient';
+import { sanitizePatientName } from '../utils/sanitizePatientName';
 
 // =====================================================
 // CONSTANTS
@@ -229,7 +230,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     try {
       const record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'> = {
         patient_id: newForm.patient_id || null,
-        patient_name: newForm.patient_name.trim(),
+        patient_name: sanitizePatientName(newForm.patient_name.trim()),
         related_family: newForm.related_family.trim() || null,
         dos: newForm.dos,
         original_balance: newForm.original_balance ? parseFloat(newForm.original_balance) : null,
