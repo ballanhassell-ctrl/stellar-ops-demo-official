@@ -18,6 +18,7 @@ import {
   FileWarning,
   MessageSquare,
   Timer,
+  Archive,
 } from 'lucide-react';
 import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry, NoteSource } from '../types/database.types';
 import {
@@ -26,6 +27,7 @@ import {
   updateInsuranceIssue,
   deleteInsuranceIssue,
   calculateIssuesSummary,
+  RESOLUTION_TARGET_DAYS,
 } from '../services/insuranceIssuesService';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
@@ -64,8 +66,6 @@ const PROVIDER_COLORS: Record<string, { bg: string; text: string; darkBg: string
 };
 
 const DEFAULT_PROVIDER_COLOR = { bg: 'bg-gray-100', text: 'text-gray-800', darkBg: 'bg-gray-700', darkText: 'text-gray-300' };
-
-type StatusFilter = 'all' | 'open' | 'resolved';
 
 type NewIssueForm = Omit<InsuranceIssue, 'id' | 'created_at' | 'updated_at'>;
 
@@ -241,11 +241,14 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // View tabs: open vs resolved
+  type ViewTab = 'open' | 'resolved';
+  const [viewTab, setViewTab] = useState<ViewTab>('open');
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterIssueType, setFilterIssueType] = useState<string>('all');
   const [filterProvider, setFilterProvider] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<StatusFilter>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   // Modal
@@ -291,6 +294,10 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   // ----- Filtering -----
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
+      // Tab filter: open vs resolved (primary split)
+      if (viewTab === 'open' && isResolved(issue)) return false;
+      if (viewTab === 'resolved' && !isResolved(issue)) return false;
+
       // Search
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -313,16 +320,17 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       if (filterIssueType !== 'all' && issue.issue_type !== filterIssueType) return false;
       // Provider
       if (filterProvider !== 'all' && issue.in_charge !== filterProvider) return false;
-      // Status
-      if (filterStatus === 'open' && isResolved(issue)) return false;
-      if (filterStatus === 'resolved' && !isResolved(issue)) return false;
       return true;
     });
-  }, [issues, searchQuery, filterIssueType, filterProvider, filterStatus]);
+  }, [issues, viewTab, searchQuery, filterIssueType, filterProvider]);
 
   // Split into regular claims and pre-auth
   const regularIssues = useMemo(() => filteredIssues.filter((i) => !i.is_pre_auth), [filteredIssues]);
   const preAuthIssues = useMemo(() => filteredIssues.filter((i) => i.is_pre_auth), [filteredIssues]);
+
+  // Counts for tab badges
+  const openCount = useMemo(() => issues.filter((i) => !isResolved(i)).length, [issues]);
+  const resolvedCount = useMemo(() => issues.filter((i) => isResolved(i)).length, [issues]);
 
   // ----- CRUD handlers -----
   const handleAddIssue = async () => {
@@ -511,19 +519,19 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     return (
       <button
         onClick={() => handleToggleStatus(issue)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
           resolved
-            ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60'
-            : 'bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
+            ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60'
+            : 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
         }`}
         title={resolved ? 'Click to mark as Open' : 'Click to mark as Corrected'}
       >
         {resolved ? (
-          <CheckCircle className="w-3.5 h-3.5" />
+          <CheckCircle className="w-3 h-3" />
         ) : (
-          <AlertTriangle className="w-3.5 h-3.5" />
+          <AlertTriangle className="w-3 h-3" />
         )}
-        {resolved ? 'Corrected' : 'Open/Needs Fix'}
+        {resolved ? 'Corrected' : 'Open'}
       </button>
     );
   };
@@ -754,14 +762,14 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
               <tr className={thBg}>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Patient ID</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Name</th>
-                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Date of Service</th>
+                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>DOS</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Procedure</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>In Charge</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Issue Type</th>
-                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder} text-center`}>In Vyne?</th>
+                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder} text-center`}>Vyne</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Status</th>
-                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Submitted</th>
-                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Notes</th>
+                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder} min-w-[100px]`}>Submitted</th>
+                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder} min-w-[90px]`}>Notes</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Actions</th>
               </tr>
             </thead>
@@ -870,15 +878,22 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
           </span>
         </div>
 
-        {/* Avg Resolution Time */}
+        {/* Avg Days on List */}
         <div className={`rounded-lg p-4 ${card}`}>
           <div className="flex items-center gap-2 mb-1">
             <Timer className={`w-4 h-4 ${isDayMode ? 'text-indigo-600' : 'text-indigo-400'}`} />
-            <span className={`text-xs font-medium ${subText}`}>Avg Resolution</span>
+            <span className={`text-xs font-medium ${subText}`}>Avg Days on List</span>
           </div>
-          <span className={`text-2xl font-bold ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>
-            {summary.avgResolutionDays !== null ? `${summary.avgResolutionDays}d` : '--'}
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className={`text-2xl font-bold ${
+              summary.avgDaysOnList !== null && summary.avgDaysOnList > RESOLUTION_TARGET_DAYS
+                ? isDayMode ? 'text-red-600' : 'text-red-400'
+                : isDayMode ? 'text-green-700' : 'text-green-400'
+            }`}>
+              {summary.avgDaysOnList !== null ? `${summary.avgDaysOnList}d` : '--'}
+            </span>
+            <span className={`text-[10px] ${subText}`}>/ {RESOLUTION_TARGET_DAYS}d target</span>
+          </div>
         </div>
 
         {/* By Issue Type (top 3) */}
@@ -921,85 +936,121 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         </div>
       </div>
 
-      {/* ===== Search & Filters ===== */}
-      <div className={`rounded-lg p-4 ${card}`}>
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${subText}`} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by patient, procedure, provider, notes..."
-              className={`w-full pl-9 pr-3 py-2 text-sm rounded-md border ${inputCls}`}
-            />
-          </div>
-
-          {/* Toggle filters */}
+      {/* ===== Open / Resolved Tabs ===== */}
+      <div className={`rounded-lg overflow-hidden ${card}`}>
+        <div className={`flex border-b ${tableBorder}`}>
           <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border transition-colors ${
-              showFilters
-                ? 'bg-blue-600 text-white border-blue-600'
+            onClick={() => setViewTab('open')}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
+              viewTab === 'open'
+                ? isDayMode
+                  ? 'border-b-2 border-blue-600 text-blue-700 bg-blue-50/50'
+                  : 'border-b-2 border-blue-400 text-blue-300 bg-blue-900/20'
                 : isDayMode
-                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                  ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
             }`}
           >
-            <Filter className="w-4 h-4" />
-            Filters
+            <AlertTriangle className="w-4 h-4" />
+            Open Issues
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+              viewTab === 'open'
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                : isDayMode ? 'bg-gray-100 text-gray-600' : 'bg-gray-700 text-gray-400'
+            }`}>
+              {openCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setViewTab('resolved')}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
+              viewTab === 'resolved'
+                ? isDayMode
+                  ? 'border-b-2 border-green-600 text-green-700 bg-green-50/50'
+                  : 'border-b-2 border-green-400 text-green-300 bg-green-900/20'
+                : isDayMode
+                  ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+            }`}
+          >
+            <Archive className="w-4 h-4" />
+            Resolved
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+              viewTab === 'resolved'
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                : isDayMode ? 'bg-gray-100 text-gray-600' : 'bg-gray-700 text-gray-400'
+            }`}>
+              {resolvedCount}
+            </span>
           </button>
         </div>
 
-        {/* Filter dropdowns */}
-        {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-dashed border-gray-300 dark:border-gray-600">
-            {/* Issue type */}
-            <div>
-              <label className={`block text-xs font-medium mb-1 ${subText}`}>Issue Type</label>
-              <select
-                value={filterIssueType}
-                onChange={(e) => setFilterIssueType(e.target.value)}
-                className={`w-full text-sm rounded-md border px-2 py-1.5 ${inputCls}`}
-              >
-                <option value="all">All Types</option>
-                {ISSUE_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+        {/* Search & Filters inside the tab card */}
+        <div className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${subText}`} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by patient, procedure, provider, notes..."
+                className={`w-full pl-9 pr-3 py-2 text-sm rounded-md border ${inputCls}`}
+              />
             </div>
 
-            {/* Provider */}
-            <div>
-              <label className={`block text-xs font-medium mb-1 ${subText}`}>Provider</label>
-              <select
-                value={filterProvider}
-                onChange={(e) => setFilterProvider(e.target.value)}
-                className={`w-full text-sm rounded-md border px-2 py-1.5 ${inputCls}`}
-              >
-                <option value="all">All Providers</option>
-                {PROVIDERS.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className={`block text-xs font-medium mb-1 ${subText}`}>Status</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as StatusFilter)}
-                className={`w-full text-sm rounded-md border px-2 py-1.5 ${inputCls}`}
-              >
-                <option value="all">All Statuses</option>
-                <option value="open">Open/Needs Fix</option>
-                <option value="resolved">Corrected</option>
-              </select>
-            </div>
+            {/* Toggle filters */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border transition-colors ${
+                showFilters
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : isDayMode
+                    ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+            </button>
           </div>
-        )}
+
+          {/* Filter dropdowns */}
+          {showFilters && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-dashed border-gray-300 dark:border-gray-600">
+              {/* Issue type */}
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${subText}`}>Issue Type</label>
+                <select
+                  value={filterIssueType}
+                  onChange={(e) => setFilterIssueType(e.target.value)}
+                  className={`w-full text-sm rounded-md border px-2 py-1.5 ${inputCls}`}
+                >
+                  <option value="all">All Types</option>
+                  {ISSUE_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Provider */}
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${subText}`}>Provider</label>
+                <select
+                  value={filterProvider}
+                  onChange={(e) => setFilterProvider(e.target.value)}
+                  className={`w-full text-sm rounded-md border px-2 py-1.5 ${inputCls}`}
+                >
+                  <option value="all">All Providers</option>
+                  {PROVIDERS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ===== Regular Claim Issues Table ===== */}

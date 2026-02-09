@@ -19,11 +19,20 @@ function isTableNotFoundError(error: any): boolean {
   );
 }
 
-/** Normalize rows coming from Supabase to ensure structured_notes is always an array */
+/** Normalize rows coming from Supabase to ensure correct types.
+ *  Handles pre-migration data where status may still be free-text like "corrected & rebatched". */
 function normalizeIssue(row: any): InsuranceIssue {
+  // Normalize status: anything containing "corrected" → 'Corrected', else 'Open'
+  let status: 'Open' | 'Corrected' = 'Open';
+  if (row.status) {
+    status = row.status === 'Corrected' || row.status.toLowerCase().includes('corrected')
+      ? 'Corrected'
+      : row.status === 'Open' ? 'Open' : 'Open';
+  }
+
   return {
     ...row,
-    status: row.status || 'Open',
+    status,
     structured_notes: Array.isArray(row.structured_notes) ? row.structured_notes : [],
   };
 }
@@ -181,6 +190,8 @@ export async function getOpenIssues(): Promise<InsuranceIssue[]> {
 // SUMMARY & RESOLUTION TIME METRICS
 // =====================================================
 
+export const RESOLUTION_TARGET_DAYS = 3;
+
 export interface InsuranceIssuesSummary {
   totalIssues: number;
   openIssues: number;
@@ -190,11 +201,12 @@ export interface InsuranceIssuesSummary {
   byProvider: Record<string, number>;
   inVyneCount: number;
   notInVyneCount: number;
-  avgResolutionDays: number | null; // average days from created_at → resolved_at
+  avgDaysOnList: number | null; // avg days from created_at → resolved_at (resolved) or → now (open)
 }
 
 export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssuesSummary {
   const resolved = issues.filter(i => i.status === 'Corrected');
+  const open = issues.filter(i => i.status !== 'Corrected');
 
   const byIssueType: Record<string, number> = {};
   const byProvider: Record<string, number> = {};
@@ -204,32 +216,45 @@ export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssue
     byProvider[i.in_charge] = (byProvider[i.in_charge] || 0) + 1;
   });
 
-  // Calculate average resolution time in days
-  let avgResolutionDays: number | null = null;
-  const resolutionTimes = resolved
-    .filter(i => i.resolved_at && i.created_at)
-    .map(i => {
-      const created = new Date(i.created_at!).getTime();
-      const resolvedAt = new Date(i.resolved_at!).getTime();
-      return (resolvedAt - created) / (1000 * 60 * 60 * 24); // days
-    })
-    .filter(d => d >= 0);
+  // Calculate avg days on the list:
+  //   Resolved items: created_at → resolved_at
+  //   Open items: created_at → now (still sitting)
+  const now = Date.now();
+  const allDays: number[] = [];
 
-  if (resolutionTimes.length > 0) {
-    avgResolutionDays = Math.round(
-      (resolutionTimes.reduce((sum, d) => sum + d, 0) / resolutionTimes.length) * 10
+  resolved
+    .filter(i => i.created_at)
+    .forEach(i => {
+      const created = new Date(i.created_at!).getTime();
+      const end = i.resolved_at ? new Date(i.resolved_at).getTime() : now;
+      const days = (end - created) / (1000 * 60 * 60 * 24);
+      if (days >= 0) allDays.push(days);
+    });
+
+  open
+    .filter(i => i.created_at)
+    .forEach(i => {
+      const created = new Date(i.created_at!).getTime();
+      const days = (now - created) / (1000 * 60 * 60 * 24);
+      if (days >= 0) allDays.push(days);
+    });
+
+  let avgDaysOnList: number | null = null;
+  if (allDays.length > 0) {
+    avgDaysOnList = Math.round(
+      (allDays.reduce((sum, d) => sum + d, 0) / allDays.length) * 10
     ) / 10;
   }
 
   return {
     totalIssues: issues.length,
-    openIssues: issues.length - resolved.length,
+    openIssues: open.length,
     resolvedIssues: resolved.length,
     preAuthIssues: issues.filter(i => i.is_pre_auth).length,
     byIssueType,
     byProvider,
     inVyneCount: issues.filter(i => i.in_vyne).length,
     notInVyneCount: issues.filter(i => !i.in_vyne).length,
-    avgResolutionDays,
+    avgDaysOnList,
   };
 }
