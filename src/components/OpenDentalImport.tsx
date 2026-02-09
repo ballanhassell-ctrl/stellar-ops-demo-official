@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Upload, FileText, CheckCircle, AlertCircle, X, ArrowRight, Trash2 } from 'lucide-react';
+import { sanitizePatientName } from '../utils/sanitizePatientName';
 
 interface OpenDentalImportProps {
   isDayMode: boolean;
@@ -265,7 +266,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
         rows.push({
           insurance_company: c[ci], carrier_phone: phi >= 0 ? c[phi] || null : null,
           pri_sec: (ti >= 0 && c[ti]?.trim().toLowerCase() === 'sec') ? 'Secondary' : 'Primary',
-          created_by: ui >= 0 ? c[ui] || '' : '', patient_name: c[pni] || '',
+          created_by: ui >= 0 ? c[ui] || '' : '', patient_name: sanitizePatientName(c[pni] || ''),
           date_of_service: dosF, date_submitted: sentF, date_sent_orig: origF || null,
           status: mapTrackStatus(tsi >= 0 ? c[tsi] || '' : ''), notes, claim_amount: amt,
           patient_id: '', claim_number: null, procedure_code: '', claim_detail: '',
@@ -331,7 +332,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
         if (lpi >= 0 && c[lpi]?.trim() && c[lpi].trim() !== '-') np.push(`Last Pay: ${c[lpi].trim()}`);
 
         rows.push({
-          patient_name: guar, patient_id: null,
+          patient_name: sanitizePatientName(guar), patient_id: null,
           dos: today, original_balance: total, current_balance: total,
           created_by: 'Open Dental Import', updated_by: 'Open Dental Import',
           ar_notes: np.join(' | '),

@@ -5,7 +5,7 @@ import {
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
   Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog, ChevronDown, ChevronUp,
-  Menu
+  Menu, LogOut
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -25,6 +25,8 @@ import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
 import ARAgingChart from './components/ARAgingChart';
 import OpenDentalImport from './components/OpenDentalImport';
 import PatientARTracker from './components/PatientARTracker';
+import { sanitizePatientName } from './utils/sanitizePatientName';
+import { useAuth } from './contexts/AuthContext';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
@@ -568,7 +570,7 @@ const recordToClaim = (record: ClaimRecord): any => {
   // Build base fields without id (for inserts)
   const baseFields = {
     patient_id: record.patientId,
-    patient_name: record.patientName,
+    patient_name: sanitizePatientName(record.patientName),
     insurance_company: record.insuranceCompany,
     claim_number: record.claimNumber || null, // Send null if empty string
     procedure_code: record.procedureCode,
@@ -627,7 +629,7 @@ const recordToPreAuth = (record: PreAuthRecord): any => {
   // Build base fields without id (for inserts)
   const baseFields = {
     patient_id: record.patientId,
-    patient_name: record.patientName,
+    patient_name: sanitizePatientName(record.patientName),
     insurance_company: record.insuranceCompany,
     pre_auth_number: record.preAuthNumber,
     procedure_code: record.procedureCode,
@@ -770,6 +772,7 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): any => {
 
 
 const CourtStreetRCM = () => {
+  const { signOut } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   // Unified date state for all dashboard sections (uses local timezone)
@@ -2364,6 +2367,20 @@ const CourtStreetRCM = () => {
                     <span className="hidden sm:inline text-sm font-medium">Day Mode</span>
                   </>
                 )}
+              </button>
+
+              {/* Sign Out */}
+              <button
+                onClick={() => signOut()}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
+                  isDayMode
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                    : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                }`}
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden sm:inline text-sm font-medium">Sign Out</span>
               </button>
 
               {/* Task Board - Hidden on mobile */}
@@ -8812,7 +8829,7 @@ const CourtStreetRCM = () => {
                     const claimNumber = formData.get('claimNumber') as string;
                     const updatedClaim = {
                       patient_id: claim.patientId, // Preserve existing patient_id
-                      patient_name: formData.get('patientName') as string,
+                      patient_name: sanitizePatientName(formData.get('patientName') as string),
                       insurance_company: formData.get('insuranceCompany') as string,
                       claim_number: claimNumber || null, // Convert empty string to null
                       procedure_code: formData.get('procedureCode') as string,
@@ -9017,7 +9034,7 @@ const CourtStreetRCM = () => {
                     const handler = formData.get('handler') as string;
                     const updatedPreAuth = {
                       patient_id: preAuth.patientId, // Preserve existing patient_id
-                      patient_name: formData.get('patientName') as string,
+                      patient_name: sanitizePatientName(formData.get('patientName') as string),
                       insurance_company: formData.get('insuranceCompany') as string,
                       pre_auth_number: (formData.get('preAuthNumber') as string) || null,
                       procedure_code: formData.get('procedureCode') as string,

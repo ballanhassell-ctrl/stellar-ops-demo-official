@@ -24,6 +24,7 @@ import {
   deleteInsuranceIssue,
   calculateIssuesSummary,
 } from '../services/insuranceIssuesService';
+import { sanitizePatientName } from '../utils/sanitizePatientName';
 
 // =====================================================
 // CONSTANTS
@@ -205,7 +206,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     if (!formData.patient_name || !formData.date_of_service || !formData.procedure_codes) return;
     try {
       setFormSaving(true);
-      const created = await insertInsuranceIssue(formData);
+      const created = await insertInsuranceIssue({ ...formData, patient_name: sanitizePatientName(formData.patient_name) });
       setIssues((prev) => [created, ...prev]);
       setShowAddModal(false);
       setFormData({ ...EMPTY_FORM });
