@@ -40,10 +40,11 @@ function parseDate(s: string): string {
 function isDefaultDate(s: string): boolean { return parseDate(s) === '2001-01-01'; }
 
 function mapTrackStatus(s: string): string {
-  const v = s.trim();
+  const v = s.trim().toLowerCase();
   if (v === '-' || v === '') return 'Sent';
-  if (v.toUpperCase() === 'CLAIM SUBMISSION ON HOLD') return 'Pending';
-  return 'Pending Review';
+  if (v === 'claim submission on hold') return 'Pending';
+  // Default to 'Pending' which is always valid in the DB constraint
+  return 'Pending';
 }
 function parseAmount(v: string): number {
   if (!v || v.trim() === '-' || v.trim() === '') return 0;
