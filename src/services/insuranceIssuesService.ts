@@ -19,6 +19,15 @@ function isTableNotFoundError(error: any): boolean {
   );
 }
 
+/** Normalize rows coming from Supabase to ensure structured_notes is always an array */
+function normalizeIssue(row: any): InsuranceIssue {
+  return {
+    ...row,
+    status: row.status || 'Open',
+    structured_notes: Array.isArray(row.structured_notes) ? row.structured_notes : [],
+  };
+}
+
 // =====================================================
 // CRUD OPERATIONS
 // =====================================================
@@ -43,7 +52,7 @@ export async function getInsuranceIssues(): Promise<InsuranceIssue[]> {
     throw error;
   }
 
-  return data || [];
+  return (data || []).map(normalizeIssue);
 }
 
 export async function insertInsuranceIssue(
@@ -60,7 +69,7 @@ export async function insertInsuranceIssue(
     throw error;
   }
 
-  return data;
+  return normalizeIssue(data);
 }
 
 export async function updateInsuranceIssue(
@@ -79,7 +88,7 @@ export async function updateInsuranceIssue(
     throw error;
   }
 
-  return data;
+  return normalizeIssue(data);
 }
 
 export async function bulkInsertInsuranceIssues(
@@ -102,7 +111,7 @@ export async function bulkInsertInsuranceIssues(
       console.error(`Error inserting batch ${i / BATCH_SIZE + 1}:`, error);
       throw error;
     }
-    if (data) allInserted.push(...data);
+    if (data) allInserted.push(...data.map(normalizeIssue));
   }
 
   return allInserted;
@@ -143,34 +152,34 @@ export async function getIssuesByProvider(inCharge: string): Promise<InsuranceIs
     throw error;
   }
 
-  return data || [];
+  return (data || []).map(normalizeIssue);
 }
 
 export async function getOpenIssues(): Promise<InsuranceIssue[]> {
   if (isStaticDataMode()) {
-    return sampleInsuranceIssues.filter(i =>
-      !i.status || !i.status.toLowerCase().includes('corrected')
-    );
+    return sampleInsuranceIssues.filter(i => i.status === 'Open');
   }
 
   const { data, error } = await supabase
     .from('insurance_issues')
     .select('*')
-    .or('status.is.null,status.not.ilike.%corrected%')
+    .eq('status', 'Open')
     .order('date_of_service', { ascending: false });
 
   if (error) {
     console.error('Error fetching open issues:', error);
     if (isTableNotFoundError(error)) {
-      return sampleInsuranceIssues.filter(i =>
-        !i.status || !i.status.toLowerCase().includes('corrected')
-      );
+      return sampleInsuranceIssues.filter(i => i.status === 'Open');
     }
     throw error;
   }
 
-  return data || [];
+  return (data || []).map(normalizeIssue);
 }
+
+// =====================================================
+// SUMMARY & RESOLUTION TIME METRICS
+// =====================================================
 
 export interface InsuranceIssuesSummary {
   totalIssues: number;
@@ -181,12 +190,11 @@ export interface InsuranceIssuesSummary {
   byProvider: Record<string, number>;
   inVyneCount: number;
   notInVyneCount: number;
+  avgResolutionDays: number | null; // average days from created_at → resolved_at
 }
 
 export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssuesSummary {
-  const resolved = issues.filter(i =>
-    i.status && i.status.toLowerCase().includes('corrected')
-  );
+  const resolved = issues.filter(i => i.status === 'Corrected');
 
   const byIssueType: Record<string, number> = {};
   const byProvider: Record<string, number> = {};
@@ -195,6 +203,23 @@ export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssue
     byIssueType[i.issue_type] = (byIssueType[i.issue_type] || 0) + 1;
     byProvider[i.in_charge] = (byProvider[i.in_charge] || 0) + 1;
   });
+
+  // Calculate average resolution time in days
+  let avgResolutionDays: number | null = null;
+  const resolutionTimes = resolved
+    .filter(i => i.resolved_at && i.created_at)
+    .map(i => {
+      const created = new Date(i.created_at!).getTime();
+      const resolvedAt = new Date(i.resolved_at!).getTime();
+      return (resolvedAt - created) / (1000 * 60 * 60 * 24); // days
+    })
+    .filter(d => d >= 0);
+
+  if (resolutionTimes.length > 0) {
+    avgResolutionDays = Math.round(
+      (resolutionTimes.reduce((sum, d) => sum + d, 0) / resolutionTimes.length) * 10
+    ) / 10;
+  }
 
   return {
     totalIssues: issues.length,
@@ -205,5 +230,6 @@ export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssue
     byProvider,
     inVyneCount: issues.filter(i => i.in_vyne).length,
     notInVyneCount: issues.filter(i => !i.in_vyne).length,
+    avgResolutionDays,
   };
 }

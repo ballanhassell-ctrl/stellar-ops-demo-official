@@ -5,7 +5,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, X, CheckCircle, AlertCircle, FileText, Download } from 'lucide-react';
-import type { InsuranceIssue, InsuranceIssueType } from '../types/database.types';
+import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry } from '../types/database.types';
 import { bulkInsertInsuranceIssues } from '../services/insuranceIssuesService';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 
@@ -318,6 +318,39 @@ export default function InsuranceIssuesCSVUpload({
                         (obj.in_vyne || '').toLowerCase() === 'true' ||
                         (obj.in_vyne || '') === '1';
 
+        // Determine status: normalize "corrected" variants to 'Corrected', else 'Open'
+        const rawStatus = (obj.status || '').toLowerCase();
+        const isCorrected = rawStatus.includes('corrected');
+        const status: InsuranceIssueStatus = isCorrected ? 'Corrected' : 'Open';
+
+        // Extract submitted_by from submission_status like "Submitted - BH"
+        const rawSubmission = obj.submission_status || '';
+        const isSubmitted = rawSubmission.toLowerCase().includes('submitted');
+        let submittedBy: string | null = null;
+        if (isSubmitted) {
+          const match = rawSubmission.match(/-\s*(.+)/);
+          submittedBy = match ? match[1].trim() : null;
+        }
+
+        // Build structured notes from status text (if it has detail) and notes field
+        const structuredNotes: NoteEntry[] = [];
+        if (obj.status && obj.status.trim() && obj.status.trim() !== 'Open' && obj.status.trim().toLowerCase() !== 'corrected') {
+          structuredNotes.push({
+            text: obj.status.trim(),
+            source: 'stellar',
+            author: submittedBy || '',
+            created_at: new Date().toISOString(),
+          });
+        }
+        if (obj.notes && obj.notes.trim()) {
+          structuredNotes.push({
+            text: obj.notes.trim(),
+            source: 'stellar',
+            author: '',
+            created_at: new Date().toISOString(),
+          });
+        }
+
         const record: ParsedRow = {
           patient_id: obj.patient_id || null,
           patient_name: sanitizePatientName(patientName),
@@ -326,9 +359,13 @@ export default function InsuranceIssuesCSVUpload({
           in_charge: inCharge,
           issue_type: issueType,
           in_vyne: inVyne,
-          status: obj.status || null,
-          submission_status: obj.submission_status || null,
+          status,
+          submission_status: isSubmitted ? 'Submitted' : null,
+          submitted_by: submittedBy,
+          submitted_at: isSubmitted ? new Date().toISOString() : null,
+          resolved_at: isCorrected ? new Date().toISOString() : null,
           notes: obj.notes || null,
+          structured_notes: structuredNotes,
           is_pre_auth: isPreAuth,
         };
 
