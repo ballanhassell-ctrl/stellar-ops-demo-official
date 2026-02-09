@@ -20,6 +20,7 @@ import {
   Save,
   Loader2,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import type { PatientAR, PatientARStatus } from '../types/database.types';
 import {
@@ -29,6 +30,7 @@ import {
   deletePatientAR,
 } from '../services/patientARService.new';
 import { isStaticDataMode } from '../config/dataMode';
+import { supabase } from '../lib/supabaseClient';
 
 // =====================================================
 // CONSTANTS
@@ -139,6 +141,8 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   const [editingValue, setEditingValue] = useState('');
   const [editingContact, setEditingContact] = useState<EditingContact>(null);
   const [contactDate, setContactDate] = useState('');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [contactInitials, setContactInitials] = useState('');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(null);
 
@@ -457,6 +461,27 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     [],
   );
 
+  const handleClearAllPatientAR = useCallback(async () => {
+    setClearing(true);
+    try {
+      if (isStaticDataMode()) {
+        setRecords([]);
+      } else {
+        const { error: delError } = await supabase.from('patient_ar').delete().gte('created_at', '1970-01-01');
+        if (delError) throw delError;
+        setRecords([]);
+      }
+      setShowClearConfirm(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error clearing patient A/R:', err);
+      setError('Failed to clear patient A/R records. Please try again.');
+      setShowClearConfirm(false);
+    } finally {
+      setClearing(false);
+    }
+  }, []);
+
   // ---------------------------------------------------
   // RENDER HELPERS
   // ---------------------------------------------------
@@ -719,8 +744,37 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
             <Plus className="w-4 h-4" />
             Add Patient A/R
           </button>
+          <button
+            onClick={() => setShowClearConfirm(true)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
+              isDayMode ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-red-700 text-red-400 hover:bg-red-900/30'
+            }`}
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear All
+          </button>
         </div>
       </div>
+
+      {/* Clear All Confirmation Banner */}
+      {showClearConfirm && (
+        <div className={`p-4 rounded-xl border ${isDayMode ? 'bg-red-50 border-red-200' : 'bg-red-900/20 border-red-800'}`}>
+          <p className={`text-sm font-semibold mb-3 ${isDayMode ? 'text-red-800' : 'text-red-300'}`}>
+            Are you sure you want to delete ALL patient A/R records? This cannot be undone.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={handleClearAllPatientAR} disabled={clearing}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+              {clearing ? 'Clearing...' : 'Yes, Delete All Patient A/R'}
+            </button>
+            <button onClick={() => setShowClearConfirm(false)} disabled={clearing}
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                isDayMode ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-gray-600 text-gray-300 hover:bg-gray-700'}`}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ============================================= */}
       {/* SUMMARY CARDS */}

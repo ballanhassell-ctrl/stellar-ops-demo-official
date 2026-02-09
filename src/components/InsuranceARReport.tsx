@@ -27,6 +27,7 @@ import {
   calculateInsuranceARSummaryFromClaims,
 } from '../services/claimsService';
 import type { InsuranceARSummary } from '../services/claimsService';
+import { supabase } from '../lib/supabaseClient';
 
 // =====================================================
 // CONSTANTS
@@ -215,6 +216,27 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   // Delete confirmation
   const [deletingClaimId, setDeletingClaimId] = useState<string | null>(null);
+
+  // Clear all data
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearAllClaims = async () => {
+    setClearing(true);
+    try {
+      const { error: delError } = await supabase.from('claims').delete().gte('created_at', '1970-01-01');
+      if (delError) throw delError;
+      setClaims([]);
+      setShowClearConfirm(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error clearing claims:', err);
+      setError('Failed to clear claims. Please try again.');
+      setShowClearConfirm(false);
+    } finally {
+      setClearing(false);
+    }
+  };
 
   // =====================================================
   // DATA LOADING
@@ -737,8 +759,38 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                 <Plus className="w-4 h-4" />
                 Add Claim
               </button>
+
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                  isDayMode ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-red-700 text-red-400 hover:bg-red-900/30'
+                }`}
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear All
+              </button>
             </div>
           </div>
+
+          {/* Clear All Confirmation Banner */}
+          {showClearConfirm && (
+            <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-red-50 border-red-200' : 'bg-red-900/20 border-red-800'}`}>
+              <p className={`text-sm font-semibold mb-3 ${isDayMode ? 'text-red-800' : 'text-red-300'}`}>
+                Are you sure you want to delete ALL claims? This cannot be undone.
+              </p>
+              <div className="flex gap-2">
+                <button onClick={handleClearAllClaims} disabled={clearing}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+                  {clearing ? 'Clearing...' : 'Yes, Delete All Claims'}
+                </button>
+                <button onClick={() => setShowClearConfirm(false)} disabled={clearing}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                    isDayMode ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-gray-600 text-gray-300 hover:bg-gray-700'}`}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Filter dropdowns */}
           {showFilters && (

@@ -49,7 +49,63 @@ function parseAmount(v: string): number {
   const n = parseFloat(v.replace(/[$,\s]/g, ''));
   return isNaN(n) ? 0 : n;
 }
-const splitTSV = (line: string) => line.split('\t').map(v => v.trim());
+
+// Strip BOM (Byte Order Mark) that some exports include
+function stripBOM(text: string): string {
+  return text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+}
+
+// Auto-detect delimiter: tab, comma, or pipe
+function detectDelimiter(headerLine: string): string {
+  const tabCount = (headerLine.match(/\t/g) || []).length;
+  const commaCount = (headerLine.match(/,/g) || []).length;
+  const pipeCount = (headerLine.match(/\|/g) || []).length;
+
+  if (tabCount >= 2 && tabCount >= commaCount) return '\t';
+  if (commaCount >= 2) return ',';
+  if (pipeCount >= 2) return '|';
+  // Default: try tab first, then comma
+  return tabCount > 0 ? '\t' : ',';
+}
+
+// Split a line respecting quoted fields (handles commas inside quotes)
+function splitLine(line: string, delimiter: string): string[] {
+  if (delimiter === '\t') {
+    // Tab-separated: simple split (quotes rarely used with TSV)
+    return line.split('\t').map(v => v.trim());
+  }
+
+  // CSV-aware split that handles quoted fields
+  const fields: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        // Check for escaped quote ""
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === delimiter) {
+      fields.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  fields.push(current.trim());
+  return fields;
+}
 
 function calculateAgingDays(dateStr: string): number {
   if (!dateStr) return 0;
@@ -171,9 +227,12 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
   // --- Claims Parsing ---
   const parseClaims = (text: string) => {
     try {
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const cleanText = stripBOM(text);
+      const lines = cleanText.split(/\r?\n/).filter(l => l.trim());
       if (lines.length < 2) { setErrorMsg('File must have a header and at least one data row.'); setStatus('error'); return; }
-      const hdr = splitTSV(lines[0]);
+
+      const delimiter = detectDelimiter(lines[0]);
+      const hdr = splitLine(lines[0], delimiter);
       const idx = (name: string) => hdr.findIndex(h => h.toLowerCase() === name.toLowerCase());
       const ci = idx('Carrier'), phi = idx('Phone'), ti = idx('Type'), ui = idx('User');
       const pni = idx('PatName'), dsi = idx('DateService'), dti = idx('DateSent');
@@ -181,13 +240,14 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
       const ei = idx('Error'), ai = idx('Amount');
 
       if (ci === -1 || pni === -1 || ai === -1) {
-        setErrorMsg('Missing required columns: Carrier, PatName, or Amount. Ensure the file is tab-separated.');
+        const foundCols = hdr.filter(h => h).join(', ');
+        setErrorMsg(`Missing required columns: Carrier, PatName, or Amount. Found columns: ${foundCols || '(none detected)'}. Detected delimiter: ${delimiter === '\t' ? 'tab' : delimiter === ',' ? 'comma' : delimiter}.`);
         setStatus('error'); return;
       }
 
       const rows: ClaimRow[] = [];
       for (let i = 1; i < lines.length; i++) {
-        const c = splitTSV(lines[i]);
+        const c = splitLine(lines[i], delimiter);
         if (c.length < 3 || !c[ci]) continue;
         const dosF = parseDate(dsi >= 0 ? c[dsi] : '');
         const sentF = parseDate(dti >= 0 ? c[dti] : '');
@@ -213,7 +273,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
           collected: 0, outstanding: amt,
         });
       }
-      if (!rows.length) { setErrorMsg('No valid data rows found. Ensure tab-separated format.'); setStatus('error'); return; }
+      if (!rows.length) { setErrorMsg('No valid data rows found after parsing. Check that your file has data rows below the header.'); setStatus('error'); return; }
       setAllClaimsData(rows); setClaimsPreview(rows.slice(0, 10)); setTotalRows(rows.length); setStatus('previewing');
     } catch { setErrorMsg('Failed to parse claims file.'); setStatus('error'); }
   };
@@ -221,15 +281,19 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
   // --- Patient A/R Parsing ---
   const parsePatientAR = (text: string) => {
     try {
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const cleanText = stripBOM(text);
+      const lines = cleanText.split(/\r?\n/).filter(l => l.trim());
       if (lines.length < 2) { setErrorMsg('File must have a header and at least one data row.'); setStatus('error'); return; }
+
+      // Detect delimiter from first line
+      const delimiter = detectDelimiter(lines[0]);
       let si = 0;
-      const ff = splitTSV(lines[0]);
+      const ff = splitLine(lines[0], delimiter);
       if (ff.length <= 2 && ff[0].toLowerCase().startsWith('date')) si = 1;
-      else if (lines[0].toLowerCase().startsWith('date ') && !lines[0].includes('\t')) si = 1;
+      else if (lines[0].toLowerCase().startsWith('date ') && !lines[0].includes(delimiter)) si = 1;
       if (si >= lines.length - 1) { setErrorMsg('File must have headers and data rows.'); setStatus('error'); return; }
 
-      const hdr = splitTSV(lines[si]);
+      const hdr = splitLine(lines[si], delimiter);
       const fi = (test: (h: string) => boolean) => hdr.findIndex(h => test(h.toLowerCase()));
       const gi = fi(h => h.includes('guarantor'));
       const d030 = fi(h => h.includes('0-30'));
@@ -243,14 +307,15 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
       const lpi = fi(h => h.includes('last pay'));
 
       if (gi === -1 || toti === -1) {
-        setErrorMsg('Missing required columns: Guarantor or Total. Ensure tab-separated format.');
+        const foundCols = hdr.filter(h => h).join(', ');
+        setErrorMsg(`Missing required columns: Guarantor or Total. Found columns: ${foundCols || '(none detected)'}. Detected delimiter: ${delimiter === '\t' ? 'tab' : delimiter === ',' ? 'comma' : delimiter}.`);
         setStatus('error'); return;
       }
 
       const today = new Date().toISOString().split('T')[0];
       const rows: PatientARRow[] = [];
       for (let i = si + 1; i < lines.length; i++) {
-        const c = splitTSV(lines[i]);
+        const c = splitLine(lines[i], delimiter);
         if (c.length < 2) continue;
         const guar = c[gi]?.trim() || '';
         if (!guar || guar.toLowerCase() === 'total' || guar.toLowerCase() === 'totals') continue;
@@ -272,7 +337,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
           ar_notes: np.join(' | '),
         });
       }
-      if (!rows.length) { setErrorMsg('No valid patient A/R rows found.'); setStatus('error'); return; }
+      if (!rows.length) { setErrorMsg('No valid patient A/R rows found after parsing. Check that your file has data rows below the header.'); setStatus('error'); return; }
       setAllARData(rows); setARPreview(rows.slice(0, 10)); setTotalRows(rows.length); setStatus('previewing');
     } catch { setErrorMsg('Failed to parse Patient A/R file.'); setStatus('error'); }
   };
@@ -350,7 +415,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
             </div>
             <div>
               <h2 className={`text-lg font-bold ${txt}`}>Open Dental Import</h2>
-              <p className={`text-sm ${txt2}`}>Import tab-separated CSV data from Open Dental</p>
+              <p className={`text-sm ${txt2}`}>Import CSV or tab-separated data from Open Dental</p>
             </div>
           </div>
           {file && (
@@ -448,7 +513,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
             }`}>
             <Upload className={`w-10 h-10 mx-auto mb-3 ${d ? 'text-gray-400' : 'text-gray-500'}`} />
             <p className={`text-sm font-medium ${txt}`}>{file ? file.name : 'Drop your file here or click to browse'}</p>
-            <p className={`text-xs mt-1 ${txtM}`}>Accepts tab-separated .csv, .tsv, or .txt files</p>
+            <p className={`text-xs mt-1 ${txtM}`}>Accepts .csv, .tsv, or .txt files (comma or tab separated)</p>
             <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" onChange={handleFileSelect} className="hidden" />
           </div>
         )}
