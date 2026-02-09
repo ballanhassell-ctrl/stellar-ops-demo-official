@@ -8,6 +8,7 @@ import {
   Search,
   Filter,
   Plus,
+  Upload,
   Edit2,
   Trash2,
   X,
@@ -25,6 +26,7 @@ import {
   calculateIssuesSummary,
 } from '../services/insuranceIssuesService';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
 
 // =====================================================
 // CONSTANTS
@@ -144,6 +146,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<InsuranceIssue>>({});
 
+  // CSV upload
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
+
   // ----- Data loading -----
   const loadIssues = useCallback(async () => {
     try {
@@ -253,6 +258,10 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     } catch (err) {
       console.error('Error deleting issue:', err);
     }
+  };
+
+  const handleCSVImportComplete = (imported: InsuranceIssue[]) => {
+    setIssues((prev) => [...imported, ...prev]);
   };
 
   // ----- Style helpers -----
@@ -570,16 +579,29 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
             Tracking {issues.length} issue{issues.length !== 1 ? 's' : ''} from the Insurance Issues Report
           </p>
         </div>
-        <button
-          onClick={() => {
-            setFormData({ ...EMPTY_FORM });
-            setShowAddModal(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Add Issue
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCSVUpload(true)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium border ${
+              isDayMode
+                ? 'border-blue-300 text-blue-700 hover:bg-blue-50'
+                : 'border-blue-600 text-blue-300 hover:bg-blue-900/30'
+            }`}
+          >
+            <Upload className="w-4 h-4" />
+            Import CSV
+          </button>
+          <button
+            onClick={() => {
+              setFormData({ ...EMPTY_FORM });
+              setShowAddModal(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add Issue
+          </button>
+        </div>
       </div>
 
       {/* ===== Summary Stats ===== */}
@@ -752,6 +774,15 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
               : 'No issues match the current filters.'}
           </p>
         </div>
+      )}
+
+      {/* ===== CSV Upload Modal ===== */}
+      {showCSVUpload && (
+        <InsuranceIssuesCSVUpload
+          isDayMode={isDayMode}
+          onClose={() => setShowCSVUpload(false)}
+          onImportComplete={handleCSVImportComplete}
+        />
       )}
 
       {/* ===== Add Issue Modal ===== */}
