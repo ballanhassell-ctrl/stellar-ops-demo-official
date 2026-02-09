@@ -520,9 +520,9 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     <div className="space-y-6">
       {/* Error banner */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
-          <p className="text-red-700 text-sm">{error}</p>
-          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+        <div className={`rounded-lg p-4 flex items-center justify-between ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
+          <p className={`text-sm ${isDayMode ? 'text-red-700' : 'text-red-300'}`}>{error}</p>
+          <button onClick={() => setError(null)} className={`${isDayMode ? 'text-red-500 hover:text-red-700' : 'text-red-400 hover:text-red-300'}`}>
             <X className="w-4 h-4" />
           </button>
         </div>

@@ -458,7 +458,7 @@ export async function rejectWriteOffSuggestion(
       status: 'not_started',
       is_collectible: true,
       write_off_suggested_date: null,
-      write_off_suggestion_reason: null,
+      write_off_reason: null,
       updated_by: reviewedBy
     })
     .eq('id', suggestion.patient_ar_id);
