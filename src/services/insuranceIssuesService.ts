@@ -82,6 +82,32 @@ export async function updateInsuranceIssue(
   return data;
 }
 
+export async function bulkInsertInsuranceIssues(
+  issues: Omit<InsuranceIssue, 'id' | 'created_at' | 'updated_at'>[]
+): Promise<InsuranceIssue[]> {
+  if (issues.length === 0) return [];
+
+  // Supabase has a row limit per request; batch in chunks of 100
+  const BATCH_SIZE = 100;
+  const allInserted: InsuranceIssue[] = [];
+
+  for (let i = 0; i < issues.length; i += BATCH_SIZE) {
+    const batch = issues.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .from('insurance_issues')
+      .insert(batch)
+      .select();
+
+    if (error) {
+      console.error(`Error inserting batch ${i / BATCH_SIZE + 1}:`, error);
+      throw error;
+    }
+    if (data) allInserted.push(...data);
+  }
+
+  return allInserted;
+}
+
 export async function deleteInsuranceIssue(id: string): Promise<void> {
   const { error } = await supabase
     .from('insurance_issues')
