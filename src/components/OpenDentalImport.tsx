@@ -2,7 +2,7 @@
 // Import Open Dental CSV data (Claims and Patient A/R) into Supabase
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Upload, FileText, CheckCircle, AlertCircle, X, ArrowRight } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, X, ArrowRight, Trash2 } from 'lucide-react';
 
 interface OpenDentalImportProps {
   isDayMode: boolean;
@@ -23,9 +23,9 @@ interface ClaimRow {
 }
 
 interface PatientARRow {
-  patient_name: string; patient_id: null; patient_contact: null;
+  patient_name: string; patient_id: null;
   dos: string; original_balance: number; current_balance: number;
-  status: 'active'; created_by: string; updated_by: string; ar_notes: string;
+  created_by: string; updated_by: string; ar_notes: string;
 }
 
 // --- Helpers ---
@@ -50,6 +50,21 @@ function parseAmount(v: string): number {
   return isNaN(n) ? 0 : n;
 }
 const splitTSV = (line: string) => line.split('\t').map(v => v.trim());
+
+function calculateAgingDays(dateStr: string): number {
+  if (!dateStr) return 0;
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return 0;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+function calculateAgingStatus(days: number): string {
+  if (days <= 30) return '0-30 Days';
+  if (days <= 60) return '31-60 Days';
+  if (days <= 90) return '61-90 Days';
+  if (days <= 120) return '91-120 Days';
+  return '121+ Days';
+}
 
 const CLAIMS_MAP = [
   { from: 'Carrier', to: 'insurance_company' }, { from: 'Phone', to: 'carrier_phone' },
@@ -80,6 +95,34 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
   const [allARData, setAllARData] = useState<PatientARRow[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState<'claims' | 'patient_ar' | null>(null);
+  const [clearing, setClearing] = useState(false);
+
+  // --- Clear Data ---
+  const handleClearData = async (table: 'claims' | 'patient_ar') => {
+    setClearing(true);
+    try {
+      // Delete all records from the specified table
+      // Supabase requires a filter for delete, so we use a condition that matches all rows
+      if (table === 'claims') {
+        const { error } = await supabase.from('claims').delete().gte('created_at', '1970-01-01');
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('patient_ar').delete().gte('created_at', '1970-01-01');
+        if (error) throw error;
+      }
+      setShowClearConfirm(null);
+      setSuccessMsg(`All ${table === 'claims' ? 'claims' : 'patient A/R records'} have been cleared.`);
+      setStatus('success');
+      onImportComplete?.();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : `Failed to clear ${table} data.`);
+      setStatus('error');
+      setShowClearConfirm(null);
+    } finally {
+      setClearing(false);
+    }
+  };
 
   // Style helpers
   const d = isDayMode;
@@ -157,6 +200,8 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
           const n = `Status date: ${dStat}`;
           notes = notes ? `${notes}; ${n}` : n;
         }
+        const agingSource = dosF || sentF;
+        const agingDays = calculateAgingDays(agingSource);
         rows.push({
           insurance_company: c[ci], carrier_phone: phi >= 0 ? c[phi] || null : null,
           pri_sec: (ti >= 0 && c[ti]?.trim().toLowerCase() === 'sec') ? 'Secondary' : 'Primary',
@@ -164,7 +209,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
           date_of_service: dosF, date_submitted: sentF, date_sent_orig: origF || null,
           status: mapTrackStatus(tsi >= 0 ? c[tsi] || '' : ''), notes, claim_amount: amt,
           patient_id: '', claim_number: null, procedure_code: '', claim_detail: '',
-          follow_up_date: sentF, completed_by: '', aging_days: 0, archived: false,
+          follow_up_date: sentF, completed_by: '', aging_days: agingDays, archived: false,
           collected: 0, outstanding: amt,
         });
       }
@@ -221,9 +266,9 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
         if (lpi >= 0 && c[lpi]?.trim() && c[lpi].trim() !== '-') np.push(`Last Pay: ${c[lpi].trim()}`);
 
         rows.push({
-          patient_name: guar, patient_id: null, patient_contact: null,
+          patient_name: guar, patient_id: null,
           dos: today, original_balance: total, current_balance: total,
-          status: 'active', created_by: 'Open Dental Import', updated_by: 'Open Dental Import',
+          created_by: 'Open Dental Import', updated_by: 'Open Dental Import',
           ar_notes: np.join(' | '),
         });
       }
@@ -250,18 +295,25 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
 
   const importClaims = async () => {
     const BS = 50, total = allClaimsData.length;
+    const today = new Date().toISOString().split('T')[0];
     for (let i = 0; i < total; i += BS) {
-      const batch = allClaimsData.slice(i, i + BS).map(r => ({
-        patient_id: r.patient_id, patient_name: r.patient_name,
-        insurance_company: r.insurance_company, carrier_phone: r.carrier_phone,
-        claim_number: r.claim_number, procedure_code: r.procedure_code,
-        claim_detail: r.claim_detail, claim_amount: r.claim_amount, status: r.status,
-        date_submitted: r.date_submitted || null, date_of_service: r.date_of_service || null,
-        follow_up_date: r.follow_up_date || null, date_sent_orig: r.date_sent_orig,
-        created_by: r.created_by, completed_by: r.completed_by, notes: r.notes,
-        aging_days: r.aging_days, archived: r.archived, collected: r.collected,
-        outstanding: r.outstanding, pri_sec: r.pri_sec,
-      }));
+      const batch = allClaimsData.slice(i, i + BS).map(r => {
+        const dos = r.date_of_service || today;
+        const submitted = r.date_submitted || dos;
+        const agingDays = calculateAgingDays(dos);
+        return {
+          patient_id: r.patient_id, patient_name: r.patient_name,
+          insurance_company: r.insurance_company, carrier_phone: r.carrier_phone,
+          claim_number: r.claim_number, procedure_code: r.procedure_code,
+          claim_detail: r.claim_detail, claim_amount: r.claim_amount, status: r.status,
+          date_submitted: submitted, date_of_service: dos,
+          follow_up_date: r.follow_up_date || submitted, date_sent_orig: r.date_sent_orig,
+          created_by: r.created_by, completed_by: r.completed_by, notes: r.notes,
+          aging_days: agingDays, archived: r.archived, collected: r.collected,
+          outstanding: r.outstanding, pri_sec: r.pri_sec,
+          aging_status: calculateAgingStatus(agingDays),
+        };
+      });
       const { error } = await supabase.from('claims').insert(batch);
       if (error) throw new Error(`Batch ${Math.floor(i / BS) + 1} error: ${error.message}`);
       setProgress(Math.min(100, Math.round(((i + batch.length) / total) * 100)));
@@ -272,9 +324,11 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
     const BS = 50, total = allARData.length;
     for (let i = 0; i < total; i += BS) {
       const batch = allARData.slice(i, i + BS).map(r => ({
-        patient_name: r.patient_name, patient_id: r.patient_id, patient_contact: r.patient_contact,
+        patient_name: r.patient_name, patient_id: r.patient_id,
         dos: r.dos, original_balance: r.original_balance, current_balance: r.current_balance,
-        status: r.status, created_by: r.created_by, updated_by: r.updated_by,
+        status: 'not_started' as const, created_by: r.created_by, updated_by: r.updated_by,
+        is_collectible: true, collected_amount: 0,
+        background_notes: r.ar_notes || null,
       }));
       const { error } = await supabase.from('patient_ar').insert(batch);
       if (error) throw new Error(`Batch ${Math.floor(i / BS) + 1} error: ${error.message}`);
@@ -337,6 +391,50 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
             ))}
           </div>
         </div>
+
+        {/* Clear Data Section */}
+        {(status === 'idle' || status === 'error') && !showClearConfirm && (
+          <div className={`rounded-lg p-4 ${d ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
+            <h3 className={`text-sm font-semibold mb-2 flex items-center gap-2 ${d ? 'text-amber-900' : 'text-amber-300'}`}>
+              <Trash2 className="w-4 h-4" /> Clear Existing Data (Fresh Start)
+            </h3>
+            <p className={`text-xs mb-3 ${d ? 'text-amber-700' : 'text-amber-400'}`}>
+              Clear all existing records before importing new data. This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowClearConfirm('claims')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  d ? 'border-red-300 text-red-700 hover:bg-red-50' : 'border-red-700 text-red-400 hover:bg-red-900/30'}`}>
+                Clear All Claims
+              </button>
+              <button onClick={() => setShowClearConfirm('patient_ar')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  d ? 'border-red-300 text-red-700 hover:bg-red-50' : 'border-red-700 text-red-400 hover:bg-red-900/30'}`}>
+                Clear All Patient A/R
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Clear Confirmation */}
+        {showClearConfirm && (
+          <div className={`rounded-lg p-4 ${d ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
+            <p className={`text-sm font-semibold mb-3 ${d ? 'text-red-800' : 'text-red-300'}`}>
+              Are you sure you want to delete ALL {showClearConfirm === 'claims' ? 'claims' : 'patient A/R records'}? This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => handleClearData(showClearConfirm)} disabled={clearing}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+                {clearing ? 'Clearing...' : 'Yes, Delete All'}
+              </button>
+              <button onClick={() => setShowClearConfirm(null)} disabled={clearing}
+                className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                  d ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-gray-600 text-gray-300 hover:bg-gray-700'}`}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* File Upload Area */}
         {(status === 'idle' || status === 'error') && (
