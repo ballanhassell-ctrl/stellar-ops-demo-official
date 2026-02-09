@@ -50,7 +50,6 @@ const ISSUE_TYPE_MAP: Record<string, InsuranceIssueType> = {
   'oral cavity code required': 'Oral Cavity Code Required by Carrier',
   'needs narrative': 'Needs Narrative',
   'need provider change': 'Need Provider Change',
-  'need provider change': 'Need Provider Change',
   'invalid tooth/surface code': 'Invalid Tooth/Surface Code',
   'invalid tooth/surface code for carrier': 'Invalid Tooth/Surface Code',
   'invalid tooth surface': 'Invalid Tooth/Surface Code',
