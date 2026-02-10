@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS patient_ar (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
   -- Patient Information
-  patient_id UUID,
+  patient_id TEXT,
   patient_name VARCHAR(255) NOT NULL,
   patient_contact VARCHAR(255),
 
@@ -469,44 +469,44 @@ ALTER TABLE patient_payment_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE write_off_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE write_off_suggestions ENABLE ROW LEVEL SECURITY;
 
--- Policies: Allow all authenticated users to view and manage
-CREATE POLICY "Allow authenticated users to view patient_ar"
-  ON patient_ar FOR SELECT TO authenticated USING (true);
+-- Policies: Allow all users (authenticated and anon) to view and manage
+CREATE POLICY "Allow all users to view patient_ar"
+  ON patient_ar FOR SELECT TO authenticated, anon USING (true);
 
-CREATE POLICY "Allow authenticated users to insert patient_ar"
-  ON patient_ar FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Allow all users to insert patient_ar"
+  ON patient_ar FOR INSERT TO authenticated, anon WITH CHECK (true);
 
-CREATE POLICY "Allow authenticated users to update patient_ar"
-  ON patient_ar FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Allow all users to update patient_ar"
+  ON patient_ar FOR UPDATE TO authenticated, anon USING (true);
 
-CREATE POLICY "Allow authenticated users to delete patient_ar"
-  ON patient_ar FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Allow all users to delete patient_ar"
+  ON patient_ar FOR DELETE TO authenticated, anon USING (true);
 
 -- Contacts policies
-CREATE POLICY "Allow authenticated users to manage contacts"
-  ON patient_ar_contacts FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow all users to manage contacts"
+  ON patient_ar_contacts FOR ALL TO authenticated, anon USING (true);
 
 -- Payments policies
-CREATE POLICY "Allow authenticated users to manage payments"
-  ON patient_ar_payments FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow all users to manage payments"
+  ON patient_ar_payments FOR ALL TO authenticated, anon USING (true);
 
 -- Payment plans policies
-CREATE POLICY "Allow authenticated users to manage payment_plans"
-  ON patient_payment_plans FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow all users to manage payment_plans"
+  ON patient_payment_plans FOR ALL TO authenticated, anon USING (true);
 
 -- Write-off rules policies
-CREATE POLICY "Allow authenticated users to view write_off_rules"
-  ON write_off_rules FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow all users to view write_off_rules"
+  ON write_off_rules FOR SELECT TO authenticated, anon USING (true);
 
-CREATE POLICY "Allow authenticated users to manage write_off_rules"
-  ON write_off_rules FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow all users to manage write_off_rules"
+  ON write_off_rules FOR ALL TO authenticated, anon USING (true);
 
 -- Write-off suggestions policies
-CREATE POLICY "Allow authenticated users to view write_off_suggestions"
-  ON write_off_suggestions FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow all users to view write_off_suggestions"
+  ON write_off_suggestions FOR SELECT TO authenticated, anon USING (true);
 
-CREATE POLICY "Allow authenticated users to manage write_off_suggestions"
-  ON write_off_suggestions FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow all users to manage write_off_suggestions"
+  ON write_off_suggestions FOR ALL TO authenticated, anon USING (true);
 
 -- =====================================================
 -- DEFAULT DATA: Write-Off Rules
