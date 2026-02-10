@@ -120,12 +120,12 @@ ALTER TABLE insurance_checks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE insurance_checks_audit_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE insurance_check_updates ENABLE ROW LEVEL SECURITY;
 
--- Create policies (allow all operations for authenticated users)
-CREATE POLICY "Enable all operations for authenticated users" ON insurance_checks
-  FOR ALL USING (true) WITH CHECK (true);
+-- Create policies (allow all operations for authenticated and anon users)
+CREATE POLICY "Enable all operations for all users" ON insurance_checks
+  FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
-CREATE POLICY "Enable all operations for authenticated users" ON insurance_checks_audit_history
-  FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all operations for all users" ON insurance_checks_audit_history
+  FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
-CREATE POLICY "Enable all operations for authenticated users" ON insurance_check_updates
-  FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all operations for all users" ON insurance_check_updates
+  FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
