@@ -157,6 +157,98 @@ export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6):
 }
 
 /**
+ * Gets monthly new-patient totals for the last N months using eod_mtd_new_patients
+ * as the authoritative source. For each month, fetches the latest MTD value
+ * recorded within that month (the highest as_of_date entry).
+ * Falls back to monthly_metric_trends if no MTD data exists for a month.
+ */
+export async function getMonthlyNewPatientMTD(numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number; goal: number }>> {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    return sampleMonthlyNewPatients.slice(-numMonths);
+  }
+
+  try {
+    const now = new Date();
+    const results: Array<{ month: string; year: number; count: number; goal: number }> = [];
+
+    // Build month ranges (oldest to newest)
+    const monthRanges: Array<{ year: number; month: number; monthStart: string; monthEnd: string; monthName: string }> = [];
+    for (let i = numMonths - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth(); // 0-indexed
+      const monthStart = date.toISOString().split('T')[0];
+      const lastDay = new Date(year, month + 1, 0);
+      // For current month, cap at today
+      const effectiveEnd = (year === now.getFullYear() && month === now.getMonth())
+        ? now
+        : lastDay;
+      const monthEnd = effectiveEnd.toISOString().split('T')[0];
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      monthRanges.push({ year, month: month + 1, monthStart, monthEnd, monthName });
+    }
+
+    console.log('[getMonthlyNewPatientMTD] Fetching MTD values for months:', monthRanges.map(m => m.monthName));
+
+    // Fetch the latest eod_mtd_new_patients for each month in parallel
+    const mtdQueries = monthRanges.map(range =>
+      supabase
+        .from('csd_metric_values')
+        .select('value, as_of_date')
+        .eq('field_key', 'eod_mtd_new_patients')
+        .gte('as_of_date', range.monthStart)
+        .lte('as_of_date', range.monthEnd)
+        .order('as_of_date', { ascending: false })
+        .limit(1)
+    );
+
+    // Also fetch monthly_metric_trends as fallback source
+    const trendsFallback = supabase
+      .from('monthly_metric_trends')
+      .select('year, month, month_name, value, goal_value')
+      .eq('field_key', 'eod_new_patients')
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(numMonths);
+
+    const [trendsResult, ...mtdResults] = await Promise.all([trendsFallback, ...mtdQueries]);
+
+    // Build a lookup from monthly_metric_trends for fallback
+    const trendsMap = new Map<string, number>();
+    if (trendsResult?.data) {
+      trendsResult.data.forEach((record: any) => {
+        trendsMap.set(`${record.year}-${record.month}`, record.value || 0);
+      });
+    }
+
+    // For each month, prefer the MTD value, then fall back to monthly_metric_trends
+    monthRanges.forEach((range, index) => {
+      const mtdResult = mtdResults[index];
+      const mtdValue = mtdResult?.data?.[0]?.value;
+      const hasMTD = mtdValue != null && mtdValue > 0;
+      const trendValue = trendsMap.get(`${range.year}-${range.month}`) ?? 0;
+
+      const count = hasMTD ? mtdValue : trendValue;
+
+      results.push({
+        month: range.monthName,
+        year: range.year,
+        count,
+        goal: 40
+      });
+
+      console.log(`[getMonthlyNewPatientMTD] ${range.monthName}: MTD=${mtdValue ?? 'none'}, trend=${trendValue}, using=${count}`);
+    });
+
+    return results;
+  } catch (err) {
+    console.error('Error in getMonthlyNewPatientMTD:', err);
+    return [];
+  }
+}
+
+/**
  * Updates or inserts a monthly trend record
  */
 export async function upsertMonthlyTrend(
