@@ -58,8 +58,10 @@ CREATE INDEX IF NOT EXISTS idx_pre_auths_aging_days ON pre_auths(aging_days);
 ALTER TABLE claims DROP CONSTRAINT IF EXISTS claims_status_check;
 
 -- Add updated status check constraint with all possible statuses
+-- Phase 1 (Submission pipeline) + Phase 2 (A/R follow-up pipeline)
 ALTER TABLE claims ADD CONSTRAINT claims_status_check
   CHECK (status IN (
+    -- Phase 1: Submission pipeline
     'Pending',
     'Sent',
     'Entered',
@@ -68,7 +70,20 @@ ALTER TABLE claims ADD CONSTRAINT claims_status_check
     'In Review/2nd Appeal',
     'Resubmitted with Attachments',
     'Resubmitted/1st Appeal',
-    'Denied/2nd Appeal'
+    'Denied/2nd Appeal',
+    -- Phase 2: A/R follow-up pipeline
+    'Pending Review',
+    'Resubmitted - 1st',
+    'Resubmitted - 2nd',
+    'Final Review',
+    'Consultant Review',
+    'Closed/Paid',
+    'Closed/Unpaid',
+    'Appeal Filed',
+    'Waiting for Info',
+    'Lori Review',
+    'Paid/Check or EFT Pending',
+    'SEE NOTES'
   ));
 
 -- Drop old status check constraint on pre_auths
