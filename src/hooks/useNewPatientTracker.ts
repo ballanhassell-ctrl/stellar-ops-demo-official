@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getNewPatientsByMonth, getNewPatientsAggregates, getMonthlyTrends, type NPAggregateResult } from '../services/metrics';
+import { getNewPatientsAggregates, getMonthlyNewPatientMTD, type NPAggregateResult } from '../services/metrics';
 
 export interface NewPatientTrackerData {
   perDay: number;
@@ -52,21 +52,10 @@ export const useNewPatientTracker = (dailyCount: number) => {
       console.log('[NP Tracker] Fetching new patient data...');
       console.log('[NP Tracker] Daily count passed to hook:', dailyCount);
 
-      // Try to fetch from monthly_metric_trends table first (faster)
-      let monthlyData = await getMonthlyTrends('eod_new_patients', 6);
-      console.log('[NP Tracker] Monthly trends data length:', monthlyData?.length);
-
-      // If monthly trends table doesn't have data, fall back to daily aggregation
-      if (monthlyData.length === 0) {
-        console.log('[NP Tracker] No data in monthly_metric_trends, aggregating from daily values');
-        const dailyMonthlyData = await getNewPatientsByMonth(6);
-        monthlyData = dailyMonthlyData.map(m => ({
-          month: m.month,
-          year: m.year,
-          count: m.count,
-          goal: 40
-        }));
-      }
+      // Fetch monthly totals from eod_mtd_new_patients (authoritative MTD source)
+      // Falls back to monthly_metric_trends internally if no MTD data for a month
+      let monthlyData = await getMonthlyNewPatientMTD(6);
+      console.log('[NP Tracker] Monthly MTD data length:', monthlyData?.length);
 
       // If still no data, use sample fallback so the chart isn't empty
       if (monthlyData.length === 0) {
