@@ -479,6 +479,12 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
           .limit(1);
       });
 
+    // All months we need for quarterly calculations (for fallback lookup)
+    const allQuarterMonths = [
+      ...priorMonthsInCurrentQuarter.map(m => ({ month: m, year: today.getFullYear() })),
+      ...priorQ.months.map(m => ({ month: m, year: priorQ.year })),
+    ];
+
     // Build MTD queries for prior months in current quarter
     const priorMonthMTDQueries = buildMTDQueriesForMonths(priorMonthsInCurrentQuarter, today.getFullYear());
     // Build MTD queries for all 3 months of the prior quarter
@@ -487,6 +493,7 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
     const [
       mtdCurrentMonth,
       weekDailyData,
+      trendsFallback,
       ...quarterMTDResults
     ] = await Promise.all([
       // Latest eod_mtd_new_patients for the current month (authoritative MTD total)
@@ -509,6 +516,15 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
             .lte('as_of_date', fridayStr)
         : Promise.resolve({ data: [], error: null }),
 
+      // Fallback: monthly_metric_trends for all quarterly months (used when eod_mtd_new_patients is missing)
+      allQuarterMonths.length > 0
+        ? supabase
+            .from('monthly_metric_trends')
+            .select('value, month, year, month_name')
+            .eq('field_key', 'eod_new_patients')
+            .or(allQuarterMonths.map(m => `and(year.eq.${m.year},month.eq.${m.month})`).join(','))
+        : Promise.resolve({ data: [], error: null }),
+
       // Prior months in current quarter (eod_mtd_new_patients per month)
       ...priorMonthMTDQueries,
 
@@ -520,12 +536,27 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
     const priorMonthMTDResults = quarterMTDResults.slice(0, priorMonthMTDQueries.length);
     const priorQuarterMTDResults = quarterMTDResults.slice(priorMonthMTDQueries.length);
 
+    // Build fallback lookup from monthly_metric_trends
+    const trendsMap = new Map<string, number>();
+    if (trendsFallback?.data) {
+      trendsFallback.data.forEach((record: any) => {
+        trendsMap.set(`${record.year}-${record.month}`, record.value || 0);
+      });
+    }
+
     const sumValues = (result: any) =>
       result?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
 
-    // Helper: sum latest MTD values from an array of single-row query results
-    const sumMTDResults = (results: any[]) =>
-      results.reduce((total, r) => total + (r?.data?.[0]?.value ?? 0), 0);
+    // Helper: for an array of MTD query results + corresponding month info,
+    // use MTD value if available, otherwise fall back to monthly_metric_trends
+    const sumWithFallback = (results: any[], months: number[], year: number) =>
+      results.reduce((total, r, i) => {
+        const mtdVal = r?.data?.[0]?.value;
+        if (mtdVal != null && mtdVal > 0) return total + mtdVal;
+        // Fallback to monthly_metric_trends
+        const trendVal = trendsMap.get(`${year}-${months[i]}`) ?? 0;
+        return total + trendVal;
+      }, 0);
 
     // ========== PER MONTH ==========
     // ONLY use eod_mtd_new_patients. No daily-sum fallback.
@@ -569,27 +600,32 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
     });
 
     // ========== QUARTERLY ==========
-    // Current quarter running total = prior completed months in quarter (MTD) + current month MTD
-    // Prior quarter = sum of latest eod_mtd_new_patients for each of its 3 months
-    const priorMonthsTotal = sumMTDResults(priorMonthMTDResults);
+    // Current quarter running total = prior completed months in quarter + current month MTD
+    // Each month: try eod_mtd_new_patients first, fall back to monthly_metric_trends
+    const priorMonthsTotal = sumWithFallback(priorMonthMTDResults, priorMonthsInCurrentQuarter, today.getFullYear());
     const currentMonthMTD = perMonth ?? 0;
     const quarterly = priorMonthsTotal + currentMonthMTD;
     const quarterlyStatus = (priorMonthsTotal === 0 && currentMonthMTD === 0) ? 'Not calculated' : '';
 
-    const priorQuarterly = sumMTDResults(priorQuarterMTDResults);
-    const hasPriorQuarterData = priorQuarterMTDResults.some((r: any) => r?.data?.[0]?.value > 0);
+    // Prior quarter: same fallback logic
+    const priorQuarterly = sumWithFallback(priorQuarterMTDResults, priorQ.months, priorQ.year);
+    const hasPriorQuarterData = priorQuarterly > 0;
 
     console.log('[getNewPatientsAggregates] quarterly:', {
       priorMonthsInQuarter: priorMonthsTotal,
-      priorMonthDetails: priorMonthsInCurrentQuarter.map((m, i) => ({
-        month: m, value: priorMonthMTDResults[i]?.data?.[0]?.value ?? 0
-      })),
+      priorMonthDetails: priorMonthsInCurrentQuarter.map((m, i) => {
+        const mtdVal = priorMonthMTDResults[i]?.data?.[0]?.value;
+        const trendVal = trendsMap.get(`${today.getFullYear()}-${m}`) ?? 0;
+        return { month: m, mtd: mtdVal ?? 'none', trend: trendVal, used: (mtdVal != null && mtdVal > 0) ? mtdVal : trendVal };
+      }),
       currentMonthMTD,
       currentQuarterTotal: quarterly,
       priorQuarterTotal: priorQuarterly,
-      priorQuarterDetails: priorQ.months.map((m: number, i: number) => ({
-        month: m, value: priorQuarterMTDResults[i]?.data?.[0]?.value ?? 0
-      }))
+      priorQuarterDetails: priorQ.months.map((m: number, i: number) => {
+        const mtdVal = priorQuarterMTDResults[i]?.data?.[0]?.value;
+        const trendVal = trendsMap.get(`${priorQ.year}-${m}`) ?? 0;
+        return { month: m, mtd: mtdVal ?? 'none', trend: trendVal, used: (mtdVal != null && mtdVal > 0) ? mtdVal : trendVal };
+      })
     });
 
     return {
