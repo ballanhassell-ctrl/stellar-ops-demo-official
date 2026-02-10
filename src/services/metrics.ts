@@ -259,16 +259,72 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
   }
 }
 
+// Quarter helper: returns label, date range, and 1-indexed month numbers
+function getQuarterInfo(year: number, quarterNum: number) {
+  const quarterNames = ['Q1', 'Q2', 'Q3', 'Q4'];
+  const quarterStartMonths = [0, 3, 6, 9]; // 0-indexed
+  const startMonth = quarterStartMonths[quarterNum - 1];
+  const startDate = new Date(year, startMonth, 1);
+  const endDate = new Date(year, startMonth + 3, 0); // last day of quarter
+  const startStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return {
+    label: `${quarterNames[quarterNum - 1]} ${year}`,
+    dateRange: `${startStr} - ${endStr}`,
+    months: [startMonth + 1, startMonth + 2, startMonth + 3], // 1-indexed for DB
+    quarterNum,
+    year
+  };
+}
+
+export interface NPAggregateResult {
+  perMonth: number | null;
+  perMonthStatus: string; // '' | 'Not calculated'
+  perWeek: number | null;
+  perWeekStatus: string;  // '' | 'Calculated at end of week' | 'Not calculated'
+  quarterly: number | null;
+  quarterlyStatus: string; // '' | 'Not calculated'
+  quarterlyLabel: string;        // e.g. "Q1 2026"
+  quarterlyDateRange: string;    // e.g. "Jan 1 - Mar 31"
+  priorQuarterly: number | null;
+  priorQuarterlyLabel: string;   // e.g. "Q4 2025"
+  priorQuarterlyDateRange: string;
+}
+
 /**
- * Aggregates new patient counts for various time periods
- * Uses eod_mtd_new_patients as the authoritative monthly total (entered via spreadsheet)
- * Falls back to summing daily eod_new_patients entries if MTD data is unavailable
- * Quarterly calculation uses current month MTD + prior months from monthly_metric_trends
+ * Aggregates new patient counts for various time periods.
+ *
+ * Per Month:  Always uses eod_mtd_new_patients. No daily-sum fallback.
+ *             Shows "Not calculated" if no MTD data exists.
+ *
+ * Per Week:   Mon-Thu → status "Calculated at end of week" (no value).
+ *             Fri-Sun → sums eod_new_patients for Mon-Fri of current business week.
+ *             If no daily entries exist by Friday → "Not calculated".
+ *
+ * Quarterly:  Current quarter running total = prior completed months (monthly_metric_trends)
+ *             + current month (eod_mtd_new_patients).
+ *             Also returns the prior completed quarter total with clear label.
  */
-export async function getNewPatientsAggregates() {
+export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
   // Return static sample data if in static mode
   if (isStaticDataMode()) {
-    return sampleNewPatientAggregates;
+    const today = new Date();
+    const currentQuarterNum = Math.floor(today.getMonth() / 3) + 1;
+    const currentQ = getQuarterInfo(today.getFullYear(), currentQuarterNum);
+    const priorQNum = currentQuarterNum === 1 ? 4 : currentQuarterNum - 1;
+    const priorQYear = currentQuarterNum === 1 ? today.getFullYear() - 1 : today.getFullYear();
+    const priorQ = getQuarterInfo(priorQYear, priorQNum);
+    return {
+      ...sampleNewPatientAggregates,
+      perMonthStatus: '',
+      perWeekStatus: '',
+      quarterlyStatus: '',
+      quarterlyLabel: currentQ.label,
+      quarterlyDateRange: currentQ.dateRange,
+      priorQuarterly: sampleNewPatientAggregates.quarterly,
+      priorQuarterlyLabel: priorQ.label,
+      priorQuarterlyDateRange: priorQ.dateRange,
+    };
   }
 
   try {
@@ -276,37 +332,49 @@ export async function getNewPatientsAggregates() {
 
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon ... 5=Fri, 6=Sat
 
-    // Calculate date ranges
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-
+    // --- Date ranges ---
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartStr = monthStart.toISOString().split('T')[0];
 
-    // Calculate current calendar quarter (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec)
+    // Current business week (Mon-Fri)
+    // getDay(): 0=Sun,1=Mon..6=Sat  →  daysFromMonday: Mon=0..Sun=6
+    const daysFromMonday = (dayOfWeek + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysFromMonday);
+    const mondayStr = monday.toISOString().split('T')[0];
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+    const fridayStr = friday.toISOString().split('T')[0];
+
+    // --- Quarter info ---
     const currentMonth = today.getMonth(); // 0-11
-    const quarterStartMonth = Math.floor(currentMonth / 3) * 3; // 0, 3, 6, or 9
+    const currentQuarterNum = Math.floor(currentMonth / 3) + 1;
+    const currentQ = getQuarterInfo(today.getFullYear(), currentQuarterNum);
 
-    // Get the months in the current quarter (1-indexed for DB)
-    const quarterMonths = [quarterStartMonth + 1, quarterStartMonth + 2, quarterStartMonth + 3];
-    // Prior months in the quarter (excluding current month, 1-indexed)
-    const priorQuarterMonths = quarterMonths.filter(m => m < currentMonth + 1);
+    // Prior quarter
+    const priorQNum = currentQuarterNum === 1 ? 4 : currentQuarterNum - 1;
+    const priorQYear = currentQuarterNum === 1 ? today.getFullYear() - 1 : today.getFullYear();
+    const priorQ = getQuarterInfo(priorQYear, priorQNum);
 
-    console.log('[getNewPatientsAggregates] Calendar quarter:', {
-      quarter: `Q${Math.floor(currentMonth / 3) + 1}`,
-      months: quarterMonths,
-      currentMonth: currentMonth + 1,
-      priorMonthsInQuarter: priorQuarterMonths
+    // Prior months in the CURRENT quarter (excluding current month, 1-indexed)
+    const priorMonthsInCurrentQuarter = currentQ.months.filter(m => m < currentMonth + 1);
+
+    console.log('[getNewPatientsAggregates] Quarter info:', {
+      current: currentQ.label, currentMonths: currentQ.months,
+      prior: priorQ.label, priorMonths: priorQ.months,
+      priorMonthsInCurrentQuarter,
+      dayOfWeek, daysFromMonday, mondayStr, fridayStr
     });
 
-    // Fetch data from multiple sources in parallel
+    // --- Fetch all data in parallel ---
+    const isFriOrLater = dayOfWeek >= 5 || dayOfWeek === 0; // Fri=5, Sat=6, Sun=0
+
     const [
       mtdCurrentMonth,
-      mtdSevenDaysAgo,
       weekDailyData,
-      monthDailyData,
+      priorMonthsCurrentQuarterData,
       priorQuarterMonthlyData
     ] = await Promise.all([
       // Latest eod_mtd_new_patients for the current month (authoritative MTD total)
@@ -319,142 +387,136 @@ export async function getNewPatientsAggregates() {
         .order('as_of_date', { ascending: false })
         .limit(1),
 
-      // eod_mtd_new_patients from around 7 days ago (for weekly delta calculation)
-      supabase
-        .from('csd_metric_values')
-        .select('value, as_of_date')
-        .eq('field_key', 'eod_mtd_new_patients')
-        .lte('as_of_date', sevenDaysAgoStr)
-        .order('as_of_date', { ascending: false })
-        .limit(1),
+      // Daily eod_new_patients for Mon-Fri of this business week (only needed Fri-Sun)
+      isFriOrLater
+        ? supabase
+            .from('csd_metric_values')
+            .select('value, as_of_date')
+            .eq('field_key', 'eod_new_patients')
+            .gte('as_of_date', mondayStr)
+            .lte('as_of_date', fridayStr)
+        : Promise.resolve({ data: [], error: null }),
 
-      // Daily eod_new_patients for the last 7 days (fallback for weekly)
-      supabase
-        .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', sevenDaysAgoStr)
-        .lte('as_of_date', todayStr),
-
-      // Daily eod_new_patients for the current month (fallback for monthly)
-      supabase
-        .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', monthStartStr)
-        .lte('as_of_date', todayStr),
-
-      // Prior months in the current quarter from monthly_metric_trends
-      priorQuarterMonths.length > 0
+      // Prior completed months in the current quarter from monthly_metric_trends
+      priorMonthsInCurrentQuarter.length > 0
         ? supabase
             .from('monthly_metric_trends')
             .select('value, month, year, month_name')
             .eq('field_key', 'eod_new_patients')
             .eq('year', today.getFullYear())
-            .in('month', priorQuarterMonths)
+            .in('month', priorMonthsInCurrentQuarter)
         : Promise.resolve({ data: [], error: null }),
+
+      // All 3 months of the PRIOR quarter from monthly_metric_trends
+      supabase
+        .from('monthly_metric_trends')
+        .select('value, month, year, month_name')
+        .eq('field_key', 'eod_new_patients')
+        .eq('year', priorQ.year)
+        .in('month', priorQ.months),
     ]);
 
-    // Helper to sum values from a query result
-    const sumValues = (result: any) => {
-      return result?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
-    };
+    const sumValues = (result: any) =>
+      result?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
 
-    // --- Per Month ---
-    // Use eod_mtd_new_patients as the authoritative source for monthly totals
-    // Fall back to summing daily eod_new_patients entries
+    // ========== PER MONTH ==========
+    // ONLY use eod_mtd_new_patients. No daily-sum fallback.
     const latestMTDValue = mtdCurrentMonth?.data?.[0]?.value;
-    const perMonth = (latestMTDValue != null && latestMTDValue > 0)
-      ? latestMTDValue
-      : sumValues(monthDailyData);
+    const hasMTD = latestMTDValue != null && latestMTDValue > 0;
+    const perMonth = hasMTD ? latestMTDValue : null;
+    const perMonthStatus = hasMTD ? '' : 'Not calculated';
 
-    console.log('[getNewPatientsAggregates] perMonth calculation:', {
+    console.log('[getNewPatientsAggregates] perMonth:', {
       mtdValue: latestMTDValue,
       mtdDate: mtdCurrentMonth?.data?.[0]?.as_of_date,
-      dailySum: sumValues(monthDailyData),
-      usedMTD: latestMTDValue != null && latestMTDValue > 0,
-      finalPerMonth: perMonth
+      final: perMonth, status: perMonthStatus
     });
 
-    // --- Per Week ---
-    // Strategy: compute from MTD differences when possible (more accurate when daily entries are sparse)
-    // If the latest MTD and a 7-day-ago MTD are both available, weekly = difference
-    // Otherwise fall back to summing daily eod_new_patients for the last 7 days
-    let perWeek: number;
-    const mtdSevenDaysAgoValue = mtdSevenDaysAgo?.data?.[0]?.value;
-    const mtdSevenDaysAgoDate = mtdSevenDaysAgo?.data?.[0]?.as_of_date;
+    // ========== PER WEEK ==========
+    // Mon-Thu: "Calculated at end of week"
+    // Fri/Sat/Sun: sum daily eod_new_patients for Mon-Fri; if none → "Not calculated"
+    let perWeek: number | null = null;
+    let perWeekStatus = '';
 
-    if (latestMTDValue != null && latestMTDValue > 0 && mtdSevenDaysAgoValue != null) {
-      // Check if the 7-day-ago MTD entry is in the same month
-      const sevenDaysAgoEntry = new Date(mtdSevenDaysAgoDate);
-      const sameMonth = sevenDaysAgoEntry.getMonth() === today.getMonth()
-        && sevenDaysAgoEntry.getFullYear() === today.getFullYear();
-
-      if (sameMonth) {
-        // Same month: weekly count = current MTD - MTD from 7 days ago
-        perWeek = latestMTDValue - mtdSevenDaysAgoValue;
-      } else {
-        // Cross-month boundary: current month's MTD is the count since month start
-        // which represents the portion of the week that falls in this month
-        // Add daily entries from the previous month's portion of the 7-day window
-        const prevMonthDailyResult = await supabase
-          .from('csd_metric_values')
-          .select('value')
-          .eq('field_key', 'eod_new_patients')
-          .gte('as_of_date', sevenDaysAgoStr)
-          .lt('as_of_date', monthStartStr);
-
-        const prevMonthPortion = sumValues(prevMonthDailyResult);
-        perWeek = latestMTDValue + prevMonthPortion;
-      }
+    if (!isFriOrLater) {
+      // Monday through Thursday
+      perWeekStatus = 'Calculated at end of week';
     } else {
-      // No MTD data available; fall back to summing daily entries
-      perWeek = sumValues(weekDailyData);
+      // Friday, Saturday, or Sunday — calculate from this week's Mon-Fri dailies
+      const weekSum = sumValues(weekDailyData);
+      const hasWeekData = weekDailyData?.data && weekDailyData.data.length > 0;
+
+      if (hasWeekData && weekSum > 0) {
+        perWeek = weekSum;
+        perWeekStatus = '';
+      } else {
+        perWeekStatus = 'Not calculated';
+      }
     }
 
-    // Ensure perWeek is not negative (safety check)
-    perWeek = Math.max(0, perWeek);
-
-    console.log('[getNewPatientsAggregates] perWeek calculation:', {
-      latestMTD: latestMTDValue,
-      sevenDaysAgoMTD: mtdSevenDaysAgoValue,
-      sevenDaysAgoDate: mtdSevenDaysAgoDate,
-      dailySum: sumValues(weekDailyData),
-      finalPerWeek: perWeek
+    console.log('[getNewPatientsAggregates] perWeek:', {
+      dayOfWeek, isFriOrLater,
+      weekDailyRecords: weekDailyData?.data?.length,
+      final: perWeek, status: perWeekStatus
     });
 
-    // --- Quarterly ---
-    // Sum prior completed months from monthly_metric_trends + current month from MTD
-    const priorMonthsTotal = sumValues(priorQuarterMonthlyData);
-    const quarterly = priorMonthsTotal + perMonth;
+    // ========== QUARTERLY ==========
+    // Current quarter running total = prior completed months in quarter + current month MTD
+    // Prior quarter = sum of all 3 months from monthly_metric_trends
+    const priorMonthsTotal = sumValues(priorMonthsCurrentQuarterData);
+    const currentMonthMTD = perMonth ?? 0;
+    const quarterly = priorMonthsTotal + currentMonthMTD;
+    const quarterlyStatus = (priorMonthsTotal === 0 && currentMonthMTD === 0) ? 'Not calculated' : '';
 
-    console.log('[getNewPatientsAggregates] quarterly calculation:', {
-      priorMonthsTotal,
-      priorMonthDetails: priorQuarterMonthlyData?.data?.map((m: any) => ({
-        month: m.month_name,
-        value: m.value
+    const priorQuarterly = sumValues(priorQuarterMonthlyData);
+    const hasPriorQuarterData = priorQuarterMonthlyData?.data && priorQuarterMonthlyData.data.length > 0;
+
+    console.log('[getNewPatientsAggregates] quarterly:', {
+      priorMonthsInQuarter: priorMonthsTotal,
+      priorMonthDetails: priorMonthsCurrentQuarterData?.data?.map((m: any) => ({
+        month: m.month_name, value: m.value
       })),
-      currentMonthMTD: perMonth,
-      finalQuarterly: quarterly
-    });
-
-    console.log('[getNewPatientsAggregates] Final aggregates:', {
-      perWeek,
-      perMonth,
-      quarterly
+      currentMonthMTD,
+      currentQuarterTotal: quarterly,
+      priorQuarterTotal: priorQuarterly,
+      priorQuarterDetails: priorQuarterMonthlyData?.data?.map((m: any) => ({
+        month: m.month_name, value: m.value
+      }))
     });
 
     return {
-      perWeek,
       perMonth,
-      quarterly
+      perMonthStatus,
+      perWeek,
+      perWeekStatus,
+      quarterly: quarterlyStatus === '' ? quarterly : null,
+      quarterlyStatus,
+      quarterlyLabel: currentQ.label,
+      quarterlyDateRange: currentQ.dateRange,
+      priorQuarterly: hasPriorQuarterData ? priorQuarterly : null,
+      priorQuarterlyLabel: priorQ.label,
+      priorQuarterlyDateRange: priorQ.dateRange,
     };
   } catch (err) {
     console.error('Error in getNewPatientsAggregates:', err);
+    const today = new Date();
+    const currentQuarterNum = Math.floor(today.getMonth() / 3) + 1;
+    const currentQ = getQuarterInfo(today.getFullYear(), currentQuarterNum);
+    const priorQNum = currentQuarterNum === 1 ? 4 : currentQuarterNum - 1;
+    const priorQYear = currentQuarterNum === 1 ? today.getFullYear() - 1 : today.getFullYear();
+    const priorQ = getQuarterInfo(priorQYear, priorQNum);
     return {
-      perWeek: 0,
-      perMonth: 0,
-      quarterly: 0
+      perMonth: null,
+      perMonthStatus: 'Not calculated',
+      perWeek: null,
+      perWeekStatus: 'Not calculated',
+      quarterly: null,
+      quarterlyStatus: 'Not calculated',
+      quarterlyLabel: currentQ.label,
+      quarterlyDateRange: currentQ.dateRange,
+      priorQuarterly: null,
+      priorQuarterlyLabel: priorQ.label,
+      priorQuarterlyDateRange: priorQ.dateRange,
     };
   }
 }

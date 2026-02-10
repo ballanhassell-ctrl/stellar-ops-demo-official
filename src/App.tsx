@@ -1544,7 +1544,7 @@ const CourtStreetRCM = () => {
 
     // New patients from tracker
     newPatientsGoal: newPatientTrackerData?.perMonthGoal ?? 30,
-    newPatientsActual: newPatientTrackerData?.perMonth ?? 0,
+    newPatientsActual: (newPatientTrackerData?.perMonth ?? 0) as number,
 
     // Claim metrics - calculated from claims data
     claimApprovalRate: (() => {
@@ -1562,7 +1562,7 @@ const CourtStreetRCM = () => {
     avgShowRateHygTarget: metricsData?.scorecard?.showRateHygTarget ?? 85,
 
     // New patients per week from tracker
-    avgNewPatientsPerWeek: newPatientTrackerData?.perWeek ?? 0,
+    avgNewPatientsPerWeek: (newPatientTrackerData?.perWeek ?? 0) as number,
 
     // Treatment totals (from Supabase)
     totalTxPresented: metricsData?.scorecard?.totalTxPresented ?? 0,
@@ -1586,7 +1586,7 @@ const CourtStreetRCM = () => {
     avgCollectionRateTarget: 100,
 
     // Monthly totals
-    totalNewPatients: newPatientTrackerData?.perMonth ?? 0,
+    totalNewPatients: (newPatientTrackerData?.perMonth ?? 0) as number,
     fiveStarReviews: metricsData?.scorecard?.fiveStarReviews ?? 0,
 
     // Weekly data - fetched from Supabase
@@ -3134,27 +3134,38 @@ const CourtStreetRCM = () => {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-emerald-700' : 'text-emerald-300'}`}>Per Week</p>
-                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>Last 7 days</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>Business week (Mon-Fri)</p>
                       </div>
                       <div className="p-2 rounded-lg bg-emerald-500/20">
                         <Users className="w-5 h-5 text-emerald-600" />
                       </div>
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        {newPatientTrackerData.perWeek}
-                      </p>
-                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perWeekGoal}</p>
-                    </div>
-                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'}`}>
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perWeek >= newPatientTrackerData.perWeekGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
-                        style={{
-                          width: `${Math.min((newPatientTrackerData.perWeek / newPatientTrackerData.perWeekGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perWeekGoal} per week</p>
+                    {newPatientTrackerData.perWeek != null ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            {newPatientTrackerData.perWeek}
+                          </p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perWeekGoal}</p>
+                        </div>
+                        <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'}`}>
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perWeek >= newPatientTrackerData.perWeekGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
+                            style={{
+                              width: `${Math.min((newPatientTrackerData.perWeek / newPatientTrackerData.perWeekGoal) * 100, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perWeekGoal} per week</p>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-start justify-center min-h-[68px]">
+                        <p className={`text-sm font-medium italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.perWeekStatus}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>Goal: {newPatientTrackerData.perWeekGoal} per week</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -3165,27 +3176,38 @@ const CourtStreetRCM = () => {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>Per Month</p>
-                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>This month</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>MTD (eod_mtd_new_patients)</p>
                       </div>
                       <div className="p-2 rounded-lg bg-purple-500/20">
                         <Users className="w-5 h-5 text-purple-600" />
                       </div>
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        {newPatientTrackerData.perMonth}
-                      </p>
-                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perMonthGoal}</p>
-                    </div>
-                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-purple-100/60' : 'bg-purple-950/40'}`}>
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perMonth >= newPatientTrackerData.perMonthGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`}
-                        style={{
-                          width: `${Math.min((newPatientTrackerData.perMonth / newPatientTrackerData.perMonthGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perMonthGoal} per month</p>
+                    {newPatientTrackerData.perMonth != null ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            {newPatientTrackerData.perMonth}
+                          </p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perMonthGoal}</p>
+                        </div>
+                        <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-purple-100/60' : 'bg-purple-950/40'}`}>
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perMonth >= newPatientTrackerData.perMonthGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`}
+                            style={{
+                              width: `${Math.min((newPatientTrackerData.perMonth / newPatientTrackerData.perMonthGoal) * 100, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perMonthGoal} per month</p>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-start justify-center min-h-[68px]">
+                        <p className={`text-sm font-medium italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.perMonthStatus}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>Goal: {newPatientTrackerData.perMonthGoal} per month</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -3196,27 +3218,54 @@ const CourtStreetRCM = () => {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Quarterly</p>
-                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>This quarter</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>
+                          {newPatientTrackerData.quarterlyLabel} ({newPatientTrackerData.quarterlyDateRange})
+                        </p>
                       </div>
                       <div className="p-2 rounded-lg bg-amber-500/20">
                         <Users className="w-5 h-5 text-amber-600" />
                       </div>
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        {newPatientTrackerData.quarterly}
-                      </p>
-                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.quarterlyGoal}</p>
-                    </div>
-                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-amber-100/60' : 'bg-amber-950/40'}`}>
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}
-                        style={{
-                          width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
+                    {newPatientTrackerData.quarterly != null ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            {newPatientTrackerData.quarterly}
+                          </p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.quarterlyGoal}</p>
+                        </div>
+                        <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-amber-100/60' : 'bg-amber-950/40'}`}>
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}
+                            style={{
+                              width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-start justify-center min-h-[68px]">
+                        <p className={`text-sm font-medium italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.quarterlyStatus}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
+                      </div>
+                    )}
+                    {/* Prior Quarter Reference */}
+                    {newPatientTrackerData.priorQuarterlyLabel && (
+                      <div className={`mt-3 pt-3 border-t ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'}`}>
+                        <p className={`text-xs font-semibold ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>
+                          Prior: {newPatientTrackerData.priorQuarterlyLabel}
+                        </p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.priorQuarterlyDateRange}
+                        </p>
+                        <p className={`text-lg font-bold mt-0.5 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                          {newPatientTrackerData.priorQuarterly != null ? newPatientTrackerData.priorQuarterly : 'N/A'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
