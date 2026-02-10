@@ -393,8 +393,8 @@ export interface NPAggregateResult {
  *             Fri-Sun → sums eod_new_patients for Mon-Fri of current business week.
  *             If no daily entries exist by Friday → "Not calculated".
  *
- * Quarterly:  Current quarter running total = prior completed months (monthly_metric_trends)
- *             + current month (eod_mtd_new_patients).
+ * Quarterly:  Current quarter running total = prior completed months (eod_mtd_new_patients)
+ *             + current month (eod_mtd_new_patients). All months use MTD as source.
  *             Also returns the prior completed quarter total with clear label.
  */
 export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
@@ -463,11 +463,31 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
     // --- Fetch all data in parallel ---
     const isFriOrLater = dayOfWeek >= 5 || dayOfWeek === 0; // Fri=5, Sat=6, Sun=0
 
+    // Helper: build queries to get latest eod_mtd_new_patients for a list of months
+    // Each month gets its own query fetching the latest MTD entry within that month
+    const buildMTDQueriesForMonths = (months: number[], year: number) =>
+      months.map(m => {
+        const mStart = new Date(year, m - 1, 1); // m is 1-indexed
+        const mEnd = new Date(year, m, 0); // last day of month
+        return supabase
+          .from('csd_metric_values')
+          .select('value, as_of_date')
+          .eq('field_key', 'eod_mtd_new_patients')
+          .gte('as_of_date', mStart.toISOString().split('T')[0])
+          .lte('as_of_date', mEnd.toISOString().split('T')[0])
+          .order('as_of_date', { ascending: false })
+          .limit(1);
+      });
+
+    // Build MTD queries for prior months in current quarter
+    const priorMonthMTDQueries = buildMTDQueriesForMonths(priorMonthsInCurrentQuarter, today.getFullYear());
+    // Build MTD queries for all 3 months of the prior quarter
+    const priorQuarterMTDQueries = buildMTDQueriesForMonths(priorQ.months, priorQ.year);
+
     const [
       mtdCurrentMonth,
       weekDailyData,
-      priorMonthsCurrentQuarterData,
-      priorQuarterMonthlyData
+      ...quarterMTDResults
     ] = await Promise.all([
       // Latest eod_mtd_new_patients for the current month (authoritative MTD total)
       supabase
@@ -489,27 +509,23 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
             .lte('as_of_date', fridayStr)
         : Promise.resolve({ data: [], error: null }),
 
-      // Prior completed months in the current quarter from monthly_metric_trends
-      priorMonthsInCurrentQuarter.length > 0
-        ? supabase
-            .from('monthly_metric_trends')
-            .select('value, month, year, month_name')
-            .eq('field_key', 'eod_new_patients')
-            .eq('year', today.getFullYear())
-            .in('month', priorMonthsInCurrentQuarter)
-        : Promise.resolve({ data: [], error: null }),
+      // Prior months in current quarter (eod_mtd_new_patients per month)
+      ...priorMonthMTDQueries,
 
-      // All 3 months of the PRIOR quarter from monthly_metric_trends
-      supabase
-        .from('monthly_metric_trends')
-        .select('value, month, year, month_name')
-        .eq('field_key', 'eod_new_patients')
-        .eq('year', priorQ.year)
-        .in('month', priorQ.months),
+      // All 3 months of the prior quarter (eod_mtd_new_patients per month)
+      ...priorQuarterMTDQueries,
     ]);
+
+    // Split the quarterMTDResults back into current-quarter-prior-months and prior-quarter
+    const priorMonthMTDResults = quarterMTDResults.slice(0, priorMonthMTDQueries.length);
+    const priorQuarterMTDResults = quarterMTDResults.slice(priorMonthMTDQueries.length);
 
     const sumValues = (result: any) =>
       result?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+
+    // Helper: sum latest MTD values from an array of single-row query results
+    const sumMTDResults = (results: any[]) =>
+      results.reduce((total, r) => total + (r?.data?.[0]?.value ?? 0), 0);
 
     // ========== PER MONTH ==========
     // ONLY use eod_mtd_new_patients. No daily-sum fallback.
@@ -553,26 +569,26 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
     });
 
     // ========== QUARTERLY ==========
-    // Current quarter running total = prior completed months in quarter + current month MTD
-    // Prior quarter = sum of all 3 months from monthly_metric_trends
-    const priorMonthsTotal = sumValues(priorMonthsCurrentQuarterData);
+    // Current quarter running total = prior completed months in quarter (MTD) + current month MTD
+    // Prior quarter = sum of latest eod_mtd_new_patients for each of its 3 months
+    const priorMonthsTotal = sumMTDResults(priorMonthMTDResults);
     const currentMonthMTD = perMonth ?? 0;
     const quarterly = priorMonthsTotal + currentMonthMTD;
     const quarterlyStatus = (priorMonthsTotal === 0 && currentMonthMTD === 0) ? 'Not calculated' : '';
 
-    const priorQuarterly = sumValues(priorQuarterMonthlyData);
-    const hasPriorQuarterData = priorQuarterMonthlyData?.data && priorQuarterMonthlyData.data.length > 0;
+    const priorQuarterly = sumMTDResults(priorQuarterMTDResults);
+    const hasPriorQuarterData = priorQuarterMTDResults.some((r: any) => r?.data?.[0]?.value > 0);
 
     console.log('[getNewPatientsAggregates] quarterly:', {
       priorMonthsInQuarter: priorMonthsTotal,
-      priorMonthDetails: priorMonthsCurrentQuarterData?.data?.map((m: any) => ({
-        month: m.month_name, value: m.value
+      priorMonthDetails: priorMonthsInCurrentQuarter.map((m, i) => ({
+        month: m, value: priorMonthMTDResults[i]?.data?.[0]?.value ?? 0
       })),
       currentMonthMTD,
       currentQuarterTotal: quarterly,
       priorQuarterTotal: priorQuarterly,
-      priorQuarterDetails: priorQuarterMonthlyData?.data?.map((m: any) => ({
-        month: m.month_name, value: m.value
+      priorQuarterDetails: priorQ.months.map((m: number, i: number) => ({
+        month: m, value: priorQuarterMTDResults[i]?.data?.[0]?.value ?? 0
       }))
     });
 
