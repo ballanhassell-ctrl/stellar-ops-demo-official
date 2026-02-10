@@ -261,8 +261,9 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
 
 /**
  * Aggregates new patient counts for various time periods
- * AUTO-CALCULATED from daily eod_new_patients values (Phase 2)
- * Quarterly calculation uses monthly_metric_trends for consistency with monthly display
+ * Uses eod_mtd_new_patients as the authoritative monthly total (entered via spreadsheet)
+ * Falls back to summing daily eod_new_patients entries if MTD data is unavailable
+ * Quarterly calculation uses current month MTD + prior months from monthly_metric_trends
  */
 export async function getNewPatientsAggregates() {
   // Return static sample data if in static mode
@@ -271,120 +272,177 @@ export async function getNewPatientsAggregates() {
   }
 
   try {
-    console.log('[getNewPatientsAggregates] Auto-calculating from daily eod_new_patients values...');
+    console.log('[getNewPatientsAggregates] Calculating from eod_mtd_new_patients and daily values...');
 
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
     // Calculate date ranges
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
 
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
 
     // Calculate current calendar quarter (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec)
     const currentMonth = today.getMonth(); // 0-11
     const quarterStartMonth = Math.floor(currentMonth / 3) * 3; // 0, 3, 6, or 9
-    const quarterStart = new Date(today.getFullYear(), quarterStartMonth, 1);
-    const quarterEnd = new Date(today.getFullYear(), quarterStartMonth + 3, 0); // Last day of quarter
 
-    // Get the months in the current quarter (0-indexed)
-    const quarterMonths = [quarterStartMonth, quarterStartMonth + 1, quarterStartMonth + 2];
+    // Get the months in the current quarter (1-indexed for DB)
+    const quarterMonths = [quarterStartMonth + 1, quarterStartMonth + 2, quarterStartMonth + 3];
+    // Prior months in the quarter (excluding current month, 1-indexed)
+    const priorQuarterMonths = quarterMonths.filter(m => m < currentMonth + 1);
 
     console.log('[getNewPatientsAggregates] Calendar quarter:', {
-      start: quarterStart.toISOString().split('T')[0],
-      end: quarterEnd.toISOString().split('T')[0],
       quarter: `Q${Math.floor(currentMonth / 3) + 1}`,
-      months: quarterMonths.map(m => m + 1) // 1-indexed for display
+      months: quarterMonths,
+      currentMonth: currentMonth + 1,
+      priorMonthsInQuarter: priorQuarterMonths
     });
 
-    // Fetch daily new patient data for different time ranges
-    const [weekData, monthData, quarterMonthlyData, quarterDailyFallback] = await Promise.all([
-      // Last 7 days
-      supabase
-        .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
-
-      // Current month (from start of month to today)
-      supabase
-        .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', monthStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
-
-      // Current quarter from monthly_metric_trends (preferred method for consistency)
-      supabase
-        .from('monthly_metric_trends')
-        .select('value, month, year, month_name')
-        .eq('field_key', 'eod_new_patients')
-        .eq('year', today.getFullYear())
-        .in('month', quarterMonths.map(m => m + 1)), // monthly_metric_trends uses 1-indexed months
-
-      // Fallback: Current quarter from daily values (in case monthly trends are not populated)
+    // Fetch data from multiple sources in parallel
+    const [
+      mtdCurrentMonth,
+      mtdSevenDaysAgo,
+      weekDailyData,
+      monthDailyData,
+      priorQuarterMonthlyData
+    ] = await Promise.all([
+      // Latest eod_mtd_new_patients for the current month (authoritative MTD total)
       supabase
         .from('csd_metric_values')
         .select('value, as_of_date')
+        .eq('field_key', 'eod_mtd_new_patients')
+        .gte('as_of_date', monthStartStr)
+        .lte('as_of_date', todayStr)
+        .order('as_of_date', { ascending: false })
+        .limit(1),
+
+      // eod_mtd_new_patients from around 7 days ago (for weekly delta calculation)
+      supabase
+        .from('csd_metric_values')
+        .select('value, as_of_date')
+        .eq('field_key', 'eod_mtd_new_patients')
+        .lte('as_of_date', sevenDaysAgoStr)
+        .order('as_of_date', { ascending: false })
+        .limit(1),
+
+      // Daily eod_new_patients for the last 7 days (fallback for weekly)
+      supabase
+        .from('csd_metric_values')
+        .select('value')
         .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', quarterStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .gte('as_of_date', sevenDaysAgoStr)
+        .lte('as_of_date', todayStr),
+
+      // Daily eod_new_patients for the current month (fallback for monthly)
+      supabase
+        .from('csd_metric_values')
+        .select('value')
+        .eq('field_key', 'eod_new_patients')
+        .gte('as_of_date', monthStartStr)
+        .lte('as_of_date', todayStr),
+
+      // Prior months in the current quarter from monthly_metric_trends
+      priorQuarterMonths.length > 0
+        ? supabase
+            .from('monthly_metric_trends')
+            .select('value, month, year, month_name')
+            .eq('field_key', 'eod_new_patients')
+            .eq('year', today.getFullYear())
+            .in('month', priorQuarterMonths)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
-    // Sum up the values
-    const sumValues = (data: any) => {
-      return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+    // Helper to sum values from a query result
+    const sumValues = (result: any) => {
+      return result?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
     };
 
-    const perWeek = sumValues(weekData);
-    const perMonth = sumValues(monthData);
+    // --- Per Month ---
+    // Use eod_mtd_new_patients as the authoritative source for monthly totals
+    // Fall back to summing daily eod_new_patients entries
+    const latestMTDValue = mtdCurrentMonth?.data?.[0]?.value;
+    const perMonth = (latestMTDValue != null && latestMTDValue > 0)
+      ? latestMTDValue
+      : sumValues(monthDailyData);
 
-    // Calculate quarterly: prefer monthly_metric_trends, fallback to daily aggregation
-    let quarterly = 0;
-    let quarterlySource = 'unknown';
-
-    if (quarterMonthlyData?.data && quarterMonthlyData.data.length > 0) {
-      // Use monthly aggregates (preferred - consistent with monthly display)
-      quarterly = sumValues(quarterMonthlyData);
-      quarterlySource = 'monthly_metric_trends';
-
-      console.log('[getNewPatientsAggregates] Using monthly_metric_trends for quarterly:', {
-        monthsFound: quarterMonthlyData.data.length,
-        monthDetails: quarterMonthlyData.data.map((m: any) => ({
-          month: m.month_name,
-          value: m.value
-        })),
-        quarterlyTotal: quarterly
-      });
-    } else {
-      // Fallback to daily aggregation
-      quarterly = sumValues(quarterDailyFallback);
-      quarterlySource = 'daily_aggregation';
-
-      console.log('[getNewPatientsAggregates] Falling back to daily aggregation for quarterly:', {
-        dailyRecords: quarterDailyFallback?.data?.length || 0,
-        quarterlyTotal: quarterly
-      });
-    }
-
-    console.log('[getNewPatientsAggregates] Auto-calculated aggregates:', {
-      perWeek,
-      perMonth,
-      quarterly,
-      quarterlySource,
-      weekRecords: weekData?.data?.length || 0,
-      monthRecords: monthData?.data?.length || 0
+    console.log('[getNewPatientsAggregates] perMonth calculation:', {
+      mtdValue: latestMTDValue,
+      mtdDate: mtdCurrentMonth?.data?.[0]?.as_of_date,
+      dailySum: sumValues(monthDailyData),
+      usedMTD: latestMTDValue != null && latestMTDValue > 0,
+      finalPerMonth: perMonth
     });
 
-    // Detailed breakdown for debugging
-    if (quarterlySource === 'daily_aggregation' && quarterDailyFallback?.data) {
-      const dateValuePairs = quarterDailyFallback.data.map((r: any) => ({
-        date: r.as_of_date,
-        value: r.value
-      }));
-      console.log('[getNewPatientsAggregates] Daily breakdown for quarter:', dateValuePairs);
+    // --- Per Week ---
+    // Strategy: compute from MTD differences when possible (more accurate when daily entries are sparse)
+    // If the latest MTD and a 7-day-ago MTD are both available, weekly = difference
+    // Otherwise fall back to summing daily eod_new_patients for the last 7 days
+    let perWeek: number;
+    const mtdSevenDaysAgoValue = mtdSevenDaysAgo?.data?.[0]?.value;
+    const mtdSevenDaysAgoDate = mtdSevenDaysAgo?.data?.[0]?.as_of_date;
+
+    if (latestMTDValue != null && latestMTDValue > 0 && mtdSevenDaysAgoValue != null) {
+      // Check if the 7-day-ago MTD entry is in the same month
+      const sevenDaysAgoEntry = new Date(mtdSevenDaysAgoDate);
+      const sameMonth = sevenDaysAgoEntry.getMonth() === today.getMonth()
+        && sevenDaysAgoEntry.getFullYear() === today.getFullYear();
+
+      if (sameMonth) {
+        // Same month: weekly count = current MTD - MTD from 7 days ago
+        perWeek = latestMTDValue - mtdSevenDaysAgoValue;
+      } else {
+        // Cross-month boundary: current month's MTD is the count since month start
+        // which represents the portion of the week that falls in this month
+        // Add daily entries from the previous month's portion of the 7-day window
+        const prevMonthDailyResult = await supabase
+          .from('csd_metric_values')
+          .select('value')
+          .eq('field_key', 'eod_new_patients')
+          .gte('as_of_date', sevenDaysAgoStr)
+          .lt('as_of_date', monthStartStr);
+
+        const prevMonthPortion = sumValues(prevMonthDailyResult);
+        perWeek = latestMTDValue + prevMonthPortion;
+      }
+    } else {
+      // No MTD data available; fall back to summing daily entries
+      perWeek = sumValues(weekDailyData);
     }
+
+    // Ensure perWeek is not negative (safety check)
+    perWeek = Math.max(0, perWeek);
+
+    console.log('[getNewPatientsAggregates] perWeek calculation:', {
+      latestMTD: latestMTDValue,
+      sevenDaysAgoMTD: mtdSevenDaysAgoValue,
+      sevenDaysAgoDate: mtdSevenDaysAgoDate,
+      dailySum: sumValues(weekDailyData),
+      finalPerWeek: perWeek
+    });
+
+    // --- Quarterly ---
+    // Sum prior completed months from monthly_metric_trends + current month from MTD
+    const priorMonthsTotal = sumValues(priorQuarterMonthlyData);
+    const quarterly = priorMonthsTotal + perMonth;
+
+    console.log('[getNewPatientsAggregates] quarterly calculation:', {
+      priorMonthsTotal,
+      priorMonthDetails: priorQuarterMonthlyData?.data?.map((m: any) => ({
+        month: m.month_name,
+        value: m.value
+      })),
+      currentMonthMTD: perMonth,
+      finalQuarterly: quarterly
+    });
+
+    console.log('[getNewPatientsAggregates] Final aggregates:', {
+      perWeek,
+      perMonth,
+      quarterly
+    });
 
     return {
       perWeek,
