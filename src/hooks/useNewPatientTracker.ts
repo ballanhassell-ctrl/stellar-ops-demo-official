@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getNewPatientsByMonth, getNewPatientsAggregates, getMonthlyNewPatientMTD, type NPAggregateResult } from '../services/metrics';
+import { getNewPatientsAggregates, getMonthlyNewPatientMTD, type NPAggregateResult } from '../services/metrics';
 
 export interface NewPatientTrackerData {
   perDay: number;
