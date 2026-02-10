@@ -1468,9 +1468,9 @@ export const sampleMonthlyNewPatients = [
 
 // New patient aggregates (week, month, quarter)
 export const sampleNewPatientAggregates = {
-  perWeek: 8,      // New patients this week
-  perMonth: 18,    // New patients this month
-  quarterly: 52,   // New patients this quarter (Oct + Nov + Dec)
+  perWeek: 8 as number | null,       // New patients this week
+  perMonth: 18 as number | null,     // New patients this month
+  quarterly: 52 as number | null,    // New patients this quarter
 };
 
 // ===== PROVIDER METRICS DATA =====
