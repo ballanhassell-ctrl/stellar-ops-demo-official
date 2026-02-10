@@ -214,6 +214,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const [editingClaim, setEditingClaim] = useState<Claim | null>(null);
   const [formData, setFormData] = useState<ClaimFormData>({ ...EMPTY_CLAIM_FORM });
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Delete confirmation
   const [deletingClaimId, setDeletingClaimId] = useState<string | null>(null);
@@ -368,11 +369,13 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const openAddModal = () => {
     setFormData({ ...EMPTY_CLAIM_FORM });
     setEditingClaim(null);
+    setFormError(null);
     setShowAddModal(true);
   };
 
   const openEditModal = (claim: Claim) => {
     setEditingClaim(claim);
+    setFormError(null);
     setFormData({
       patient_name: claim.patient_name,
       patient_id: claim.patient_id || '',
@@ -422,6 +425,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
     try {
       setFormSubmitting(true);
+      setFormError(null);
       const payload = {
         patient_name: sanitizePatientName(formData.patient_name.trim()),
         patient_id: formData.patient_id.trim() || '',
@@ -464,7 +468,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       await loadClaims();
     } catch (err) {
       console.error('Error saving claim:', err);
-      setError('Failed to save claim. Please try again.');
+      setFormError('Failed to save claim. Please try again.');
     } finally {
       setFormSubmitting(false);
     }
@@ -1288,7 +1292,11 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
             </div>
 
             {/* Footer */}
-            <div className={`sticky bottom-0 ${bgPrimary} border-t ${borderColor} px-6 py-4 flex items-center justify-end gap-3`}>
+            <div className={`sticky bottom-0 ${bgPrimary} border-t ${borderColor} px-6 py-4 space-y-3`}>
+              {formError && (
+                <p className="text-sm text-red-500">{formError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3">
               <button
                 onClick={closeModal}
                 className={`px-4 py-2 rounded-lg border ${inputBorder} ${textSecondary} text-sm font-medium hover:${bgTertiary} transition-colors`}
@@ -1306,6 +1314,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     ? 'Update Claim'
                     : 'Add Claim'}
               </button>
+              </div>
             </div>
           </div>
         </div>

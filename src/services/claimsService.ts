@@ -44,7 +44,7 @@ export async function getClaimById(id: string) {
 export async function insertClaim(claim: Omit<Claim, 'id' | 'created_at' | 'updated_at'>) {
   const { data, error } = await supabase
     .from('claims')
-    .insert(claim)
+    .insert({ ...claim, id: crypto.randomUUID() })
     .select()
     .single();
 
@@ -158,7 +158,7 @@ export async function getPreAuthById(id: string) {
 export async function insertPreAuth(preAuth: Omit<PreAuth, 'id' | 'created_at' | 'updated_at'>) {
   const { data, error } = await supabase
     .from('pre_auths')
-    .insert(preAuth)
+    .insert({ ...preAuth, id: crypto.randomUUID() })
     .select()
     .single();
 
