@@ -226,6 +226,18 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
   const handleAddRecord = useCallback(async () => {
     if (!newForm.patient_name.trim() || !newForm.dos || !newForm.current_balance) return;
+
+    const currentBal = parseFloat(newForm.current_balance);
+    if (isNaN(currentBal) || currentBal < 0) {
+      setError('Current balance must be a valid positive number.');
+      return;
+    }
+    const originalBal = newForm.original_balance ? parseFloat(newForm.original_balance) : null;
+    if (originalBal !== null && (isNaN(originalBal) || originalBal < 0)) {
+      setError('Original balance must be a valid positive number.');
+      return;
+    }
+
     setSaving(true);
     try {
       const record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'> = {
@@ -233,8 +245,8 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         patient_name: sanitizePatientName(newForm.patient_name.trim()),
         related_family: newForm.related_family.trim() || null,
         dos: newForm.dos,
-        original_balance: newForm.original_balance ? parseFloat(newForm.original_balance) : null,
-        current_balance: parseFloat(newForm.current_balance),
+        original_balance: originalBal,
+        current_balance: currentBal,
         is_collectible: newForm.is_collectible,
         status: newForm.status,
         background_notes: newForm.background_notes.trim() || null,
@@ -280,9 +292,12 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
       setNewForm({ ...EMPTY_FORM });
       setShowAddModal(false);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error adding patient AR:', err);
-      setError('Failed to add record. Please try again.');
+      const msg = err && typeof err === 'object' && 'message' in err
+        ? (err as { message: string }).message
+        : 'Unknown error';
+      setError(`Failed to add record: ${msg}`);
     } finally {
       setSaving(false);
     }
