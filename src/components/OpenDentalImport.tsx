@@ -369,6 +369,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
         const submitted = r.date_submitted || dos;
         const agingDays = calculateAgingDays(dos);
         return {
+          id: crypto.randomUUID(),
           patient_id: r.patient_id, patient_name: r.patient_name,
           insurance_company: r.insurance_company, carrier_phone: r.carrier_phone,
           claim_number: r.claim_number, procedure_code: r.procedure_code,
