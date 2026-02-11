@@ -2673,27 +2673,16 @@ const CourtStreetRCM = () => {
                     {/* Insurance A/R 31+ */}
                     <div className="mb-3">
                       <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Insurance A/R 31+</p>
-                      <p className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${(
-                          claimsData.arAging.thirtyOneToSixty.amount +
-                          claimsData.arAging.sixtyOneToNinety.amount +
-                          claimsData.arAging.ninetyPlus.amount
-                        ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <p className={`text-sm font-semibold italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
+                        Calculated on the 1st &amp; 15th
                       </p>
                     </div>
 
                     {/* Total Outstanding */}
                     <div className={`pt-3 border-t ${isDayMode ? 'border-white/30' : 'border-white/10'}`}>
                       <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Outstanding</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${(
-                          patientsData.patientARAging.thirtyOneToSixty +
-                          patientsData.patientARAging.sixtyOneToNinety +
-                          patientsData.patientARAging.ninetyPlus +
-                          claimsData.arAging.thirtyOneToSixty.amount +
-                          claimsData.arAging.sixtyOneToNinety.amount +
-                          claimsData.arAging.ninetyPlus.amount
-                        ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <p className={`text-sm font-semibold italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
+                        Calculated on the 1st &amp; 15th
                       </p>
                     </div>
                   </div>
@@ -3032,31 +3021,13 @@ const CourtStreetRCM = () => {
               <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
                 Insurance A/R Aging Summary
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/30 border-green-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>0-30 Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                    ${claimsData.arAging.zeroToThirty.amount.toLocaleString()}
-                  </p>
-                </div>
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-900/30 border-yellow-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>31-60 Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
-                    ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()}
-                  </p>
-                </div>
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-orange-50 border-orange-200' : 'bg-orange-900/30 border-orange-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>61-90 Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
-                    ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()}
-                  </p>
-                </div>
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-red-50 border-red-200' : 'bg-red-900/30 border-red-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>90+ Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
-                    ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
-                  </p>
-                </div>
+              <div className={`text-center p-6 rounded-lg border ${isDayMode ? 'bg-gray-50 border-gray-200' : 'bg-gray-700/30 border-gray-600'}`}>
+                <p className={`text-sm font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                  Insurance A/R is calculated on the 1st &amp; 15th of each month
+                </p>
+                <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Next update will reflect the latest reconciled balances
+                </p>
               </div>
             </div>
 

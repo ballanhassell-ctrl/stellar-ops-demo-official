@@ -615,8 +615,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                 </div>
                 <div>
                   <p className={`text-xs font-medium uppercase tracking-wide ${textMuted}`}>Total Outstanding</p>
-                  <p className={`text-2xl font-bold ${textPrimary}`}>
-                    {formatCurrency(summary.totalOutstanding)}
+                  <p className={`text-sm font-semibold ${textMuted} mt-1`}>
+                    Calculated on the 1st &amp; 15th
                   </p>
                 </div>
               </div>
@@ -672,7 +672,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                       </div>
                       <div className="flex items-center justify-between text-xs ml-5">
                         <span className={textMuted}>Outstanding</span>
-                        <span className={textSecondary}>{formatCurrency(data.outstanding)}</span>
+                        <span className={`${textMuted} italic`}>Calculated on the 1st &amp; 15th</span>
                       </div>
                     </div>
                   )
@@ -700,7 +700,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className={textMuted}>Outstanding</span>
-                          <span className={textSecondary}>{formatCurrency(data.outstanding)}</span>
+                          <span className={`${textMuted} italic`}>Calculated on the 1st &amp; 15th</span>
                         </div>
                       </div>
                     ))}
@@ -994,10 +994,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     <td className={`px-3 py-3 whitespace-nowrap text-right ${textSecondary}`}>
                       {formatCurrency(claim.collected)}
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap text-right font-semibold ${
-                      claim.outstanding > 0 ? 'text-red-600' : 'text-green-600'
-                    }`}>
-                      {formatCurrency(claim.outstanding)}
+                    <td className={`px-3 py-3 whitespace-nowrap text-right ${textMuted} italic text-xs`}>
+                      1st &amp; 15th
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.status)}`}>
