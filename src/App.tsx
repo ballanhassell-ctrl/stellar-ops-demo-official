@@ -25,6 +25,7 @@ import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
 import ARAgingChart from './components/ARAgingChart';
 import OpenDentalImport from './components/OpenDentalImport';
 import PatientARTracker from './components/PatientARTracker';
+import VCCPaymentsTracker from './components/VCCPaymentsTracker';
 import { sanitizePatientName } from './utils/sanitizePatientName';
 import { useAuth } from './contexts/AuthContext';
 import { generateInsights, Insight } from './services/aiInsights';
@@ -3342,6 +3343,18 @@ const CourtStreetRCM = () => {
                   Payments
                 </button>
                 <button
+                  onClick={() => setPatientManagementView('vcc-payments')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'vcc-payments'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  VCC Payments
+                </button>
+                <button
                   onClick={() => setPatientManagementView('insurance-networks')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'insurance-networks'
@@ -5369,6 +5382,10 @@ const CourtStreetRCM = () => {
 
             {patientManagementView === 'ar-trends' && (
               <ARAgingChart isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'vcc-payments' && (
+              <VCCPaymentsTracker isDayMode={isDayMode} />
             )}
 
             {patientManagementView === 'od-import' && (
