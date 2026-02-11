@@ -2320,9 +2320,9 @@ const CourtStreetRCM = () => {
               <Menu className="w-6 h-6" />
             </button>
 
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               {/* Logo Section - Responsive */}
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 {/* Show only CSD logo on mobile, both on larger screens */}
                 <img
                   src="/Stellar2 copy.jpg"
@@ -2336,8 +2336,8 @@ const CourtStreetRCM = () => {
                   className="h-8 sm:h-12 w-auto object-contain"
                 />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">
+              <div className="hidden sm:block min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent truncate">
                   Court Street Dental RCM Dashboard
                 </h1>
                 <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -2346,7 +2346,7 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Day/Night Mode Button - Icon only on mobile */}
               <button
                 onClick={() => setIsDayMode(!isDayMode)}
@@ -2359,12 +2359,12 @@ const CourtStreetRCM = () => {
                 {isDayMode ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    <span className="hidden sm:inline text-sm font-medium">Night Mode</span>
+                    <span className="hidden md:inline text-sm font-medium">Night Mode</span>
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" />
-                    <span className="hidden sm:inline text-sm font-medium">Day Mode</span>
+                    <span className="hidden md:inline text-sm font-medium">Day Mode</span>
                   </>
                 )}
               </button>
@@ -2380,7 +2380,7 @@ const CourtStreetRCM = () => {
                 title="Sign Out"
               >
                 <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline text-sm font-medium">Sign Out</span>
+                <span className="hidden md:inline text-sm font-medium">Sign Out</span>
               </button>
 
               {/* Task Board - Hidden on mobile */}
@@ -2388,23 +2388,14 @@ const CourtStreetRCM = () => {
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium min-h-[44px]"
+                className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium min-h-[44px]"
               >
                 <ExternalLink className="w-4 h-4" />
                 <span className="text-sm">Task Board</span>
               </a>
 
-              {/* Upload Metrics - Hidden on mobile */}
-              <button
-                onClick={() => setShowCSDMetricsModal(true)}
-                className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm min-h-[44px]"
-              >
-                <Upload className="w-4 h-4" />
-                <span className="text-sm">Upload Metrics</span>
-              </button>
-
-              {/* Collaboration text - Hidden on mobile */}
-              <div className="hidden lg:block text-right">
+              {/* Collaboration text - Hidden on smaller screens */}
+              <div className="hidden xl:block text-right">
                 <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
                   Designed for <span className="font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">Court Street Dental</span>
                 </p>
@@ -2488,16 +2479,6 @@ const CourtStreetRCM = () => {
                   <ExternalLink className="w-5 h-5" />
                   <span>Task Board</span>
                 </a>
-                <button
-                  onClick={() => {
-                    setShowCSDMetricsModal(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full mt-2 flex items-center gap-3 px-4 py-3.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold min-h-[52px]"
-                >
-                  <Upload className="w-5 h-5" />
-                  <span>Upload Metrics</span>
-                </button>
               </div>
             </nav>
           </div>
@@ -3398,18 +3379,6 @@ const CourtStreetRCM = () => {
                   }`}
                 >
                   Insurance Networks
-                </button>
-                <button
-                  onClick={() => setPatientManagementView('checklist')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'checklist'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Checklist
                 </button>
                 <button
                   onClick={() => setPatientManagementView('insurance-issues')}
@@ -4538,7 +4507,7 @@ const CourtStreetRCM = () => {
 
             {/* Add New Claim Modal */}
             {showAddClaimModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Claim</h3>
@@ -4688,7 +4657,7 @@ const CourtStreetRCM = () => {
 
             {/* Add New Pre-Auth Modal */}
             {showAddPreAuthModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Pre-Authorization Request</h3>
@@ -4809,7 +4778,7 @@ const CourtStreetRCM = () => {
 
             {/* Add New Insurance Check/EFT Modal */}
             {showAddInsuranceCheckModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Insurance Check/EFT</h3>
@@ -5437,12 +5406,23 @@ const CourtStreetRCM = () => {
           <div className="space-y-6">
             {/* Scorecard Header */}
             <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
-              <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                Practice Scorecard Metrics
-              </h2>
-              <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                Track your practice performance against goals
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                    Practice Scorecard Metrics
+                  </h2>
+                  <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Track your practice performance against goals
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCSDMetricsModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm min-h-[44px] whitespace-nowrap"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload Metrics</span>
+                </button>
+              </div>
             </div>
 
             {/* Advanced Business Metrics */}
@@ -7325,7 +7305,7 @@ const CourtStreetRCM = () => {
 
             {/* Email Modal */}
             {showEmailModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="p-6">
                     {/* Modal Header */}
@@ -8062,7 +8042,7 @@ const CourtStreetRCM = () => {
 
             {/* Add VIP Modal */}
             {showAddVipModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add VIP Patient</h3>
@@ -8160,7 +8140,7 @@ const CourtStreetRCM = () => {
 
             {/* Add Recare Modal */}
             {showAddRecareModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add Recare Patient</h3>
@@ -8262,7 +8242,7 @@ const CourtStreetRCM = () => {
 
             {/* Add Treatment Modal */}
             {showAddTreatmentModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add Treatment Patient</h3>
@@ -8360,7 +8340,7 @@ const CourtStreetRCM = () => {
 
             {/* Edit Scheduling Item Modal */}
             {showEditSchedulingModal && selectedSchedulingItem && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Edit {selectedSchedulingItem.listType.toUpperCase()} Patient</h3>
@@ -8551,7 +8531,7 @@ const CourtStreetRCM = () => {
 
         {/* BAM Cycle Modal */}
         {showBAMModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className={`rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="p-6">
                 {/* Modal Header */}
@@ -8764,7 +8744,7 @@ const CourtStreetRCM = () => {
 
         {/* Lifecycle Metrics Modal */}
         {showLifecycleModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className={`rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="p-6">
                 {/* Modal Header */}
@@ -8850,7 +8830,7 @@ const CourtStreetRCM = () => {
 
         {/* Edit Modal */}
         {showEditModal && editingItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-900">
@@ -9451,7 +9431,7 @@ const CourtStreetRCM = () => {
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="p-6">
                 <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
@@ -9491,7 +9471,7 @@ const CourtStreetRCM = () => {
 
         {/* Add Update Modal */}
         {showAddUpdateModal && updateTarget && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <div>
@@ -9769,7 +9749,7 @@ const CourtStreetRCM = () => {
 
         {/* History/Audit Timeline Modal */}
         {showHistoryModal && historyItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
                 <div>
@@ -9970,7 +9950,7 @@ const CourtStreetRCM = () => {
 
         {/* Weekly Details Modal */}
         {showWeeklyDetailsModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto`}>
               <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
                 <div className="flex items-center justify-between">
