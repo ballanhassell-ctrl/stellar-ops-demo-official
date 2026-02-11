@@ -128,4 +128,21 @@ body {
   button, a, input[type="button"], input[type="submit"] {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   }
+
+  /* GPU-accelerated modal overlays to prevent stuttering */
+  .fixed.inset-0 {
+    will-change: opacity;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  /* Promote glassmorphism elements to own compositor layer */
+  .glass,
+  .glass-dark,
+  .glass-card,
+  .glass-card-dark {
+    will-change: transform;
+    transform: translateZ(0);
+  }
 }
