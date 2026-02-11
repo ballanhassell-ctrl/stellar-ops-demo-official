@@ -30,7 +30,7 @@ export interface VCCPayment {
   processed_by_initials: string;
   deposited_via_check: boolean;
   deposited_via_check_by_initials: string;
-  status: 'Pending Payment Deposit via CC Terminal/Check' | 'Posted' | 'Closed';
+  status: 'Needs OD Posting & Payment Deposit' | 'Needs to be Posted to OD' | 'Pending Payment Deposit' | 'Closed';
   opt_out_requested: boolean;
   opted_out: boolean;
   opt_out_notes: OptOutNote[];

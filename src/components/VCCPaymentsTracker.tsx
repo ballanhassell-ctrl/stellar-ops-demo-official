@@ -37,7 +37,7 @@ import { sanitizePatientName } from '../utils/sanitizePatientName';
 // =====================================================
 
 const CLAIM_TYPES = ['VCC Standard'];
-const STATUS_OPTIONS: VCCPayment['status'][] = ['Pending Payment Deposit via CC Terminal/Check', 'Posted', 'Closed'];
+const STATUS_OPTIONS: VCCPayment['status'][] = ['Needs OD Posting & Payment Deposit', 'Needs to be Posted to OD', 'Pending Payment Deposit', 'Closed'];
 const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
 
 const EMPTY_FORM: NewVCCPayment = {
@@ -51,7 +51,7 @@ const EMPTY_FORM: NewVCCPayment = {
   processed_by_initials: '',
   deposited_via_check: false,
   deposited_via_check_by_initials: '',
-  status: 'Pending Payment Deposit via CC Terminal/Check',
+  status: 'Needs OD Posting & Payment Deposit',
   opt_out_requested: false,
   opted_out: false,
   opt_out_notes: [],
@@ -155,10 +155,12 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     const paymentProcessed = sanitized.processed_via_terminal || sanitized.deposited_via_check;
     if (sanitized.posted_to_open_dental && paymentProcessed) {
       sanitized.status = 'Closed';
-    } else if (sanitized.posted_to_open_dental || paymentProcessed) {
-      sanitized.status = 'Posted';
+    } else if (!sanitized.posted_to_open_dental && !paymentProcessed) {
+      sanitized.status = 'Needs OD Posting & Payment Deposit';
+    } else if (!sanitized.posted_to_open_dental) {
+      sanitized.status = 'Needs to be Posted to OD';
     } else {
-      sanitized.status = 'Pending Payment Deposit via CC Terminal/Check';
+      sanitized.status = 'Pending Payment Deposit';
     }
 
     try {
@@ -236,8 +238,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     // Auto-update status
     const paymentProcessed = payment.processed_via_terminal || payment.deposited_via_check;
     if (newPosted && paymentProcessed) updates.status = 'Closed';
-    else if (newPosted || paymentProcessed) updates.status = 'Posted';
-    else updates.status = 'Pending Payment Deposit via CC Terminal/Check';
+    else if (!newPosted && !paymentProcessed) updates.status = 'Needs OD Posting & Payment Deposit';
+    else if (!newPosted) updates.status = 'Needs to be Posted to OD';
+    else updates.status = 'Pending Payment Deposit';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -256,8 +259,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       ...(newProcessed ? { deposited_via_check: false, deposited_via_check_by_initials: '' } : {}),
     };
     if (payment.posted_to_open_dental && newProcessed) updates.status = 'Closed';
-    else if (payment.posted_to_open_dental || newProcessed) updates.status = 'Posted';
-    else updates.status = 'Pending Payment Deposit via CC Terminal/Check';
+    else if (!payment.posted_to_open_dental && !newProcessed) updates.status = 'Needs OD Posting & Payment Deposit';
+    else if (!payment.posted_to_open_dental) updates.status = 'Needs to be Posted to OD';
+    else updates.status = 'Pending Payment Deposit';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -276,8 +280,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       ...(newCheck ? { processed_via_terminal: false, processed_by_initials: '' } : {}),
     };
     if (payment.posted_to_open_dental && newCheck) updates.status = 'Closed';
-    else if (payment.posted_to_open_dental || newCheck) updates.status = 'Posted';
-    else updates.status = 'Pending Payment Deposit via CC Terminal/Check';
+    else if (!payment.posted_to_open_dental && !newCheck) updates.status = 'Needs OD Posting & Payment Deposit';
+    else if (!payment.posted_to_open_dental) updates.status = 'Needs to be Posted to OD';
+    else updates.status = 'Pending Payment Deposit';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -359,11 +364,13 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     switch (status) {
       case 'Closed':
         return isDayMode ? 'bg-green-100 text-green-800' : 'bg-green-900/40 text-green-300';
-      case 'Posted':
-        return isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-900/40 text-blue-300';
-      case 'Pending Payment Deposit via CC Terminal/Check':
-      default:
+      case 'Pending Payment Deposit':
         return isDayMode ? 'bg-amber-100 text-amber-800' : 'bg-amber-900/40 text-amber-300';
+      case 'Needs to be Posted to OD':
+        return isDayMode ? 'bg-orange-100 text-orange-800' : 'bg-orange-900/40 text-orange-300';
+      case 'Needs OD Posting & Payment Deposit':
+      default:
+        return isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-900/40 text-red-300';
     }
   };
 
@@ -426,7 +433,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
           <div className={`${isDayMode ? 'bg-amber-50' : 'bg-amber-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-amber-200' : 'border-amber-500/20'}`}>
             <div className="flex items-center gap-2 mb-1">
               <Clock className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
-              <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending Payment Deposit via CC Terminal/Check</p>
+              <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending Payment Deposit</p>
             </div>
             <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
               ${summary.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
