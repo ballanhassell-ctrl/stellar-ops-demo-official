@@ -164,54 +164,6 @@ function PatientAgingTooltip({
   );
 }
 
-// Custom tooltip for the insurance aging stacked bar chart
-function InsuranceAgingTooltip({
-  active,
-  payload,
-  label,
-  isDayMode,
-}: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string }>;
-  label?: string;
-  isDayMode: boolean;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-
-  const total = payload.reduce((sum, entry) => sum + entry.value, 0);
-
-  return (
-    <div
-      className={`rounded-lg shadow-lg border p-3 ${
-        isDayMode
-          ? 'bg-white border-gray-200 text-gray-900'
-          : 'bg-gray-800 border-gray-700 text-white'
-      }`}
-    >
-      <p className="font-semibold text-sm mb-2">{label} &mdash; Insurance A/R</p>
-      {payload.map((entry, index) => (
-        <div key={index} className="flex items-center justify-between gap-4 text-sm">
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            {entry.name}
-          </span>
-          <span className="font-medium">{formatDollar(entry.value)}</span>
-        </div>
-      ))}
-      <div
-        className={`mt-2 pt-2 border-t flex items-center justify-between text-sm font-semibold ${
-          isDayMode ? 'border-gray-200' : 'border-gray-600'
-        }`}
-      >
-        <span>Total</span>
-        <span>{formatDollar(total)}</span>
-      </div>
-    </div>
-  );
-}
 
 export default function ARAgingChart({ isDayMode }: ARAgingChartProps) {
   const [snapshots, setSnapshots] = useState<ARSnapshot[]>([]);
