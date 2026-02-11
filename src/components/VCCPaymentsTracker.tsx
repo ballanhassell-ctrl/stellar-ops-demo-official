@@ -37,7 +37,7 @@ import { sanitizePatientName } from '../utils/sanitizePatientName';
 // =====================================================
 
 const CLAIM_TYPES = ['VCC Standard'];
-const STATUS_OPTIONS: VCCPayment['status'][] = ['Pending/Needs Payment', 'Posted', 'Closed'];
+const STATUS_OPTIONS: VCCPayment['status'][] = ['Pending Payment Deposit via CC Terminal/Check', 'Posted', 'Closed'];
 const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
 
 const EMPTY_FORM: NewVCCPayment = {
@@ -51,7 +51,7 @@ const EMPTY_FORM: NewVCCPayment = {
   processed_by_initials: '',
   deposited_via_check: false,
   deposited_via_check_by_initials: '',
-  status: 'Pending/Needs Payment',
+  status: 'Pending Payment Deposit via CC Terminal/Check',
   opt_out_requested: false,
   opted_out: false,
   opt_out_notes: [],
@@ -158,7 +158,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     } else if (sanitized.posted_to_open_dental || paymentProcessed) {
       sanitized.status = 'Posted';
     } else {
-      sanitized.status = 'Pending/Needs Payment';
+      sanitized.status = 'Pending Payment Deposit via CC Terminal/Check';
     }
 
     try {
@@ -237,7 +237,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     const paymentProcessed = payment.processed_via_terminal || payment.deposited_via_check;
     if (newPosted && paymentProcessed) updates.status = 'Closed';
     else if (newPosted || paymentProcessed) updates.status = 'Posted';
-    else updates.status = 'Pending/Needs Payment';
+    else updates.status = 'Pending Payment Deposit via CC Terminal/Check';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -257,7 +257,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     };
     if (payment.posted_to_open_dental && newProcessed) updates.status = 'Closed';
     else if (payment.posted_to_open_dental || newProcessed) updates.status = 'Posted';
-    else updates.status = 'Pending/Needs Payment';
+    else updates.status = 'Pending Payment Deposit via CC Terminal/Check';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -277,7 +277,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     };
     if (payment.posted_to_open_dental && newCheck) updates.status = 'Closed';
     else if (payment.posted_to_open_dental || newCheck) updates.status = 'Posted';
-    else updates.status = 'Pending/Needs Payment';
+    else updates.status = 'Pending Payment Deposit via CC Terminal/Check';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -361,7 +361,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
         return isDayMode ? 'bg-green-100 text-green-800' : 'bg-green-900/40 text-green-300';
       case 'Posted':
         return isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-900/40 text-blue-300';
-      case 'Pending/Needs Payment':
+      case 'Pending Payment Deposit via CC Terminal/Check':
       default:
         return isDayMode ? 'bg-amber-100 text-amber-800' : 'bg-amber-900/40 text-amber-300';
     }
@@ -401,7 +401,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
           {/* Total Payments */}
           <div className={`${isDayMode ? 'bg-slate-50' : 'bg-white/5'} rounded-xl p-4 border ${isDayMode ? 'border-slate-200' : 'border-white/10'}`}>
             <div className="flex items-center gap-2 mb-1">
@@ -422,11 +422,11 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
             </p>
           </div>
 
-          {/* Pending */}
+          {/* Pending Payment Deposit */}
           <div className={`${isDayMode ? 'bg-amber-50' : 'bg-amber-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-amber-200' : 'border-amber-500/20'}`}>
             <div className="flex items-center gap-2 mb-1">
               <Clock className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
-              <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending/Needs Payment</p>
+              <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending Payment Deposit via CC Terminal/Check</p>
             </div>
             <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
               ${summary.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -454,6 +454,18 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
             </div>
             <p className={`text-2xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>{summary.postedCount}</p>
             <p className={`text-xs mt-0.5 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>{summary.notPostedCount} not posted</p>
+          </div>
+
+          {/* Needs OD Posting */}
+          <div className={`${isDayMode ? 'bg-orange-50' : 'bg-orange-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-orange-200' : 'border-orange-500/20'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <AlertCircle className={`w-4 h-4 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
+              <p className={`text-xs font-medium ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Needs OD Posting</p>
+            </div>
+            <p className={`text-2xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
+              ${summary.notPostedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-xs mt-0.5 ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>{summary.notPostedCount} claims</p>
           </div>
 
           {/* Opt Out Requested */}

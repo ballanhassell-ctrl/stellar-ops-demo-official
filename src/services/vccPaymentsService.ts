@@ -30,7 +30,7 @@ export interface VCCPayment {
   processed_by_initials: string;
   deposited_via_check: boolean;
   deposited_via_check_by_initials: string;
-  status: 'Pending/Needs Payment' | 'Posted' | 'Closed';
+  status: 'Pending Payment Deposit via CC Terminal/Check' | 'Posted' | 'Closed';
   opt_out_requested: boolean;
   opted_out: boolean;
   opt_out_notes: OptOutNote[];
@@ -49,6 +49,7 @@ export interface VCCPaymentsSummary {
   closedCount: number;
   postedCount: number;
   notPostedCount: number;
+  notPostedAmount: number;
   processedViaTerminalCount: number;
   depositedViaCheckCount: number;
   notProcessedCount: number;
@@ -170,6 +171,7 @@ export async function deleteVCCPayment(id: string): Promise<void> {
 export function calculateVCCSummary(payments: VCCPayment[]): VCCPaymentsSummary {
   const pending = payments.filter(p => !p.processed_via_terminal && !p.deposited_via_check);
   const closed = payments.filter(p => p.status === 'Closed');
+  const notPosted = payments.filter(p => !p.posted_to_open_dental);
 
   return {
     totalPayments: payments.length,
@@ -179,7 +181,8 @@ export function calculateVCCSummary(payments: VCCPayment[]): VCCPaymentsSummary 
     closedAmount: closed.reduce((s, p) => s + p.payment_amount, 0),
     closedCount: closed.length,
     postedCount: payments.filter(p => p.posted_to_open_dental).length,
-    notPostedCount: payments.filter(p => !p.posted_to_open_dental).length,
+    notPostedCount: notPosted.length,
+    notPostedAmount: notPosted.reduce((s, p) => s + p.payment_amount, 0),
     processedViaTerminalCount: payments.filter(p => p.processed_via_terminal).length,
     depositedViaCheckCount: payments.filter(p => p.deposited_via_check).length,
     notProcessedCount: payments.filter(p => !p.processed_via_terminal && !p.deposited_via_check).length,
