@@ -28,6 +28,8 @@ export interface VCCPayment {
   posted_by_initials: string;
   processed_via_terminal: boolean;
   processed_by_initials: string;
+  deposited_via_check: boolean;
+  deposited_via_check_by_initials: string;
   status: 'Pending/Needs Payment' | 'Posted' | 'Closed';
   opt_out_requested: boolean;
   opted_out: boolean;
@@ -48,6 +50,7 @@ export interface VCCPaymentsSummary {
   postedCount: number;
   notPostedCount: number;
   processedViaTerminalCount: number;
+  depositedViaCheckCount: number;
   notProcessedCount: number;
   optOutRequestedCount: number;
   optedOutCount: number;
@@ -79,6 +82,7 @@ function normalizePayment(row: any): VCCPayment {
     payment_amount: Number(row.payment_amount) || 0,
     posted_to_open_dental: !!row.posted_to_open_dental,
     processed_via_terminal: !!row.processed_via_terminal,
+    deposited_via_check: !!row.deposited_via_check,
     opt_out_requested: !!row.opt_out_requested,
     opted_out: !!row.opted_out,
     opt_out_notes: Array.isArray(row.opt_out_notes) ? row.opt_out_notes : [],
@@ -164,7 +168,7 @@ export async function deleteVCCPayment(id: string): Promise<void> {
 // =====================================================
 
 export function calculateVCCSummary(payments: VCCPayment[]): VCCPaymentsSummary {
-  const pending = payments.filter(p => !p.processed_via_terminal);
+  const pending = payments.filter(p => !p.processed_via_terminal && !p.deposited_via_check);
   const closed = payments.filter(p => p.status === 'Closed');
 
   return {
@@ -177,7 +181,8 @@ export function calculateVCCSummary(payments: VCCPayment[]): VCCPaymentsSummary 
     postedCount: payments.filter(p => p.posted_to_open_dental).length,
     notPostedCount: payments.filter(p => !p.posted_to_open_dental).length,
     processedViaTerminalCount: payments.filter(p => p.processed_via_terminal).length,
-    notProcessedCount: payments.filter(p => !p.processed_via_terminal).length,
+    depositedViaCheckCount: payments.filter(p => p.deposited_via_check).length,
+    notProcessedCount: payments.filter(p => !p.processed_via_terminal && !p.deposited_via_check).length,
     optOutRequestedCount: payments.filter(p => p.opt_out_requested).length,
     optedOutCount: payments.filter(p => p.opted_out).length,
   };

@@ -1,7 +1,7 @@
 -- =====================================================
 -- VCC Payments Table
 -- Tracks VCC standard claim payments, Open Dental
--- posting status, terminal processing, and opt-out workflow
+-- posting status, CC/terminal and check processing, and opt-out workflow
 -- =====================================================
 
 -- Create vcc_payments table
@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS vcc_payments (
   posted_by_initials TEXT NOT NULL DEFAULT '',
   processed_via_terminal BOOLEAN NOT NULL DEFAULT FALSE,
   processed_by_initials TEXT NOT NULL DEFAULT '',
+  deposited_via_check BOOLEAN NOT NULL DEFAULT FALSE,
+  deposited_via_check_by_initials TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'Pending/Needs Payment' CHECK (status IN ('Pending/Needs Payment', 'Posted', 'Closed')),
   opt_out_requested BOOLEAN NOT NULL DEFAULT FALSE,
   opted_out BOOLEAN NOT NULL DEFAULT FALSE,
@@ -29,6 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_vcc_payments_status ON vcc_payments(status);
 CREATE INDEX IF NOT EXISTS idx_vcc_payments_patient_name ON vcc_payments(patient_name);
 CREATE INDEX IF NOT EXISTS idx_vcc_payments_posted_to_open_dental ON vcc_payments(posted_to_open_dental);
 CREATE INDEX IF NOT EXISTS idx_vcc_payments_processed_via_terminal ON vcc_payments(processed_via_terminal);
+CREATE INDEX IF NOT EXISTS idx_vcc_payments_deposited_via_check ON vcc_payments(deposited_via_check);
 CREATE INDEX IF NOT EXISTS idx_vcc_payments_opted_out ON vcc_payments(opted_out);
 
 -- =====================================================

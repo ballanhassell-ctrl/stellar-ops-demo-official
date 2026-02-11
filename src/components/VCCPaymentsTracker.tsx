@@ -1,7 +1,7 @@
 // =====================================================
 // VCC Payments Tracker
 // Tracks VCC standard payments, posting status,
-// terminal processing, and opt-out workflows
+// CC/terminal and check processing, and opt-out workflows
 // =====================================================
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -49,6 +49,8 @@ const EMPTY_FORM: NewVCCPayment = {
   posted_by_initials: '',
   processed_via_terminal: false,
   processed_by_initials: '',
+  deposited_via_check: false,
+  deposited_via_check_by_initials: '',
   status: 'Pending/Needs Payment',
   opt_out_requested: false,
   opted_out: false,
@@ -150,9 +152,10 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     };
 
     // Auto-set status based on workflow
-    if (sanitized.posted_to_open_dental && sanitized.processed_via_terminal) {
+    const paymentProcessed = sanitized.processed_via_terminal || sanitized.deposited_via_check;
+    if (sanitized.posted_to_open_dental && paymentProcessed) {
       sanitized.status = 'Closed';
-    } else if (sanitized.posted_to_open_dental || sanitized.processed_via_terminal) {
+    } else if (sanitized.posted_to_open_dental || paymentProcessed) {
       sanitized.status = 'Posted';
     } else {
       sanitized.status = 'Pending/Needs Payment';
@@ -200,6 +203,8 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       posted_by_initials: payment.posted_by_initials,
       processed_via_terminal: payment.processed_via_terminal,
       processed_by_initials: payment.processed_by_initials,
+      deposited_via_check: payment.deposited_via_check,
+      deposited_via_check_by_initials: payment.deposited_via_check_by_initials,
       status: payment.status,
       opt_out_requested: payment.opt_out_requested,
       opted_out: payment.opted_out,
@@ -229,8 +234,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       posted_by_initials: newPosted ? payment.posted_by_initials : '',
     };
     // Auto-update status
-    if (newPosted && payment.processed_via_terminal) updates.status = 'Closed';
-    else if (newPosted || payment.processed_via_terminal) updates.status = 'Posted';
+    const paymentProcessed = payment.processed_via_terminal || payment.deposited_via_check;
+    if (newPosted && paymentProcessed) updates.status = 'Closed';
+    else if (newPosted || paymentProcessed) updates.status = 'Posted';
     else updates.status = 'Pending/Needs Payment';
 
     if (localMode) {
@@ -246,6 +252,8 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     const updates: Partial<NewVCCPayment> = {
       processed_via_terminal: newProcessed,
       processed_by_initials: newProcessed ? payment.processed_by_initials : '',
+      // Mutual exclusivity: if enabling CC, disable Check
+      ...(newProcessed ? { deposited_via_check: false, deposited_via_check_by_initials: '' } : {}),
     };
     if (payment.posted_to_open_dental && newProcessed) updates.status = 'Closed';
     else if (payment.posted_to_open_dental || newProcessed) updates.status = 'Posted';
@@ -259,7 +267,27 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     }
   };
 
-  const handleSetInitials = async (payment: VCCPayment, field: 'posted_by_initials' | 'processed_by_initials', value: string) => {
+  const handleToggleCheck = async (payment: VCCPayment) => {
+    const newCheck = !payment.deposited_via_check;
+    const updates: Partial<NewVCCPayment> = {
+      deposited_via_check: newCheck,
+      deposited_via_check_by_initials: newCheck ? payment.deposited_via_check_by_initials : '',
+      // Mutual exclusivity: if enabling Check, disable CC
+      ...(newCheck ? { processed_via_terminal: false, processed_by_initials: '' } : {}),
+    };
+    if (payment.posted_to_open_dental && newCheck) updates.status = 'Closed';
+    else if (payment.posted_to_open_dental || newCheck) updates.status = 'Posted';
+    else updates.status = 'Pending/Needs Payment';
+
+    if (localMode) {
+      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
+    } else {
+      await updateVCCPayment(payment.id, updates);
+      await fetchPayments();
+    }
+  };
+
+  const handleSetInitials = async (payment: VCCPayment, field: 'posted_by_initials' | 'processed_by_initials' | 'deposited_via_check_by_initials', value: string) => {
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, [field]: value, updated_at: new Date().toISOString() } : p)));
     } else {
@@ -360,7 +388,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
               VCC Payments
             </h2>
             <p className={`text-sm mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Track VCC standard claim payments, posting, and terminal processing
+              Track VCC standard claim payments, posting, and payment processing
             </p>
           </div>
           <button
@@ -551,17 +579,18 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
               )}
             </div>
 
-            {/* Processed via Terminal */}
+            {/* Payment Processed via CC on Clover/Terminal */}
             <div className="flex flex-col justify-end">
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className={`flex items-center gap-2 ${form.deposited_via_check ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
                   <input
                     type="checkbox"
                     checked={form.processed_via_terminal}
-                    onChange={e => setForm(f => ({ ...f, processed_via_terminal: e.target.checked }))}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    disabled={form.deposited_via_check}
+                    onChange={e => setForm(f => ({ ...f, processed_via_terminal: e.target.checked, ...(e.target.checked ? { deposited_via_check: false, deposited_via_check_by_initials: '' } : {}) }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40"
                   />
-                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Processed via Terminal</span>
+                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Payment Processed via CC on Clover/Terminal</span>
                 </label>
               </div>
               {form.processed_via_terminal && (
@@ -570,6 +599,37 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                   <select
                     value={form.processed_by_initials}
                     onChange={e => setForm(f => ({ ...f, processed_by_initials: e.target.value }))}
+                    className={inputClass}
+                  >
+                    <option value="">Select...</option>
+                    {STAFF_INITIALS.map(i => (
+                      <option key={i} value={i}>{i}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Deposited via Check */}
+            <div className="flex flex-col justify-end">
+              <div className="flex items-center gap-3">
+                <label className={`flex items-center gap-2 ${form.processed_via_terminal ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input
+                    type="checkbox"
+                    checked={form.deposited_via_check}
+                    disabled={form.processed_via_terminal}
+                    onChange={e => setForm(f => ({ ...f, deposited_via_check: e.target.checked, ...(e.target.checked ? { processed_via_terminal: false, processed_by_initials: '' } : {}) }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40"
+                  />
+                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Payment Deposited via Check</span>
+                </label>
+              </div>
+              {form.deposited_via_check && (
+                <div className="mt-2">
+                  <label className={labelClass}>Deposited By (Initials)</label>
+                  <select
+                    value={form.deposited_via_check_by_initials}
+                    onChange={e => setForm(f => ({ ...f, deposited_via_check_by_initials: e.target.value }))}
                     className={inputClass}
                   >
                     <option value="">Select...</option>
@@ -654,7 +714,8 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                   <th className={`text-left py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Claim Type</th>
                   <th className={`text-right py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Amount</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Posted to OD</th>
-                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Terminal</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>CC on Clover/Terminal</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Check</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Opt Out</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
@@ -722,14 +783,17 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                       </div>
                     </td>
 
-                    {/* Terminal */}
-                    <td className="py-3 px-3 text-center">
+                    {/* CC on Clover/Terminal */}
+                    <td className={`py-3 px-3 text-center ${payment.deposited_via_check ? 'opacity-40' : ''}`}>
                       <div className="flex flex-col items-center gap-1">
                         <button
                           onClick={() => handleToggleProcessed(payment)}
+                          disabled={payment.deposited_via_check}
                           className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
                             payment.processed_via_terminal
                               ? 'bg-green-500 border-green-500 text-white'
+                              : payment.deposited_via_check
+                              ? 'border-gray-400 cursor-not-allowed'
                               : isDayMode
                               ? 'border-gray-300 hover:border-green-400'
                               : 'border-gray-600 hover:border-green-400'
@@ -741,6 +805,41 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                           <select
                             value={payment.processed_by_initials}
                             onChange={e => handleSetInitials(payment, 'processed_by_initials', e.target.value)}
+                            className={`text-xs px-1 py-0.5 rounded border ${
+                              isDayMode ? 'bg-white border-gray-200 text-gray-700' : 'bg-white/10 border-white/20 text-gray-300'
+                            }`}
+                          >
+                            <option value="">--</option>
+                            {STAFF_INITIALS.map(i => (
+                              <option key={i} value={i}>{i}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Check */}
+                    <td className={`py-3 px-3 text-center ${payment.processed_via_terminal ? 'opacity-40' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button
+                          onClick={() => handleToggleCheck(payment)}
+                          disabled={payment.processed_via_terminal}
+                          className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                            payment.deposited_via_check
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : payment.processed_via_terminal
+                              ? 'border-gray-400 cursor-not-allowed'
+                              : isDayMode
+                              ? 'border-gray-300 hover:border-green-400'
+                              : 'border-gray-600 hover:border-green-400'
+                          }`}
+                        >
+                          {payment.deposited_via_check && <CheckCircle className="w-4 h-4" />}
+                        </button>
+                        {payment.deposited_via_check && (
+                          <select
+                            value={payment.deposited_via_check_by_initials}
+                            onChange={e => handleSetInitials(payment, 'deposited_via_check_by_initials', e.target.value)}
                             className={`text-xs px-1 py-0.5 rounded border ${
                               isDayMode ? 'bg-white border-gray-200 text-gray-700' : 'bg-white/10 border-white/20 text-gray-300'
                             }`}
