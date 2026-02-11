@@ -403,32 +403,8 @@ export default function ARAgingChart({ isDayMode }: ARAgingChartProps) {
               }`}
             >
               <p className={`text-xs font-medium ${subtextColor} mb-1`}>Insurance A/R</p>
-              <div className="flex items-center gap-2">
-                {delta.insuranceARChange <= 0 ? (
-                  <ArrowDownRight className="w-5 h-5 text-green-500" />
-                ) : (
-                  <ArrowUpRight className="w-5 h-5 text-red-500" />
-                )}
-                <span
-                  className={`text-lg font-bold ${
-                    delta.insuranceARChange <= 0 ? 'text-green-500' : 'text-red-500'
-                  }`}
-                >
-                  {formatDollar(Math.abs(delta.insuranceARChange))}
-                </span>
-              </div>
-              <p
-                className={`text-xs mt-1 ${
-                  delta.insuranceARChange <= 0 ? 'text-green-500' : 'text-red-500'
-                }`}
-              >
-                {delta.insuranceARChange <= 0 ? (
-                  <TrendingDown className="inline w-3 h-3 mr-1" />
-                ) : (
-                  <TrendingUp className="inline w-3 h-3 mr-1" />
-                )}
-                {delta.insuranceARChangePct >= 0 ? '+' : ''}
-                {delta.insuranceARChangePct.toFixed(1)}% from previous
+              <p className={`text-sm font-semibold ${subtextColor} italic mt-2`}>
+                Calculated on the 1st &amp; 15th
               </p>
             </div>
 
@@ -439,32 +415,8 @@ export default function ARAgingChart({ isDayMode }: ARAgingChartProps) {
               }`}
             >
               <p className={`text-xs font-medium ${subtextColor} mb-1`}>Combined A/R</p>
-              <div className="flex items-center gap-2">
-                {delta.combinedChange <= 0 ? (
-                  <ArrowDownRight className="w-5 h-5 text-green-500" />
-                ) : (
-                  <ArrowUpRight className="w-5 h-5 text-red-500" />
-                )}
-                <span
-                  className={`text-lg font-bold ${
-                    delta.combinedChange <= 0 ? 'text-green-500' : 'text-red-500'
-                  }`}
-                >
-                  {formatDollar(Math.abs(delta.combinedChange))}
-                </span>
-              </div>
-              <p
-                className={`text-xs mt-1 ${
-                  delta.combinedChange <= 0 ? 'text-green-500' : 'text-red-500'
-                }`}
-              >
-                {delta.combinedChange <= 0 ? (
-                  <TrendingDown className="inline w-3 h-3 mr-1" />
-                ) : (
-                  <TrendingUp className="inline w-3 h-3 mr-1" />
-                )}
-                {delta.combinedChangePct >= 0 ? '+' : ''}
-                {delta.combinedChangePct.toFixed(1)}% from previous
+              <p className={`text-sm font-semibold ${subtextColor} italic mt-2`}>
+                Calculated on the 1st &amp; 15th
               </p>
             </div>
           </div>
@@ -505,21 +457,24 @@ export default function ARAgingChart({ isDayMode }: ARAgingChartProps) {
             <Line
               type="monotone"
               dataKey="insuranceAR"
-              name="Insurance A/R"
+              name="Insurance A/R (1st & 15th only)"
               stroke="#f97316"
               strokeWidth={2}
+              strokeDasharray="4 4"
               dot={{ r: 4, fill: '#f97316' }}
               activeDot={{ r: 6 }}
+              hide
             />
             <Line
               type="monotone"
               dataKey="combinedAR"
-              name="Combined Total"
+              name="Combined Total (1st & 15th only)"
               stroke="#9ca3af"
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={{ r: 3, fill: '#9ca3af' }}
               activeDot={{ r: 5 }}
+              hide
             />
           </LineChart>
         </ResponsiveContainer>
@@ -553,33 +508,16 @@ export default function ARAgingChart({ isDayMode }: ARAgingChartProps) {
         </ResponsiveContainer>
       </div>
 
-      {/* Insurance A/R Aging Breakdown Stacked Bar Chart */}
+      {/* Insurance A/R Aging Breakdown */}
       <div className={`${bgColor} rounded-lg shadow-sm border ${borderColor} p-5`}>
         <h3 className={`text-base font-semibold ${textColor} mb-4`}>
           Insurance A/R Aging Breakdown
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-            <XAxis
-              dataKey="label"
-              tick={{ fill: axisTickColor, fontSize: 12 }}
-              tickLine={{ stroke: axisTickColor }}
-            />
-            <YAxis
-              tickFormatter={formatYAxisTick}
-              tick={{ fill: axisTickColor, fontSize: 12 }}
-              tickLine={{ stroke: axisTickColor }}
-            />
-            <Tooltip content={<InsuranceAgingTooltip isDayMode={isDayMode} />} />
-            <Legend wrapperStyle={{ fontSize: 12, color: axisTickColor }} />
-            <Bar dataKey="insurance_0_30" name="0-30 Days" stackId="insurance" fill="#22c55e" />
-            <Bar dataKey="insurance_31_60" name="31-60 Days" stackId="insurance" fill="#eab308" />
-            <Bar dataKey="insurance_61_90" name="61-90 Days" stackId="insurance" fill="#f97316" />
-            <Bar dataKey="insurance_91_120" name="91-120 Days" stackId="insurance" fill="#ef4444" />
-            <Bar dataKey="insurance_121_plus" name="121+ Days" stackId="insurance" fill="#991b1b" />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className={`flex flex-col items-center justify-center py-12 ${subtextColor}`}>
+          <BarChart3 className="w-10 h-10 mb-3 opacity-40" />
+          <p className="font-medium text-sm">Insurance A/R is calculated on the 1st &amp; 15th of each month</p>
+          <p className="text-xs mt-1 opacity-70">Next update will reflect the latest reconciled balances</p>
+        </div>
       </div>
     </div>
   );
