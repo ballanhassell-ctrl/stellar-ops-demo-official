@@ -37,7 +37,7 @@ import { sanitizePatientName } from '../utils/sanitizePatientName';
 // =====================================================
 
 const CLAIM_TYPES = ['VCC Standard'];
-const STATUS_OPTIONS: VCCPayment['status'][] = ['Pending', 'Posted', 'Closed'];
+const STATUS_OPTIONS: VCCPayment['status'][] = ['Pending/Needs Payment', 'Posted', 'Closed'];
 const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
 
 const EMPTY_FORM: NewVCCPayment = {
@@ -49,7 +49,7 @@ const EMPTY_FORM: NewVCCPayment = {
   posted_by_initials: '',
   processed_via_terminal: false,
   processed_by_initials: '',
-  status: 'Pending',
+  status: 'Pending/Needs Payment',
   opt_out_requested: false,
   opted_out: false,
   opt_out_notes: [],
@@ -154,6 +154,8 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       sanitized.status = 'Closed';
     } else if (sanitized.posted_to_open_dental || sanitized.processed_via_terminal) {
       sanitized.status = 'Posted';
+    } else {
+      sanitized.status = 'Pending/Needs Payment';
     }
 
     try {
@@ -229,7 +231,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     // Auto-update status
     if (newPosted && payment.processed_via_terminal) updates.status = 'Closed';
     else if (newPosted || payment.processed_via_terminal) updates.status = 'Posted';
-    else updates.status = 'Pending';
+    else updates.status = 'Pending/Needs Payment';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -247,7 +249,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     };
     if (payment.posted_to_open_dental && newProcessed) updates.status = 'Closed';
     else if (payment.posted_to_open_dental || newProcessed) updates.status = 'Posted';
-    else updates.status = 'Pending';
+    else updates.status = 'Pending/Needs Payment';
 
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
@@ -331,6 +333,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
         return isDayMode ? 'bg-green-100 text-green-800' : 'bg-green-900/40 text-green-300';
       case 'Posted':
         return isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-900/40 text-blue-300';
+      case 'Pending/Needs Payment':
       default:
         return isDayMode ? 'bg-amber-100 text-amber-800' : 'bg-amber-900/40 text-amber-300';
     }
@@ -395,7 +398,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
           <div className={`${isDayMode ? 'bg-amber-50' : 'bg-amber-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-amber-200' : 'border-amber-500/20'}`}>
             <div className="flex items-center gap-2 mb-1">
               <Clock className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
-              <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending</p>
+              <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending/Needs Payment</p>
             </div>
             <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
               ${summary.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
