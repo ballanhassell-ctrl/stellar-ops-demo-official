@@ -1,0 +1,959 @@
+// =====================================================
+// VCC Payments Tracker
+// Tracks VCC standard payments, posting status,
+// terminal processing, and opt-out workflows
+// =====================================================
+
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import {
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  CreditCard,
+  AlertCircle,
+  MessageSquare,
+  FileText,
+  Ban,
+} from 'lucide-react';
+import {
+  getVCCPayments,
+  insertVCCPayment,
+  updateVCCPayment,
+  deleteVCCPayment,
+  calculateVCCSummary,
+  type VCCPayment,
+  type NewVCCPayment,
+  type OptOutNote,
+} from '../services/vccPaymentsService';
+import { sanitizePatientName } from '../utils/sanitizePatientName';
+
+// =====================================================
+// CONSTANTS
+// =====================================================
+
+const CLAIM_TYPES = ['VCC Standard'];
+const STATUS_OPTIONS: VCCPayment['status'][] = ['Pending', 'Posted', 'Closed'];
+const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
+
+const EMPTY_FORM: NewVCCPayment = {
+  patient_name: '',
+  date_of_service: '',
+  claim_type: 'VCC Standard',
+  payment_amount: 0,
+  posted_to_open_dental: false,
+  posted_by_initials: '',
+  processed_via_terminal: false,
+  processed_by_initials: '',
+  status: 'Pending',
+  opt_out_requested: false,
+  opted_out: false,
+  opt_out_notes: [],
+};
+
+// =====================================================
+// COMPONENT
+// =====================================================
+
+interface VCCPaymentsTrackerProps {
+  isDayMode: boolean;
+}
+
+export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProps) {
+  // --------------------------------------------------
+  // State
+  // --------------------------------------------------
+  const [payments, setPayments] = useState<VCCPayment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<NewVCCPayment>({ ...EMPTY_FORM });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Opt-out modal state
+  const [optOutModalPaymentId, setOptOutModalPaymentId] = useState<string | null>(null);
+  const [optOutNoteText, setOptOutNoteText] = useState('');
+  const [optOutNoteInitials, setOptOutNoteInitials] = useState('');
+
+  // Use local-only mode when Supabase table doesn't exist
+  const [localMode, setLocalMode] = useState(false);
+
+  // --------------------------------------------------
+  // Data fetching
+  // --------------------------------------------------
+  const fetchPayments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getVCCPayments();
+      setPayments(data);
+      setLocalMode(false);
+    } catch {
+      // If Supabase table doesn't exist, fall back to local state
+      setLocalMode(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
+
+  // --------------------------------------------------
+  // Derived data
+  // --------------------------------------------------
+  const summary = useMemo(() => calculateVCCSummary(payments), [payments]);
+
+  const filteredPayments = useMemo(() => {
+    let filtered = payments;
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        p =>
+          p.patient_name.toLowerCase().includes(lower) ||
+          p.claim_type.toLowerCase().includes(lower)
+      );
+    }
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(p => p.status === statusFilter);
+    }
+    return filtered;
+  }, [payments, searchTerm, statusFilter]);
+
+  const optOutModalPayment = useMemo(
+    () => payments.find(p => p.id === optOutModalPaymentId) ?? null,
+    [payments, optOutModalPaymentId]
+  );
+
+  // --------------------------------------------------
+  // Handlers
+  // --------------------------------------------------
+  const resetForm = () => {
+    setForm({ ...EMPTY_FORM });
+    setShowAddForm(false);
+    setEditingId(null);
+  };
+
+  const handleSave = async () => {
+    if (!form.patient_name.trim() || !form.date_of_service) return;
+
+    const sanitized: NewVCCPayment = {
+      ...form,
+      patient_name: sanitizePatientName(form.patient_name),
+      payment_amount: Number(form.payment_amount) || 0,
+    };
+
+    // Auto-set status based on workflow
+    if (sanitized.posted_to_open_dental && sanitized.processed_via_terminal) {
+      sanitized.status = 'Closed';
+    } else if (sanitized.posted_to_open_dental || sanitized.processed_via_terminal) {
+      sanitized.status = 'Posted';
+    }
+
+    try {
+      if (localMode) {
+        // Local-only mode
+        if (editingId) {
+          setPayments(prev =>
+            prev.map(p => (p.id === editingId ? { ...p, ...sanitized, updated_at: new Date().toISOString() } : p))
+          );
+        } else {
+          const newPayment: VCCPayment = {
+            ...sanitized,
+            id: crypto.randomUUID(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          setPayments(prev => [newPayment, ...prev]);
+        }
+      } else {
+        if (editingId) {
+          await updateVCCPayment(editingId, sanitized);
+        } else {
+          await insertVCCPayment(sanitized);
+        }
+        await fetchPayments();
+      }
+    } catch (err) {
+      console.error('Error saving VCC payment:', err);
+    }
+
+    resetForm();
+  };
+
+  const handleEdit = (payment: VCCPayment) => {
+    setEditingId(payment.id);
+    setForm({
+      patient_name: payment.patient_name,
+      date_of_service: payment.date_of_service,
+      claim_type: payment.claim_type,
+      payment_amount: payment.payment_amount,
+      posted_to_open_dental: payment.posted_to_open_dental,
+      posted_by_initials: payment.posted_by_initials,
+      processed_via_terminal: payment.processed_via_terminal,
+      processed_by_initials: payment.processed_by_initials,
+      status: payment.status,
+      opt_out_requested: payment.opt_out_requested,
+      opted_out: payment.opted_out,
+      opt_out_notes: payment.opt_out_notes,
+    });
+    setShowAddForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      if (localMode) {
+        setPayments(prev => prev.filter(p => p.id !== id));
+      } else {
+        await deleteVCCPayment(id);
+        await fetchPayments();
+      }
+    } catch (err) {
+      console.error('Error deleting VCC payment:', err);
+    }
+    setDeleteConfirmId(null);
+  };
+
+  const handleTogglePosted = async (payment: VCCPayment) => {
+    const newPosted = !payment.posted_to_open_dental;
+    const updates: Partial<NewVCCPayment> = {
+      posted_to_open_dental: newPosted,
+      posted_by_initials: newPosted ? payment.posted_by_initials : '',
+    };
+    // Auto-update status
+    if (newPosted && payment.processed_via_terminal) updates.status = 'Closed';
+    else if (newPosted || payment.processed_via_terminal) updates.status = 'Posted';
+    else updates.status = 'Pending';
+
+    if (localMode) {
+      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
+    } else {
+      await updateVCCPayment(payment.id, updates);
+      await fetchPayments();
+    }
+  };
+
+  const handleToggleProcessed = async (payment: VCCPayment) => {
+    const newProcessed = !payment.processed_via_terminal;
+    const updates: Partial<NewVCCPayment> = {
+      processed_via_terminal: newProcessed,
+      processed_by_initials: newProcessed ? payment.processed_by_initials : '',
+    };
+    if (payment.posted_to_open_dental && newProcessed) updates.status = 'Closed';
+    else if (payment.posted_to_open_dental || newProcessed) updates.status = 'Posted';
+    else updates.status = 'Pending';
+
+    if (localMode) {
+      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
+    } else {
+      await updateVCCPayment(payment.id, updates);
+      await fetchPayments();
+    }
+  };
+
+  const handleSetInitials = async (payment: VCCPayment, field: 'posted_by_initials' | 'processed_by_initials', value: string) => {
+    if (localMode) {
+      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, [field]: value, updated_at: new Date().toISOString() } : p)));
+    } else {
+      await updateVCCPayment(payment.id, { [field]: value });
+      await fetchPayments();
+    }
+  };
+
+  // Opt-out handlers
+  const handleAddOptOutNote = async () => {
+    if (!optOutModalPaymentId || !optOutNoteText.trim() || !optOutNoteInitials.trim()) return;
+
+    const newNote: OptOutNote = {
+      id: crypto.randomUUID(),
+      initials: optOutNoteInitials.trim().toUpperCase(),
+      note: optOutNoteText.trim(),
+      created_at: new Date().toISOString(),
+    };
+
+    const payment = payments.find(p => p.id === optOutModalPaymentId);
+    if (!payment) return;
+
+    const updatedNotes = [...payment.opt_out_notes, newNote];
+
+    if (localMode) {
+      setPayments(prev =>
+        prev.map(p =>
+          p.id === optOutModalPaymentId
+            ? { ...p, opt_out_notes: updatedNotes, opt_out_requested: true, updated_at: new Date().toISOString() }
+            : p
+        )
+      );
+    } else {
+      await updateVCCPayment(optOutModalPaymentId, { opt_out_notes: updatedNotes, opt_out_requested: true });
+      await fetchPayments();
+    }
+
+    setOptOutNoteText('');
+    setOptOutNoteInitials('');
+  };
+
+  const handleToggleOptedOut = async (paymentId: string, currentValue: boolean) => {
+    if (localMode) {
+      setPayments(prev =>
+        prev.map(p =>
+          p.id === paymentId
+            ? { ...p, opted_out: !currentValue, updated_at: new Date().toISOString() }
+            : p
+        )
+      );
+    } else {
+      await updateVCCPayment(paymentId, { opted_out: !currentValue });
+      await fetchPayments();
+    }
+  };
+
+  // --------------------------------------------------
+  // Styling helpers
+  // --------------------------------------------------
+  const cardClass = `rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`;
+  const inputClass = `w-full px-3 py-2 rounded-lg border text-sm ${
+    isDayMode
+      ? 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
+      : 'bg-white/10 border-white/20 text-white focus:border-blue-400'
+  } focus:outline-none focus:ring-2 focus:ring-blue-500/30`;
+  const labelClass = `block text-xs font-semibold mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`;
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'Closed':
+        return isDayMode ? 'bg-green-100 text-green-800' : 'bg-green-900/40 text-green-300';
+      case 'Posted':
+        return isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-900/40 text-blue-300';
+      default:
+        return isDayMode ? 'bg-amber-100 text-amber-800' : 'bg-amber-900/40 text-amber-300';
+    }
+  };
+
+  // --------------------------------------------------
+  // Render
+  // --------------------------------------------------
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className={cardClass}>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+              VCC Payments
+            </h2>
+            <p className={`text-sm mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Track VCC standard claim payments, posting, and terminal processing
+            </p>
+          </div>
+          <button
+            onClick={() => { resetForm(); setShowAddForm(true); }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-primary text-gold-400 shadow-glow-primary hover-lift transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Payment
+          </button>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* Total Payments */}
+          <div className={`${isDayMode ? 'bg-slate-50' : 'bg-white/5'} rounded-xl p-4 border ${isDayMode ? 'border-slate-200' : 'border-white/10'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <FileText className={`w-4 h-4 ${isDayMode ? 'text-slate-500' : 'text-slate-400'}`} />
+              <p className={`text-xs font-medium ${isDayMode ? 'text-slate-600' : 'text-slate-400'}`}>Total Claims</p>
+            </div>
+            <p className={`text-2xl font-bold ${isDayMode ? 'text-slate-900' : 'text-white'}`}>{summary.totalPayments}</p>
+          </div>
+
+          {/* Total Amount */}
+          <div className={`${isDayMode ? 'bg-emerald-50' : 'bg-emerald-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-emerald-200' : 'border-emerald-500/20'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className={`w-4 h-4 ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
+              <p className={`text-xs font-medium ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Total Amount</p>
+            </div>
+            <p className={`text-2xl font-bold ${isDayMode ? 'text-emerald-900' : 'text-emerald-300'}`}>
+              ${summary.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+
+          {/* Pending */}
+          <div className={`${isDayMode ? 'bg-amber-50' : 'bg-amber-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-amber-200' : 'border-amber-500/20'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
+              <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending</p>
+            </div>
+            <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
+              ${summary.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-xs mt-0.5 ${isDayMode ? 'text-amber-600' : 'text-amber-500'}`}>{summary.pendingCount} claims</p>
+          </div>
+
+          {/* Closed/Resolved */}
+          <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-green-200' : 'border-green-500/20'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
+              <p className={`text-xs font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Closed/Resolved</p>
+            </div>
+            <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+              ${summary.closedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-xs mt-0.5 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>{summary.closedCount} claims</p>
+          </div>
+
+          {/* Posted to OD */}
+          <div className={`${isDayMode ? 'bg-blue-50' : 'bg-blue-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-blue-200' : 'border-blue-500/20'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <CreditCard className={`w-4 h-4 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`} />
+              <p className={`text-xs font-medium ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Posted to OD</p>
+            </div>
+            <p className={`text-2xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>{summary.postedCount}</p>
+            <p className={`text-xs mt-0.5 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>{summary.notPostedCount} not posted</p>
+          </div>
+
+          {/* Opt Out Requested */}
+          <div className={`${isDayMode ? 'bg-red-50' : 'bg-red-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-red-200' : 'border-red-500/20'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <Ban className={`w-4 h-4 ${isDayMode ? 'text-red-600' : 'text-red-400'}`} />
+              <p className={`text-xs font-medium ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Opt-Out Requested</p>
+            </div>
+            <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>{summary.optOutRequestedCount}</p>
+            <p className={`text-xs mt-0.5 ${isDayMode ? 'text-red-600' : 'text-red-500'}`}>{summary.optedOutCount} opted out</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Add/Edit Form */}
+      {showAddForm && (
+        <div className={cardClass}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+              {editingId ? 'Edit VCC Payment' : 'Add VCC Payment'}
+            </h3>
+            <button onClick={resetForm} className={`p-1.5 rounded-lg ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Patient Name */}
+            <div>
+              <label className={labelClass}>Patient Name *</label>
+              <input
+                type="text"
+                value={form.patient_name}
+                onChange={e => setForm(f => ({ ...f, patient_name: e.target.value }))}
+                className={inputClass}
+                placeholder="Last, First"
+              />
+            </div>
+
+            {/* Date of Service */}
+            <div>
+              <label className={labelClass}>Date of Service *</label>
+              <input
+                type="date"
+                value={form.date_of_service}
+                onChange={e => setForm(f => ({ ...f, date_of_service: e.target.value }))}
+                className={inputClass}
+              />
+            </div>
+
+            {/* Claim Type */}
+            <div>
+              <label className={labelClass}>Claim Type</label>
+              <select
+                value={form.claim_type}
+                onChange={e => setForm(f => ({ ...f, claim_type: e.target.value }))}
+                className={inputClass}
+              >
+                {CLAIM_TYPES.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Payment Amount */}
+            <div>
+              <label className={labelClass}>Payment Amount</label>
+              <div className="relative">
+                <span className={`absolute left-3 top-2.5 text-sm ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.payment_amount || ''}
+                  onChange={e => setForm(f => ({ ...f, payment_amount: parseFloat(e.target.value) || 0 }))}
+                  className={`${inputClass} pl-7`}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className={labelClass}>Status</label>
+              <select
+                value={form.status}
+                onChange={e => setForm(f => ({ ...f, status: e.target.value as VCCPayment['status'] }))}
+                className={inputClass}
+              >
+                {STATUS_OPTIONS.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Posted to Open Dental */}
+            <div className="flex flex-col justify-end">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.posted_to_open_dental}
+                    onChange={e => setForm(f => ({ ...f, posted_to_open_dental: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Posted to Open Dental</span>
+                </label>
+              </div>
+              {form.posted_to_open_dental && (
+                <div className="mt-2">
+                  <label className={labelClass}>Posted By (Initials)</label>
+                  <select
+                    value={form.posted_by_initials}
+                    onChange={e => setForm(f => ({ ...f, posted_by_initials: e.target.value }))}
+                    className={inputClass}
+                  >
+                    <option value="">Select...</option>
+                    {STAFF_INITIALS.map(i => (
+                      <option key={i} value={i}>{i}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Processed via Terminal */}
+            <div className="flex flex-col justify-end">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.processed_via_terminal}
+                    onChange={e => setForm(f => ({ ...f, processed_via_terminal: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Processed via Terminal</span>
+                </label>
+              </div>
+              {form.processed_via_terminal && (
+                <div className="mt-2">
+                  <label className={labelClass}>Processed By (Initials)</label>
+                  <select
+                    value={form.processed_by_initials}
+                    onChange={e => setForm(f => ({ ...f, processed_by_initials: e.target.value }))}
+                    className={inputClass}
+                  >
+                    <option value="">Select...</option>
+                    {STAFF_INITIALS.map(i => (
+                      <option key={i} value={i}>{i}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={resetForm}
+              className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!form.patient_name.trim() || !form.date_of_service}
+              className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-primary text-gold-400 shadow-glow-primary hover-lift transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {editingId ? 'Update Payment' : 'Add Payment'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Filters & Search */}
+      <div className={cardClass}>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className={`absolute left-3 top-2.5 w-4 h-4 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search by patient name..."
+              className={`${inputClass} pl-9`}
+            />
+          </div>
+          <div className="flex gap-2">
+            {['all', ...STATUS_OPTIONS].map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  statusFilter === s
+                    ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                    : isDayMode
+                    ? 'bg-white/60 text-gray-600 hover:bg-white/80 border border-white/40'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+                }`}
+              >
+                {s === 'all' ? 'All' : s}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Payments Table */}
+      <div className={cardClass}>
+        {filteredPayments.length === 0 ? (
+          <div className="text-center py-12">
+            <CreditCard className={`w-12 h-12 mx-auto mb-3 ${isDayMode ? 'text-gray-300' : 'text-gray-600'}`} />
+            <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              {payments.length === 0 ? 'No VCC payments added yet. Click "Add Payment" to get started.' : 'No payments match your filters.'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-white/10'}`}>
+                  <th className={`text-left py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient Name</th>
+                  <th className={`text-left py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>DOS</th>
+                  <th className={`text-left py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Claim Type</th>
+                  <th className={`text-right py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Amount</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Posted to OD</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Terminal</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Opt Out</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPayments.map(payment => (
+                  <tr
+                    key={payment.id}
+                    className={`border-b ${isDayMode ? 'border-gray-100 hover:bg-blue-50/50' : 'border-white/5 hover:bg-white/5'} transition-colors`}
+                  >
+                    {/* Patient Name */}
+                    <td className={`py-3 px-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      {payment.patient_name}
+                    </td>
+
+                    {/* DOS */}
+                    <td className={`py-3 px-3 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {payment.date_of_service ? new Date(payment.date_of_service + 'T00:00:00').toLocaleDateString() : '-'}
+                    </td>
+
+                    {/* Claim Type */}
+                    <td className="py-3 px-3">
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        isDayMode ? 'bg-purple-100 text-purple-800' : 'bg-purple-900/40 text-purple-300'
+                      }`}>
+                        {payment.claim_type}
+                      </span>
+                    </td>
+
+                    {/* Amount */}
+                    <td className={`py-3 px-3 text-right font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                      ${payment.payment_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </td>
+
+                    {/* Posted to OD */}
+                    <td className="py-3 px-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <button
+                          onClick={() => handleTogglePosted(payment)}
+                          className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                            payment.posted_to_open_dental
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : isDayMode
+                              ? 'border-gray-300 hover:border-green-400'
+                              : 'border-gray-600 hover:border-green-400'
+                          }`}
+                        >
+                          {payment.posted_to_open_dental && <CheckCircle className="w-4 h-4" />}
+                        </button>
+                        {payment.posted_to_open_dental && (
+                          <select
+                            value={payment.posted_by_initials}
+                            onChange={e => handleSetInitials(payment, 'posted_by_initials', e.target.value)}
+                            className={`text-xs px-1 py-0.5 rounded border ${
+                              isDayMode ? 'bg-white border-gray-200 text-gray-700' : 'bg-white/10 border-white/20 text-gray-300'
+                            }`}
+                          >
+                            <option value="">--</option>
+                            {STAFF_INITIALS.map(i => (
+                              <option key={i} value={i}>{i}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Terminal */}
+                    <td className="py-3 px-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <button
+                          onClick={() => handleToggleProcessed(payment)}
+                          className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                            payment.processed_via_terminal
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : isDayMode
+                              ? 'border-gray-300 hover:border-green-400'
+                              : 'border-gray-600 hover:border-green-400'
+                          }`}
+                        >
+                          {payment.processed_via_terminal && <CheckCircle className="w-4 h-4" />}
+                        </button>
+                        {payment.processed_via_terminal && (
+                          <select
+                            value={payment.processed_by_initials}
+                            onChange={e => handleSetInitials(payment, 'processed_by_initials', e.target.value)}
+                            className={`text-xs px-1 py-0.5 rounded border ${
+                              isDayMode ? 'bg-white border-gray-200 text-gray-700' : 'bg-white/10 border-white/20 text-gray-300'
+                            }`}
+                          >
+                            <option value="">--</option>
+                            {STAFF_INITIALS.map(i => (
+                              <option key={i} value={i}>{i}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-3 px-3 text-center">
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor(payment.status)}`}>
+                        {payment.status}
+                      </span>
+                    </td>
+
+                    {/* Opt Out */}
+                    <td className="py-3 px-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        {payment.opted_out ? (
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            isDayMode ? 'bg-red-100 text-red-700' : 'bg-red-900/40 text-red-300'
+                          }`}>
+                            Opted Out
+                          </span>
+                        ) : payment.opt_out_requested ? (
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            isDayMode ? 'bg-orange-100 text-orange-700' : 'bg-orange-900/40 text-orange-300'
+                          }`}>
+                            Requested
+                          </span>
+                        ) : (
+                          <span className={`text-xs ${isDayMode ? 'text-gray-400' : 'text-gray-600'}`}>-</span>
+                        )}
+                        <button
+                          onClick={() => setOptOutModalPaymentId(payment.id)}
+                          className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded-lg transition-all ${
+                            isDayMode ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:bg-blue-900/20'
+                          }`}
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          Notes
+                        </button>
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-3 px-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleEdit(payment)}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            isDayMode ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:bg-blue-900/20'
+                          }`}
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        {deleteConfirmId === payment.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleDelete(payment.id)}
+                              className="px-2 py-1 rounded text-xs font-semibold bg-red-500 text-white hover:bg-red-600"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(null)}
+                              className={`px-2 py-1 rounded text-xs font-semibold ${
+                                isDayMode ? 'bg-gray-100 text-gray-600' : 'bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirmId(payment.id)}
+                            className={`p-1.5 rounded-lg transition-all ${
+                              isDayMode ? 'text-red-500 hover:bg-red-50' : 'text-red-400 hover:bg-red-900/20'
+                            }`}
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Opt-Out Status Modal */}
+      {optOutModalPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className={`w-full max-w-lg rounded-2xl p-6 ${isDayMode ? 'bg-white shadow-xl' : 'bg-gray-900 border border-white/10'} max-h-[80vh] flex flex-col`}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                  Opt-Out Status
+                </h3>
+                <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {optOutModalPayment.patient_name} &mdash; DOS: {optOutModalPayment.date_of_service ? new Date(optOutModalPayment.date_of_service + 'T00:00:00').toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+              <button
+                onClick={() => { setOptOutModalPaymentId(null); setOptOutNoteText(''); setOptOutNoteInitials(''); }}
+                className={`p-1.5 rounded-lg ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Opted Out Checkbox */}
+            <div className={`flex items-center gap-3 mb-4 p-3 rounded-xl ${
+              isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-500/20'
+            }`}>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={optOutModalPayment.opted_out}
+                  onChange={() => handleToggleOptedOut(optOutModalPayment.id, optOutModalPayment.opted_out)}
+                  className="w-5 h-5 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                />
+                <span className={`text-sm font-semibold ${isDayMode ? 'text-red-800' : 'text-red-300'}`}>
+                  Mark as Opted Out
+                </span>
+              </label>
+              {optOutModalPayment.opted_out && (
+                <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-bold ${
+                  isDayMode ? 'bg-red-200 text-red-800' : 'bg-red-800 text-red-200'
+                }`}>
+                  OPTED OUT
+                </span>
+              )}
+            </div>
+
+            {/* Notes List */}
+            <div className="flex-1 overflow-y-auto mb-4 space-y-2">
+              {optOutModalPayment.opt_out_notes.length === 0 ? (
+                <div className="text-center py-6">
+                  <AlertCircle className={`w-8 h-8 mx-auto mb-2 ${isDayMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <p className={`text-sm ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>No opt-out notes yet.</p>
+                </div>
+              ) : (
+                optOutModalPayment.opt_out_notes.map(note => (
+                  <div
+                    key={note.id}
+                    className={`p-3 rounded-xl ${isDayMode ? 'bg-gray-50 border border-gray-200' : 'bg-white/5 border border-white/10'}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-900/40 text-blue-300'
+                      }`}>
+                        {note.initials}
+                      </span>
+                      <span className={`text-xs ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {new Date(note.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className={`text-sm ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>{note.note}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Add Note Form */}
+            <div className={`border-t pt-4 ${isDayMode ? 'border-gray-200' : 'border-white/10'}`}>
+              <div className="flex gap-2 mb-2">
+                <select
+                  value={optOutNoteInitials}
+                  onChange={e => setOptOutNoteInitials(e.target.value)}
+                  className={`px-3 py-2 rounded-lg border text-sm w-24 ${
+                    isDayMode
+                      ? 'bg-white border-gray-300 text-gray-900'
+                      : 'bg-white/10 border-white/20 text-white'
+                  }`}
+                >
+                  <option value="">Initials</option>
+                  {STAFF_INITIALS.map(i => (
+                    <option key={i} value={i}>{i}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={optOutNoteText}
+                  onChange={e => setOptOutNoteText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddOptOutNote(); }}
+                  placeholder="Add a note about opt-out status..."
+                  className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
+                    isDayMode
+                      ? 'bg-white border-gray-300 text-gray-900'
+                      : 'bg-white/10 border-white/20 text-white'
+                  }`}
+                />
+              </div>
+              <button
+                onClick={handleAddOptOutNote}
+                disabled={!optOutNoteText.trim() || !optOutNoteInitials}
+                className="w-full px-4 py-2 rounded-xl font-semibold text-sm bg-gradient-primary text-gold-400 shadow-glow-primary hover-lift transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
