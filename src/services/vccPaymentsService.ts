@@ -22,6 +22,7 @@ export interface VCCPayment {
   id: string;
   patient_name: string;
   date_of_service: string;
+  multiple_dos: boolean;
   claim_type: string;
   payment_amount: number;
   posted_to_open_dental: boolean;
@@ -83,6 +84,7 @@ function normalizePayment(row: any): VCCPayment {
     payment_amount: Number(row.payment_amount) || 0,
     posted_to_open_dental: !!row.posted_to_open_dental,
     processed_via_terminal: !!row.processed_via_terminal,
+    multiple_dos: !!row.multiple_dos,
     deposited_via_check: !!row.deposited_via_check,
     opt_out_requested: !!row.opt_out_requested,
     opted_out: !!row.opted_out,

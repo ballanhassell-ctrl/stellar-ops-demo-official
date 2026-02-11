@@ -43,6 +43,7 @@ const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
 const EMPTY_FORM: NewVCCPayment = {
   patient_name: '',
   date_of_service: '',
+  multiple_dos: false,
   claim_type: 'VCC Standard',
   payment_amount: 0,
   posted_to_open_dental: false,
@@ -143,7 +144,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
   };
 
   const handleSave = async () => {
-    if (!form.patient_name.trim() || !form.date_of_service) return;
+    if (!form.patient_name.trim() || (!form.multiple_dos && !form.date_of_service)) return;
 
     const sanitized: NewVCCPayment = {
       ...form,
@@ -199,6 +200,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     setForm({
       patient_name: payment.patient_name,
       date_of_service: payment.date_of_service,
+      multiple_dos: payment.multiple_dos,
       claim_type: payment.claim_type,
       payment_amount: payment.payment_amount,
       posted_to_open_dental: payment.posted_to_open_dental,
@@ -514,13 +516,31 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
 
             {/* Date of Service */}
             <div>
-              <label className={labelClass}>Date of Service *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={`text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  Date of Service {!form.multiple_dos && '*'}
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.multiple_dos}
+                    onChange={e => setForm(f => ({ ...f, multiple_dos: e.target.checked, ...(e.target.checked ? { date_of_service: '' } : {}) }))}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Multiple</span>
+                </label>
+              </div>
               <input
                 type="date"
                 value={form.date_of_service}
                 onChange={e => setForm(f => ({ ...f, date_of_service: e.target.value }))}
-                className={inputClass}
+                disabled={form.multiple_dos}
+                className={`${inputClass} ${form.multiple_dos ? 'opacity-40 cursor-not-allowed' : ''}`}
+                placeholder={form.multiple_dos ? 'Multiple DOS' : ''}
               />
+              {form.multiple_dos && (
+                <p className={`text-xs mt-1 font-medium ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>Multiple DOS will be recorded</p>
+              )}
             </div>
 
             {/* Claim Type */}
@@ -672,7 +692,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
             </button>
             <button
               onClick={handleSave}
-              disabled={!form.patient_name.trim() || !form.date_of_service}
+              disabled={!form.patient_name.trim() || (!form.multiple_dos && !form.date_of_service)}
               className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-primary text-gold-400 shadow-glow-primary hover-lift transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {editingId ? 'Update Payment' : 'Add Payment'}
@@ -753,7 +773,11 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
 
                     {/* DOS */}
                     <td className={`py-3 px-3 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {payment.date_of_service ? new Date(payment.date_of_service + 'T00:00:00').toLocaleDateString() : '-'}
+                      {payment.multiple_dos ? (
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-900/40 text-blue-300'
+                        }`}>Multiple</span>
+                      ) : payment.date_of_service ? new Date(payment.date_of_service + 'T00:00:00').toLocaleDateString() : '-'}
                     </td>
 
                     {/* Claim Type */}
