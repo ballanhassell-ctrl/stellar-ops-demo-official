@@ -28,7 +28,7 @@ export interface VCCPayment {
   posted_by_initials: string;
   processed_via_terminal: boolean;
   processed_by_initials: string;
-  status: 'Pending' | 'Posted' | 'Closed';
+  status: 'Pending/Needs Payment' | 'Posted' | 'Closed';
   opt_out_requested: boolean;
   opted_out: boolean;
   opt_out_notes: OptOutNote[];
@@ -164,7 +164,7 @@ export async function deleteVCCPayment(id: string): Promise<void> {
 // =====================================================
 
 export function calculateVCCSummary(payments: VCCPayment[]): VCCPaymentsSummary {
-  const pending = payments.filter(p => p.status === 'Pending');
+  const pending = payments.filter(p => !p.processed_via_terminal);
   const closed = payments.filter(p => p.status === 'Closed');
 
   return {

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS vcc_payments (
   posted_by_initials TEXT NOT NULL DEFAULT '',
   processed_via_terminal BOOLEAN NOT NULL DEFAULT FALSE,
   processed_by_initials TEXT NOT NULL DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Posted', 'Closed')),
+  status TEXT NOT NULL DEFAULT 'Pending/Needs Payment' CHECK (status IN ('Pending/Needs Payment', 'Posted', 'Closed')),
   opt_out_requested BOOLEAN NOT NULL DEFAULT FALSE,
   opted_out BOOLEAN NOT NULL DEFAULT FALSE,
   opt_out_notes JSONB NOT NULL DEFAULT '[]'::jsonb,
