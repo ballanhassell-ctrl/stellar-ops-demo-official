@@ -772,7 +772,7 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): any => {
 
 
 const CourtStreetRCM = () => {
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   // Unified date state for all dashboard sections (uses local timezone)
@@ -1696,7 +1696,7 @@ const CourtStreetRCM = () => {
   ];
 
   // Sub-navigation for RCM Management tab
-  const [patientManagementView, setPatientManagementView] = useState('claims');
+  const [patientManagementView, setPatientManagementView] = useState('preauths');
 
   // Sub-navigation for Administration tab
   const [administrationView, setAdministrationView] = useState('scheduling');
@@ -3279,18 +3279,20 @@ const CourtStreetRCM = () => {
             {/* Sub-navigation tabs */}
             <div className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setPatientManagementView('claims')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'claims'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Claims
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setPatientManagementView('claims')}
+                    className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                      patientManagementView === 'claims'
+                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                        : isDayMode
+                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    Claims
+                  </button>
+                )}
                 <button
                   onClick={() => setPatientManagementView('preauths')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -3390,7 +3392,7 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
-            {patientManagementView === 'claims' && (
+            {isAdmin && patientManagementView === 'claims' && (
               <InsuranceARReport isDayMode={isDayMode} />
             )}
 
