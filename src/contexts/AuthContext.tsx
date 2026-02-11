@@ -3,20 +3,17 @@ import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 
-type UserRole = 'admin' | 'team';
-
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
-  signIn: (password: string, role: UserRole) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ADMIN_EMAIL = 'admin@dashboard.local';
-const TEAM_EMAIL = 'team@dashboard.local';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -39,14 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = useCallback(async (password: string, role: UserRole): Promise<{ error: string | null }> => {
-    const email = role === 'admin' ? ADMIN_EMAIL : TEAM_EMAIL;
+  const signIn = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) {
-      return { error: 'Invalid password. Please try again.' };
+      return { error: 'Invalid email or password. Please try again.' };
     }
     return { error: null };
   }, []);
