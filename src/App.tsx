@@ -3280,6 +3280,78 @@ const CourtStreetRCM = () => {
             {/* Sub-navigation tabs */}
             <div className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setPatientManagementView('patients')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'patients'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Patient A/R
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-issues')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'insurance-issues'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Insurance Issues
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('vcc-payments')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'vcc-payments'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  VCC Payments
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-checks')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'insurance-checks'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Insurance Checks/EFT's
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('ar-trends')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'ar-trends'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  A/R Trends
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('preauths')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'preauths'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Pre-Auths
+                </button>
                 {isAdmin && (
                   <button
                     onClick={() => setPatientManagementView('claims')}
@@ -3295,40 +3367,16 @@ const CourtStreetRCM = () => {
                   </button>
                 )}
                 <button
-                  onClick={() => setPatientManagementView('preauths')}
+                  onClick={() => setPatientManagementView('od-import')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'preauths'
+                    patientManagementView === 'od-import'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
                       ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
                       : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                   }`}
                 >
-                  Pre-Auths
-                </button>
-                <button
-                  onClick={() => setPatientManagementView('patients')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'patients'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Patient A/R
-                </button>
-                <button
-                  onClick={() => setPatientManagementView('insurance-checks')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'insurance-checks'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Insurance Checks/EFT's
+                  Open Dental Import
                 </button>
                 {/* Temporarily hidden - Payments tab
                 <button
@@ -3344,18 +3392,6 @@ const CourtStreetRCM = () => {
                   Payments
                 </button>
                 */}
-                <button
-                  onClick={() => setPatientManagementView('vcc-payments')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'vcc-payments'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  VCC Payments
-                </button>
                 {/* Temporarily hidden - Insurance Networks tab
                 <button
                   onClick={() => setPatientManagementView('insurance-networks')}
@@ -3370,42 +3406,6 @@ const CourtStreetRCM = () => {
                   Insurance Networks
                 </button>
                 */}
-                <button
-                  onClick={() => setPatientManagementView('insurance-issues')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'insurance-issues'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Insurance Issues
-                </button>
-                <button
-                  onClick={() => setPatientManagementView('ar-trends')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'ar-trends'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  A/R Trends
-                </button>
-                <button
-                  onClick={() => setPatientManagementView('od-import')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'od-import'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Open Dental Import
-                </button>
               </div>
             </div>
 
