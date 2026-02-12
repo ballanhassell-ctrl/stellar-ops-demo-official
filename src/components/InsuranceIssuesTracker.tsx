@@ -140,6 +140,28 @@ function NotesPopup({
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
   // Sort newest first
   const sorted = useMemo(
     () => [...notes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
@@ -153,13 +175,21 @@ function NotesPopup({
   const sourceBadge = (source: NoteSource) => {
     if (source === 'office') {
       return (
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+          isDayMode
+            ? 'bg-blue-100 text-blue-700'
+            : 'bg-blue-900/40 text-blue-300'
+        }`}>
           Office
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+        isDayMode
+          ? 'bg-violet-100 text-violet-700'
+          : 'bg-violet-900/40 text-violet-300'
+      }`}>
         Stellar
       </span>
     );
@@ -168,13 +198,15 @@ function NotesPopup({
   return (
     <div className="relative" ref={popupRef}>
       <button
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
         onClick={() => setIsOpen(!isOpen)}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs cursor-pointer transition-colors ${
-          isDayMode
-            ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
-            : 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50'
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs cursor-pointer transition-colors ${
+          isOpen
+            ? isDayMode
+              ? 'text-blue-800 bg-blue-100 ring-2 ring-blue-300'
+              : 'text-blue-200 bg-blue-800/50 ring-2 ring-blue-500'
+            : isDayMode
+              ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+              : 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50'
         }`}
       >
         <MessageSquare className="w-3 h-3" />
@@ -183,40 +215,62 @@ function NotesPopup({
 
       {isOpen && (
         <div
-          onMouseEnter={() => setIsOpen(true)}
-          onMouseLeave={() => setIsOpen(false)}
-          className={`absolute z-40 bottom-full left-0 mb-1 w-80 max-h-64 overflow-y-auto rounded-lg shadow-xl border p-3 space-y-2 ${
+          className={`absolute z-50 bottom-full left-0 mb-2 w-96 max-h-80 rounded-xl shadow-2xl border flex flex-col transition-opacity duration-150 ${
             isDayMode
               ? 'bg-white border-gray-200'
               : 'bg-gray-800 border-gray-600'
           }`}
+          style={{ animation: 'notesPopupFadeIn 0.15s ease-out' }}
         >
-          <p className={`text-xs font-semibold mb-2 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
-            Notes (newest first)
-          </p>
-          {sorted.map((note, idx) => (
-            <div
-              key={idx}
-              className={`rounded-md p-2 text-xs ${
-                isDayMode ? 'bg-gray-50 border border-gray-100' : 'bg-gray-700/50 border border-gray-600'
+          {/* Header */}
+          <div className={`flex items-center justify-between px-4 py-2.5 border-b flex-shrink-0 ${
+            isDayMode ? 'border-gray-100' : 'border-gray-700'
+          }`}>
+            <p className={`text-xs font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+              Notes ({sorted.length}) — newest first
+            </p>
+            <button
+              onClick={() => setIsOpen(false)}
+              className={`p-0.5 rounded transition-colors ${
+                isDayMode
+                  ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
               }`}
             >
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="flex items-center gap-1.5">
-                  {sourceBadge(note.source)}
-                  {note.author && (
-                    <span className={`font-semibold ${isDayMode ? 'text-gray-800' : 'text-gray-200'}`}>
-                      {note.author}
-                    </span>
-                  )}
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Scrollable notes list */}
+          <div className={`overflow-y-auto flex-1 p-3 space-y-2.5 notes-popup-scroll ${
+            isDayMode ? 'notes-popup-scroll-light' : 'notes-popup-scroll-dark'
+          }`}>
+            {sorted.map((note, idx) => (
+              <div
+                key={idx}
+                className={`rounded-lg p-3 text-[13px] leading-relaxed ${
+                  isDayMode
+                    ? 'bg-gray-50 border border-gray-150 shadow-sm'
+                    : 'bg-gray-700/60 border border-gray-600 shadow-sm'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2">
+                    {sourceBadge(note.source)}
+                    {note.author && (
+                      <span className={`font-semibold text-xs ${isDayMode ? 'text-gray-800' : 'text-gray-200'}`}>
+                        {note.author}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-[10px] whitespace-nowrap ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {formatTimestamp(note.created_at)}
+                  </span>
                 </div>
-                <span className={`text-[10px] ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {formatTimestamp(note.created_at)}
-                </span>
+                <p className={`leading-snug ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>{note.text}</p>
               </div>
-              <p className={isDayMode ? 'text-gray-700' : 'text-gray-300'}>{note.text}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
