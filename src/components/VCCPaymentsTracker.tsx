@@ -176,7 +176,6 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       if (localMode) {
         // Local-only mode
         if (editingId) {
-          const existingPayment = payments.find(p => p.id === editingId);
           const auditEntry = createAuditEntry('updated', sanitized.posted_by_initials || 'staff', { notes: 'Payment updated' });
           setPayments(prev =>
             prev.map(p => (p.id === editingId ? {
@@ -236,6 +235,8 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       opt_out_requested: payment.opt_out_requested,
       opted_out: payment.opted_out,
       opt_out_notes: payment.opt_out_notes,
+      structured_notes: payment.structured_notes || [],
+      audit_trail: payment.audit_trail || [],
     });
     setShowAddForm(true);
   };

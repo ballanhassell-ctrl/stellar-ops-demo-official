@@ -192,7 +192,6 @@ export default function NotesAuditDrawer({
 
   // Style helpers
   const bgPrimary = isDayMode ? 'bg-white' : 'bg-gray-800';
-  const bgSecondary = isDayMode ? 'bg-gray-50' : 'bg-gray-900';
   const textPrimary = isDayMode ? 'text-gray-900' : 'text-white';
   const textSecondary = isDayMode ? 'text-gray-600' : 'text-gray-400';
   const textMuted = isDayMode ? 'text-gray-400' : 'text-gray-500';

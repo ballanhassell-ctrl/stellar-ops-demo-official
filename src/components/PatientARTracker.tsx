@@ -24,7 +24,7 @@ import {
   MessageSquare,
   History,
 } from 'lucide-react';
-import type { PatientAR, PatientARStatus, NoteEntry, AuditTrailEntry } from '../types/database.types';
+import type { PatientAR, PatientARStatus, NoteEntry } from '../types/database.types';
 import {
   getPatientARRecords,
   insertPatientAR,
