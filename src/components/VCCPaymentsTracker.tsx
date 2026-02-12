@@ -19,6 +19,7 @@ import {
   MessageSquare,
   FileText,
   Ban,
+  History,
 } from 'lucide-react';
 import {
   getVCCPayments,
@@ -30,7 +31,9 @@ import {
   type NewVCCPayment,
   type OptOutNote,
 } from '../services/vccPaymentsService';
+import type { NoteEntry } from '../types/database.types';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 
 // =====================================================
 // CONSTANTS
@@ -56,6 +59,8 @@ const EMPTY_FORM: NewVCCPayment = {
   opt_out_requested: false,
   opted_out: false,
   opt_out_notes: [],
+  structured_notes: [],
+  audit_trail: [],
 };
 
 // =====================================================
@@ -86,6 +91,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
 
   // Use local-only mode when Supabase table doesn't exist
   const [localMode, setLocalMode] = useState(false);
+
+  // Notes & Audit drawer
+  const [drawerPaymentId, setDrawerPaymentId] = useState<string | null>(null);
 
   // --------------------------------------------------
   // Data fetching
@@ -168,13 +176,23 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       if (localMode) {
         // Local-only mode
         if (editingId) {
+          const existingPayment = payments.find(p => p.id === editingId);
+          const auditEntry = createAuditEntry('updated', sanitized.posted_by_initials || 'staff', { notes: 'Payment updated' });
           setPayments(prev =>
-            prev.map(p => (p.id === editingId ? { ...p, ...sanitized, updated_at: new Date().toISOString() } : p))
+            prev.map(p => (p.id === editingId ? {
+              ...p,
+              ...sanitized,
+              structured_notes: p.structured_notes || [],
+              audit_trail: [...(p.audit_trail || []), auditEntry],
+              updated_at: new Date().toISOString(),
+            } : p))
           );
         } else {
           const newPayment: VCCPayment = {
             ...sanitized,
             id: crypto.randomUUID(),
+            structured_notes: [],
+            audit_trail: [createAuditEntry('created', sanitized.posted_by_initials || 'staff', { notes: 'Payment created' })],
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -182,8 +200,13 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
         }
       } else {
         if (editingId) {
+          const existingPayment = payments.find(p => p.id === editingId);
+          const auditEntry = createAuditEntry('updated', sanitized.posted_by_initials || 'staff', { notes: 'Payment updated' });
+          sanitized.audit_trail = [...(existingPayment?.audit_trail || []), auditEntry];
+          sanitized.structured_notes = existingPayment?.structured_notes || [];
           await updateVCCPayment(editingId, sanitized);
         } else {
+          sanitized.audit_trail = [createAuditEntry('created', sanitized.posted_by_initials || 'staff', { notes: 'Payment created' })];
           await insertVCCPayment(sanitized);
         }
         await fetchPayments();
@@ -347,6 +370,42 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       );
     } else {
       await updateVCCPayment(paymentId, { opted_out: !currentValue });
+      await fetchPayments();
+    }
+  };
+
+  // --------------------------------------------------
+  // Notes & Audit drawer handler
+  // --------------------------------------------------
+  const drawerPayment = useMemo(
+    () => payments.find(p => p.id === drawerPaymentId) ?? null,
+    [payments, drawerPaymentId],
+  );
+
+  const handleDrawerAddNote = async (note: NoteEntry) => {
+    if (!drawerPaymentId) return;
+    const payment = payments.find(p => p.id === drawerPaymentId);
+    if (!payment) return;
+
+    const updatedNotes = [...(payment.structured_notes || []), note];
+    const auditEntry = createAuditEntry('note_added', note.author || 'staff', {
+      notes: `Note added by ${note.author || 'staff'} (${note.source})`,
+    });
+    const updatedTrail = [...(payment.audit_trail || []), auditEntry];
+
+    if (localMode) {
+      setPayments(prev =>
+        prev.map(p =>
+          p.id === drawerPaymentId
+            ? { ...p, structured_notes: updatedNotes, audit_trail: updatedTrail, updated_at: new Date().toISOString() }
+            : p,
+        ),
+      );
+    } else {
+      await updateVCCPayment(drawerPaymentId, {
+        structured_notes: updatedNotes,
+        audit_trail: updatedTrail,
+      });
       await fetchPayments();
     }
   };
@@ -757,6 +816,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Check</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Opt Out</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Notes / Audit</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
                 </tr>
               </thead>
@@ -933,6 +993,25 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                       </div>
                     </td>
 
+                    {/* Notes / Audit Trail */}
+                    <td className="py-3 px-3 text-center">
+                      <button
+                        onClick={() => setDrawerPaymentId(payment.id)}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                          isDayMode
+                            ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+                            : 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50'
+                        }`}
+                        title="View notes & audit trail"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        {(payment.structured_notes || []).length > 0 && (
+                          <span>{(payment.structured_notes || []).length}</span>
+                        )}
+                        <History className="w-3 h-3" />
+                      </button>
+                    </td>
+
                     {/* Actions */}
                     <td className="py-3 px-3 text-center">
                       <div className="flex items-center justify-center gap-1">
@@ -1099,6 +1178,18 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
           </div>
         </div>
       )}
+
+      {/* Notes & Audit Trail Drawer */}
+      <NotesAuditDrawer
+        isOpen={!!drawerPaymentId}
+        onClose={() => setDrawerPaymentId(null)}
+        isDayMode={isDayMode}
+        entityType="VCC Payment"
+        entityLabel={drawerPayment?.patient_name || ''}
+        notes={drawerPayment?.structured_notes || []}
+        auditTrail={drawerPayment?.audit_trail || []}
+        onAddNote={handleDrawerAddNote}
+      />
     </div>
   );
 }

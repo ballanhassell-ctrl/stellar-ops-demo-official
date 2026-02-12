@@ -380,6 +380,8 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
           aging_days: agingDays, archived: r.archived, collected: r.collected,
           outstanding: r.outstanding, pri_sec: r.pri_sec,
           aging_status: calculateAgingStatus(agingDays),
+          structured_notes: [],
+          audit_trail: [],
         };
       });
       const { error } = await supabase.from('claims').insert(batch);
@@ -397,6 +399,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
         status: 'not_started' as const, created_by: r.created_by, updated_by: r.updated_by,
         is_collectible: true, collected_amount: 0,
         background_notes: r.ar_notes || null,
+        structured_notes: [], audit_trail: [],
       }));
       const { error } = await supabase.from('patient_ar').insert(batch);
       if (error) throw new Error(`Batch ${Math.floor(i / BS) + 1} error: ${error.message}`);

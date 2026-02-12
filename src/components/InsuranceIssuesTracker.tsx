@@ -19,8 +19,9 @@ import {
   MessageSquare,
   Timer,
   Archive,
+  History,
 } from 'lucide-react';
-import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry, NoteSource } from '../types/database.types';
+import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry, NoteSource, AuditTrailEntry } from '../types/database.types';
 import {
   getInsuranceIssues,
   insertInsuranceIssue,
@@ -31,6 +32,7 @@ import {
 } from '../services/insuranceIssuesService';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
+import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 
 // =====================================================
 // CONSTANTS
@@ -84,6 +86,7 @@ const EMPTY_FORM: NewIssueForm = {
   resolved_at: null,
   notes: null,
   structured_notes: [],
+  audit_trail: [],
   is_pre_auth: false,
 };
 
@@ -335,6 +338,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   // CSV upload
   const [showCSVUpload, setShowCSVUpload] = useState(false);
 
+  // Notes & Audit drawer
+  const [drawerIssueId, setDrawerIssueId] = useState<string | null>(null);
+
   // ----- Data loading -----
   const loadIssues = useCallback(async () => {
     try {
@@ -410,6 +416,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         submitted_at: formData.submission_status === 'Submitted' ? new Date().toISOString() : null,
         // Auto-log resolved_at if marking as Corrected
         resolved_at: formData.status === 'Corrected' ? new Date().toISOString() : null,
+        audit_trail: [createAuditEntry('created', formData.submitted_by || 'staff', { notes: 'Issue created' })],
       };
       const created = await insertInsuranceIssue(issueToInsert);
       setIssues((prev) => [created, ...prev]);
@@ -452,6 +459,41 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         updates.submitted_at = new Date().toISOString();
       }
 
+      // Build audit entries for each changed field
+      const newAuditEntries: AuditTrailEntry[] = [];
+      if (currentIssue) {
+        const changedBy = updates.submitted_by || currentIssue.submitted_by || 'staff';
+        if (updates.status && updates.status !== currentIssue.status) {
+          newAuditEntries.push(createAuditEntry('status_changed', changedBy, {
+            field: 'status', oldValue: currentIssue.status, newValue: updates.status as string,
+          }));
+        }
+        if (updates.in_charge && updates.in_charge !== currentIssue.in_charge) {
+          newAuditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'in_charge', oldValue: currentIssue.in_charge, newValue: updates.in_charge,
+          }));
+        }
+        if (updates.issue_type && updates.issue_type !== currentIssue.issue_type) {
+          newAuditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'issue_type', oldValue: currentIssue.issue_type, newValue: updates.issue_type,
+          }));
+        }
+        if (updates.submission_status !== undefined && updates.submission_status !== currentIssue.submission_status) {
+          newAuditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'submission_status', oldValue: currentIssue.submission_status || 'Not Submitted', newValue: updates.submission_status || 'Not Submitted',
+          }));
+        }
+        if (updates.in_vyne !== undefined && updates.in_vyne !== currentIssue.in_vyne) {
+          newAuditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'in_vyne', oldValue: String(currentIssue.in_vyne), newValue: String(updates.in_vyne),
+          }));
+        }
+      }
+
+      if (newAuditEntries.length > 0) {
+        updates.audit_trail = [...(currentIssue?.audit_trail || []), ...newAuditEntries];
+      }
+
       const updated = await updateInsuranceIssue(id, updates);
       setIssues((prev) => prev.map((i) => (i.id === id ? updated : i)));
       setEditingId(null);
@@ -479,9 +521,13 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   // ----- Status toggle handler (direct click, no edit mode needed) -----
   const handleToggleStatus = async (issue: InsuranceIssue) => {
     const newStatus: InsuranceIssueStatus = issue.status === 'Corrected' ? 'Open' : 'Corrected';
+    const auditEntry = createAuditEntry('status_changed', issue.submitted_by || 'staff', {
+      field: 'status', oldValue: issue.status, newValue: newStatus,
+    });
     const updates: Partial<InsuranceIssue> = {
       status: newStatus,
       resolved_at: newStatus === 'Corrected' ? new Date().toISOString() : null,
+      audit_trail: [...(issue.audit_trail || []), auditEntry],
     };
     try {
       const updated = await updateInsuranceIssue(issue.id, updates);
@@ -505,9 +551,16 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     };
 
     const updatedNotes = [...(issue.structured_notes || []), newNote];
+    const auditEntry = createAuditEntry('note_added', newNoteAuthor || 'staff', {
+      notes: `Note added by ${newNoteAuthor || 'staff'} (${newNoteSource})`,
+    });
+    const updatedTrail = [...(issue.audit_trail || []), auditEntry];
 
     try {
-      const updated = await updateInsuranceIssue(noteModalIssueId, { structured_notes: updatedNotes });
+      const updated = await updateInsuranceIssue(noteModalIssueId, {
+        structured_notes: updatedNotes,
+        audit_trail: updatedTrail,
+      });
       setIssues((prev) => prev.map((i) => (i.id === noteModalIssueId ? updated : i)));
       setNoteModalIssueId(null);
       setNewNoteText('');
@@ -519,6 +572,34 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
   const handleCSVImportComplete = (imported: InsuranceIssue[]) => {
     setIssues((prev) => [...imported, ...prev]);
+  };
+
+  // Drawer note handler
+  const drawerIssue = useMemo(
+    () => issues.find((i) => i.id === drawerIssueId) || null,
+    [issues, drawerIssueId],
+  );
+
+  const handleDrawerAddNote = async (note: NoteEntry) => {
+    if (!drawerIssueId) return;
+    const issue = issues.find((i) => i.id === drawerIssueId);
+    if (!issue) return;
+
+    const updatedNotes = [...(issue.structured_notes || []), note];
+    const auditEntry = createAuditEntry('note_added', note.author || 'staff', {
+      notes: `Note added by ${note.author || 'staff'} (${note.source})`,
+    });
+    const updatedTrail = [...(issue.audit_trail || []), auditEntry];
+
+    try {
+      const updated = await updateInsuranceIssue(drawerIssueId, {
+        structured_notes: updatedNotes,
+        audit_trail: updatedTrail,
+      });
+      setIssues((prev) => prev.map((i) => (i.id === drawerIssueId ? updated : i)));
+    } catch (err) {
+      console.error('Error adding note via drawer:', err);
+    }
   };
 
   // ----- Style helpers -----
@@ -772,6 +853,24 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
           </div>
         </td>
 
+        {/* Audit Trail */}
+        <td className={`px-3 py-2 text-xs border-b ${tableBorder} text-center`}>
+          <button
+            onClick={() => setDrawerIssueId(issue.id)}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              isDayMode
+                ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                : 'text-emerald-300 bg-emerald-900/30 hover:bg-emerald-900/50'
+            }`}
+            title="View notes & audit trail"
+          >
+            <History className="w-3 h-3" />
+            {(issue.audit_trail || []).length > 0 && (
+              <span>{(issue.audit_trail || []).length}</span>
+            )}
+          </button>
+        </td>
+
         {/* Actions */}
         <td className={`px-3 py-2 border-b ${tableBorder} whitespace-nowrap`}>
           {isEditing ? (
@@ -836,6 +935,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Status</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder} min-w-[100px]`}>Submitted</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder} min-w-[90px]`}>Notes</th>
+                <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder} text-center`}>Audit</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Actions</th>
               </tr>
             </thead>
@@ -1432,6 +1532,18 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
           </div>
         </div>
       )}
+
+      {/* Notes & Audit Trail Drawer */}
+      <NotesAuditDrawer
+        isOpen={!!drawerIssueId}
+        onClose={() => setDrawerIssueId(null)}
+        isDayMode={isDayMode}
+        entityType="Insurance Issue"
+        entityLabel={drawerIssue?.patient_name || ''}
+        notes={drawerIssue?.structured_notes || []}
+        auditTrail={drawerIssue?.audit_trail || []}
+        onAddNote={handleDrawerAddNote}
+      />
     </div>
   );
 }

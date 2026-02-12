@@ -162,6 +162,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL002',
@@ -193,6 +195,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL003',
@@ -224,6 +228,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL004',
@@ -255,6 +261,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL005',
@@ -286,6 +294,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL006',
@@ -317,6 +327,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL007',
@@ -348,6 +360,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL008',
@@ -379,6 +393,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL009',
@@ -410,6 +426,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL010',
@@ -441,6 +459,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL011',
@@ -472,6 +492,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL012',
@@ -503,6 +525,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
 ];
 
@@ -754,6 +778,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'Patient interested, needs to check schedule',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL002',
@@ -770,6 +796,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'MS',
     status: 'unscheduled',
     notes: 'Left voicemail on 2nd contact',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL003',
@@ -786,6 +814,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'High-value case, patient considering financing options',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL004',
@@ -802,6 +832,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'MS',
     status: 'unscheduled',
     notes: 'Patient wants cosmetic consultation',
+    structured_notes: [],
+    audit_trail: [],
   },
   // Recare List
   {
@@ -819,6 +851,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'LK',
     status: 'unscheduled',
     notes: 'Due for 6-month cleaning',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL006',
@@ -835,6 +869,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'LK',
     status: 'unscheduled',
     notes: 'Past due for recall',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL007',
@@ -851,6 +887,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'LK',
     status: 'scheduled',
     notes: 'Scheduled for next week',
+    structured_notes: [],
+    audit_trail: [],
   },
   // Treatment List
   {
@@ -868,6 +906,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'Waiting on pre-auth approval',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL009',
@@ -884,6 +924,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'MS',
     status: 'unscheduled',
     notes: 'Patient considering payment plan',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL010',
@@ -900,6 +942,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'Patient will call back to schedule',
+    structured_notes: [],
+    audit_trail: [],
   },
 ];
 
@@ -932,6 +976,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'JM',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR002',
@@ -960,6 +1006,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 650.00,
     created_by: 'Admin',
     updated_by: 'SR',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR003',
@@ -988,6 +1036,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'JM',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR004',
@@ -1016,6 +1066,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'Admin',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR005',
@@ -1044,6 +1096,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 800.00,
     created_by: 'Admin',
     updated_by: 'SR',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR006',
@@ -1072,6 +1126,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'JM',
+    structured_notes: [],
+    audit_trail: [],
   },
 ];
 
@@ -1880,6 +1936,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1898,6 +1955,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1916,6 +1974,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1934,6 +1993,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1955,6 +2015,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
       { text: "it's requesting x-rays", source: 'stellar', author: 'DM', created_at: '2025-12-10T09:00:00Z' },
       { text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-12-11T15:30:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1976,6 +2037,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
       { text: 'Original claim had wrong code for anterior; corrected by office and resubmitted.', source: 'office', author: 'BH', created_at: '2025-11-14T11:00:00Z' },
       { text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-11-15T14:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1996,6 +2058,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     structured_notes: [
       { text: '#13 is considered pre-molar to Insurance, code changed from D3330 to D3320. Codes need to be changed in OD, clinical note reattached and resigned. Please assist DM/Dr. Judge.', source: 'stellar', author: 'BH', created_at: '2025-11-16T09:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2014,6 +2077,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: '2025-11-19T16:00:00Z',
     notes: null,
     structured_notes: [{ text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-11-19T16:00:00Z' }],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2032,6 +2096,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: '2025-11-13T12:00:00Z',
     notes: null,
     structured_notes: [{ text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-11-13T12:00:00Z' }],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2050,6 +2115,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2068,6 +2134,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2089,6 +2156,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
       { text: "it's requesting x-rays", source: 'stellar', author: 'DM', created_at: '2026-01-09T09:00:00Z' },
       { text: 'corrected & rebatched', source: 'stellar', author: 'BH', created_at: '2026-01-10T11:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2109,6 +2177,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     structured_notes: [
       { text: 'Coding was incorrect for both claims. Corrected on Vyne only. Codes need to be changed in OD, clinical note reattached and resigned. Please assist DM/Dr. Judge.', source: 'stellar', author: 'BH', created_at: '2026-01-16T14:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2129,6 +2198,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     structured_notes: [
       { text: 'Claim to be held until 01/28 - Dr. Strachan needs to provide short narrative and better PA of #18. BH/LM', source: 'stellar', author: 'BH', created_at: '2026-01-15T10:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2149,6 +2219,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     structured_notes: [
       { text: 'Notified team 01/22 to obtain correct info from Dr. S - also requested narrative for this and future treatment start for today. BH.', source: 'stellar', author: 'BH', created_at: '2026-01-22T10:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2167,6 +2238,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: true,
   },
   {
@@ -2185,6 +2257,7 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: true,
   },
 ];

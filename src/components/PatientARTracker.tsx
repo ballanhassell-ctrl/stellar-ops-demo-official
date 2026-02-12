@@ -21,8 +21,10 @@ import {
   Loader2,
   RefreshCw,
   Trash2,
+  MessageSquare,
+  History,
 } from 'lucide-react';
-import type { PatientAR, PatientARStatus } from '../types/database.types';
+import type { PatientAR, PatientARStatus, NoteEntry, AuditTrailEntry } from '../types/database.types';
 import {
   getPatientARRecords,
   insertPatientAR,
@@ -32,6 +34,7 @@ import {
 import { isStaticDataMode } from '../config/dataMode';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 
 // =====================================================
 // CONSTANTS
@@ -147,6 +150,9 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   const [contactInitials, setContactInitials] = useState('');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(null);
 
+  // Notes & Audit drawer state
+  const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
+
   // ---------------------------------------------------
   // DATA FETCHING
   // ---------------------------------------------------
@@ -250,6 +256,8 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         write_off_suggested_date: null,
         write_off_reason: null,
         collected_amount: 0,
+        structured_notes: [],
+        audit_trail: [createAuditEntry('created', 'staff', { notes: 'Record created' })],
         created_by: 'staff',
         updated_by: 'staff',
       };
@@ -269,6 +277,8 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
           id: fakeId,
           aging_days: agingDays,
           aging_bucket: agingBucket,
+          structured_notes: record.structured_notes || [],
+          audit_trail: record.audit_trail || [createAuditEntry('created', 'staff', { notes: 'Record created' })],
           created_at: now,
           updated_at: now,
         };
@@ -291,12 +301,25 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   const handleUpdateField = useCallback(
     async (id: string, field: string, value: string | null) => {
       try {
+        const record = records.find((r) => r.id === id);
+        const oldValue = record ? String((record as Record<string, unknown>)[field] ?? '') : '';
+        const auditEntry = createAuditEntry('updated', 'staff', {
+          field,
+          oldValue: oldValue || null,
+          newValue: value,
+        });
+
         if (isStaticDataMode()) {
           setRecords((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, [field]: value, updated_at: new Date().toISOString() } : r)),
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, [field]: value, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
+                : r,
+            ),
           );
         } else {
-          await updatePatientAR(id, { [field]: value, updated_by: 'staff' });
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(id, { [field]: value, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
           await fetchData();
         }
       } catch (err) {
@@ -304,18 +327,31 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         setError('Failed to update. Please try again.');
       }
     },
-    [fetchData],
+    [fetchData, records],
   );
 
   const handleStatusChange = useCallback(
     async (id: string, newStatus: PatientARStatus) => {
       try {
+        const record = records.find((r) => r.id === id);
+        const oldStatus = record?.status || '';
+        const auditEntry = createAuditEntry('status_changed', 'staff', {
+          field: 'status',
+          oldValue: oldStatus,
+          newValue: newStatus,
+        });
+
         if (isStaticDataMode()) {
           setRecords((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, status: newStatus, updated_at: new Date().toISOString() } : r)),
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, status: newStatus, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
+                : r,
+            ),
           );
         } else {
-          await updatePatientAR(id, { status: newStatus, updated_by: 'staff' });
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(id, { status: newStatus, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
           await fetchData();
         }
         setStatusDropdownOpen(null);
@@ -324,22 +360,30 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         setError('Failed to update status.');
       }
     },
-    [fetchData],
+    [fetchData, records],
   );
 
   const handleToggleCollectible = useCallback(
     async (id: string, makeCollectible: boolean) => {
       try {
+        const record = records.find((r) => r.id === id);
+        const auditEntry = createAuditEntry('moved', 'staff', {
+          field: 'is_collectible',
+          oldValue: record?.is_collectible ? 'Collectible' : 'Non-Collectible',
+          newValue: makeCollectible ? 'Collectible' : 'Non-Collectible',
+        });
+
         if (isStaticDataMode()) {
           setRecords((prev) =>
             prev.map((r) =>
               r.id === id
-                ? { ...r, is_collectible: makeCollectible, updated_at: new Date().toISOString() }
+                ? { ...r, is_collectible: makeCollectible, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
                 : r,
             ),
           );
         } else {
-          await updatePatientAR(id, { is_collectible: makeCollectible, updated_by: 'staff' });
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(id, { is_collectible: makeCollectible, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
           await fetchData();
         }
       } catch (err) {
@@ -347,7 +391,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         setError('Failed to move record.');
       }
     },
-    [fetchData],
+    [fetchData, records],
   );
 
   const handleMarkCompleted = useCallback(
@@ -521,6 +565,52 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
       setClearing(false);
     }
   }, []);
+
+  // ---------------------------------------------------
+  // NOTES & AUDIT DRAWER HANDLERS
+  // ---------------------------------------------------
+
+  const drawerRecord = useMemo(
+    () => records.find((r) => r.id === drawerRecordId) || null,
+    [records, drawerRecordId],
+  );
+
+  const handleAddNote = useCallback(
+    async (note: NoteEntry) => {
+      if (!drawerRecordId) return;
+      const record = records.find((r) => r.id === drawerRecordId);
+      if (!record) return;
+
+      const updatedNotes = [...(record.structured_notes || []), note];
+      const auditEntry = createAuditEntry('note_added', note.author || 'staff', {
+        notes: `Note added by ${note.author || 'staff'} (${note.source})`,
+      });
+      const updatedTrail = [...(record.audit_trail || []), auditEntry];
+
+      try {
+        if (isStaticDataMode()) {
+          setRecords((prev) =>
+            prev.map((r) =>
+              r.id === drawerRecordId
+                ? { ...r, structured_notes: updatedNotes, audit_trail: updatedTrail, updated_at: new Date().toISOString() }
+                : r,
+            ),
+          );
+        } else {
+          await updatePatientAR(drawerRecordId, {
+            structured_notes: updatedNotes,
+            audit_trail: updatedTrail,
+            updated_by: 'staff',
+          });
+          await fetchData();
+        }
+      } catch (err) {
+        console.error('Error adding note:', err);
+        setError('Failed to add note.');
+      }
+    },
+    [drawerRecordId, records, fetchData],
+  );
 
   // ---------------------------------------------------
   // RENDER HELPERS
@@ -1072,6 +1162,9 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[120px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Action Needed
                   </th>
+                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Notes / Audit
+                  </th>
                   {activeTab === 'non_collectible' && (
                     <>
                       <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[120px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -1171,6 +1264,27 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                     {/* Action Needed */}
                     <td className="py-2.5 px-2">
                       {renderEditableCell(record, 'action_needed', record.action_needed)}
+                    </td>
+
+                    {/* Notes & Audit Trail */}
+                    <td className="py-2.5 px-2">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => setDrawerRecordId(record.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            isDayMode
+                              ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+                              : 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50'
+                          }`}
+                          title="View notes & audit trail"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          {(record.structured_notes || []).length > 0 && (
+                            <span>{(record.structured_notes || []).length}</span>
+                          )}
+                          <History className="w-3 h-3 ml-0.5" />
+                        </button>
+                      </div>
                     </td>
 
                     {/* Non-collectible extra columns */}
@@ -1443,6 +1557,18 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
           </div>
         </div>
       )}
+
+      {/* Notes & Audit Trail Drawer */}
+      <NotesAuditDrawer
+        isOpen={!!drawerRecordId}
+        onClose={() => setDrawerRecordId(null)}
+        isDayMode={isDayMode}
+        entityType="Patient A/R"
+        entityLabel={drawerRecord?.patient_name || ''}
+        notes={drawerRecord?.structured_notes || []}
+        auditTrail={drawerRecord?.audit_trail || []}
+        onAddNote={handleAddNote}
+      />
     </div>
   );
 }
