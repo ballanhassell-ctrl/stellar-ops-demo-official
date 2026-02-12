@@ -3370,7 +3370,6 @@ const CourtStreetRCM = () => {
                   Insurance Networks
                 </button>
                 */}
-                {/* Temporarily hidden - Insurance Issues tab
                 <button
                   onClick={() => setPatientManagementView('insurance-issues')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -3383,7 +3382,6 @@ const CourtStreetRCM = () => {
                 >
                   Insurance Issues
                 </button>
-                */}
                 <button
                   onClick={() => setPatientManagementView('ar-trends')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -5384,8 +5382,7 @@ const CourtStreetRCM = () => {
               </>
             )}
 
-            {/* Temporarily hidden - Insurance Issues content */}
-            {false && patientManagementView === 'insurance-issues' && (
+            {patientManagementView === 'insurance-issues' && (
               <InsuranceIssuesTracker isDayMode={isDayMode} />
             )}
 
