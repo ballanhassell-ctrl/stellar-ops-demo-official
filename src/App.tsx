@@ -3330,6 +3330,7 @@ const CourtStreetRCM = () => {
                 >
                   Insurance Checks/EFT's
                 </button>
+                {/* Temporarily hidden - Payments tab
                 <button
                   onClick={() => setPatientManagementView('payments')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -3342,6 +3343,7 @@ const CourtStreetRCM = () => {
                 >
                   Payments
                 </button>
+                */}
                 <button
                   onClick={() => setPatientManagementView('vcc-payments')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -3354,6 +3356,7 @@ const CourtStreetRCM = () => {
                 >
                   VCC Payments
                 </button>
+                {/* Temporarily hidden - Insurance Networks tab
                 <button
                   onClick={() => setPatientManagementView('insurance-networks')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -3366,6 +3369,8 @@ const CourtStreetRCM = () => {
                 >
                   Insurance Networks
                 </button>
+                */}
+                {/* Temporarily hidden - Insurance Issues tab
                 <button
                   onClick={() => setPatientManagementView('insurance-issues')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -3378,6 +3383,7 @@ const CourtStreetRCM = () => {
                 >
                   Insurance Issues
                 </button>
+                */}
                 <button
                   onClick={() => setPatientManagementView('ar-trends')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -4243,7 +4249,8 @@ const CourtStreetRCM = () => {
               </>
             )}
 
-            {patientManagementView === 'payments' && (
+            {/* Temporarily hidden - Payments content */}
+            {false && patientManagementView === 'payments' && (
               <>
                 {/* Payments Header */}
                 <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
@@ -4926,7 +4933,8 @@ const CourtStreetRCM = () => {
               </div>
             )}
 
-            {patientManagementView === 'insurance-networks' && (
+            {/* Temporarily hidden - Insurance Networks content */}
+            {false && patientManagementView === 'insurance-networks' && (
               <>
             {/* Insurance Header */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
@@ -5376,7 +5384,8 @@ const CourtStreetRCM = () => {
               </>
             )}
 
-            {patientManagementView === 'insurance-issues' && (
+            {/* Temporarily hidden - Insurance Issues content */}
+            {false && patientManagementView === 'insurance-issues' && (
               <InsuranceIssuesTracker isDayMode={isDayMode} />
             )}
 
