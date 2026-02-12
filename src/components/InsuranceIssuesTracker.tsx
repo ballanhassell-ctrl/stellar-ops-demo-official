@@ -468,7 +468,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const tableBorder = isDayMode ? 'border-gray-200' : 'border-gray-700';
   const rowHover = isDayMode ? 'hover:bg-gray-50' : 'hover:bg-gray-750 hover:bg-gray-700/50';
   const thBg = isDayMode ? 'bg-gray-50 text-gray-700' : 'bg-gray-900 text-gray-300';
-  const modalOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
+  const modalOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60';
   const modalCard = isDayMode
     ? 'bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto'
     : 'bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto';

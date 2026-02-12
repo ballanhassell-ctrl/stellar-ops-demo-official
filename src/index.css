@@ -11,42 +11,32 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphism utility classes */
+/* Glass utility classes - uses solid semi-transparent backgrounds
+   instead of backdrop-filter blur to prevent rendering artifacts
+   on virtual machines and remote desktop environments */
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(30px) saturate(200%);
-    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    background: rgba(255, 255, 255, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08);
   }
 
   .glass-dark {
-    background: rgba(17, 24, 39, 0.3);
-    backdrop-filter: blur(30px) saturate(200%);
-    -webkit-backdrop-filter: blur(30px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    background: rgba(17, 24, 39, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    background: rgba(255, 255, 255, 0.82);
     border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.12),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08);
   }
 
   .glass-card-dark {
-    background: rgba(30, 41, 59, 0.4);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    background: rgba(30, 41, 59, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
   }
 
   .gradient-primary {
@@ -58,36 +48,30 @@ body {
   }
 
   .gradient-mesh {
-    background: radial-gradient(at 40% 20%, rgba(0, 102, 255, 0.3) 0px, transparent 50%),
-                radial-gradient(at 80% 0%, rgba(255, 184, 0, 0.25) 0px, transparent 50%),
-                radial-gradient(at 0% 50%, rgba(0, 212, 170, 0.25) 0px, transparent 50%),
-                radial-gradient(at 80% 80%, rgba(0, 102, 255, 0.2) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(255, 184, 0, 0.2) 0px, transparent 50%);
+    background: radial-gradient(at 40% 20%, rgba(0, 102, 255, 0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 50%, rgba(0, 212, 170, 0.12) 0px, transparent 50%);
   }
 
   .gradient-mesh-dark {
-    background: radial-gradient(at 40% 20%, rgba(0, 102, 255, 0.35) 0px, transparent 50%),
-                radial-gradient(at 80% 0%, rgba(255, 184, 0, 0.25) 0px, transparent 50%),
-                radial-gradient(at 0% 50%, rgba(0, 212, 170, 0.25) 0px, transparent 50%),
-                radial-gradient(at 80% 80%, rgba(0, 102, 255, 0.25) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(255, 184, 0, 0.2) 0px, transparent 50%);
+    background: radial-gradient(at 40% 20%, rgba(0, 102, 255, 0.18) 0px, transparent 50%),
+                radial-gradient(at 80% 50%, rgba(0, 212, 170, 0.14) 0px, transparent 50%);
   }
 
   .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 48px 0 rgba(31, 38, 135, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.15);
   }
 
   .hover-glow {
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow 0.2s ease;
   }
 
   .hover-glow:hover {
-    box-shadow: 0 0 24px rgba(0, 102, 255, 0.4);
+    box-shadow: 0 0 16px rgba(0, 102, 255, 0.3);
   }
 
   /* Mobile-specific optimizations */
@@ -129,20 +113,15 @@ body {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   }
 
-  /* GPU-accelerated modal overlays to prevent stuttering */
-  .fixed.inset-0 {
-    will-change: opacity;
-    transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-  }
+}
 
-  /* Promote glassmorphism elements to own compositor layer */
-  .glass,
-  .glass-dark,
-  .glass-card,
-  .glass-card-dark {
-    will-change: transform;
-    transform: translateZ(0);
+/* Disable animations and transitions for users/environments that
+   prefer reduced motion (includes many virtual desktop clients) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
