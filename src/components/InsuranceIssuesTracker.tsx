@@ -685,7 +685,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
   // ----- Render: table row -----
   const renderRow = (issue: InsuranceIssue) => {
-    const isEditing = editingId === issue.id;
     const resolved = isResolved(issue);
     const rowBg = resolved
       ? isDayMode
@@ -717,117 +716,49 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
         {/* In Charge */}
         <td className={`px-3 py-2 border-b ${tableBorder} whitespace-nowrap`}>
-          {isEditing ? (
-            <select
-              value={editData.in_charge ?? issue.in_charge}
-              onChange={(e) => setEditData((d) => ({ ...d, in_charge: e.target.value }))}
-              className={`text-xs rounded border px-1 py-0.5 ${inputCls}`}
-            >
-              <option value="">--</option>
-              {PROVIDERS.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          ) : (
-            renderProviderBadge(issue.in_charge)
-          )}
+          {renderProviderBadge(issue.in_charge)}
         </td>
 
         {/* Issue Type */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} max-w-[180px]`}>
-          {isEditing ? (
-            <select
-              value={editData.issue_type ?? issue.issue_type}
-              onChange={(e) => setEditData((d) => ({ ...d, issue_type: e.target.value as InsuranceIssueType }))}
-              className={`text-xs rounded border px-1 py-0.5 w-full ${inputCls}`}
-            >
-              {ISSUE_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          ) : (
-            <span className="truncate block" title={issue.issue_type}>
-              {issue.issue_type}
-            </span>
-          )}
+          <span className="truncate block" title={issue.issue_type}>
+            {issue.issue_type}
+          </span>
         </td>
 
         {/* In Vyne? */}
         <td className={`px-3 py-2 border-b ${tableBorder} text-center`}>
-          {isEditing ? (
-            <input
-              type="checkbox"
-              checked={editData.in_vyne ?? issue.in_vyne}
-              onChange={(e) => setEditData((d) => ({ ...d, in_vyne: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-          ) : (
-            renderVyneBadge(issue.in_vyne)
-          )}
+          {renderVyneBadge(issue.in_vyne)}
         </td>
 
         {/* Status Toggle */}
         <td className={`px-3 py-2 border-b ${tableBorder}`}>
-          {isEditing ? (
-            <select
-              value={(editData.status as string) ?? issue.status}
-              onChange={(e) => setEditData((d) => ({ ...d, status: e.target.value as InsuranceIssueStatus }))}
-              className={`text-xs rounded border px-1 py-0.5 w-full ${inputCls}`}
-            >
-              <option value="Open">Open/Needs Fix</option>
-              <option value="Corrected">Corrected</option>
-            </select>
-          ) : (
-            renderStatusToggle(issue)
-          )}
+          {renderStatusToggle(issue)}
         </td>
 
         {/* Submitted + Submitted By */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap`}>
-          {isEditing ? (
-            <div className="space-y-1">
-              <select
-                value={editData.submission_status ?? issue.submission_status ?? ''}
-                onChange={(e) => setEditData((d) => ({ ...d, submission_status: e.target.value || null }))}
-                className={`text-xs rounded border px-1 py-0.5 w-full ${inputCls}`}
-              >
-                <option value="">Not Submitted</option>
-                <option value="Submitted">Submitted</option>
-              </select>
-              <select
-                value={editData.submitted_by ?? issue.submitted_by ?? ''}
-                onChange={(e) => setEditData((d) => ({ ...d, submitted_by: e.target.value || null }))}
-                className={`text-xs rounded border px-1 py-0.5 w-full ${inputCls}`}
-              >
-                <option value="">-- By --</option>
-                {SUBMITTER_INITIALS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div>
-              {issue.submission_status === 'Submitted' ? (
-                <div className="flex flex-col">
-                  <span className={`font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>
-                    Submitted
+          <div>
+            {issue.submission_status === 'Submitted' ? (
+              <div className="flex flex-col">
+                <span className={`font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>
+                  Submitted
+                </span>
+                {issue.submitted_by && (
+                  <span className={`text-[10px] ${subText}`}>
+                    By: {issue.submitted_by}
                   </span>
-                  {issue.submitted_by && (
-                    <span className={`text-[10px] ${subText}`}>
-                      By: {issue.submitted_by}
-                    </span>
-                  )}
-                  {issue.submitted_at && (
-                    <span className={`text-[10px] ${subText}`}>
-                      {formatTimestamp(issue.submitted_at)}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <span className={subText}>--</span>
-              )}
-            </div>
-          )}
+                )}
+                {issue.submitted_at && (
+                  <span className={`text-[10px] ${subText}`}>
+                    {formatTimestamp(issue.submitted_at)}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className={subText}>--</span>
+            )}
+          </div>
         </td>
 
         {/* Notes (hover popup) */}
@@ -873,41 +804,22 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
         {/* Actions */}
         <td className={`px-3 py-2 border-b ${tableBorder} whitespace-nowrap`}>
-          {isEditing ? (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handleSaveEdit(issue.id)}
-                className="p-1 rounded text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
-                title="Save"
-              >
-                <CheckCircle className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleCancelEdit}
-                className="p-1 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                title="Cancel"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handleStartEdit(issue)}
-                className={`p-1 rounded ${isDayMode ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:bg-blue-900/30'}`}
-                title="Edit"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleDelete(issue.id)}
-                className={`p-1 rounded ${isDayMode ? 'text-red-600 hover:bg-red-50' : 'text-red-400 hover:bg-red-900/30'}`}
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handleStartEdit(issue)}
+              className={`p-1 rounded ${isDayMode ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:bg-blue-900/30'}`}
+              title="Edit"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(issue.id)}
+              className={`p-1 rounded ${isDayMode ? 'text-red-600 hover:bg-red-50' : 'text-red-400 hover:bg-red-900/30'}`}
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         </td>
       </tr>
     );
@@ -1321,6 +1233,146 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Edit Issue Modal ===== */}
+      {editingId && (
+        <div className={modalOverlay} onClick={handleCancelEdit}>
+          <div
+            className={isDayMode
+              ? 'bg-white rounded-xl shadow-xl max-w-lg w-full mx-4'
+              : 'bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4'
+            }
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className={`flex items-center justify-between px-6 py-4 border-b ${tableBorder}`}>
+              <div>
+                <h3 className={`text-lg font-semibold ${headerText}`}>Edit Issue</h3>
+                {(() => {
+                  const editIssue = issues.find((i) => i.id === editingId);
+                  return editIssue ? (
+                    <p className={`text-xs mt-0.5 ${subText}`}>
+                      {editIssue.patient_name} — {formatDate(editIssue.date_of_service)}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
+              <button
+                onClick={handleCancelEdit}
+                className={`p-1 rounded ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Row 1: In Charge + Issue Type */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${subText}`}>In Charge</label>
+                  <select
+                    value={editData.in_charge ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, in_charge: e.target.value }))}
+                    className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                  >
+                    <option value="">-- Select --</option>
+                    {PROVIDERS.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${subText}`}>Issue Type</label>
+                  <select
+                    value={editData.issue_type ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, issue_type: e.target.value as InsuranceIssueType }))}
+                    className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                  >
+                    {ISSUE_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 2: Status + Submitted By */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${subText}`}>Status</label>
+                  <select
+                    value={(editData.status as string) ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, status: e.target.value as InsuranceIssueStatus }))}
+                    className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                  >
+                    <option value="Open">Open / Needs Fix</option>
+                    <option value="Corrected">Corrected</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${subText}`}>Submission Status</label>
+                  <select
+                    value={editData.submission_status ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, submission_status: e.target.value || null }))}
+                    className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                  >
+                    <option value="">Not Submitted</option>
+                    <option value="Submitted">Submitted</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 3: Submitted By + In Vyne */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${subText}`}>Submitted By</label>
+                  <select
+                    value={editData.submitted_by ?? ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, submitted_by: e.target.value || null }))}
+                    className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                  >
+                    <option value="">-- Select --</option>
+                    {SUBMITTER_INITIALS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editData.in_vyne ?? false}
+                      onChange={(e) => setEditData((d) => ({ ...d, in_vyne: e.target.checked }))}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={`text-sm ${headerText}`}>In Vyne</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t ${tableBorder}`}>
+              <button
+                onClick={handleCancelEdit}
+                className={`px-4 py-2 text-sm rounded-md border transition-colors ${
+                  isDayMode
+                    ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSaveEdit(editingId)}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Save Changes
               </button>
             </div>
           </div>
