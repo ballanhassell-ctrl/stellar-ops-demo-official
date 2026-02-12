@@ -366,6 +366,7 @@ export default function InsuranceIssuesCSVUpload({
           resolved_at: isCorrected ? new Date().toISOString() : null,
           notes: obj.notes || null,
           structured_notes: structuredNotes,
+          audit_trail: [],
           is_pre_auth: isPreAuth,
         };
 

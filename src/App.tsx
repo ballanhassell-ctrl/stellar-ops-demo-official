@@ -692,7 +692,9 @@ const recordToSchedulingItem = (record: SchedulingListRecord): Omit<SchedulingLi
   follow_up_date: record.followUpDate,
   employee_initials: record.employeeInitials,
   status: record.status,
-  notes: record.notes
+  notes: record.notes,
+  structured_notes: [],
+  audit_trail: [],
 });
 
 interface InsuranceCheckRecord {

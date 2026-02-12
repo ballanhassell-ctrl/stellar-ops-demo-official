@@ -14,10 +14,14 @@ import {
   FileText,
   Users,
   Clock,
+  MessageSquare,
+  History,
 } from 'lucide-react';
 import type {
   Claim,
   UnifiedClaimStatus,
+  NoteEntry,
+  AuditTrailEntry,
 } from '../types/database.types';
 import {
   getClaims,
@@ -29,6 +33,7 @@ import {
 import type { InsuranceARSummary } from '../services/claimsService';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 
 // =====================================================
 // CONSTANTS
@@ -218,6 +223,9 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   // Delete confirmation
   const [deletingClaimId, setDeletingClaimId] = useState<string | null>(null);
+
+  // Notes & Audit drawer
+  const [drawerClaimId, setDrawerClaimId] = useState<string | null>(null);
 
   // Clear all data
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -456,11 +464,48 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         archived_by: null,
         carrier_phone: null,
         date_sent_orig: null,
+        structured_notes: [] as NoteEntry[],
+        audit_trail: [] as AuditTrailEntry[],
       };
 
       if (editingClaim) {
+        // Build audit entries for changed fields
+        const auditEntries: AuditTrailEntry[] = [];
+        const changedBy = formData.assigned_to.trim() || 'staff';
+        if (editingClaim.status !== payload.status) {
+          auditEntries.push(createAuditEntry('status_changed', changedBy, {
+            field: 'status', oldValue: editingClaim.status, newValue: payload.status,
+          }));
+        }
+        if (editingClaim.notes !== payload.notes) {
+          auditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'notes', oldValue: editingClaim.notes, newValue: payload.notes,
+          }));
+        }
+        if (editingClaim.claim_amount !== payload.claim_amount) {
+          auditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'claim_amount', oldValue: String(editingClaim.claim_amount), newValue: String(payload.claim_amount),
+          }));
+        }
+        if (editingClaim.collected !== payload.collected) {
+          auditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'collected', oldValue: String(editingClaim.collected), newValue: String(payload.collected),
+          }));
+        }
+        if (editingClaim.assigned_to !== payload.assigned_to) {
+          auditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'assigned_to', oldValue: editingClaim.assigned_to, newValue: payload.assigned_to,
+          }));
+        }
+        if (auditEntries.length > 0) {
+          payload.audit_trail = [...(editingClaim.audit_trail || []), ...auditEntries];
+        } else {
+          payload.audit_trail = editingClaim.audit_trail || [];
+        }
+        payload.structured_notes = editingClaim.structured_notes || [];
         await updateClaim(editingClaim.id, payload);
       } else {
+        payload.audit_trail = [createAuditEntry('created', formData.assigned_to.trim() || 'staff', { notes: 'Claim created' })];
         await insertClaim(payload);
       }
 
@@ -482,6 +527,38 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     } catch (err) {
       console.error('Error deleting claim:', err);
       setError('Failed to delete claim. Please try again.');
+    }
+  };
+
+  // =====================================================
+  // NOTES & AUDIT DRAWER
+  // =====================================================
+
+  const drawerClaim = useMemo(
+    () => claims.find((c) => c.id === drawerClaimId) || null,
+    [claims, drawerClaimId],
+  );
+
+  const handleDrawerAddNote = async (note: NoteEntry) => {
+    if (!drawerClaimId) return;
+    const claim = claims.find((c) => c.id === drawerClaimId);
+    if (!claim) return;
+
+    const updatedNotes = [...(claim.structured_notes || []), note];
+    const auditEntry = createAuditEntry('note_added', note.author || 'staff', {
+      notes: `Note added by ${note.author || 'staff'} (${note.source})`,
+    });
+    const updatedTrail = [...(claim.audit_trail || []), auditEntry];
+
+    try {
+      await updateClaim(drawerClaimId, {
+        structured_notes: updatedNotes,
+        audit_trail: updatedTrail,
+      });
+      await loadClaims();
+    } catch (err) {
+      console.error('Error adding note:', err);
+      setError('Failed to add note.');
     }
   };
 
@@ -931,7 +1008,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   { field: 'procedure_types' as SortField, label: 'Procedures' },
                   { field: 'rep_name' as SortField, label: 'Rep Name' },
                   { field: 'reference_number' as SortField, label: 'Ref #' },
-                  { field: 'notes' as SortField, label: 'Notes' },
+                  { field: 'notes' as SortField, label: 'Notes / Audit' },
                 ].map((col) => (
                   <th
                     key={col.field}
@@ -1021,8 +1098,29 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     <td className={`px-3 py-3 whitespace-nowrap ${textMuted} text-xs font-mono`}>
                       {claim.reference_number || '-'}
                     </td>
-                    <td className={`px-3 py-3 max-w-[200px] truncate ${textMuted} text-xs`} title={claim.notes || ''}>
-                      {claim.notes || '-'}
+                    <td className={`px-3 py-3 ${textMuted} text-xs`}>
+                      <div className="flex items-center gap-1.5">
+                        {claim.notes && (
+                          <span className="truncate max-w-[120px]" title={claim.notes}>
+                            {claim.notes}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setDrawerClaimId(claim.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 ${
+                            isDayMode
+                              ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+                              : 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50'
+                          }`}
+                          title="View notes & audit trail"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          {(claim.structured_notes || []).length > 0 && (
+                            <span>{(claim.structured_notes || []).length}</span>
+                          )}
+                          <History className="w-3 h-3" />
+                        </button>
+                      </div>
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -1317,6 +1415,18 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
           </div>
         </div>
       )}
+
+      {/* Notes & Audit Trail Drawer */}
+      <NotesAuditDrawer
+        isOpen={!!drawerClaimId}
+        onClose={() => setDrawerClaimId(null)}
+        isDayMode={isDayMode}
+        entityType="Insurance A/R Claim"
+        entityLabel={drawerClaim?.patient_name || ''}
+        notes={drawerClaim?.structured_notes || []}
+        auditTrail={drawerClaim?.audit_trail || []}
+        onAddNote={handleDrawerAddNote}
+      />
     </div>
   );
 }

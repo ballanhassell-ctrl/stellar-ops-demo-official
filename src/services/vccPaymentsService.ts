@@ -6,6 +6,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { isStaticDataMode } from '../config/dataMode';
+import type { NoteEntry, AuditTrailEntry } from '../types/database.types';
 
 // =====================================================
 // TYPES
@@ -35,6 +36,8 @@ export interface VCCPayment {
   opt_out_requested: boolean;
   opted_out: boolean;
   opt_out_notes: OptOutNote[];
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
   created_at: string;
   updated_at: string;
 }

@@ -94,6 +94,8 @@ export type Claim = {
   aging_status: '0-30 Days' | '31-60 Days' | '61-90 Days' | '91-120 Days' | '121+ Days' | null;
   carrier_phone: string | null;
   date_sent_orig: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
   created_at?: string;
   updated_at?: string;
 };
@@ -236,6 +238,8 @@ export type SchedulingListItem = {
   employee_initials: string;
   status: 'unscheduled' | 'scheduled';
   notes: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
   created_at?: string;
   updated_at?: string;
 };
@@ -286,6 +290,10 @@ export type PatientAR = {
 
   // Collected amount (when marked as paid)
   collected_amount: number;
+
+  // Structured team notes + audit trail
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
 
   created_by: string;
   created_at?: string;
@@ -446,6 +454,31 @@ export type NoteEntry = {
   created_at: string; // ISO timestamp
 };
 
+// =====================================================
+// Shared Audit Trail Entry (stored as JSON array on records)
+// =====================================================
+
+export type AuditTrailAction =
+  | 'created'
+  | 'updated'
+  | 'status_changed'
+  | 'note_added'
+  | 'deleted'
+  | 'archived'
+  | 'unarchived'
+  | 'moved';
+
+export type AuditTrailEntry = {
+  id: string;
+  action: AuditTrailAction;
+  field?: string;
+  old_value?: string | null;
+  new_value?: string | null;
+  changed_by: string; // initials
+  changed_at: string; // ISO timestamp
+  notes?: string;
+};
+
 export type InsuranceIssue = {
   id: string;
   patient_id: string | null;
@@ -462,6 +495,7 @@ export type InsuranceIssue = {
   resolved_at: string | null; // ISO timestamp - auto-logged when status → Corrected
   notes: string | null; // legacy plain-text (kept for backward compat)
   structured_notes: NoteEntry[]; // structured notes with source tagging
+  audit_trail: AuditTrailEntry[]; // audit trail entries
   is_pre_auth: boolean;
   created_at?: string;
   updated_at?: string;

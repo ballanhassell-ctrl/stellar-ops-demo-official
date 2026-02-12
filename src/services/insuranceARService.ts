@@ -65,6 +65,8 @@ export function calculateInsuranceARSummary(claims: InsuranceARClaim[]): Insuran
     aging_status: c.aging_status,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   }));
   return calculateInsuranceARSummaryFromClaims(asClaims);
 }
