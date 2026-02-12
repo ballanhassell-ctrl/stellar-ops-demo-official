@@ -63,7 +63,7 @@ type ActiveTab = 'collectible' | 'non_collectible';
 
 type EditingCell = {
   recordId: string;
-  field: 'background_notes' | 'team_discussion_notes' | 'action_needed' | 'dr_decision' | 'write_off_reason';
+  field: 'patient_name' | 'related_family' | 'current_balance' | 'dos' | 'background_notes' | 'team_discussion_notes' | 'action_needed' | 'dr_decision' | 'write_off_reason';
 } | null;
 
 type EditingContact = {
@@ -393,10 +393,49 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
   const handleSaveEditingCell = useCallback(async () => {
     if (!editingCell) return;
-    await handleUpdateField(editingCell.recordId, editingCell.field, editingValue.trim() || null);
+    const { recordId, field } = editingCell;
+
+    if (field === 'current_balance') {
+      const numValue = parseFloat(editingValue);
+      if (isNaN(numValue) || numValue < 0) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      try {
+        if (isStaticDataMode()) {
+          setRecords((prev) =>
+            prev.map((r) => (r.id === recordId ? { ...r, current_balance: numValue, updated_at: new Date().toISOString() } : r)),
+          );
+        } else {
+          await updatePatientAR(recordId, { current_balance: numValue, updated_by: 'staff' });
+          await fetchData();
+        }
+      } catch (err) {
+        console.error('Error updating field:', err);
+        setError('Failed to update. Please try again.');
+      }
+    } else if (field === 'patient_name') {
+      const trimmed = sanitizePatientName(editingValue.trim());
+      if (!trimmed) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, trimmed);
+    } else if (field === 'dos') {
+      if (!editingValue) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, editingValue);
+    } else {
+      await handleUpdateField(recordId, field, editingValue.trim() || null);
+    }
     setEditingCell(null);
     setEditingValue('');
-  }, [editingCell, editingValue, handleUpdateField]);
+  }, [editingCell, editingValue, handleUpdateField, fetchData]);
 
   const handleSaveContact = useCallback(async () => {
     if (!editingContact) return;
@@ -533,29 +572,56 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     record: PatientAR,
     field: NonNullable<EditingCell>['field'],
     value: string | null,
+    displayValue?: string,
+    customClassName?: string,
   ) {
     const isEditing = editingCell?.recordId === record.id && editingCell?.field === field;
 
     if (isEditing) {
+      const inputType = field === 'current_balance' ? 'number' : field === 'dos' ? 'date' : 'text';
+      const useTextarea = !['patient_name', 'related_family', 'current_balance', 'dos'].includes(field);
+
       return (
         <div className="flex items-center gap-1">
-          <textarea
-            value={editingValue}
-            onChange={(e) => setEditingValue(e.target.value)}
-            autoFocus
-            rows={2}
-            className={`w-full px-2 py-1 rounded-lg border text-xs resize-none ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSaveEditingCell();
-              }
-              if (e.key === 'Escape') {
-                setEditingCell(null);
-                setEditingValue('');
-              }
-            }}
-          />
+          {useTextarea ? (
+            <textarea
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              autoFocus
+              rows={2}
+              className={`w-full px-2 py-1 rounded-lg border text-xs resize-none ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSaveEditingCell();
+                }
+                if (e.key === 'Escape') {
+                  setEditingCell(null);
+                  setEditingValue('');
+                }
+              }}
+            />
+          ) : (
+            <input
+              type={inputType}
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              autoFocus
+              step={field === 'current_balance' ? '0.01' : undefined}
+              min={field === 'current_balance' ? '0' : undefined}
+              className={`w-full px-2 py-1 rounded-lg border text-xs ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveEditingCell();
+                }
+                if (e.key === 'Escape') {
+                  setEditingCell(null);
+                  setEditingValue('');
+                }
+              }}
+            />
+          )}
           <button
             onClick={handleSaveEditingCell}
             className="p-1 text-emerald-500 hover:text-emerald-600 flex-shrink-0"
@@ -577,13 +643,15 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
       );
     }
 
+    const shownValue = displayValue || value;
+
     return (
       <div
         onClick={() => startEditCell(record.id, field, value)}
-        className={`cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs leading-relaxed ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${value ? '' : 'italic opacity-40'}`}
+        className={customClassName || `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs leading-relaxed ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${shownValue ? '' : 'italic opacity-40'}`}
         title="Click to edit"
       >
-        {value || 'Click to add...'}
+        {shownValue || 'Click to add...'}
       </div>
     );
   }
@@ -1027,23 +1095,47 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Patient Name */}
-                    <td className={`py-2.5 px-2 text-sm font-medium ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {record.patient_name}
+                    <td className="py-2.5 px-2">
+                      {renderEditableCell(
+                        record,
+                        'patient_name',
+                        record.patient_name,
+                        record.patient_name,
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-medium ${isDayMode ? 'text-gray-900 hover:bg-gray-100' : 'text-white hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* Related Family */}
-                    <td className={`py-2.5 px-2 text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {record.related_family || '--'}
+                    <td className="py-2.5 px-2">
+                      {renderEditableCell(
+                        record,
+                        'related_family',
+                        record.related_family,
+                        record.related_family || '--',
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'} ${!record.related_family ? 'italic opacity-40' : ''}`,
+                      )}
                     </td>
 
                     {/* Balance */}
-                    <td className={`py-2.5 px-2 text-sm font-semibold text-right ${record.current_balance >= 500 ? 'text-red-500' : isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {formatCurrency(record.current_balance)}
+                    <td className="py-2.5 px-2">
+                      {renderEditableCell(
+                        record,
+                        'current_balance',
+                        String(record.current_balance),
+                        formatCurrency(record.current_balance),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-semibold text-right ${record.current_balance >= 500 ? 'text-red-500' : isDayMode ? 'text-gray-900' : 'text-white'} ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* DOS */}
-                    <td className={`py-2.5 px-2 text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {formatDate(record.dos)}
+                    <td className="py-2.5 px-2">
+                      {renderEditableCell(
+                        record,
+                        'dos',
+                        record.dos,
+                        formatDate(record.dos),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* Background Notes */}
