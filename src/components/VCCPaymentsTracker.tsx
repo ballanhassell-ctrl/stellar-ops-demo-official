@@ -985,7 +985,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
 
       {/* Opt-Out Status Modal */}
       {optOutModalPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className={`w-full max-w-lg rounded-2xl p-6 ${isDayMode ? 'bg-white shadow-xl' : 'bg-gray-900 border border-white/10'} max-h-[80vh] flex flex-col`}>
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-4">
