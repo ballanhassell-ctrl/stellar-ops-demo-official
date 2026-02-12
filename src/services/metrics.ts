@@ -719,7 +719,8 @@ export async function getPaymentAggregates() {
 
 /**
  * Gets BAM cycle revenue for a specific cycle date range
- * Filters revenue entries by as_of_date within the cycle and sums them
+ * Returns the most recent bam_current_revenue entry within the cycle,
+ * since each entry represents the cumulative running total for that cycle.
  * Returns 0 if no data exists for the cycle (new cycle with no data entered yet)
  */
 export async function getBAMCycleRevenue(cycleStartDate: Date | null, cycleEndDate: Date | null): Promise<number> {
@@ -735,25 +736,27 @@ export async function getBAMCycleRevenue(cycleStartDate: Date | null, cycleEndDa
 
     console.log('[getBAMCycleRevenue] Fetching BAM revenue for cycle:', startDateStr, 'to', endDateStr);
 
-    // Fetch all bam_current_revenue entries within the cycle date range
+    // Fetch the most recent bam_current_revenue entry within the cycle date range.
+    // Each entry is a cumulative running total, so we only need the latest one.
     const { data, error } = await supabase
       .from('csd_metric_values')
       .select('value, as_of_date')
       .eq('field_key', 'bam_current_revenue')
       .gte('as_of_date', startDateStr)
-      .lte('as_of_date', endDateStr);
+      .lte('as_of_date', endDateStr)
+      .order('as_of_date', { ascending: false })
+      .limit(1);
 
     if (error) {
       console.error('[getBAMCycleRevenue] Error fetching BAM cycle revenue:', error);
       return 0;
     }
 
-    // Sum up all revenue entries for this cycle
-    const totalRevenue = data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+    const latestRevenue = data?.[0]?.value || 0;
 
-    console.log('[getBAMCycleRevenue] Found', data?.length || 0, 'entries, total revenue:', totalRevenue);
+    console.log('[getBAMCycleRevenue] Latest entry:', data?.[0]?.as_of_date, 'revenue:', latestRevenue);
 
-    return totalRevenue;
+    return latestRevenue;
   } catch (err) {
     console.error('[getBAMCycleRevenue] Unexpected error:', err);
     return 0;
