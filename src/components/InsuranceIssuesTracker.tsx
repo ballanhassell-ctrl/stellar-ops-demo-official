@@ -215,7 +215,7 @@ function NotesPopup({
 
       {isOpen && (
         <div
-          className={`absolute z-50 bottom-full left-0 mb-2 w-96 max-h-80 rounded-xl shadow-2xl border flex flex-col transition-opacity duration-150 ${
+          className={`absolute z-50 bottom-full right-0 mb-2 w-96 max-h-80 rounded-xl shadow-2xl border flex flex-col transition-opacity duration-150 ${
             isDayMode
               ? 'bg-white border-gray-200'
               : 'bg-gray-800 border-gray-600'
