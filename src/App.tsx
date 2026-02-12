@@ -250,7 +250,9 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
 const STORAGE_KEYS = {
   CURRENT_DATE: 'csd_current_date',
   EOD_HISTORY: 'csd_eod_history',
-  DAILY_DATA: 'csd_daily_data'
+  DAILY_DATA: 'csd_daily_data',
+  CURRENT_VIEW: 'csd_current_view',
+  PATIENT_MGMT_VIEW: 'csd_patient_mgmt_view'
 };
 
 // DISABLED: localStorage utility functions (now using Supabase)
@@ -774,7 +776,15 @@ const recordToInsuranceCheck = (record: InsuranceCheckRecord): any => {
 
 const CourtStreetRCM = () => {
   const { signOut, isAdmin } = useAuth();
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentViewState] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.CURRENT_VIEW) || 'dashboard';
+    } catch { return 'dashboard'; }
+  });
+  const setCurrentView = (view: string) => {
+    setCurrentViewState(view);
+    try { localStorage.setItem(STORAGE_KEYS.CURRENT_VIEW, view); } catch {}
+  };
   const [searchQuery, setSearchQuery] = useState('');
   // Unified date state for all dashboard sections (uses local timezone)
   const [dashboardDate, setDashboardDate] = useState(getLocalDateString());
@@ -1697,7 +1707,15 @@ const CourtStreetRCM = () => {
   ];
 
   // Sub-navigation for RCM Management tab
-  const [patientManagementView, setPatientManagementView] = useState('preauths');
+  const [patientManagementView, setPatientManagementViewState] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.PATIENT_MGMT_VIEW) || 'patients';
+    } catch { return 'patients'; }
+  });
+  const setPatientManagementView = (view: string) => {
+    setPatientManagementViewState(view);
+    try { localStorage.setItem(STORAGE_KEYS.PATIENT_MGMT_VIEW, view); } catch {}
+  };
 
   // Sub-navigation for Administration tab
   const [administrationView, setAdministrationView] = useState('scheduling');
