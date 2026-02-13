@@ -1,0 +1,62 @@
+-- =====================================================
+-- Seed VCC Payments - February 2026 Batch
+-- 52 patients with CC on Clover/Terminal checked
+-- DOS: 01/01/2026 (placeholder), Status: Needs to be Posted to OD
+-- =====================================================
+
+INSERT INTO vcc_payments (id, patient_name, date_of_service, claim_type, payment_amount, posted_to_open_dental, posted_by_initials, processed_via_terminal, processed_by_initials, deposited_via_check, deposited_via_check_by_initials, status, opt_out_requested, opted_out, opt_out_notes)
+VALUES
+  -- MG patient
+  (gen_random_uuid(), 'Jerome Ware', '2026-01-01', 'VCC Standard', 434.27, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  -- DM patients
+  (gen_random_uuid(), 'Victor Guadagnino', '2026-01-01', 'VCC Standard', 260.50, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'John Figura', '2026-01-01', 'VCC Standard', 379.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Danielle Williams', '2026-01-01', 'VCC Standard', 283.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Omar Turk', '2026-01-01', 'VCC Standard', 307.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Jennifer Dawson', '2026-01-01', 'VCC Standard', 152.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Terriyonne Green', '2026-01-01', 'VCC Standard', 768.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Deniya Pheix', '2026-01-01', 'VCC Standard', 347.20, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Joseph Williams', '2026-01-01', 'VCC Standard', 99.40, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Terriyonne Green', '2026-01-01', 'VCC Standard', 368.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Warren Faulkner', '2026-01-01', 'VCC Standard', 328.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Alexander Peters', '2026-01-01', 'VCC Standard', 839.20, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Raquel Balsam', '2026-01-01', 'VCC Standard', 309.60, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Sean Dawson', '2026-01-01', 'VCC Standard', 215.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Terriyonne Green', '2026-01-01', 'VCC Standard', 1496.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Sylvia Williams', '2026-01-01', 'VCC Standard', 1760.87, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Hazel Ann Forde', '2026-01-01', 'VCC Standard', 5000.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Tamika Merise', '2026-01-01', 'VCC Standard', 307.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'William Johnston', '2026-01-01', 'VCC Standard', 328.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Frederick Fernandes', '2026-01-01', 'VCC Standard', 108.50, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Rachel Manes', '2026-01-01', 'VCC Standard', 933.60, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Esra Shahein', '2026-01-01', 'VCC Standard', 152.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'James Block', '2026-01-01', 'VCC Standard', 328.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Ishan Banerjee', '2026-01-01', 'VCC Standard', 215.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Takara Estes', '2026-01-01', 'VCC Standard', 621.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Jamie McBeth', '2026-01-01', 'VCC Standard', 688.50, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Rachel Manes', '2026-01-01', 'VCC Standard', 307.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Rachel Pace', '2026-01-01', 'VCC Standard', 285.60, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Jennifer Poole', '2026-01-01', 'VCC Standard', 215.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Abdulrahan Alkhudhari', '2026-01-01', 'VCC Standard', 897.46, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Myriam Bucatinsky', '2026-01-01', 'VCC Standard', 76.09, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Nethra Rajendran', '2026-01-01', 'VCC Standard', 531.20, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Gloria Benjamin', '2026-01-01', 'VCC Standard', 215.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Victor Guadagnino', '2026-01-01', 'VCC Standard', 432.50, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Alec Mitchel', '2026-01-01', 'VCC Standard', 121.60, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Swazi Tshbalala', '2026-01-01', 'VCC Standard', 275.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Bennett Cohen', '2026-01-01', 'VCC Standard', 152.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Devonte Rondon', '2026-01-01', 'VCC Standard', 497.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Robert Ham', '2026-01-01', 'VCC Standard', 284.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Andrew Wetzel', '2026-01-01', 'VCC Standard', 629.60, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Maria Bernas', '2026-01-01', 'VCC Standard', 167.50, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Frederick Fernandes', '2026-01-01', 'VCC Standard', 549.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Johnathan Fox', '2026-01-01', 'VCC Standard', 557.40, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Julia Gharachourlou', '2026-01-01', 'VCC Standard', 686.40, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Jason Karolak', '2026-01-01', 'VCC Standard', 152.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Nicole Vaughan', '2026-01-01', 'VCC Standard', 304.20, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Abdulrahan Alkhudhari', '2026-01-01', 'VCC Standard', 214.74, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Sherri Ehrlich', '2026-01-01', 'VCC Standard', 870.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Delia McDermott', '2026-01-01', 'VCC Standard', 851.25, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Kathyann Alleyne', '2026-01-01', 'VCC Standard', 225.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Philip Rosenthal', '2026-01-01', 'VCC Standard', 266.00, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb),
+  (gen_random_uuid(), 'Delia McDermott', '2026-01-01', 'VCC Standard', 152.80, false, '', true, '', false, '', 'Needs to be Posted to OD', false, false, '[]'::jsonb);
