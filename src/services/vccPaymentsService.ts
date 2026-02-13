@@ -51,6 +51,10 @@ export interface VCCPaymentsSummary {
   pendingCount: number;
   closedAmount: number;
   closedCount: number;
+  closedCheckAmount: number;
+  closedCheckCount: number;
+  closedTerminalAmount: number;
+  closedTerminalCount: number;
   postedCount: number;
   notPostedCount: number;
   notPostedAmount: number;
@@ -176,6 +180,8 @@ export async function deleteVCCPayment(id: string): Promise<void> {
 export function calculateVCCSummary(payments: VCCPayment[]): VCCPaymentsSummary {
   const pending = payments.filter(p => !p.processed_via_terminal && !p.deposited_via_check);
   const closed = payments.filter(p => p.status === 'Closed');
+  const closedChecks = closed.filter(p => p.deposited_via_check);
+  const closedTerminal = closed.filter(p => p.processed_via_terminal);
   const notPosted = payments.filter(p => !p.posted_to_open_dental);
 
   return {
@@ -185,6 +191,10 @@ export function calculateVCCSummary(payments: VCCPayment[]): VCCPaymentsSummary 
     pendingCount: pending.length,
     closedAmount: closed.reduce((s, p) => s + p.payment_amount, 0),
     closedCount: closed.length,
+    closedCheckAmount: closedChecks.reduce((s, p) => s + p.payment_amount, 0),
+    closedCheckCount: closedChecks.length,
+    closedTerminalAmount: closedTerminal.reduce((s, p) => s + p.payment_amount, 0),
+    closedTerminalCount: closedTerminal.length,
     postedCount: payments.filter(p => p.posted_to_open_dental).length,
     notPostedCount: notPosted.length,
     notPostedAmount: notPosted.reduce((s, p) => s + p.payment_amount, 0),
