@@ -27,6 +27,7 @@ import {
   updateVCCPayment,
   deleteVCCPayment,
   calculateVCCSummary,
+  sampleVCCPayments,
   type VCCPayment,
   type NewVCCPayment,
   type OptOutNote,
@@ -105,8 +106,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       setPayments(data);
       setLocalMode(false);
     } catch {
-      // If Supabase table doesn't exist, fall back to local state
+      // If Supabase table doesn't exist, fall back to local state with seed data
       setLocalMode(true);
+      setPayments([...sampleVCCPayments]);
     } finally {
       setLoading(false);
     }
