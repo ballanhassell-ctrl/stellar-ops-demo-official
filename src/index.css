@@ -148,6 +148,37 @@ body {
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Insurance table - always-visible scrollbars for horizontal/vertical scroll */
+.insurance-table-scroll {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.insurance-table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.insurance-table-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.insurance-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.insurance-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Firefox scrollbar support */
+.insurance-table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+}
+
 /* Notes popup fade-in animation */
 @keyframes notesPopupFadeIn {
   from {
