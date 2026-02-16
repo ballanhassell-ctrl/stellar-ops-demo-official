@@ -418,7 +418,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         patient_name: sanitizePatientName(formData.patient_name),
         // Sanitize empty strings to null for nullable fields
         patient_id: formData.patient_id?.trim() || null,
-        in_charge: formData.in_charge?.trim() || null,
         submitted_by: formData.submitted_by?.trim() || null,
         notes: formData.notes?.trim() || null,
         // Auto-log submitted_at if marking as Submitted
