@@ -11,9 +11,7 @@ import {
   Trash2,
   X,
   CheckCircle,
-  XCircle,
   Clock,
-  DollarSign,
   CreditCard,
   AlertCircle,
   MessageSquare,
@@ -33,7 +31,6 @@ import {
   getPaymentMethod,
   getWorkflowStatus,
   getWorkflowStatusLabel,
-  getPaymentMethodLabel,
   type VCCPayment,
   type NewVCCPayment,
   type OptOutNote,
@@ -352,46 +349,6 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     }
   };
 
-  const handleToggleProcessed = async (payment: VCCPayment) => {
-    const newProcessed = !payment.processed_via_terminal;
-    const updates: Partial<NewVCCPayment> = {
-      processed_via_terminal: newProcessed,
-      processed_by_initials: newProcessed ? payment.processed_by_initials : '',
-      ...(newProcessed ? { deposited_via_check: false, deposited_via_check_by_initials: '' } : {}),
-    };
-    if (payment.posted_to_open_dental && newProcessed) updates.status = 'Closed';
-    else if (!payment.posted_to_open_dental && !newProcessed) updates.status = 'Needs OD Posting & Payment Deposit';
-    else if (!payment.posted_to_open_dental) updates.status = 'Needs to be Posted to OD';
-    else updates.status = 'Pending Payment Deposit';
-
-    if (localMode) {
-      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
-    } else {
-      await updateVCCPayment(payment.id, updates);
-      await fetchPayments();
-    }
-  };
-
-  const handleToggleCheck = async (payment: VCCPayment) => {
-    const newCheck = !payment.deposited_via_check;
-    const updates: Partial<NewVCCPayment> = {
-      deposited_via_check: newCheck,
-      deposited_via_check_by_initials: newCheck ? payment.deposited_via_check_by_initials : '',
-      ...(newCheck ? { processed_via_terminal: false, processed_by_initials: '' } : {}),
-    };
-    if (payment.posted_to_open_dental && newCheck) updates.status = 'Closed';
-    else if (!payment.posted_to_open_dental && !newCheck) updates.status = 'Needs OD Posting & Payment Deposit';
-    else if (!payment.posted_to_open_dental) updates.status = 'Needs to be Posted to OD';
-    else updates.status = 'Pending Payment Deposit';
-
-    if (localMode) {
-      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p)));
-    } else {
-      await updateVCCPayment(payment.id, updates);
-      await fetchPayments();
-    }
-  };
-
   const handleSetInitials = async (payment: VCCPayment, field: 'posted_by_initials' | 'processed_by_initials' | 'deposited_via_check_by_initials', value: string) => {
     if (localMode) {
       setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, [field]: value, updated_at: new Date().toISOString() } : p)));
@@ -445,16 +402,6 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       );
     } else {
       await updateVCCPayment(paymentId, { opted_out: !currentValue });
-      await fetchPayments();
-    }
-  };
-
-  const handleToggleDeclined = async (payment: VCCPayment) => {
-    const newDeclined = !payment.declined;
-    if (localMode) {
-      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, declined: newDeclined, updated_at: new Date().toISOString() } : p)));
-    } else {
-      await updateVCCPayment(payment.id, { declined: newDeclined });
       await fetchPayments();
     }
   };
