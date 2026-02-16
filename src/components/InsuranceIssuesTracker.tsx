@@ -33,6 +33,7 @@ import {
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
+import SuccessToast from './SuccessToast';
 
 // =====================================================
 // CONSTANTS
@@ -341,6 +342,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   // Notes & Audit drawer
   const [drawerIssueId, setDrawerIssueId] = useState<string | null>(null);
 
+  // Success toast
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   // ----- Data loading -----
   const loadIssues = useCallback(async () => {
     try {
@@ -412,6 +416,10 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       const issueToInsert = {
         ...formData,
         patient_name: sanitizePatientName(formData.patient_name),
+        // Sanitize empty strings to null for nullable fields
+        patient_id: formData.patient_id?.trim() || null,
+        submitted_by: formData.submitted_by?.trim() || null,
+        notes: formData.notes?.trim() || null,
         // Auto-log submitted_at if marking as Submitted
         submitted_at: formData.submission_status === 'Submitted' ? new Date().toISOString() : null,
         // Auto-log resolved_at if marking as Corrected
@@ -422,6 +430,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       setIssues((prev) => [created, ...prev]);
       setShowAddModal(false);
       setFormData({ ...EMPTY_FORM });
+      setToastMessage('Insurance issue added successfully');
     } catch (err) {
       console.error('Error adding issue:', err);
     } finally {
@@ -572,6 +581,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
   const handleCSVImportComplete = (imported: InsuranceIssue[]) => {
     setIssues((prev) => [...imported, ...prev]);
+    setToastMessage(`${imported.length} issue${imported.length !== 1 ? 's' : ''} imported successfully`);
   };
 
   // Drawer note handler
@@ -1595,6 +1605,14 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         notes={drawerIssue?.structured_notes || []}
         auditTrail={drawerIssue?.audit_trail || []}
         onAddNote={handleDrawerAddNote}
+      />
+
+      {/* Success Toast */}
+      <SuccessToast
+        message={toastMessage || ''}
+        isVisible={!!toastMessage}
+        onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
       />
     </div>
   );

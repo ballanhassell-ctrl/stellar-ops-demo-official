@@ -43,13 +43,15 @@ function normalizeIssue(row: any): InsuranceIssue {
 
 export async function getInsuranceIssues(): Promise<InsuranceIssue[]> {
   if (isStaticDataMode()) {
-    return [...sampleInsuranceIssues];
+    return [...sampleInsuranceIssues].sort((a, b) =>
+      new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+    );
   }
 
   const { data, error } = await supabase
     .from('insurance_issues')
     .select('*')
-    .order('date_of_service', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching insurance issues:', error);
@@ -64,12 +66,30 @@ export async function getInsuranceIssues(): Promise<InsuranceIssue[]> {
   return (data || []).map(normalizeIssue);
 }
 
+/** Sanitize empty strings to null for nullable fields before Supabase insert/update */
+function sanitizeForDb(
+  issue: Partial<Omit<InsuranceIssue, 'id' | 'created_at' | 'updated_at'>>
+): typeof issue {
+  const nullableStringFields: (keyof typeof issue)[] = [
+    'patient_id', 'submission_status', 'submitted_by', 'submitted_at',
+    'resolved_at', 'notes',
+  ];
+  const cleaned = { ...issue };
+  for (const field of nullableStringFields) {
+    if (typeof cleaned[field] === 'string' && (cleaned[field] as string).trim() === '') {
+      (cleaned as any)[field] = null;
+    }
+  }
+  return cleaned;
+}
+
 export async function insertInsuranceIssue(
   issue: Omit<InsuranceIssue, 'id' | 'created_at' | 'updated_at'>
 ): Promise<InsuranceIssue> {
+  const sanitized = sanitizeForDb(issue);
   const { data, error } = await supabase
     .from('insurance_issues')
-    .insert(issue)
+    .insert(sanitized)
     .select()
     .single();
 
@@ -85,9 +105,10 @@ export async function updateInsuranceIssue(
   id: string,
   updates: Partial<Omit<InsuranceIssue, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<InsuranceIssue> {
+  const sanitized = sanitizeForDb(updates);
   const { data, error } = await supabase
     .from('insurance_issues')
-    .update(updates)
+    .update(sanitized)
     .eq('id', id)
     .select()
     .single();
@@ -110,7 +131,7 @@ export async function bulkInsertInsuranceIssues(
   const allInserted: InsuranceIssue[] = [];
 
   for (let i = 0; i < issues.length; i += BATCH_SIZE) {
-    const batch = issues.slice(i, i + BATCH_SIZE);
+    const batch = issues.slice(i, i + BATCH_SIZE).map(sanitizeForDb);
     const { data, error } = await supabase
       .from('insurance_issues')
       .insert(batch)
@@ -151,7 +172,7 @@ export async function getIssuesByProvider(inCharge: string): Promise<InsuranceIs
     .from('insurance_issues')
     .select('*')
     .eq('in_charge', inCharge)
-    .order('date_of_service', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching issues by provider:', error);
@@ -173,7 +194,7 @@ export async function getOpenIssues(): Promise<InsuranceIssue[]> {
     .from('insurance_issues')
     .select('*')
     .eq('status', 'Open')
-    .order('date_of_service', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching open issues:', error);

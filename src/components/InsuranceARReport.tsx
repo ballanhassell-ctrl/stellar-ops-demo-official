@@ -34,6 +34,7 @@ import type { InsuranceARSummary } from '../services/claimsService';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
+import SuccessToast from './SuccessToast';
 
 // =====================================================
 // CONSTANTS
@@ -230,6 +231,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   // Clear all data
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleClearAllClaims = async () => {
     setClearing(true);
@@ -509,8 +511,12 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         await insertClaim(payload);
       }
 
+      const wasEditing = !!editingClaim;
       closeModal();
       await loadClaims();
+      if (!wasEditing) {
+        setToastMessage('Insurance A/R claim added successfully');
+      }
     } catch (err) {
       console.error('Error saving claim:', err);
       setFormError('Failed to save claim. Please try again.');
@@ -1426,6 +1432,14 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         notes={drawerClaim?.structured_notes || []}
         auditTrail={drawerClaim?.audit_trail || []}
         onAddNote={handleDrawerAddNote}
+      />
+
+      {/* Success Toast */}
+      <SuccessToast
+        message={toastMessage || ''}
+        isVisible={!!toastMessage}
+        onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
       />
     </div>
   );
