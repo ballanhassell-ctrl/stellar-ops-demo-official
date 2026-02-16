@@ -35,6 +35,7 @@ import {
 import type { NoteEntry } from '../types/database.types';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
+import SuccessToast from './SuccessToast';
 
 // =====================================================
 // CONSTANTS
@@ -95,6 +96,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
 
   // Notes & Audit drawer
   const [drawerPaymentId, setDrawerPaymentId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // --------------------------------------------------
   // Data fetching
@@ -211,6 +213,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
           await insertVCCPayment(sanitized);
         }
         await fetchPayments();
+      }
+      if (!editingId) {
+        setToastMessage('VCC payment added successfully');
       }
     } catch (err) {
       console.error('Error saving VCC payment:', err);
@@ -1241,6 +1246,14 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
         notes={drawerPayment?.structured_notes || []}
         auditTrail={drawerPayment?.audit_trail || []}
         onAddNote={handleDrawerAddNote}
+      />
+
+      {/* Success Toast */}
+      <SuccessToast
+        message={toastMessage || ''}
+        isVisible={!!toastMessage}
+        onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
       />
     </div>
   );

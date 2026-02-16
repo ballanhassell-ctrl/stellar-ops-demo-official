@@ -35,6 +35,7 @@ import { isStaticDataMode } from '../config/dataMode';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
+import SuccessToast from './SuccessToast';
 
 // =====================================================
 // CONSTANTS
@@ -152,6 +153,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
   // Notes & Audit drawer state
   const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -290,6 +292,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
       setNewForm({ ...EMPTY_FORM });
       setShowAddModal(false);
+      setToastMessage('Patient A/R record added successfully');
     } catch (err) {
       console.error('Error adding patient AR:', err);
       setError('Failed to add record. Please try again.');
@@ -1568,6 +1571,14 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         notes={drawerRecord?.structured_notes || []}
         auditTrail={drawerRecord?.audit_trail || []}
         onAddNote={handleAddNote}
+      />
+
+      {/* Success Toast */}
+      <SuccessToast
+        message={toastMessage || ''}
+        isVisible={!!toastMessage}
+        onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
       />
     </div>
   );
