@@ -12,6 +12,7 @@ import {
   Trash2,
   X,
   CheckCircle,
+  XCircle,
   Clock,
   DollarSign,
   CreditCard,
@@ -58,6 +59,7 @@ const EMPTY_FORM: NewVCCPayment = {
   deposited_via_check: false,
   deposited_via_check_by_initials: '',
   status: 'Needs OD Posting & Payment Deposit',
+  declined: false,
   opt_out_requested: false,
   opted_out: false,
   opt_out_notes: [],
@@ -168,7 +170,9 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
           p.claim_type.toLowerCase().includes(lower)
       );
     }
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'Declined') {
+      filtered = filtered.filter(p => p.declined);
+    } else if (statusFilter !== 'all') {
       filtered = filtered.filter(p => p.status === statusFilter);
     }
     return filtered;
@@ -272,6 +276,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       deposited_via_check: payment.deposited_via_check,
       deposited_via_check_by_initials: payment.deposited_via_check_by_initials,
       status: payment.status,
+      declined: payment.declined,
       opt_out_requested: payment.opt_out_requested,
       opted_out: payment.opted_out,
       opt_out_notes: payment.opt_out_notes,
@@ -411,6 +416,16 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       );
     } else {
       await updateVCCPayment(paymentId, { opted_out: !currentValue });
+      await fetchPayments();
+    }
+  };
+
+  const handleToggleDeclined = async (payment: VCCPayment) => {
+    const newDeclined = !payment.declined;
+    if (localMode) {
+      setPayments(prev => prev.map(p => (p.id === payment.id ? { ...p, declined: newDeclined, updated_at: new Date().toISOString() } : p)));
+    } else {
+      await updateVCCPayment(payment.id, { declined: newDeclined });
       await fetchPayments();
     }
   };
@@ -599,6 +614,18 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
               ${summary.notPostedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
             <p className={`text-[10px] ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>{summary.notPostedCount} claims</p>
+          </div>
+
+          {/* Declined */}
+          <div className={`${isDayMode ? 'bg-rose-50' : 'bg-rose-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-rose-200' : 'border-rose-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <XCircle className={`w-3.5 h-3.5 ${isDayMode ? 'text-rose-600' : 'text-rose-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-rose-700' : 'text-rose-400'}`}>Declined</p>
+            </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-rose-900' : 'text-rose-300'}`}>{summary.declinedCount}</p>
+            <p className={`text-[10px] ${isDayMode ? 'text-rose-600' : 'text-rose-500'}`}>
+              ${summary.declinedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
           </div>
 
           {/* Opt Out Requested */}
@@ -840,8 +867,8 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
               className={`${inputClass} pl-9`}
             />
           </div>
-          <div className="flex gap-2">
-            {['all', ...STATUS_OPTIONS].map(s => (
+          <div className="flex gap-2 flex-wrap">
+            {['all', ...STATUS_OPTIONS, 'Declined'].map(s => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
@@ -881,6 +908,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Posted to OD</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>CC on Clover/Terminal</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Check</th>
+                  <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Declined</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Opt Out</th>
                   <th className={`text-center py-3 px-3 font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Notes / Audit</th>
@@ -1021,6 +1049,22 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
                           </select>
                         )}
                       </div>
+                    </td>
+
+                    {/* Declined */}
+                    <td className="py-3 px-3 text-center">
+                      <button
+                        onClick={() => handleToggleDeclined(payment)}
+                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all mx-auto ${
+                          payment.declined
+                            ? 'bg-red-500 border-red-500 text-white'
+                            : isDayMode
+                            ? 'border-gray-300 hover:border-red-400'
+                            : 'border-gray-600 hover:border-red-400'
+                        }`}
+                      >
+                        {payment.declined && <XCircle className="w-4 h-4" />}
+                      </button>
                     </td>
 
                     {/* Status */}
