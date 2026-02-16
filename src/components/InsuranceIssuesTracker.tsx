@@ -339,6 +339,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   // CSV upload
   const [showCSVUpload, setShowCSVUpload] = useState(false);
 
+  // Resolve confirmation
+  const [confirmResolveIssue, setConfirmResolveIssue] = useState<InsuranceIssue | null>(null);
+
   // Notes & Audit drawer
   const [drawerIssueId, setDrawerIssueId] = useState<string | null>(null);
 
@@ -528,7 +531,17 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   };
 
   // ----- Status toggle handler (direct click, no edit mode needed) -----
-  const handleToggleStatus = async (issue: InsuranceIssue) => {
+  const handleToggleStatus = (issue: InsuranceIssue) => {
+    // If marking as resolved (Open → Corrected), show confirmation first
+    if (issue.status !== 'Corrected') {
+      setConfirmResolveIssue(issue);
+      return;
+    }
+    // If toggling back to Open, no confirmation needed
+    performStatusToggle(issue);
+  };
+
+  const performStatusToggle = async (issue: InsuranceIssue) => {
     const newStatus: InsuranceIssueStatus = issue.status === 'Corrected' ? 'Open' : 'Corrected';
     const auditEntry = createAuditEntry('status_changed', issue.submitted_by || 'staff', {
       field: 'status', oldValue: issue.status, newValue: newStatus,
@@ -543,6 +556,13 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       setIssues((prev) => prev.map((i) => (i.id === issue.id ? updated : i)));
     } catch (err) {
       console.error('Error toggling status:', err);
+    }
+  };
+
+  const handleConfirmResolve = () => {
+    if (confirmResolveIssue) {
+      performStatusToggle(confirmResolveIssue);
+      setConfirmResolveIssue(null);
     }
   };
 
@@ -709,9 +729,19 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
           {issue.patient_id ?? '--'}
         </td>
 
-        {/* Patient Name */}
-        <td className={`px-3 py-2 text-sm font-medium border-b ${tableBorder} whitespace-nowrap ${headerText}`}>
-          {issue.patient_name}
+        {/* Patient Name (clickable → opens edit modal) */}
+        <td className={`px-3 py-2 text-sm font-medium border-b ${tableBorder} whitespace-nowrap`}>
+          <button
+            onClick={() => handleStartEdit(issue)}
+            className={`text-left font-medium underline decoration-dotted underline-offset-2 cursor-pointer transition-colors ${
+              isDayMode
+                ? 'text-blue-700 hover:text-blue-900'
+                : 'text-blue-400 hover:text-blue-200'
+            }`}
+            title={`Edit ${issue.patient_name}`}
+          >
+            {issue.patient_name}
+          </button>
         </td>
 
         {/* Date of Service */}
@@ -843,9 +873,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         <div className={`px-4 py-3 border-b ${tableBorder}`}>
           <h3 className={`text-sm font-semibold ${headerText}`}>{title}</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
+        <div className="overflow-x-auto insurance-table-scroll" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          <table className="w-full text-left" style={{ minWidth: '1100px' }}>
+            <thead className="sticky top-0 z-10">
               <tr className={thBg}>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Patient ID</th>
                 <th className={`px-3 py-2 text-xs font-semibold border-b ${tableBorder}`}>Name</th>
@@ -1589,6 +1619,67 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {formSaving ? 'Saving...' : 'Add Issue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Resolve Confirmation Modal ===== */}
+      {confirmResolveIssue && (
+        <div
+          className={modalOverlay}
+          onClick={() => setConfirmResolveIssue(null)}
+        >
+          <div
+            className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-xl shadow-xl max-w-sm w-full mx-4`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'notesPopupFadeIn 0.15s ease-out' }}
+          >
+            {/* Header */}
+            <div className={`flex items-center justify-between px-6 py-4 border-b ${tableBorder}`}>
+              <div className="flex items-center gap-2">
+                <CheckCircle className={`w-5 h-5 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
+                <h3 className={`text-lg font-semibold ${headerText}`}>Mark as Resolved</h3>
+              </div>
+              <button
+                onClick={() => setConfirmResolveIssue(null)}
+                className={`p-1 rounded ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              <p className={`text-sm ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                Are you sure you want to mark this claim as resolved?
+              </p>
+              <div className={`mt-3 p-3 rounded-lg ${isDayMode ? 'bg-gray-50 border border-gray-100' : 'bg-gray-700/50 border border-gray-600'}`}>
+                <p className={`text-sm font-medium ${headerText}`}>{confirmResolveIssue.patient_name}</p>
+                <p className={`text-xs mt-0.5 ${subText}`}>
+                  {formatDate(confirmResolveIssue.date_of_service)} &middot; {confirmResolveIssue.procedure_codes}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t ${tableBorder}`}>
+              <button
+                onClick={() => setConfirmResolveIssue(null)}
+                className={`px-4 py-2 text-sm rounded-md border transition-colors ${
+                  isDayMode
+                    ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmResolve}
+                className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+              >
+                Confirm
               </button>
             </div>
           </div>
