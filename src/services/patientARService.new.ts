@@ -89,14 +89,26 @@ export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
 }
 
 /**
+ * Strip JSONB fields that may not yet exist as DB columns.
+ * Once the add_structured_notes_audit_trail_to_patient_ar migration is applied,
+ * this helper can be removed and the raw record sent directly.
+ */
+function stripNonDbFields<T extends Record<string, unknown>>(record: T): Omit<T, 'structured_notes' | 'audit_trail'> {
+  const { structured_notes, audit_trail, ...dbSafe } = record as Record<string, unknown>;
+  return dbSafe as Omit<T, 'structured_notes' | 'audit_trail'>;
+}
+
+/**
  * Insert a new patient A/R record
  */
 export async function insertPatientAR(
   record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>
 ): Promise<PatientAR> {
+  const dbRecord = stripNonDbFields(record);
+
   const { data, error } = await supabase
     .from('patient_ar')
-    .insert(record)
+    .insert(dbRecord)
     .select()
     .single();
 
@@ -115,9 +127,11 @@ export async function updatePatientAR(
   id: string,
   updates: Partial<Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>>
 ): Promise<PatientAR> {
+  const dbUpdates = stripNonDbFields(updates);
+
   const { data, error } = await supabase
     .from('patient_ar')
-    .update(updates)
+    .update(dbUpdates)
     .eq('id', id)
     .select()
     .single();
