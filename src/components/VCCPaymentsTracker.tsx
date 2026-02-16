@@ -99,6 +99,31 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // --------------------------------------------------
+  // localStorage helpers for local-mode persistence
+  // --------------------------------------------------
+  const LOCAL_STORAGE_KEY = 'vcc_payments_local';
+
+  const loadLocalPayments = useCallback((): VCCPayment[] | null => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored) as VCCPayment[];
+      }
+    } catch {
+      // Corrupted data, ignore
+    }
+    return null;
+  }, []);
+
+  const saveLocalPayments = useCallback((data: VCCPayment[]) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      // Storage full or unavailable, ignore
+    }
+  }, []);
+
+  // --------------------------------------------------
   // Data fetching
   // --------------------------------------------------
   const fetchPayments = useCallback(async () => {
@@ -108,17 +133,25 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
       setPayments(data);
       setLocalMode(false);
     } catch {
-      // If Supabase table doesn't exist, fall back to local state with seed data
+      // If Supabase table doesn't exist, fall back to local state
       setLocalMode(true);
-      setPayments([...sampleVCCPayments]);
+      const cached = loadLocalPayments();
+      setPayments(cached ?? [...sampleVCCPayments]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadLocalPayments]);
 
   useEffect(() => {
     fetchPayments();
   }, [fetchPayments]);
+
+  // Persist to localStorage whenever payments change in local mode
+  useEffect(() => {
+    if (localMode && payments.length > 0) {
+      saveLocalPayments(payments);
+    }
+  }, [localMode, payments, saveLocalPayments]);
 
   // --------------------------------------------------
   // Derived data
@@ -458,12 +491,12 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     <div className="space-y-6">
       {/* Header */}
       <div className={cardClass}>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
               VCC Payments
             </h2>
-            <p className={`text-sm mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
               Track VCC standard claim payments, posting, and payment processing
             </p>
           </div>
@@ -476,343 +509,320 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
           </button>
         </div>
 
-        {/* Summary Cards - Organized by Category */}
-        <div className="space-y-4">
-
-          {/* Row 1: Total Claims & Total Amount */}
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDayMode ? 'text-slate-500' : 'text-slate-400'}`}>Overview</p>
-            <div className="grid grid-cols-2 gap-3">
-              {/* Total Claims */}
-              <div className={`${isDayMode ? 'bg-slate-50' : 'bg-white/5'} rounded-xl p-4 border ${isDayMode ? 'border-slate-200' : 'border-white/10'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className={`w-4 h-4 ${isDayMode ? 'text-slate-500' : 'text-slate-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-slate-600' : 'text-slate-400'}`}>Total Claims</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-slate-900' : 'text-white'}`}>{summary.totalPayments}</p>
-              </div>
-
-              {/* Total Amount */}
-              <div className={`${isDayMode ? 'bg-emerald-50' : 'bg-emerald-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-emerald-200' : 'border-emerald-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className={`w-4 h-4 ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Total Amount</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-emerald-900' : 'text-emerald-300'}`}>
-                  ${summary.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-              </div>
+        {/* Summary Cards - Compact Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          {/* Total Claims */}
+          <div className={`${isDayMode ? 'bg-slate-50' : 'bg-white/5'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-slate-200' : 'border-white/10'}`}>
+            <div className="flex items-center gap-1.5">
+              <FileText className={`w-3.5 h-3.5 ${isDayMode ? 'text-slate-500' : 'text-slate-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-slate-600' : 'text-slate-400'}`}>Total Claims</p>
             </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-slate-900' : 'text-white'}`}>{summary.totalPayments}</p>
           </div>
 
-          {/* Row 2: Pending Payment Deposit */}
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Pending Payment Deposit</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className={`${isDayMode ? 'bg-amber-50' : 'bg-amber-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-amber-200' : 'border-amber-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending Amount</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
-                  ${summary.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-amber-600' : 'text-amber-500'}`}>{summary.pendingCount} claims</p>
-              </div>
+          {/* Total Amount */}
+          <div className={`${isDayMode ? 'bg-emerald-50' : 'bg-emerald-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-emerald-200' : 'border-emerald-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <DollarSign className={`w-3.5 h-3.5 ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Total Amount</p>
             </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-emerald-900' : 'text-emerald-300'}`}>
+              ${summary.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
           </div>
 
-          {/* Row 3: Closed & Resolved */}
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDayMode ? 'text-green-600' : 'text-green-400'}`}>Closed & Resolved</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Total Closed */}
-              <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-green-200' : 'border-green-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Total Closed</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                  ${summary.closedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>{summary.closedCount} claims</p>
-              </div>
-
-              {/* Closed - Checks */}
-              <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-green-200' : 'border-green-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Checks</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                  ${summary.closedCheckAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>{summary.closedCheckCount} claims</p>
-              </div>
-
-              {/* Closed - CC on Clover/Terminal */}
-              <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-green-200' : 'border-green-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <CreditCard className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>CC on Clover/Terminal</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                  ${summary.closedTerminalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>{summary.closedTerminalCount} claims</p>
-              </div>
+          {/* Pending */}
+          <div className={`${isDayMode ? 'bg-amber-50' : 'bg-amber-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-amber-200' : 'border-amber-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <Clock className={`w-3.5 h-3.5 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Pending Deposit</p>
             </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-amber-900' : 'text-amber-300'}`}>
+              ${summary.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-[10px] ${isDayMode ? 'text-amber-600' : 'text-amber-500'}`}>{summary.pendingCount} claims</p>
           </div>
 
-          {/* Row 4: OD Posting & Opt-Out Status */}
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>OD Posting & Opt-Out</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {/* Posted to OD */}
-              <div className={`${isDayMode ? 'bg-blue-50' : 'bg-blue-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-blue-200' : 'border-blue-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <CreditCard className={`w-4 h-4 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Posted to OD</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>{summary.postedCount}</p>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>{summary.notPostedCount} not posted</p>
-              </div>
-
-              {/* Needs OD Posting */}
-              <div className={`${isDayMode ? 'bg-orange-50' : 'bg-orange-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-orange-200' : 'border-orange-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <AlertCircle className={`w-4 h-4 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Needs OD Posting</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
-                  ${summary.notPostedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>{summary.notPostedCount} claims</p>
-              </div>
-
-              {/* Opt Out Requested */}
-              <div className={`${isDayMode ? 'bg-red-50' : 'bg-red-900/20'} rounded-xl p-4 border ${isDayMode ? 'border-red-200' : 'border-red-500/20'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <Ban className={`w-4 h-4 ${isDayMode ? 'text-red-600' : 'text-red-400'}`} />
-                  <p className={`text-xs font-medium ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Opt-Out Requested</p>
-                </div>
-                <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>{summary.optOutRequestedCount}</p>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-red-600' : 'text-red-500'}`}>{summary.optedOutCount} opted out</p>
-              </div>
+          {/* Total Closed */}
+          <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-green-200' : 'border-green-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle className={`w-3.5 h-3.5 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Closed</p>
             </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+              ${summary.closedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-[10px] ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>{summary.closedCount} claims</p>
           </div>
 
+          {/* Checks */}
+          <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-green-200' : 'border-green-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <FileText className={`w-3.5 h-3.5 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Checks</p>
+            </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+              ${summary.closedCheckAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-[10px] ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>{summary.closedCheckCount} claims</p>
+          </div>
+
+          {/* CC Terminal */}
+          <div className={`${isDayMode ? 'bg-green-50' : 'bg-green-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-green-200' : 'border-green-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <CreditCard className={`w-3.5 h-3.5 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>CC/Terminal</p>
+            </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+              ${summary.closedTerminalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-[10px] ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>{summary.closedTerminalCount} claims</p>
+          </div>
+
+          {/* Posted to OD */}
+          <div className={`${isDayMode ? 'bg-blue-50' : 'bg-blue-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-blue-200' : 'border-blue-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <CreditCard className={`w-3.5 h-3.5 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Posted to OD</p>
+            </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>{summary.postedCount}</p>
+            <p className={`text-[10px] ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>{summary.notPostedCount} not posted</p>
+          </div>
+
+          {/* Needs OD Posting */}
+          <div className={`${isDayMode ? 'bg-orange-50' : 'bg-orange-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-orange-200' : 'border-orange-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <AlertCircle className={`w-3.5 h-3.5 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Needs OD Posting</p>
+            </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
+              ${summary.notPostedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-[10px] ${isDayMode ? 'text-orange-600' : 'text-orange-500'}`}>{summary.notPostedCount} claims</p>
+          </div>
+
+          {/* Opt Out Requested */}
+          <div className={`${isDayMode ? 'bg-red-50' : 'bg-red-900/20'} rounded-lg px-3 py-2 border ${isDayMode ? 'border-red-200' : 'border-red-500/20'}`}>
+            <div className="flex items-center gap-1.5">
+              <Ban className={`w-3.5 h-3.5 ${isDayMode ? 'text-red-600' : 'text-red-400'}`} />
+              <p className={`text-[11px] font-medium ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Opt-Out</p>
+            </div>
+            <p className={`text-lg font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>{summary.optOutRequestedCount}</p>
+            <p className={`text-[10px] ${isDayMode ? 'text-red-600' : 'text-red-500'}`}>{summary.optedOutCount} opted out</p>
+          </div>
         </div>
       </div>
 
-      {/* Add/Edit Form */}
+      {/* Add/Edit Form Modal */}
       {showAddForm && (
-        <div className={cardClass}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-              {editingId ? 'Edit VCC Payment' : 'Add VCC Payment'}
-            </h3>
-            <button onClick={resetForm} className={`p-1.5 rounded-lg ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}>
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Patient Name */}
-            <div>
-              <label className={labelClass}>Patient Name *</label>
-              <input
-                type="text"
-                value={form.patient_name}
-                onChange={e => setForm(f => ({ ...f, patient_name: e.target.value }))}
-                className={inputClass}
-                placeholder="Last, First"
-              />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className={`w-full max-w-2xl rounded-2xl p-6 ${isDayMode ? 'bg-white shadow-xl' : 'bg-gray-900 border border-white/10'} max-h-[85vh] overflow-y-auto`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                {editingId ? 'Edit VCC Payment' : 'Add VCC Payment'}
+              </h3>
+              <button onClick={resetForm} className={`p-1.5 rounded-lg ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}>
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Date of Service */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className={`text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Date of Service {!form.multiple_dos && '*'}
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.multiple_dos}
-                    onChange={e => setForm(f => ({ ...f, multiple_dos: e.target.checked, ...(e.target.checked ? { date_of_service: '' } : {}) }))}
-                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Multiple</span>
-                </label>
-              </div>
-              <input
-                type="date"
-                value={form.date_of_service}
-                onChange={e => setForm(f => ({ ...f, date_of_service: e.target.value }))}
-                disabled={form.multiple_dos}
-                className={`${inputClass} ${form.multiple_dos ? 'opacity-40 cursor-not-allowed' : ''}`}
-                placeholder={form.multiple_dos ? 'Multiple DOS' : ''}
-              />
-              {form.multiple_dos && (
-                <p className={`text-xs mt-1 font-medium ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>Multiple DOS will be recorded</p>
-              )}
-            </div>
-
-            {/* Claim Type */}
-            <div>
-              <label className={labelClass}>Claim Type</label>
-              <select
-                value={form.claim_type}
-                onChange={e => setForm(f => ({ ...f, claim_type: e.target.value }))}
-                className={inputClass}
-              >
-                {CLAIM_TYPES.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Payment Amount */}
-            <div>
-              <label className={labelClass}>Payment Amount</label>
-              <div className="relative">
-                <span className={`absolute left-3 top-2.5 text-sm ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>$</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Patient Name */}
+              <div>
+                <label className={labelClass}>Patient Name *</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.payment_amount || ''}
-                  onChange={e => setForm(f => ({ ...f, payment_amount: parseFloat(e.target.value) || 0 }))}
-                  className={`${inputClass} pl-7`}
-                  placeholder="0.00"
+                  type="text"
+                  value={form.patient_name}
+                  onChange={e => setForm(f => ({ ...f, patient_name: e.target.value }))}
+                  className={inputClass}
+                  placeholder="Last, First"
                 />
               </div>
+
+              {/* Date of Service */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className={`text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Date of Service {!form.multiple_dos && '*'}
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.multiple_dos}
+                      onChange={e => setForm(f => ({ ...f, multiple_dos: e.target.checked, ...(e.target.checked ? { date_of_service: '' } : {}) }))}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Multiple</span>
+                  </label>
+                </div>
+                <input
+                  type="date"
+                  value={form.date_of_service}
+                  onChange={e => setForm(f => ({ ...f, date_of_service: e.target.value }))}
+                  disabled={form.multiple_dos}
+                  className={`${inputClass} ${form.multiple_dos ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  placeholder={form.multiple_dos ? 'Multiple DOS' : ''}
+                />
+                {form.multiple_dos && (
+                  <p className={`text-xs mt-1 font-medium ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>Multiple DOS will be recorded</p>
+                )}
+              </div>
+
+              {/* Claim Type */}
+              <div>
+                <label className={labelClass}>Claim Type</label>
+                <select
+                  value={form.claim_type}
+                  onChange={e => setForm(f => ({ ...f, claim_type: e.target.value }))}
+                  className={inputClass}
+                >
+                  {CLAIM_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Payment Amount */}
+              <div>
+                <label className={labelClass}>Payment Amount</label>
+                <div className="relative">
+                  <span className={`absolute left-3 top-2.5 text-sm ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.payment_amount || ''}
+                    onChange={e => setForm(f => ({ ...f, payment_amount: parseFloat(e.target.value) || 0 }))}
+                    className={`${inputClass} pl-7`}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className={labelClass}>Status</label>
+                <select
+                  value={form.status}
+                  onChange={e => setForm(f => ({ ...f, status: e.target.value as VCCPayment['status'] }))}
+                  className={inputClass}
+                >
+                  {STATUS_OPTIONS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Posted to Open Dental */}
+              <div className="flex flex-col justify-end">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.posted_to_open_dental}
+                      onChange={e => setForm(f => ({ ...f, posted_to_open_dental: e.target.checked }))}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Posted to Open Dental</span>
+                  </label>
+                </div>
+                {form.posted_to_open_dental && (
+                  <div className="mt-2">
+                    <label className={labelClass}>Posted By (Initials)</label>
+                    <select
+                      value={form.posted_by_initials}
+                      onChange={e => setForm(f => ({ ...f, posted_by_initials: e.target.value }))}
+                      className={inputClass}
+                    >
+                      <option value="">Select...</option>
+                      {STAFF_INITIALS.map(i => (
+                        <option key={i} value={i}>{i}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Processed via CC on Clover/Terminal */}
+              <div className="flex flex-col justify-end">
+                <div className="flex items-center gap-3">
+                  <label className={`flex items-center gap-2 ${form.deposited_via_check ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <input
+                      type="checkbox"
+                      checked={form.processed_via_terminal}
+                      disabled={form.deposited_via_check}
+                      onChange={e => setForm(f => ({ ...f, processed_via_terminal: e.target.checked, ...(e.target.checked ? { deposited_via_check: false, deposited_via_check_by_initials: '' } : {}) }))}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40"
+                    />
+                    <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>CC on Clover/Terminal</span>
+                  </label>
+                </div>
+                {form.processed_via_terminal && (
+                  <div className="mt-2">
+                    <label className={labelClass}>Processed By (Initials)</label>
+                    <select
+                      value={form.processed_by_initials}
+                      onChange={e => setForm(f => ({ ...f, processed_by_initials: e.target.value }))}
+                      className={inputClass}
+                    >
+                      <option value="">Select...</option>
+                      {STAFF_INITIALS.map(i => (
+                        <option key={i} value={i}>{i}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Deposited via Check */}
+              <div className="flex flex-col justify-end">
+                <div className="flex items-center gap-3">
+                  <label className={`flex items-center gap-2 ${form.processed_via_terminal ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <input
+                      type="checkbox"
+                      checked={form.deposited_via_check}
+                      disabled={form.processed_via_terminal}
+                      onChange={e => setForm(f => ({ ...f, deposited_via_check: e.target.checked, ...(e.target.checked ? { processed_via_terminal: false, processed_by_initials: '' } : {}) }))}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40"
+                    />
+                    <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Deposited via Check</span>
+                  </label>
+                </div>
+                {form.deposited_via_check && (
+                  <div className="mt-2">
+                    <label className={labelClass}>Deposited By (Initials)</label>
+                    <select
+                      value={form.deposited_via_check_by_initials}
+                      onChange={e => setForm(f => ({ ...f, deposited_via_check_by_initials: e.target.value }))}
+                      className={inputClass}
+                    >
+                      <option value="">Select...</option>
+                      {STAFF_INITIALS.map(i => (
+                        <option key={i} value={i}>{i}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Status */}
-            <div>
-              <label className={labelClass}>Status</label>
-              <select
-                value={form.status}
-                onChange={e => setForm(f => ({ ...f, status: e.target.value as VCCPayment['status'] }))}
-                className={inputClass}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={resetForm}
+                className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                  isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                }`}
               >
-                {STATUS_OPTIONS.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!form.patient_name.trim() || (!form.multiple_dos && !form.date_of_service)}
+                className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-primary text-gold-400 shadow-glow-primary hover-lift transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingId ? 'Update Payment' : 'Add Payment'}
+              </button>
             </div>
-
-            {/* Posted to Open Dental */}
-            <div className="flex flex-col justify-end">
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.posted_to_open_dental}
-                    onChange={e => setForm(f => ({ ...f, posted_to_open_dental: e.target.checked }))}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Posted to Open Dental</span>
-                </label>
-              </div>
-              {form.posted_to_open_dental && (
-                <div className="mt-2">
-                  <label className={labelClass}>Posted By (Initials)</label>
-                  <select
-                    value={form.posted_by_initials}
-                    onChange={e => setForm(f => ({ ...f, posted_by_initials: e.target.value }))}
-                    className={inputClass}
-                  >
-                    <option value="">Select...</option>
-                    {STAFF_INITIALS.map(i => (
-                      <option key={i} value={i}>{i}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Payment Processed via CC on Clover/Terminal */}
-            <div className="flex flex-col justify-end">
-              <div className="flex items-center gap-3">
-                <label className={`flex items-center gap-2 ${form.deposited_via_check ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <input
-                    type="checkbox"
-                    checked={form.processed_via_terminal}
-                    disabled={form.deposited_via_check}
-                    onChange={e => setForm(f => ({ ...f, processed_via_terminal: e.target.checked, ...(e.target.checked ? { deposited_via_check: false, deposited_via_check_by_initials: '' } : {}) }))}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40"
-                  />
-                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Payment Processed via CC on Clover/Terminal</span>
-                </label>
-              </div>
-              {form.processed_via_terminal && (
-                <div className="mt-2">
-                  <label className={labelClass}>Processed By (Initials)</label>
-                  <select
-                    value={form.processed_by_initials}
-                    onChange={e => setForm(f => ({ ...f, processed_by_initials: e.target.value }))}
-                    className={inputClass}
-                  >
-                    <option value="">Select...</option>
-                    {STAFF_INITIALS.map(i => (
-                      <option key={i} value={i}>{i}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Payment Deposited via Check */}
-            <div className="flex flex-col justify-end">
-              <div className="flex items-center gap-3">
-                <label className={`flex items-center gap-2 ${form.processed_via_terminal ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <input
-                    type="checkbox"
-                    checked={form.deposited_via_check}
-                    disabled={form.processed_via_terminal}
-                    onChange={e => setForm(f => ({ ...f, deposited_via_check: e.target.checked, ...(e.target.checked ? { processed_via_terminal: false, processed_by_initials: '' } : {}) }))}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-40"
-                  />
-                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Payment Deposited via Check</span>
-                </label>
-              </div>
-              {form.deposited_via_check && (
-                <div className="mt-2">
-                  <label className={labelClass}>Deposited By (Initials)</label>
-                  <select
-                    value={form.deposited_via_check_by_initials}
-                    onChange={e => setForm(f => ({ ...f, deposited_via_check_by_initials: e.target.value }))}
-                    className={inputClass}
-                  >
-                    <option value="">Select...</option>
-                    {STAFF_INITIALS.map(i => (
-                      <option key={i} value={i}>{i}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              onClick={resetForm}
-              className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
-                isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-white/10 text-gray-300 hover:bg-white/20'
-              }`}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!form.patient_name.trim() || (!form.multiple_dos && !form.date_of_service)}
-              className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-primary text-gold-400 shadow-glow-primary hover-lift transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {editingId ? 'Update Payment' : 'Add Payment'}
-            </button>
           </div>
         </div>
       )}
