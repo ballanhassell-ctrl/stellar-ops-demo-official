@@ -20,11 +20,16 @@ ALTER TABLE patient_ar
   ADD COLUMN IF NOT EXISTS audit_trail JSONB DEFAULT '[]'::jsonb;
 
 -- =====================================================
--- STEP 2: Recreate the patient_ar_with_aging view
---         to include the new columns
+-- STEP 2: Drop and recreate the patient_ar_with_aging view
+--         to include the new columns.
+--         NOTE: DROP is required because CREATE OR REPLACE
+--         cannot reorder or insert columns into an existing
+--         view — PostgreSQL raises error 42P16.
 -- =====================================================
 
-CREATE OR REPLACE VIEW patient_ar_with_aging AS
+DROP VIEW IF EXISTS patient_ar_with_aging;
+
+CREATE VIEW patient_ar_with_aging AS
 SELECT
   id,
   patient_id,
