@@ -557,6 +557,10 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       }
     }
 
+    // Capture previous status BEFORE any async work (avoids stale closure issues)
+    const isEditMode = !!editingClaim;
+    const previousStatus = editingClaim?.status;
+
     try {
       setFormSubmitting(true);
       setFormError(null);
@@ -594,7 +598,10 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         audit_trail: [] as AuditTrailEntry[],
       };
 
-      if (editingClaim) {
+      // ── SAVE (edit or new) ──
+      let savedClaim: Claim;
+
+      if (isEditMode && editingClaim) {
         // Build audit entries for changed fields
         const auditEntries: AuditTrailEntry[] = [];
         const changedBy = formData.assigned_to.trim() || 'staff';
@@ -635,57 +642,42 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         }
         payload.structured_notes = editingClaim.structured_notes || [];
         await updateClaim(editingClaim.id, payload);
-
-        const statusChanged = editingClaim.status !== newStatus;
-        const savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
-
-        // If status changed to "Waiting for Info", show transfer-to-issues modal
-        if (statusChanged && newStatus === 'Waiting for Info') {
-          // Set modal state FIRST, then close the form and silently reload
-          setTransferClaim({ claim: savedClaim });
-          setTransferForm({ in_charge: '', issue_type: 'Other', in_vyne: false });
-          setShowTransferModal(true);
-          closeModal();
-          reloadClaimsSilently();
-          return;
-        }
-
-        // If status changed to Denied or Closed/Unpaid, prompt transfer to Patient A/R
-        if (statusChanged && PATIENT_AR_TRANSFER_STATUSES.includes(newStatus)) {
-          setPatientARClaim(savedClaim);
-          setShowPatientARModal(true);
-          closeModal();
-          reloadClaimsSilently();
-          return;
-        }
+        savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
       } else {
-        // NEW claim
         payload.audit_trail = [createAuditEntry('created', formData.assigned_to.trim() || 'staff', { notes: 'Claim created' })];
         const inserted = await insertClaim(payload);
-        const savedNew = inserted as Claim;
-
-        // For new claims: also trigger transfer modals when applicable
-        if (newStatus === 'Waiting for Info') {
-          setTransferClaim({ claim: savedNew });
-          setTransferForm({ in_charge: '', issue_type: 'Other', in_vyne: false });
-          setShowTransferModal(true);
-          closeModal();
-          reloadClaimsSilently();
-          return;
-        }
-        if (PATIENT_AR_TRANSFER_STATUSES.includes(newStatus)) {
-          setPatientARClaim(savedNew);
-          setShowPatientARModal(true);
-          closeModal();
-          reloadClaimsSilently();
-          return;
-        }
+        savedClaim = inserted as Claim;
       }
 
-      const wasEditing = !!editingClaim;
+      // ── TRANSFER CHECKS (unified for both edit and new) ──
+      // For edits: only prompt when status actually changed
+      // For new claims: always prompt if the status warrants it
+      const statusIsNew = isEditMode ? (previousStatus !== newStatus) : true;
+
+      if (statusIsNew && newStatus === 'Waiting for Info') {
+        // Hide the form (don't full-reset via closeModal to avoid state interference)
+        setShowAddModal(false);
+        // Show the Insurance Issues transfer modal
+        setTransferClaim({ claim: savedClaim });
+        setTransferForm({ in_charge: '', issue_type: 'Other', in_vyne: false });
+        setShowTransferModal(true);
+        // Silently refresh the claims list in the background
+        reloadClaimsSilently();
+        return;
+      }
+
+      if (statusIsNew && PATIENT_AR_TRANSFER_STATUSES.includes(newStatus)) {
+        setShowAddModal(false);
+        setPatientARClaim(savedClaim);
+        setShowPatientARModal(true);
+        reloadClaimsSilently();
+        return;
+      }
+
+      // ── Normal close (no transfer needed) ──
       closeModal();
       await loadClaims();
-      if (!wasEditing) {
+      if (!isEditMode) {
         setToastMessage('Insurance A/R claim added successfully');
       }
     } catch (err) {
@@ -764,12 +756,16 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       });
       setShowTransferModal(false);
       setTransferClaim(null);
+      setEditingClaim(null);
+      setFormData({ ...EMPTY_CLAIM_FORM });
       setToastMessage(`Claim transferred to Insurance Issues (assigned to ${transferForm.in_charge})`);
     } catch (err) {
       console.error('Error transferring to insurance issues:', err);
       setError('Failed to create insurance issue. You can add it manually in the Insurance Issues tab.');
       setShowTransferModal(false);
       setTransferClaim(null);
+      setEditingClaim(null);
+      setFormData({ ...EMPTY_CLAIM_FORM });
     } finally {
       setTransferring(false);
     }
@@ -778,6 +774,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const handleSkipTransfer = () => {
     setShowTransferModal(false);
     setTransferClaim(null);
+    setEditingClaim(null);
+    setFormData({ ...EMPTY_CLAIM_FORM });
     setToastMessage('Claim saved. You can add to Insurance Issues later if needed.');
   };
 
@@ -819,12 +817,16 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       });
       setShowPatientARModal(false);
       setPatientARClaim(null);
+      setEditingClaim(null);
+      setFormData({ ...EMPTY_CLAIM_FORM });
       setToastMessage(`Patient sent to Patient A/R for collections (${c.patient_name})`);
     } catch (err) {
       console.error('Error transferring to Patient A/R:', err);
       setError('Failed to create Patient A/R record. You can add it manually in the Patient A/R tab.');
       setShowPatientARModal(false);
       setPatientARClaim(null);
+      setEditingClaim(null);
+      setFormData({ ...EMPTY_CLAIM_FORM });
     } finally {
       setPatientARTransferring(false);
     }
@@ -833,6 +835,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const handleSkipPatientARTransfer = () => {
     setShowPatientARModal(false);
     setPatientARClaim(null);
+    setEditingClaim(null);
+    setFormData({ ...EMPTY_CLAIM_FORM });
     setToastMessage('Claim saved. You can add to Patient A/R later if needed.');
   };
 
