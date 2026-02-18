@@ -361,7 +361,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     });
 
     return result;
-  }, [claims, searchQuery, statusFilter, agingFilter, insuranceFilter, assignedToFilter, sortField, sortDirection]);
+  }, [claims, viewTab, searchQuery, statusFilter, agingFilter, insuranceFilter, assignedToFilter, sortField, sortDirection]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
