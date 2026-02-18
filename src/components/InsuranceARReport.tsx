@@ -16,6 +16,8 @@ import {
   Clock,
   MessageSquare,
   History,
+  CheckCircle,
+  RotateCcw,
 } from 'lucide-react';
 import type {
   Claim,
@@ -113,6 +115,13 @@ type ClaimFormData = {
 
 type SortField = keyof Claim;
 type SortDirection = 'asc' | 'desc';
+type ViewTab = 'active' | 'closed';
+
+const CLOSED_STATUSES: UnifiedClaimStatus[] = ['Closed/Paid', 'Closed/Unpaid'];
+
+function isClosedClaim(claim: Claim): boolean {
+  return CLOSED_STATUSES.includes(claim.status);
+}
 
 // =====================================================
 // STYLE HELPERS
@@ -203,6 +212,9 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Active / Closed tab
+  const [viewTab, setViewTab] = useState<ViewTab>('active');
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<UnifiedClaimStatus | 'All'>('All');
@@ -276,23 +288,28 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   // DERIVED VALUES
   // =====================================================
 
+  // Split claims by tab
+  const activeClaims = useMemo(() => claims.filter((c) => !isClosedClaim(c)), [claims]);
+  const closedClaims = useMemo(() => claims.filter((c) => isClosedClaim(c)), [claims]);
+  const tabClaims = viewTab === 'active' ? activeClaims : closedClaims;
+
   const summary: InsuranceARSummary | null = useMemo(() => {
-    if (claims.length === 0) return null;
-    return calculateInsuranceARSummaryFromClaims(claims);
-  }, [claims]);
+    if (tabClaims.length === 0) return null;
+    return calculateInsuranceARSummaryFromClaims(tabClaims);
+  }, [tabClaims]);
 
   const uniqueInsuranceCompanies = useMemo(() => {
-    const companies = new Set(claims.map((c) => c.insurance_company));
+    const companies = new Set(tabClaims.map((c) => c.insurance_company));
     return Array.from(companies).sort();
-  }, [claims]);
+  }, [tabClaims]);
 
   const uniqueAssignees = useMemo(() => {
-    const assignees = new Set(claims.map((c) => c.assigned_to));
+    const assignees = new Set(tabClaims.map((c) => c.assigned_to));
     return Array.from(assignees).sort();
-  }, [claims]);
+  }, [tabClaims]);
 
   const filteredAndSortedClaims = useMemo(() => {
-    let result = [...claims];
+    let result = [...tabClaims];
 
     // Search filter
     if (searchQuery.trim()) {
@@ -533,6 +550,46 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     } catch (err) {
       console.error('Error deleting claim:', err);
       setError('Failed to delete claim. Please try again.');
+    }
+  };
+
+  const handleResolveClaim = async (claim: Claim, resolution: 'Closed/Paid' | 'Closed/Unpaid') => {
+    try {
+      const changedBy = claim.assigned_to || 'staff';
+      const auditEntry = createAuditEntry('status_changed', changedBy, {
+        field: 'status',
+        oldValue: claim.status,
+        newValue: resolution,
+      });
+      await updateClaim(claim.id, {
+        status: resolution,
+        audit_trail: [...(claim.audit_trail || []), auditEntry],
+      });
+      await loadClaims();
+      setToastMessage(`Claim marked as ${resolution}`);
+    } catch (err) {
+      console.error('Error resolving claim:', err);
+      setError('Failed to resolve claim. Please try again.');
+    }
+  };
+
+  const handleReopenClaim = async (claim: Claim) => {
+    try {
+      const changedBy = claim.assigned_to || 'staff';
+      const auditEntry = createAuditEntry('status_changed', changedBy, {
+        field: 'status',
+        oldValue: claim.status,
+        newValue: 'Pending Review',
+      });
+      await updateClaim(claim.id, {
+        status: 'Pending Review' as UnifiedClaimStatus,
+        audit_trail: [...(claim.audit_trail || []), auditEntry],
+      });
+      await loadClaims();
+      setToastMessage('Claim reopened — moved back to Active');
+    } catch (err) {
+      console.error('Error reopening claim:', err);
+      setError('Failed to reopen claim. Please try again.');
     }
   };
 
@@ -795,6 +852,48 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       )}
 
       {/* =====================================================
+          ACTIVE / CLOSED TABS
+          ===================================================== */}
+      <div className={`flex gap-1 p-1 rounded-lg ${bgSecondary} border ${borderColor} w-fit`}>
+        <button
+          onClick={() => { setViewTab('active'); clearFilters(); }}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            viewTab === 'active'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : `${textSecondary} hover:${textPrimary} hover:${bgTertiary}`
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Active Claims
+          <span className={`inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 text-xs font-bold rounded-full ${
+            viewTab === 'active'
+              ? 'bg-white/20 text-white'
+              : 'bg-blue-100 text-blue-700'
+          }`}>
+            {activeClaims.length}
+          </span>
+        </button>
+        <button
+          onClick={() => { setViewTab('closed'); clearFilters(); }}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            viewTab === 'closed'
+              ? 'bg-green-600 text-white shadow-sm'
+              : `${textSecondary} hover:${textPrimary} hover:${bgTertiary}`
+          }`}
+        >
+          <CheckCircle className="w-4 h-4" />
+          Closed / Resolved
+          <span className={`inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 text-xs font-bold rounded-full ${
+            viewTab === 'closed'
+              ? 'bg-white/20 text-white'
+              : 'bg-green-100 text-green-700'
+          }`}>
+            {closedClaims.length}
+          </span>
+        </button>
+      </div>
+
+      {/* =====================================================
           TOOLBAR: SEARCH, FILTERS, ADD CLAIM
           ===================================================== */}
       <div className={`${bgPrimary} rounded-lg ${cardShadow} border ${borderColor}`}>
@@ -973,7 +1072,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
           {/* Results count + aging key */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <p className={`text-sm ${textMuted}`}>
-              Showing {filteredAndSortedClaims.length} of {claims.length} claims
+              Showing {filteredAndSortedClaims.length} of {tabClaims.length} {viewTab === 'active' ? 'active' : 'closed'} claims
             </p>
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <span className={`font-medium ${textMuted}`}>Aging Key:</span>
@@ -1130,6 +1229,40 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Resolve / Reopen toggle */}
+                        {viewTab === 'active' ? (
+                          <div className="relative group">
+                            <button
+                              className={`p-1.5 rounded-md transition-colors ${isDayMode ? 'hover:bg-green-50' : 'hover:bg-green-900/30'}`}
+                              title="Mark as resolved"
+                            >
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            </button>
+                            {/* Dropdown for Closed/Paid vs Closed/Unpaid */}
+                            <div className={`absolute right-0 top-full mt-1 z-20 hidden group-hover:flex flex-col ${bgPrimary} border ${borderColor} rounded-lg shadow-lg overflow-hidden min-w-[150px]`}>
+                              <button
+                                onClick={() => handleResolveClaim(claim, 'Closed/Paid')}
+                                className={`px-3 py-2 text-xs text-left font-medium transition-colors ${isDayMode ? 'hover:bg-green-50 text-green-700' : 'hover:bg-green-900/30 text-green-400'}`}
+                              >
+                                Closed / Paid
+                              </button>
+                              <button
+                                onClick={() => handleResolveClaim(claim, 'Closed/Unpaid')}
+                                className={`px-3 py-2 text-xs text-left font-medium transition-colors ${isDayMode ? 'hover:bg-red-50 text-red-700' : 'hover:bg-red-900/30 text-red-400'}`}
+                              >
+                                Closed / Unpaid
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleReopenClaim(claim)}
+                            className={`p-1.5 rounded-md transition-colors ${isDayMode ? 'hover:bg-amber-50' : 'hover:bg-amber-900/30'}`}
+                            title="Reopen claim (move to Active)"
+                          >
+                            <RotateCcw className="w-4 h-4 text-amber-600" />
+                          </button>
+                        )}
                         <button
                           onClick={() => openEditModal(claim)}
                           className={`p-1.5 rounded-md ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}
