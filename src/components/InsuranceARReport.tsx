@@ -397,6 +397,13 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     return calculateInsuranceARSummaryFromClaims(tabClaims);
   }, [tabClaims]);
 
+  // Combined collected totals across both active and closed tabs
+  const collectedTotals = useMemo(() => {
+    const activeTotal = activeClaims.reduce((sum, c) => sum + (c.collected || 0), 0);
+    const closedTotal = closedClaims.reduce((sum, c) => sum + (c.collected || 0), 0);
+    return { activeTotal, closedTotal, combinedTotal: activeTotal + closedTotal };
+  }, [activeClaims, closedClaims]);
+
   const uniqueInsuranceCompanies = useMemo(() => {
     const companies = new Set(tabClaims.map((c) => c.insurance_company));
     return Array.from(companies).sort();
@@ -1083,8 +1090,13 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                 <div>
                   <p className={`text-xs font-medium uppercase tracking-wide ${textMuted}`}>Total Collected</p>
                   <p className={`text-2xl font-bold ${textPrimary}`}>
-                    {formatCurrency(summary.totalCollected)}
+                    {formatCurrency(collectedTotals.combinedTotal)}
                   </p>
+                  <div className={`flex gap-3 mt-1 text-xs ${textMuted}`}>
+                    <span>Active: {formatCurrency(collectedTotals.activeTotal)}</span>
+                    <span>|</span>
+                    <span>Closed: {formatCurrency(collectedTotals.closedTotal)}</span>
+                  </div>
                 </div>
               </div>
             </div>
