@@ -10,6 +10,8 @@ import {
   Trash2,
   X,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   DollarSign,
   FileText,
   Users,
@@ -299,6 +301,13 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const [clearing, setClearing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
+
+  // Selected row for detail panel
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+
   // Transfer to Insurance Issues modal (triggered on "Waiting for CSD/Moved to IIR" status)
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferClaim, setTransferClaim] = useState<{ claim: Claim } | null>(null);
@@ -452,6 +461,24 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
     return result;
   }, [claims, viewTab, searchQuery, statusFilter, agingFilter, insuranceFilter, assignedToFilter, sortField, sortDirection]);
+
+  // Pagination derived values
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedClaims.length / rowsPerPage));
+  const paginatedClaims = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredAndSortedClaims.slice(start, start + rowsPerPage);
+  }, [filteredAndSortedClaims, currentPage, rowsPerPage]);
+
+  // Reset to page 1 when filters/search/tab change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, agingFilter, insuranceFilter, assignedToFilter, viewTab]);
+
+  // Selected claim for detail panel
+  const selectedClaim = useMemo(
+    () => (selectedClaimId ? filteredAndSortedClaims.find((c) => c.id === selectedClaimId) || null : null),
+    [filteredAndSortedClaims, selectedClaimId],
+  );
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -1457,7 +1484,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
               </tr>
             </thead>
             <tbody className={`divide-y ${borderColor}`}>
-              {filteredAndSortedClaims.length === 0 ? (
+              {paginatedClaims.length === 0 ? (
                 <tr>
                   <td colSpan={15} className="px-4 py-12 text-center">
                     <p className={`${textMuted} text-base`}>No claims found.</p>
@@ -1469,8 +1496,18 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   </td>
                 </tr>
               ) : (
-                filteredAndSortedClaims.map((claim) => (
-                  <tr key={claim.id} className={`${hoverRow} transition-colors`}>
+                paginatedClaims.map((claim) => (
+                  <tr
+                    key={claim.id}
+                    onClick={() => setSelectedClaimId(selectedClaimId === claim.id ? null : claim.id)}
+                    className={`cursor-pointer transition-colors ${
+                      selectedClaimId === claim.id
+                        ? isDayMode
+                          ? 'bg-blue-50 ring-1 ring-inset ring-blue-300'
+                          : 'bg-blue-900/30 ring-1 ring-inset ring-blue-700'
+                        : hoverRow
+                    }`}
+                  >
                     <td className={`px-3 py-3 whitespace-nowrap font-medium ${textPrimary}`}>
                       {claim.patient_name}
                     </td>
@@ -1530,7 +1567,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                           </span>
                         )}
                         <button
-                          onClick={() => setDrawerClaimId(claim.id)}
+                          onClick={(e) => { e.stopPropagation(); setDrawerClaimId(claim.id); }}
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 ${
                             isDayMode
                               ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
@@ -1547,7 +1584,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                       </div>
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         {/* Resolve / Reopen toggle */}
                         {viewTab === 'active' ? (
                           <div className="relative group">
@@ -1621,6 +1658,170 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
             </tbody>
           </table>
         </div>
+
+        {/* =====================================================
+            SELECTED CLAIM DETAIL PANEL
+            ===================================================== */}
+        {selectedClaim && (
+          <div className={`border-t ${borderColor} px-4 py-4`}>
+            <div className={`rounded-lg border ${borderColor} ${bgSecondary} overflow-hidden`}>
+              {/* Detail header */}
+              <div className={`px-4 py-3 flex items-center justify-between ${isDayMode ? 'bg-blue-50 border-b border-blue-200' : 'bg-blue-900/20 border-b border-blue-800'}`}>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-semibold ${textPrimary}`}>{selectedClaim.patient_name}</span>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedClaim.status)}`}>
+                    {selectedClaim.status}
+                  </span>
+                  {selectedClaim.aging_status && (
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getAgingColor(selectedClaim.aging_status)}`}>
+                      {selectedClaim.aging_status}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openEditModal(selectedClaim)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDrawerClaimId(selectedClaim.id); }}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                      isDayMode ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600'
+                    }`}
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    Notes & Audit
+                  </button>
+                  <button
+                    onClick={() => setSelectedClaimId(null)}
+                    className={`p-1 rounded-md ${isDayMode ? 'hover:bg-gray-200' : 'hover:bg-gray-600'} transition-colors`}
+                  >
+                    <X className={`w-4 h-4 ${textMuted}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Detail body - horizontal scroll-friendly card grid */}
+              <div className="px-4 py-3 overflow-x-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 min-w-0">
+                  {[
+                    { label: 'Date of Service', value: formatDate(selectedClaim.date_of_service) },
+                    { label: 'Insurance Company', value: selectedClaim.insurance_company },
+                    { label: 'Pri/Sec', value: selectedClaim.pri_sec || '-' },
+                    { label: 'Total Claim', value: formatCurrency(selectedClaim.claim_amount) },
+                    { label: 'Collected', value: formatCurrency(selectedClaim.collected) },
+                    { label: 'Outstanding', value: formatCurrency(selectedClaim.outstanding) },
+                    { label: 'Assigned To', value: selectedClaim.assigned_to || '-' },
+                    { label: 'Rep Name', value: selectedClaim.rep_name || '-' },
+                    { label: 'Reference #', value: selectedClaim.reference_number || '-' },
+                    { label: 'Procedures', value: selectedClaim.procedure_types || '-' },
+                    { label: 'Follow-Up Date', value: selectedClaim.follow_up_date ? formatDate(selectedClaim.follow_up_date) : '-' },
+                    { label: 'Carrier Phone', value: selectedClaim.carrier_phone || '-' },
+                  ].map((item) => (
+                    <div key={item.label} className={`rounded-lg p-2.5 ${bgPrimary} border ${borderColor}`}>
+                      <p className={`text-[10px] font-medium uppercase tracking-wider ${textMuted} mb-0.5`}>{item.label}</p>
+                      <p className={`text-sm font-medium ${textPrimary} truncate`} title={item.value}>{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+                {selectedClaim.notes && (
+                  <div className={`mt-3 rounded-lg p-3 ${bgPrimary} border ${borderColor}`}>
+                    <p className={`text-[10px] font-medium uppercase tracking-wider ${textMuted} mb-1`}>Notes</p>
+                    <p className={`text-sm ${textSecondary} whitespace-pre-wrap`}>{selectedClaim.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================
+            PAGINATION
+            ===================================================== */}
+        {filteredAndSortedClaims.length > 0 && (
+          <div className={`border-t ${borderColor} px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3`}>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs ${textMuted}`}>
+                Showing {((currentPage - 1) * rowsPerPage) + 1}–{Math.min(currentPage * rowsPerPage, filteredAndSortedClaims.length)} of {filteredAndSortedClaims.length}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <label className={`text-xs ${textMuted}`}>Rows:</label>
+                <select
+                  value={rowsPerPage}
+                  onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                  className={`px-2 py-1 rounded border ${inputBorder} ${inputBg} ${inputText} text-xs focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                >
+                  {[10, 15, 25, 50].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} ${textSecondary}`}
+              >
+                First
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={`p-1.5 rounded transition-colors disabled:opacity-40 ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'}`}
+              >
+                <ChevronLeft className={`w-4 h-4 ${textSecondary}`} />
+              </button>
+              {/* Page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((page) => {
+                  if (totalPages <= 7) return true;
+                  if (page === 1 || page === totalPages) return true;
+                  if (Math.abs(page - currentPage) <= 1) return true;
+                  return false;
+                })
+                .reduce<(number | 'ellipsis')[]>((acc, page, idx, arr) => {
+                  if (idx > 0 && arr[idx - 1] !== page - 1) acc.push('ellipsis');
+                  acc.push(page);
+                  return acc;
+                }, [])
+                .map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    <span key={`ellipsis-${idx}`} className={`px-1.5 text-xs ${textMuted}`}>...</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setCurrentPage(item)}
+                      className={`min-w-[28px] h-7 rounded text-xs font-medium transition-colors ${
+                        currentPage === item
+                          ? 'bg-blue-600 text-white'
+                          : `${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} ${textSecondary}`
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className={`p-1.5 rounded transition-colors disabled:opacity-40 ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'}`}
+              >
+                <ChevronRight className={`w-4 h-4 ${textSecondary}`} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} ${textSecondary}`}
+              >
+                Last
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* =====================================================

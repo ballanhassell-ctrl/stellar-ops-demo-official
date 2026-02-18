@@ -24,7 +24,7 @@ ALTER TABLE claims ADD CONSTRAINT claims_status_check
     'Closed/Paid',
     'Closed/Unpaid',
     'Appeal Filed',
-    'Waiting for Info',
+    'Waiting for CSD/Moved to IIR',
     'Lori Review',
     'Paid/Check or EFT Pending',
     'SEE NOTES'
