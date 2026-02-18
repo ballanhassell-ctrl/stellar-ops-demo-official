@@ -18,12 +18,16 @@ import {
   History,
   CheckCircle,
   RotateCcw,
+  AlertTriangle,
+  Calendar,
+  ArrowRight,
 } from 'lucide-react';
 import type {
   Claim,
   UnifiedClaimStatus,
   NoteEntry,
   AuditTrailEntry,
+  InsuranceIssueType,
 } from '../types/database.types';
 import {
   getClaims,
@@ -35,6 +39,7 @@ import {
 import type { InsuranceARSummary } from '../services/claimsService';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import { insertInsuranceIssue } from '../services/insuranceIssuesService';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 
@@ -85,6 +90,7 @@ const EMPTY_CLAIM_FORM: ClaimFormData = {
   rep_name: '',
   reference_number: '',
   notes: '',
+  follow_up_date: '',
 };
 
 // =====================================================
@@ -111,6 +117,7 @@ type ClaimFormData = {
   rep_name: string;
   reference_number: string;
   notes: string;
+  follow_up_date: string;
 };
 
 type SortField = keyof Claim;
@@ -119,8 +126,48 @@ type ViewTab = 'active' | 'closed';
 
 const CLOSED_STATUSES: UnifiedClaimStatus[] = ['Closed/Paid', 'Closed/Unpaid'];
 
+// Statuses that require a follow-up date (waiting on external response)
+const FOLLOW_UP_REQUIRED_STATUSES: UnifiedClaimStatus[] = [
+  'Resubmitted - 1st',
+  'Resubmitted - 2nd',
+  'Consultant Review',
+  'Appeal Filed',
+  'Final Review',
+];
+
+// Providers for Insurance Issues "In Charge" field
+const PROVIDERS = ['DDS1', 'DDS2', 'DMD1', 'HYG2', 'HYG3', 'HYG5', 'Daniely'];
+
+const ISSUE_TYPES: InsuranceIssueType[] = [
+  'Needs Perio Chart',
+  'Invalid Tooth Code for Carrier',
+  'Invalid Number of Surfaces',
+  'Invalid Surface Code for Carrier',
+  'Tooth Code Required by Carrier',
+  'Oral Cavity Code Required by Carrier',
+  'Needs Narrative',
+  'Need Provider Change',
+  'Invalid Tooth/Surface Code',
+  'Pre-Auth Required',
+  'Other',
+];
+
+type TransferToIssuesForm = {
+  in_charge: string;
+  issue_type: InsuranceIssueType;
+  in_vyne: boolean;
+};
+
 function isClosedClaim(claim: Claim): boolean {
   return CLOSED_STATUSES.includes(claim.status);
+}
+
+function isFollowUpRequired(status: UnifiedClaimStatus): boolean {
+  return FOLLOW_UP_REQUIRED_STATUSES.includes(status);
+}
+
+function getTodayISO(): string {
+  return new Date().toISOString().split('T')[0];
 }
 
 // =====================================================
@@ -245,6 +292,16 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const [clearing, setClearing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Transfer to Insurance Issues modal (triggered on "Waiting for Info" status)
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferClaim, setTransferClaim] = useState<{ claim: Claim } | null>(null);
+  const [transferForm, setTransferForm] = useState<TransferToIssuesForm>({
+    in_charge: '',
+    issue_type: 'Other',
+    in_vyne: false,
+  });
+  const [transferring, setTransferring] = useState(false);
+
   const handleClearAllClaims = async () => {
     setClearing(true);
     try {
@@ -292,6 +349,16 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const activeClaims = useMemo(() => claims.filter((c) => !isClosedClaim(c)), [claims]);
   const closedClaims = useMemo(() => claims.filter((c) => isClosedClaim(c)), [claims]);
   const tabClaims = viewTab === 'active' ? activeClaims : closedClaims;
+
+  // Follow-up notifications: claims due today or overdue
+  const followUpDueClaims = useMemo(() => {
+    const today = getTodayISO();
+    return activeClaims.filter((c) => {
+      if (!isFollowUpRequired(c.status)) return false;
+      if (!c.follow_up_date) return false;
+      return c.follow_up_date <= today;
+    });
+  }, [activeClaims]);
 
   const summary: InsuranceARSummary | null = useMemo(() => {
     if (tabClaims.length === 0) return null;
@@ -419,6 +486,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       rep_name: claim.rep_name || '',
       reference_number: claim.reference_number || '',
       notes: claim.notes || '',
+      follow_up_date: claim.follow_up_date || '',
     });
     setShowAddModal(true);
   };
@@ -450,10 +518,17 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       return;
     }
 
+    // Validate: follow-up date required for certain statuses
+    const newStatus = formData.status as UnifiedClaimStatus;
+    if (isFollowUpRequired(newStatus) && !formData.follow_up_date) {
+      setFormError('A follow-up date is required when setting status to "' + newStatus + '".');
+      return;
+    }
+
     try {
       setFormSubmitting(true);
       setFormError(null);
-      const payload = {
+      const payload: Omit<Claim, 'id' | 'created_at' | 'updated_at'> = {
         patient_name: sanitizePatientName(formData.patient_name.trim()),
         patient_id: formData.patient_id.trim() || '',
         date_of_service: formData.date_of_service,
@@ -462,7 +537,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         claim_amount: Number(formData.claim_amount),
         collected: Number(formData.collected),
         outstanding: Number(formData.outstanding),
-        status: formData.status as UnifiedClaimStatus,
+        status: newStatus,
         aging_status: formData.aging_status as AgingStatus,
         assigned_to: formData.assigned_to.trim() || null,
         procedure_types: formData.procedure_types.trim() || null,
@@ -474,7 +549,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         claim_detail: '',
         claim_number: null,
         date_submitted: formData.date_of_service,
-        follow_up_date: formData.date_of_service,
+        follow_up_date: formData.follow_up_date || formData.date_of_service,
         created_by: '',
         completed_by: formData.assigned_to.trim() || '',
         aging_days: 0,
@@ -491,9 +566,9 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         // Build audit entries for changed fields
         const auditEntries: AuditTrailEntry[] = [];
         const changedBy = formData.assigned_to.trim() || 'staff';
-        if (editingClaim.status !== payload.status) {
+        if (editingClaim.status !== newStatus) {
           auditEntries.push(createAuditEntry('status_changed', changedBy, {
-            field: 'status', oldValue: editingClaim.status, newValue: payload.status,
+            field: 'status', oldValue: editingClaim.status, newValue: newStatus,
           }));
         }
         if (editingClaim.notes !== payload.notes) {
@@ -516,6 +591,11 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
             field: 'assigned_to', oldValue: editingClaim.assigned_to, newValue: payload.assigned_to,
           }));
         }
+        if (editingClaim.follow_up_date !== payload.follow_up_date) {
+          auditEntries.push(createAuditEntry('updated', changedBy, {
+            field: 'follow_up_date', oldValue: editingClaim.follow_up_date, newValue: payload.follow_up_date,
+          }));
+        }
         if (auditEntries.length > 0) {
           payload.audit_trail = [...(editingClaim.audit_trail || []), ...auditEntries];
         } else {
@@ -523,6 +603,17 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         }
         payload.structured_notes = editingClaim.structured_notes || [];
         await updateClaim(editingClaim.id, payload);
+
+        // If status changed to "Waiting for Info", show transfer-to-issues modal
+        if (editingClaim.status !== newStatus && newStatus === 'Waiting for Info') {
+          const savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
+          closeModal();
+          await loadClaims();
+          setTransferClaim({ claim: savedClaim });
+          setTransferForm({ in_charge: '', issue_type: 'Other', in_vyne: false });
+          setShowTransferModal(true);
+          return;
+        }
       } else {
         payload.audit_trail = [createAuditEntry('created', formData.assigned_to.trim() || 'staff', { notes: 'Claim created' })];
         await insertClaim(payload);
@@ -571,6 +662,51 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       console.error('Error resolving claim:', err);
       setError('Failed to resolve claim. Please try again.');
     }
+  };
+
+  // Transfer a "Waiting for Info" claim to Insurance Issues
+  const handleTransferToIssues = async () => {
+    if (!transferClaim || !transferForm.in_charge) return;
+    try {
+      setTransferring(true);
+      const c = transferClaim.claim;
+      await insertInsuranceIssue({
+        patient_id: c.patient_id || null,
+        patient_name: c.patient_name,
+        date_of_service: c.date_of_service,
+        procedure_codes: c.procedure_types || c.procedure_code || '',
+        in_charge: transferForm.in_charge,
+        issue_type: transferForm.issue_type,
+        in_vyne: transferForm.in_vyne,
+        status: 'Open',
+        submission_status: null,
+        submitted_by: null,
+        submitted_at: null,
+        resolved_at: null,
+        notes: c.notes || null,
+        structured_notes: [],
+        audit_trail: [createAuditEntry('created', transferForm.in_charge, {
+          notes: `Auto-created from Insurance A/R claim (status: Waiting for Info)`,
+        })],
+        is_pre_auth: false,
+      });
+      setShowTransferModal(false);
+      setTransferClaim(null);
+      setToastMessage(`Claim transferred to Insurance Issues (assigned to ${transferForm.in_charge})`);
+    } catch (err) {
+      console.error('Error transferring to insurance issues:', err);
+      setError('Failed to create insurance issue. You can add it manually in the Insurance Issues tab.');
+      setShowTransferModal(false);
+      setTransferClaim(null);
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  const handleSkipTransfer = () => {
+    setShowTransferModal(false);
+    setTransferClaim(null);
+    setToastMessage('Claim saved. You can add to Insurance Issues later if needed.');
   };
 
   const handleReopenClaim = async (claim: Claim) => {
@@ -692,6 +828,54 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
           <button onClick={() => setError(null)} className={`${isDayMode ? 'text-red-500 hover:text-red-700' : 'text-red-400 hover:text-red-300'}`}>
             <X className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {/* =====================================================
+          FOLLOW-UP NOTIFICATION BANNER
+          ===================================================== */}
+      {followUpDueClaims.length > 0 && viewTab === 'active' && (
+        <div className={`rounded-lg p-4 border ${isDayMode ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/20 border-amber-800'}`}>
+          <div className="flex items-start gap-3">
+            <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
+            <div className="flex-1">
+              <p className={`text-sm font-semibold ${isDayMode ? 'text-amber-800' : 'text-amber-300'}`}>
+                {followUpDueClaims.length} claim{followUpDueClaims.length !== 1 ? 's' : ''} due for follow-up today or overdue
+              </p>
+              <div className="mt-2 space-y-1">
+                {followUpDueClaims.slice(0, 5).map((c) => {
+                  const isOverdue = c.follow_up_date < getTodayISO();
+                  return (
+                    <div key={c.id} className={`flex items-center gap-2 text-xs ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>
+                      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${isOverdue ? 'bg-red-500' : 'bg-amber-500'}`} />
+                      <span className="font-medium">{c.patient_name}</span>
+                      <span className={`${isDayMode ? 'text-amber-500' : 'text-amber-500'}`}>-</span>
+                      <span>{c.insurance_company}</span>
+                      <span className={`${isDayMode ? 'text-amber-500' : 'text-amber-500'}`}>-</span>
+                      <span className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${getStatusColor(c.status)}`}>{c.status}</span>
+                      <span className={`${isDayMode ? 'text-amber-500' : 'text-amber-500'}`}>-</span>
+                      <span className={isOverdue ? 'font-semibold text-red-600' : ''}>
+                        {isOverdue ? `Overdue (${formatDate(c.follow_up_date)})` : `Due today`}
+                      </span>
+                      <button
+                        onClick={() => openEditModal(c)}
+                        className={`ml-auto px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                          isDayMode ? 'text-amber-700 bg-amber-100 hover:bg-amber-200' : 'text-amber-300 bg-amber-900/40 hover:bg-amber-900/60'
+                        }`}
+                      >
+                        Update
+                      </button>
+                    </div>
+                  );
+                })}
+                {followUpDueClaims.length > 5 && (
+                  <p className={`text-xs ${isDayMode ? 'text-amber-600' : 'text-amber-400'} mt-1`}>
+                    + {followUpDueClaims.length - 5} more...
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1434,7 +1618,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
               </div>
 
               {/* Status row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Claim Status</label>
                   <div className="relative">
@@ -1465,7 +1649,40 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 ${textMuted} pointer-events-none`} />
                   </div>
                 </div>
+                <div>
+                  <label className={`block text-sm font-medium ${textSecondary} mb-1`}>
+                    Follow-Up Date {isFollowUpRequired(formData.status as UnifiedClaimStatus) && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.follow_up_date}
+                    onChange={(e) => handleFormChange('follow_up_date', e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${
+                      isFollowUpRequired(formData.status as UnifiedClaimStatus) && !formData.follow_up_date
+                        ? 'border-red-400 ring-1 ring-red-400'
+                        : inputBorder
+                    } ${inputBg} ${inputText} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                </div>
               </div>
+
+              {/* Status-specific inline alerts */}
+              {isFollowUpRequired(formData.status as UnifiedClaimStatus) && (
+                <div className={`p-3 rounded-lg flex items-start gap-2 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
+                  <Calendar className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
+                  <p className={`text-xs ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>
+                    <strong>Follow-up date required.</strong> This status means we're waiting on a response. The app will notify you when this claim is due for follow-up.
+                  </p>
+                </div>
+              )}
+              {formData.status === 'Waiting for Info' && editingClaim && editingClaim.status !== 'Waiting for Info' && (
+                <div className={`p-3 rounded-lg flex items-start gap-2 ${isDayMode ? 'bg-orange-50 border border-orange-200' : 'bg-orange-900/20 border border-orange-800'}`}>
+                  <ArrowRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
+                  <p className={`text-xs ${isDayMode ? 'text-orange-700' : 'text-orange-300'}`}>
+                    <strong>This claim will be added to Insurance Issues.</strong> After saving, you'll be prompted to add the In Charge, Issue Type, and Vyne details so the issue appears in the Insurance Issues tracker.
+                  </p>
+                </div>
+              )}
 
               {/* Assignment row */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1550,6 +1767,104 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     : 'Add Claim'}
               </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          TRANSFER TO INSURANCE ISSUES MODAL
+          ===================================================== */}
+      {showTransferModal && transferClaim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={handleSkipTransfer} />
+          <div className={`relative w-full max-w-md rounded-xl ${bgPrimary} ${cardShadow} border ${borderColor}`}>
+            {/* Header */}
+            <div className={`border-b ${borderColor} px-6 py-4 flex items-center justify-between`}>
+              <div className="flex items-center gap-2">
+                <ArrowRight className="w-5 h-5 text-orange-500" />
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>Transfer to Insurance Issues</h2>
+              </div>
+              <button onClick={handleSkipTransfer} className={`p-1.5 rounded-md ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}>
+                <X className={`w-5 h-5 ${textMuted}`} />
+              </button>
+            </div>
+
+            {/* Info banner */}
+            <div className={`mx-6 mt-4 p-3 rounded-lg ${isDayMode ? 'bg-orange-50 border border-orange-200' : 'bg-orange-900/20 border border-orange-800'}`}>
+              <p className={`text-xs ${isDayMode ? 'text-orange-700' : 'text-orange-300'}`}>
+                <strong>{transferClaim.claim.patient_name}</strong> has been marked as "Waiting for Info". Add the details below to automatically create an entry in the Insurance Issues tracker.
+              </p>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-4 space-y-4">
+              {/* In Charge */}
+              <div>
+                <label className={`block text-sm font-medium ${textSecondary} mb-1`}>
+                  In Charge <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={transferForm.in_charge}
+                    onChange={(e) => setTransferForm((prev) => ({ ...prev, in_charge: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Select provider...</option>
+                    {PROVIDERS.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 ${textMuted} pointer-events-none`} />
+                </div>
+              </div>
+
+              {/* Issue Type */}
+              <div>
+                <label className={`block text-sm font-medium ${textSecondary} mb-1`}>Issue Type</label>
+                <div className="relative">
+                  <select
+                    value={transferForm.issue_type}
+                    onChange={(e) => setTransferForm((prev) => ({ ...prev, issue_type: e.target.value as InsuranceIssueType }))}
+                    className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    {ISSUE_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 ${textMuted} pointer-events-none`} />
+                </div>
+              </div>
+
+              {/* In Vyne */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="transfer-in-vyne"
+                  checked={transferForm.in_vyne}
+                  onChange={(e) => setTransferForm((prev) => ({ ...prev, in_vyne: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="transfer-in-vyne" className={`text-sm ${textSecondary}`}>In Vyne</label>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={`border-t ${borderColor} px-6 py-4 flex items-center justify-between`}>
+              <button
+                onClick={handleSkipTransfer}
+                className={`px-4 py-2 rounded-lg border ${inputBorder} ${textSecondary} text-sm font-medium hover:${bgTertiary} transition-colors`}
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleTransferToIssues}
+                disabled={transferring || !transferForm.in_charge}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              >
+                <ArrowRight className="w-4 h-4" />
+                {transferring ? 'Creating Issue...' : 'Transfer to Issues'}
+              </button>
             </div>
           </div>
         </div>
