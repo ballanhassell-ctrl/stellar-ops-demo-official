@@ -1088,6 +1088,10 @@ export interface InsuranceARSummary {
     closedUnpaid: number;
     appealFiled: number;
     denied: number;
+    waitingForInfo: number;
+    loriReview: number;
+    paidPending: number;
+    seeNotes: number;
   };
   agingBreakdown: Record<string, { count: number; outstanding: number }>;
   teamWorkload: Record<string, { count: number; outstanding: number }>;
@@ -1108,6 +1112,10 @@ export function calculateInsuranceARSummaryFromClaims(claims: Claim[]): Insuranc
     closedUnpaid: claims.filter(c => c.status === 'Closed/Unpaid').length,
     appealFiled: claims.filter(c => c.status === 'Appeal Filed').length,
     denied: claims.filter(c => c.status === 'Denied').length,
+    waitingForInfo: claims.filter(c => c.status === 'Waiting for Info').length,
+    loriReview: claims.filter(c => c.status === 'Lori Review').length,
+    paidPending: claims.filter(c => c.status === 'Paid/Check or EFT Pending').length,
+    seeNotes: claims.filter(c => c.status === 'SEE NOTES').length,
   };
 
   const agingBuckets = ['0-30 Days', '31-60 Days', '61-90 Days', '91-120 Days', '121+ Days'] as const;

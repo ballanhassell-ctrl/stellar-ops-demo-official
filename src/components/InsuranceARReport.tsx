@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Calendar,
   ArrowRight,
+  UserCheck,
 } from 'lucide-react';
 import type {
   Claim,
@@ -28,6 +29,7 @@ import type {
   NoteEntry,
   AuditTrailEntry,
   InsuranceIssueType,
+  PatientARStatus,
 } from '../types/database.types';
 import {
   getClaims,
@@ -40,6 +42,7 @@ import type { InsuranceARSummary } from '../services/claimsService';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { insertInsuranceIssue } from '../services/insuranceIssuesService';
+import { insertPatientAR } from '../services/patientARService.new';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 
@@ -125,6 +128,9 @@ type SortDirection = 'asc' | 'desc';
 type ViewTab = 'active' | 'closed';
 
 const CLOSED_STATUSES: UnifiedClaimStatus[] = ['Closed/Paid', 'Closed/Unpaid'];
+
+// Statuses that should prompt transfer to Patient A/R for collections
+const PATIENT_AR_TRANSFER_STATUSES: UnifiedClaimStatus[] = ['Denied', 'Closed/Unpaid'];
 
 // Statuses that require a follow-up date (waiting on external response)
 const FOLLOW_UP_REQUIRED_STATUSES: UnifiedClaimStatus[] = [
@@ -301,6 +307,11 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     in_vyne: false,
   });
   const [transferring, setTransferring] = useState(false);
+
+  // Transfer to Patient A/R modal (triggered on Denied / Closed/Unpaid)
+  const [showPatientARModal, setShowPatientARModal] = useState(false);
+  const [patientARClaim, setPatientARClaim] = useState<Claim | null>(null);
+  const [patientARTransferring, setPatientARTransferring] = useState(false);
 
   const handleClearAllClaims = async () => {
     setClearing(true);
@@ -614,6 +625,16 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
           setShowTransferModal(true);
           return;
         }
+
+        // If status changed to Denied or Closed/Unpaid, prompt transfer to Patient A/R
+        if (editingClaim.status !== newStatus && PATIENT_AR_TRANSFER_STATUSES.includes(newStatus)) {
+          const savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
+          closeModal();
+          await loadClaims();
+          setPatientARClaim(savedClaim);
+          setShowPatientARModal(true);
+          return;
+        }
       } else {
         payload.audit_trail = [createAuditEntry('created', formData.assigned_to.trim() || 'staff', { notes: 'Claim created' })];
         await insertClaim(payload);
@@ -657,7 +678,15 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         audit_trail: [...(claim.audit_trail || []), auditEntry],
       });
       await loadClaims();
-      setToastMessage(`Claim marked as ${resolution}`);
+
+      // If Closed/Unpaid, prompt transfer to Patient A/R
+      if (resolution === 'Closed/Unpaid') {
+        const savedClaim = { ...claim, status: resolution } as Claim;
+        setPatientARClaim(savedClaim);
+        setShowPatientARModal(true);
+      } else {
+        setToastMessage(`Claim marked as ${resolution}`);
+      }
     } catch (err) {
       console.error('Error resolving claim:', err);
       setError('Failed to resolve claim. Please try again.');
@@ -707,6 +736,61 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     setShowTransferModal(false);
     setTransferClaim(null);
     setToastMessage('Claim saved. You can add to Insurance Issues later if needed.');
+  };
+
+  // Transfer a Denied / Closed/Unpaid claim to Patient A/R
+  const handleTransferToPatientAR = async () => {
+    if (!patientARClaim) return;
+    try {
+      setPatientARTransferring(true);
+      const c = patientARClaim;
+      const outstandingAmount = c.claim_amount - c.collected;
+      await insertPatientAR({
+        patient_id: c.patient_id || null,
+        patient_name: c.patient_name,
+        related_family: null,
+        dos: c.date_of_service,
+        original_balance: c.claim_amount,
+        current_balance: outstandingAmount > 0 ? outstandingAmount : c.claim_amount,
+        is_collectible: true,
+        status: 'not_started' as PatientARStatus,
+        background_notes: `Transferred from Insurance A/R — Claim status: ${c.status}. Insurance: ${c.insurance_company}. ${c.notes || ''}`.trim(),
+        team_discussion_notes: null,
+        action_needed: c.status === 'Denied' ? 'Claim denied by insurance — begin patient collections' : 'Claim closed unpaid — begin patient collections',
+        dr_decision: null,
+        first_contact_date: null,
+        first_contact_initials: null,
+        second_contact_date: null,
+        second_contact_initials: null,
+        final_contact_date: null,
+        final_contact_initials: null,
+        write_off_suggested_date: null,
+        write_off_reason: null,
+        collected_amount: 0,
+        structured_notes: [],
+        audit_trail: [createAuditEntry('created', c.assigned_to || 'staff', {
+          notes: `Auto-created from Insurance A/R claim (status: ${c.status})`,
+        })],
+        created_by: c.assigned_to || 'staff',
+        updated_by: c.assigned_to || 'staff',
+      });
+      setShowPatientARModal(false);
+      setPatientARClaim(null);
+      setToastMessage(`Patient sent to Patient A/R for collections (${c.patient_name})`);
+    } catch (err) {
+      console.error('Error transferring to Patient A/R:', err);
+      setError('Failed to create Patient A/R record. You can add it manually in the Patient A/R tab.');
+      setShowPatientARModal(false);
+      setPatientARClaim(null);
+    } finally {
+      setPatientARTransferring(false);
+    }
+  };
+
+  const handleSkipPatientARTransfer = () => {
+    setShowPatientARModal(false);
+    setPatientARClaim(null);
+    setToastMessage('Claim saved. You can add to Patient A/R later if needed.');
   };
 
   const handleReopenClaim = async (claim: Claim) => {
@@ -939,8 +1023,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                 </div>
                 <div>
                   <p className={`text-xs font-medium uppercase tracking-wide ${textMuted}`}>Total Outstanding</p>
-                  <p className={`text-sm font-semibold ${textMuted} mt-1`}>
-                    Calculated on the 1st &amp; 15th
+                  <p className={`text-2xl font-bold ${textPrimary}`}>
+                    {formatCurrency(summary.totalOutstanding)}
                   </p>
                 </div>
               </div>
@@ -961,11 +1045,15 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   { label: 'Resubmitted', value: summary.statusBreakdown.resubmitted, color: 'bg-blue-500' },
                   { label: 'Final Review', value: summary.statusBreakdown.finalReview, color: 'bg-slate-500' },
                   { label: 'Consultant Review', value: summary.statusBreakdown.consultantReview, color: 'bg-slate-400' },
+                  { label: 'Waiting for Info', value: summary.statusBreakdown.waitingForInfo, color: 'bg-orange-500' },
+                  { label: 'Appeal Filed', value: summary.statusBreakdown.appealFiled, color: 'bg-indigo-500' },
+                  { label: 'Lori Review', value: summary.statusBreakdown.loriReview, color: 'bg-purple-500' },
+                  { label: 'Paid/EFT Pending', value: summary.statusBreakdown.paidPending, color: 'bg-cyan-500' },
+                  { label: 'SEE NOTES', value: summary.statusBreakdown.seeNotes, color: 'bg-gray-500' },
+                  { label: 'Denied', value: summary.statusBreakdown.denied, color: 'bg-red-700' },
                   { label: 'Closed/Paid', value: summary.statusBreakdown.closedPaid, color: 'bg-green-500' },
                   { label: 'Closed/Unpaid', value: summary.statusBreakdown.closedUnpaid, color: 'bg-red-500' },
-                  { label: 'Appeal Filed', value: summary.statusBreakdown.appealFiled, color: 'bg-indigo-500' },
-                  { label: 'Denied', value: summary.statusBreakdown.denied, color: 'bg-red-700' },
-                ].map((item) => (
+                ].filter((item) => item.value > 0).map((item) => (
                   <div key={item.label} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
@@ -996,7 +1084,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                       </div>
                       <div className="flex items-center justify-between text-xs ml-5">
                         <span className={textMuted}>Outstanding</span>
-                        <span className={`${textMuted} italic`}>Calculated on the 1st &amp; 15th</span>
+                        <span className={`font-medium ${textPrimary}`}>{formatCurrency(data.outstanding)}</span>
                       </div>
                     </div>
                   )
@@ -1024,7 +1112,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className={textMuted}>Outstanding</span>
-                          <span className={`${textMuted} italic`}>Calculated on the 1st &amp; 15th</span>
+                          <span className={`font-medium ${textPrimary}`}>{formatCurrency(data.outstanding)}</span>
                         </div>
                       </div>
                     ))}
@@ -1360,8 +1448,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     <td className={`px-3 py-3 whitespace-nowrap text-right ${textSecondary}`}>
                       {formatCurrency(claim.collected)}
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap text-right ${textMuted} italic text-xs`}>
-                      1st &amp; 15th
+                    <td className={`px-3 py-3 whitespace-nowrap text-right font-medium ${textPrimary}`}>
+                      {formatCurrency(claim.outstanding)}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.status)}`}>
@@ -1864,6 +1952,92 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
               >
                 <ArrowRight className="w-4 h-4" />
                 {transferring ? 'Creating Issue...' : 'Transfer to Issues'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          TRANSFER TO PATIENT A/R MODAL
+          ===================================================== */}
+      {showPatientARModal && patientARClaim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={handleSkipPatientARTransfer} />
+          <div className={`relative w-full max-w-md rounded-xl ${bgPrimary} ${cardShadow} border ${borderColor}`}>
+            {/* Header */}
+            <div className={`border-b ${borderColor} px-6 py-4 flex items-center justify-between`}>
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-purple-500" />
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>Send to Patient A/R?</h2>
+              </div>
+              <button onClick={handleSkipPatientARTransfer} className={`p-1.5 rounded-md ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}>
+                <X className={`w-5 h-5 ${textMuted}`} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div className={`p-3 rounded-lg ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
+                <p className={`text-sm ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>
+                  <strong>{patientARClaim.patient_name}</strong> has been marked as <strong>"{patientARClaim.status}"</strong>.
+                </p>
+                <p className={`text-xs mt-1 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>
+                  Would you like to transfer this patient to the Patient A/R tab for collections follow-up?
+                </p>
+              </div>
+
+              {/* Summary of what will be transferred */}
+              <div className={`rounded-lg border ${borderColor} overflow-hidden`}>
+                <div className={`px-4 py-2 ${bgSecondary}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${textMuted}`}>Transfer Details</p>
+                </div>
+                <div className="px-4 py-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className={textMuted}>Patient</span>
+                    <span className={`font-medium ${textPrimary}`}>{patientARClaim.patient_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={textMuted}>DOS</span>
+                    <span className={textSecondary}>{formatDate(patientARClaim.date_of_service)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={textMuted}>Insurance</span>
+                    <span className={textSecondary}>{patientARClaim.insurance_company}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={textMuted}>Claim Amount</span>
+                    <span className={`font-medium ${textPrimary}`}>{formatCurrency(patientARClaim.claim_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={textMuted}>Collected</span>
+                    <span className={textSecondary}>{formatCurrency(patientARClaim.collected)}</span>
+                  </div>
+                  <div className={`flex justify-between pt-2 border-t ${borderColor}`}>
+                    <span className={`font-medium ${textMuted}`}>Balance to Collect</span>
+                    <span className="font-bold text-red-600">
+                      {formatCurrency(Math.max(0, patientARClaim.claim_amount - patientARClaim.collected))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={`border-t ${borderColor} px-6 py-4 flex items-center justify-between`}>
+              <button
+                onClick={handleSkipPatientARTransfer}
+                className={`px-4 py-2 rounded-lg border ${inputBorder} ${textSecondary} text-sm font-medium hover:${bgTertiary} transition-colors`}
+              >
+                No, Skip
+              </button>
+              <button
+                onClick={handleTransferToPatientAR}
+                disabled={patientARTransferring}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              >
+                <UserCheck className="w-4 h-4" />
+                {patientARTransferring ? 'Transferring...' : 'Send to Patient A/R'}
               </button>
             </div>
           </div>
