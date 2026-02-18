@@ -59,7 +59,7 @@ export type UnifiedClaimStatus =
   | 'Pending Review' | 'Resubmitted - 1st' | 'Resubmitted - 2nd'
   | 'Final Review' | 'Consultant Review'
   | 'Closed/Paid' | 'Closed/Unpaid'
-  | 'Appeal Filed' | 'Waiting for Info'
+  | 'Appeal Filed' | 'Waiting for CSD/Moved to IIR'
   | 'Lori Review' | 'Paid/Check or EFT Pending' | 'SEE NOTES';
 
 export type Claim = {
@@ -392,7 +392,7 @@ export type InsuranceARClaimStatus =
   | 'Closed/Unpaid'
   | 'Appeal Filed'
   | 'Denied'
-  | 'Waiting for Info'
+  | 'Waiting for CSD/Moved to IIR'
   | 'Lori Review'
   | 'Paid/Check or EFT Pending'
   | 'SEE NOTES';

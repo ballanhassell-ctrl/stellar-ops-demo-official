@@ -1112,7 +1112,7 @@ export function calculateInsuranceARSummaryFromClaims(claims: Claim[]): Insuranc
     closedUnpaid: claims.filter(c => c.status === 'Closed/Unpaid').length,
     appealFiled: claims.filter(c => c.status === 'Appeal Filed').length,
     denied: claims.filter(c => c.status === 'Denied').length,
-    waitingForInfo: claims.filter(c => c.status === 'Waiting for Info').length,
+    waitingForInfo: claims.filter(c => c.status === 'Waiting for CSD/Moved to IIR').length,
     loriReview: claims.filter(c => c.status === 'Lori Review').length,
     paidPending: claims.filter(c => c.status === 'Paid/Check or EFT Pending').length,
     seeNotes: claims.filter(c => c.status === 'SEE NOTES').length,

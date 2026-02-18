@@ -61,7 +61,7 @@ const ALL_STATUSES: UnifiedClaimStatus[] = [
   'Closed/Unpaid',
   'Appeal Filed',
   'Denied',
-  'Waiting for Info',
+  'Waiting for CSD/Moved to IIR',
   'Lori Review',
   'Paid/Check or EFT Pending',
   'SEE NOTES',
@@ -139,7 +139,7 @@ const FOLLOW_UP_REQUIRED_STATUSES: UnifiedClaimStatus[] = [
   'Consultant Review',
   'Appeal Filed',
   'Final Review',
-  'Waiting for Info',
+  'Waiting for CSD/Moved to IIR',
 ];
 
 // Providers for Insurance Issues "In Charge" field
@@ -196,7 +196,7 @@ function getStatusColor(status: UnifiedClaimStatus): string {
       return 'bg-red-200 text-red-900 border-red-400';
     case 'Paid/Check or EFT Pending':
       return 'bg-cyan-100 text-cyan-800 border-cyan-300';
-    case 'Waiting for Info':
+    case 'Waiting for CSD/Moved to IIR':
       return 'bg-orange-100 text-orange-800 border-orange-300';
     case 'Lori Review':
       return 'bg-purple-100 text-purple-800 border-purple-300';
@@ -299,7 +299,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const [clearing, setClearing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Transfer to Insurance Issues modal (triggered on "Waiting for Info" status)
+  // Transfer to Insurance Issues modal (triggered on "Waiting for CSD/Moved to IIR" status)
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferClaim, setTransferClaim] = useState<{ claim: Claim } | null>(null);
   const [transferForm, setTransferForm] = useState<TransferToIssuesForm>({
@@ -654,7 +654,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       // For new claims: always prompt if the status warrants it
       const statusIsNew = isEditMode ? (previousStatus !== newStatus) : true;
 
-      if (statusIsNew && newStatus === 'Waiting for Info') {
+      if (statusIsNew && newStatus === 'Waiting for CSD/Moved to IIR') {
         // Hide the form (don't full-reset via closeModal to avoid state interference)
         setShowAddModal(false);
         // Show the Insurance Issues transfer modal
@@ -728,7 +728,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     }
   };
 
-  // Transfer a "Waiting for Info" claim to Insurance Issues
+  // Transfer a "Waiting for CSD/Moved to IIR" claim to Insurance Issues
   const handleTransferToIssues = async () => {
     if (!transferClaim || !transferForm.in_charge) return;
     try {
@@ -750,7 +750,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         notes: c.notes || null,
         structured_notes: [],
         audit_trail: [createAuditEntry('created', transferForm.in_charge, {
-          notes: `Auto-created from Insurance A/R claim (status: Waiting for Info)`,
+          notes: `Auto-created from Insurance A/R claim (status: Waiting for CSD/Moved to IIR)`,
         })],
         is_pre_auth: false,
       });
@@ -1092,7 +1092,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   { label: 'Resubmitted', value: summary.statusBreakdown.resubmitted, color: 'bg-blue-500' },
                   { label: 'Final Review', value: summary.statusBreakdown.finalReview, color: 'bg-slate-500' },
                   { label: 'Consultant Review', value: summary.statusBreakdown.consultantReview, color: 'bg-slate-400' },
-                  { label: 'Waiting for Info', value: summary.statusBreakdown.waitingForInfo, color: 'bg-orange-500' },
+                  { label: 'Waiting for CSD/Moved to IIR', value: summary.statusBreakdown.waitingForInfo, color: 'bg-orange-500' },
                   { label: 'Appeal Filed', value: summary.statusBreakdown.appealFiled, color: 'bg-indigo-500' },
                   { label: 'Lori Review', value: summary.statusBreakdown.loriReview, color: 'bg-purple-500' },
                   { label: 'Paid/EFT Pending', value: summary.statusBreakdown.paidPending, color: 'bg-cyan-500' },
@@ -1810,7 +1810,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   </p>
                 </div>
               )}
-              {formData.status === 'Waiting for Info' && (!editingClaim || editingClaim.status !== 'Waiting for Info') && (
+              {formData.status === 'Waiting for CSD/Moved to IIR' && (!editingClaim || editingClaim.status !== 'Waiting for CSD/Moved to IIR') && (
                 <div className={`p-3 rounded-lg flex items-start gap-2 ${isDayMode ? 'bg-orange-50 border border-orange-200' : 'bg-orange-900/20 border border-orange-800'}`}>
                   <ArrowRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
                   <p className={`text-xs ${isDayMode ? 'text-orange-700' : 'text-orange-300'}`}>
@@ -1936,7 +1936,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
             {/* Info banner */}
             <div className={`mx-6 mt-4 p-3 rounded-lg ${isDayMode ? 'bg-orange-50 border border-orange-200' : 'bg-orange-900/20 border border-orange-800'}`}>
               <p className={`text-xs ${isDayMode ? 'text-orange-700' : 'text-orange-300'}`}>
-                <strong>{transferClaim.claim.patient_name}</strong> has been marked as "Waiting for Info". Add the details below to automatically create an entry in the Insurance Issues tracker.
+                <strong>{transferClaim.claim.patient_name}</strong> has been marked as "Waiting for CSD/Moved to IIR". Add the details below to automatically create an entry in the Insurance Issues tracker.
               </p>
             </div>
 
