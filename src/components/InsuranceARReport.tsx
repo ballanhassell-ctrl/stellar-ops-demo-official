@@ -294,18 +294,13 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   // Transfer to Insurance Issues modal (triggered on "Waiting for Info" status)
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [transferClaim, setTransferClaim] = useState<{ claim: Claim; payload: Record<string, unknown> } | null>(null);
+  const [transferClaim, setTransferClaim] = useState<{ claim: Claim } | null>(null);
   const [transferForm, setTransferForm] = useState<TransferToIssuesForm>({
     in_charge: '',
     issue_type: 'Other',
     in_vyne: false,
   });
   const [transferring, setTransferring] = useState(false);
-
-  // Follow-up date prompt (triggered on follow-up-required statuses)
-  const [showFollowUpPrompt, setShowFollowUpPrompt] = useState(false);
-  const [followUpClaim, setFollowUpClaim] = useState<{ claim: Claim; payload: Record<string, unknown> } | null>(null);
-  const [followUpDate, setFollowUpDate] = useState('');
 
   const handleClearAllClaims = async () => {
     setClearing(true);
@@ -533,7 +528,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     try {
       setFormSubmitting(true);
       setFormError(null);
-      const payload: Record<string, unknown> = {
+      const payload: Omit<Claim, 'id' | 'created_at' | 'updated_at'> = {
         patient_name: sanitizePatientName(formData.patient_name.trim()),
         patient_id: formData.patient_id.trim() || '',
         date_of_service: formData.date_of_service,
@@ -614,7 +609,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
           const savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
           closeModal();
           await loadClaims();
-          setTransferClaim({ claim: savedClaim, payload });
+          setTransferClaim({ claim: savedClaim });
           setTransferForm({ in_charge: '', issue_type: 'Other', in_vyne: false });
           setShowTransferModal(true);
           return;
