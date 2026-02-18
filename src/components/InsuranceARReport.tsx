@@ -139,6 +139,7 @@ const FOLLOW_UP_REQUIRED_STATUSES: UnifiedClaimStatus[] = [
   'Consultant Review',
   'Appeal Filed',
   'Final Review',
+  'Waiting for Info',
 ];
 
 // Providers for Insurance Issues "In Charge" field
@@ -348,6 +349,17 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     }
   }, []);
 
+  // Silent reload — updates claims without showing the loading spinner.
+  // Used after save+transfer so the transfer modals aren't unmounted by loading=true.
+  const reloadClaimsSilently = useCallback(async () => {
+    try {
+      const data = await getClaims();
+      setClaims(data);
+    } catch (err) {
+      console.error('Error reloading claims:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadClaims();
   }, [loadClaims]);
@@ -531,9 +543,18 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
     // Validate: follow-up date required for certain statuses
     const newStatus = formData.status as UnifiedClaimStatus;
-    if (isFollowUpRequired(newStatus) && !formData.follow_up_date) {
-      setFormError('A follow-up date is required when setting status to "' + newStatus + '".');
-      return;
+    if (isFollowUpRequired(newStatus)) {
+      if (!formData.follow_up_date) {
+        setFormError('A follow-up date is required when setting status to "' + newStatus + '".');
+        return;
+      }
+      // When status is CHANGING to a follow-up-required status, enforce a future/today date
+      const isStatusChanging = editingClaim && editingClaim.status !== newStatus;
+      const isNewClaim = !editingClaim;
+      if ((isStatusChanging || isNewClaim) && formData.follow_up_date < getTodayISO()) {
+        setFormError('Follow-up date must be today or in the future for "' + newStatus + '".');
+        return;
+      }
     }
 
     try {
@@ -615,29 +636,50 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         payload.structured_notes = editingClaim.structured_notes || [];
         await updateClaim(editingClaim.id, payload);
 
+        const statusChanged = editingClaim.status !== newStatus;
+        const savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
+
         // If status changed to "Waiting for Info", show transfer-to-issues modal
-        if (editingClaim.status !== newStatus && newStatus === 'Waiting for Info') {
-          const savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
-          closeModal();
-          await loadClaims();
+        if (statusChanged && newStatus === 'Waiting for Info') {
+          // Set modal state FIRST, then close the form and silently reload
           setTransferClaim({ claim: savedClaim });
           setTransferForm({ in_charge: '', issue_type: 'Other', in_vyne: false });
           setShowTransferModal(true);
+          closeModal();
+          reloadClaimsSilently();
           return;
         }
 
         // If status changed to Denied or Closed/Unpaid, prompt transfer to Patient A/R
-        if (editingClaim.status !== newStatus && PATIENT_AR_TRANSFER_STATUSES.includes(newStatus)) {
-          const savedClaim = { ...editingClaim, ...payload, id: editingClaim.id } as Claim;
-          closeModal();
-          await loadClaims();
+        if (statusChanged && PATIENT_AR_TRANSFER_STATUSES.includes(newStatus)) {
           setPatientARClaim(savedClaim);
           setShowPatientARModal(true);
+          closeModal();
+          reloadClaimsSilently();
           return;
         }
       } else {
+        // NEW claim
         payload.audit_trail = [createAuditEntry('created', formData.assigned_to.trim() || 'staff', { notes: 'Claim created' })];
-        await insertClaim(payload);
+        const inserted = await insertClaim(payload);
+        const savedNew = inserted as Claim;
+
+        // For new claims: also trigger transfer modals when applicable
+        if (newStatus === 'Waiting for Info') {
+          setTransferClaim({ claim: savedNew });
+          setTransferForm({ in_charge: '', issue_type: 'Other', in_vyne: false });
+          setShowTransferModal(true);
+          closeModal();
+          reloadClaimsSilently();
+          return;
+        }
+        if (PATIENT_AR_TRANSFER_STATUSES.includes(newStatus)) {
+          setPatientARClaim(savedNew);
+          setShowPatientARModal(true);
+          closeModal();
+          reloadClaimsSilently();
+          return;
+        }
       }
 
       const wasEditing = !!editingClaim;
@@ -677,14 +719,15 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         status: resolution,
         audit_trail: [...(claim.audit_trail || []), auditEntry],
       });
-      await loadClaims();
 
-      // If Closed/Unpaid, prompt transfer to Patient A/R
+      // If Closed/Unpaid, prompt transfer to Patient A/R (set state FIRST, then reload)
       if (resolution === 'Closed/Unpaid') {
         const savedClaim = { ...claim, status: resolution } as Claim;
         setPatientARClaim(savedClaim);
         setShowPatientARModal(true);
+        reloadClaimsSilently();
       } else {
+        await loadClaims();
         setToastMessage(`Claim marked as ${resolution}`);
       }
     } catch (err) {
@@ -1763,11 +1806,19 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   </p>
                 </div>
               )}
-              {formData.status === 'Waiting for Info' && editingClaim && editingClaim.status !== 'Waiting for Info' && (
+              {formData.status === 'Waiting for Info' && (!editingClaim || editingClaim.status !== 'Waiting for Info') && (
                 <div className={`p-3 rounded-lg flex items-start gap-2 ${isDayMode ? 'bg-orange-50 border border-orange-200' : 'bg-orange-900/20 border border-orange-800'}`}>
                   <ArrowRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
                   <p className={`text-xs ${isDayMode ? 'text-orange-700' : 'text-orange-300'}`}>
                     <strong>This claim will be added to Insurance Issues.</strong> After saving, you'll be prompted to add the In Charge, Issue Type, and Vyne details so the issue appears in the Insurance Issues tracker.
+                  </p>
+                </div>
+              )}
+              {PATIENT_AR_TRANSFER_STATUSES.includes(formData.status as UnifiedClaimStatus) && (!editingClaim || !PATIENT_AR_TRANSFER_STATUSES.includes(editingClaim.status)) && (
+                <div className={`p-3 rounded-lg flex items-start gap-2 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
+                  <UserCheck className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`} />
+                  <p className={`text-xs ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>
+                    <strong>This patient may need to go to Patient A/R.</strong> After saving, you'll be prompted to send this patient to the Patient A/R tab for collections follow-up.
                   </p>
                 </div>
               )}
