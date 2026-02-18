@@ -41,14 +41,41 @@ export async function getClaimById(id: string) {
   return data as Claim;
 }
 
+// Strip JSONB fields that may not exist in the DB yet
+// (requires migration: add_structured_notes_audit_trail_to_claims.sql)
+function stripJsonbFieldsIfNeeded(payload: Record<string, any>): Record<string, any> {
+  const { structured_notes, audit_trail, ...rest } = payload;
+  return rest;
+}
+
 export async function insertClaim(claim: Omit<Claim, 'id' | 'created_at' | 'updated_at'>) {
+  const insertPayload = { ...claim, id: crypto.randomUUID() };
   const { data, error } = await supabase
     .from('claims')
-    .insert({ ...claim, id: crypto.randomUUID() })
+    .insert(insertPayload)
     .select()
     .single();
 
   if (error) {
+    // If 400 error, retry without JSONB fields that may not exist in the DB yet
+    if (error.code === 'PGRST204' || (error as any).status === 400 || error.message?.includes('column')) {
+      console.warn('[insertClaim] Retrying without structured_notes/audit_trail columns (migration may be pending)');
+      const safePayload = { ...stripJsonbFieldsIfNeeded(insertPayload as any), id: insertPayload.id };
+      const { data: retryData, error: retryError } = await supabase
+        .from('claims')
+        .insert(safePayload)
+        .select()
+        .single();
+
+      if (retryError) {
+        console.error('Error inserting claim (retry):', retryError);
+        console.error('Error details:', JSON.stringify(retryError, null, 2));
+        throw retryError;
+      }
+
+      return retryData as Claim;
+    }
+
     console.error('Error inserting claim:', error);
     console.error('Error details:', JSON.stringify(error, null, 2));
     console.error('Claim data being inserted:', JSON.stringify(claim, null, 2));
@@ -67,6 +94,25 @@ export async function updateClaim(id: string, updates: Partial<Omit<Claim, 'id' 
     .single();
 
   if (error) {
+    // If 400 error, retry without JSONB fields that may not exist in the DB yet
+    if (error.code === 'PGRST204' || (error as any).status === 400 || error.message?.includes('column')) {
+      console.warn('[updateClaim] Retrying without structured_notes/audit_trail columns (migration may be pending)');
+      const safeUpdates = stripJsonbFieldsIfNeeded(updates as any);
+      const { data: retryData, error: retryError } = await supabase
+        .from('claims')
+        .update(safeUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (retryError) {
+        console.error('Error updating claim (retry):', retryError);
+        throw retryError;
+      }
+
+      return retryData as Claim;
+    }
+
     console.error('Error updating claim:', error);
     throw error;
   }
