@@ -1656,7 +1656,7 @@ export const sampleInsuranceARClaims: InsuranceARClaim[] = [
     total_claim: 275.00,
     collected: 0,
     outstanding: 275.00,
-    claim_status: 'Waiting for Info',
+    claim_status: 'Waiting for CSD/Moved to IIR',
     aging_status: '31-60 Days',
     assigned_to: 'BH',
     procedure_types: 'Prophy: Adult',
