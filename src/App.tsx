@@ -1899,18 +1899,7 @@ const CourtStreetRCM = () => {
     return matchesSearch;
   });
 
-  // Calculate real-time claims statistics from actual claims data
-  const realTimeClaimsStats = {
-    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter((c: ClaimRecord) => !c.archivedAt).length,
-    pending: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Pending').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.status === 'Pending').length,
-    denied: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
-    // Use static metric value from database (most recent entry), never show 0 if data exists
-    overSixtyDays: claimsOver60Days ?? 0
-  };
+
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
     searchQuery === '' ||
