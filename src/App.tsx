@@ -829,7 +829,7 @@ const CourtStreetRCM = () => {
   const [newClaimStatus, setNewClaimStatus] = useState<ClaimRecord['status']>('Pending');
   const [_claimsLoading, setClaimsLoading] = useState(true);
   const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
-  const [claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
+  const [_claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -850,7 +850,7 @@ const CourtStreetRCM = () => {
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
 
   // Archive date filter state
-  const [archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
+  const [_archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
   const [archiveInsuranceChecksDateFilter, setArchiveInsuranceChecksDateFilter] = useState<string>('');
 
   // Add Update modal state
@@ -1878,39 +1878,9 @@ const CourtStreetRCM = () => {
     });
   }, [claims]);
 
-  // Filter functions for search
-  const filteredClaims = claims.filter((claim: ClaimRecord) => {
-    // Apply search query filter
-    const matchesSearch = searchQuery === '' ||
-      claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.dateOfService.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply archive date filter if viewing archived items and date filter is set
-    if (showArchivedClaims && archiveClaimsDateFilter && claim.archivedAt) {
-      const archivedDate = claim.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
-      return matchesSearch && archivedDate === archiveClaimsDateFilter;
-    }
 
-    return matchesSearch;
-  });
 
-  // Calculate real-time claims statistics from actual claims data
-  const realTimeClaimsStats = {
-    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter((c: ClaimRecord) => !c.archivedAt).length,
-    pending: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Pending').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.status === 'Pending').length,
-    denied: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
-    // Use static metric value from database (most recent entry), never show 0 if data exists
-    overSixtyDays: claimsOver60Days ?? 0
-  };
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
     searchQuery === '' ||
@@ -7226,70 +7196,6 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Claims Summary Section */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <div className="flex items-center justify-between mb-5">
-                <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                  Claims Management Summary
-                </h3>
-                <button
-                  onClick={() => setShowRCMMetricsModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span className="text-sm">Upload RCM Metrics</span>
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Claims Over 60 Days</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {realTimeClaimsStats.overSixtyDays}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need follow-up</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Denied Claims</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.deniedClaimsToResubmit}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need resubmission</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Pre-Auths Approved</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.preAuthsApproved}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Ready for treatment</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Active Claims</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {metricsData?.dashboard.activeClaims ?? 0}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>In system</p>
-                  </div>
-                </div>
-              </div>
-              <p className={`text-xs mt-4 text-center ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Real-time data from Claims Management - updated automatically
-              </p>
             </div>
 
             {/* Important Notes Section */}
