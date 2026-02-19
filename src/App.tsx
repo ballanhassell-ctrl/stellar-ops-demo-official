@@ -829,7 +829,7 @@ const CourtStreetRCM = () => {
   const [newClaimStatus, setNewClaimStatus] = useState<ClaimRecord['status']>('Pending');
   const [_claimsLoading, setClaimsLoading] = useState(true);
   const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
-  const [claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
+  const [_claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1879,7 +1879,7 @@ const CourtStreetRCM = () => {
   }, [claims]);
 
   // Filter functions for search
-  const filteredClaims = claims.filter((claim: ClaimRecord) => {
+  const _filteredClaims = claims.filter((claim: ClaimRecord) => {
     // Apply search query filter
     const matchesSearch = searchQuery === '' ||
       claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
