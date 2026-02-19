@@ -33,6 +33,7 @@ import { generatePaymentInsights, PaymentInsight } from './services/paymentInsig
 import { getTopProceduresForDateRange } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 import { getLatestMetricValue } from './services/metrics';
+import { generateEODEmailHTML } from './services/eodEmailTemplate';
 import {
   getClaims, insertClaim, updateClaim, deleteClaim, getClaimAuditHistory,
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
@@ -2206,41 +2207,68 @@ const CourtStreetRCM = () => {
 
   // Helper function to send email
   const handleSendEmail = () => {
-    // In a real implementation, this would call an API endpoint to send the email
-    // For now, we'll show a success message
     if (!emailRecipients) {
       alert('Please enter at least one email recipient');
       return;
     }
 
-    const emailData = {
-      to: emailRecipients.split(',').map((email: string) => email.trim()),
-      subject: emailSubject,
-      message: emailMessage,
-      reportDate: dashboardDate,
-      reportData: eodData,
-      template: selectedTemplate,
-      schedule: scheduleEmail ? {
-        enabled: true,
-        time: scheduleTime,
-        frequency: scheduleFrequency
-      } : null
-    };
+    if (!eodData) return;
 
-    // Simulate API call
-    console.log('Sending email with data:', emailData);
+    // Generate the professional HTML email
+    const logoBaseUrl = window.location.origin;
+    const html = generateEODEmailHTML({
+      eodData,
+      reportDate: eodData.reportDate,
+      message: emailMessage || undefined,
+      template: selectedTemplate,
+      logoBaseUrl,
+    });
+
+    // Copy HTML to clipboard for pasting into email clients
+    navigator.clipboard.writeText(html).catch(() => {});
+
+    // Open mailto with subject and recipients
+    const recipients = emailRecipients.split(',').map((e: string) => e.trim()).join(',');
+    const mailtoUrl = `mailto:${recipients}?subject=${encodeURIComponent(emailSubject)}`;
+    window.open(mailtoUrl, '_blank');
+
+    // Also open a preview window with the formatted report
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(html);
+      previewWindow.document.close();
+    }
 
     if (scheduleEmail) {
       const template = reportTemplates[selectedTemplate as keyof typeof reportTemplates];
-      alert(`EOD Report scheduled successfully!\nRecipients: ${emailRecipients}\nFrequency: ${scheduleFrequency} at ${scheduleTime}\nTemplate: ${template.name}`);
+      alert(`EOD Report preview opened and mailto launched.\nRecipients: ${emailRecipients}\nFrequency: ${scheduleFrequency} at ${scheduleTime}\nTemplate: ${template.name}`);
     } else {
-      alert(`EOD Report sent successfully to: ${emailRecipients}`);
+      alert('EOD Report preview opened in a new tab. You can print or copy it into your email.');
     }
 
     setShowEmailModal(false);
     setEmailRecipients('');
     setEmailMessage('');
     setScheduleEmail(false);
+  };
+
+  const handlePreviewEmail = () => {
+    if (!eodData) return;
+
+    const logoBaseUrl = window.location.origin;
+    const html = generateEODEmailHTML({
+      eodData,
+      reportDate: eodData.reportDate,
+      message: emailMessage || undefined,
+      template: selectedTemplate,
+      logoBaseUrl,
+    });
+
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(html);
+      previewWindow.document.close();
+    }
   };
 
   // Loading state - wait for all data to load from Supabase
@@ -7413,9 +7441,16 @@ const CourtStreetRCM = () => {
                     <div className="flex gap-3 mt-6">
                       <button
                         onClick={() => setShowEmailModal(false)}
-                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
                       >
                         Cancel
+                      </button>
+                      <button
+                        onClick={handlePreviewEmail}
+                        className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-all font-medium shadow-md flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Preview
                       </button>
                       <button
                         onClick={handleSendEmail}
