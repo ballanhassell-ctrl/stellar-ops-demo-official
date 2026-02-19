@@ -33,6 +33,7 @@ import { generatePaymentInsights, PaymentInsight } from './services/paymentInsig
 import { getTopProceduresForDateRange } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 import { getLatestMetricValue } from './services/metrics';
+import { generateEODEmailHTML, type BAMCycleData } from './services/eodEmailTemplate';
 import {
   getClaims, insertClaim, updateClaim, deleteClaim, getClaimAuditHistory,
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
@@ -829,7 +830,7 @@ const CourtStreetRCM = () => {
   const [newClaimStatus, setNewClaimStatus] = useState<ClaimRecord['status']>('Pending');
   const [_claimsLoading, setClaimsLoading] = useState(true);
   const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
-  const [claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
+  const [_claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -850,7 +851,7 @@ const CourtStreetRCM = () => {
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
 
   // Archive date filter state
-  const [archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
+  const [_archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
   const [archiveInsuranceChecksDateFilter, setArchiveInsuranceChecksDateFilter] = useState<string>('');
 
   // Add Update modal state
@@ -1409,17 +1410,17 @@ const CourtStreetRCM = () => {
     full: {
       name: 'Full Report',
       description: 'Complete EOD report with all sections',
-      includes: ['Daily Summary', 'Payments Detail', 'Action Items', 'Top Procedures', 'MTD Summary', 'Important Notes']
+      includes: ['Daily Summary', 'BAM Cycle', 'Payments Detail', 'Action Items', 'MTD Summary', 'Top Procedures', 'Important Notes']
     },
     executive: {
       name: 'Executive Summary',
       description: 'High-level overview for management',
-      includes: ['Daily Summary', 'Action Items', 'MTD Summary']
+      includes: ['Daily Summary', 'BAM Cycle', 'Action Items', 'MTD Summary']
     },
     financial: {
       name: 'Financial Focus',
       description: 'Payment and collection details',
-      includes: ['Daily Summary', 'Payments Detail', 'Payment Methods', 'MTD Summary']
+      includes: ['Daily Summary', 'BAM Cycle', 'Payments Detail', 'MTD Summary', 'Top Procedures']
     },
     actionItems: {
       name: 'Action Items Only',
@@ -1878,39 +1879,9 @@ const CourtStreetRCM = () => {
     });
   }, [claims]);
 
-  // Filter functions for search
-  const filteredClaims = claims.filter((claim: ClaimRecord) => {
-    // Apply search query filter
-    const matchesSearch = searchQuery === '' ||
-      claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.dateOfService.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply archive date filter if viewing archived items and date filter is set
-    if (showArchivedClaims && archiveClaimsDateFilter && claim.archivedAt) {
-      const archivedDate = claim.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
-      return matchesSearch && archivedDate === archiveClaimsDateFilter;
-    }
 
-    return matchesSearch;
-  });
 
-  // Calculate real-time claims statistics from actual claims data
-  const realTimeClaimsStats = {
-    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter((c: ClaimRecord) => !c.archivedAt).length,
-    pending: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Pending').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.status === 'Pending').length,
-    denied: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
-    // Use static metric value from database (most recent entry), never show 0 if data exists
-    overSixtyDays: claimsOver60Days ?? 0
-  };
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
     searchQuery === '' ||
@@ -2236,41 +2207,92 @@ const CourtStreetRCM = () => {
 
   // Helper function to send email
   const handleSendEmail = () => {
-    // In a real implementation, this would call an API endpoint to send the email
-    // For now, we'll show a success message
     if (!emailRecipients) {
       alert('Please enter at least one email recipient');
       return;
     }
 
-    const emailData = {
-      to: emailRecipients.split(',').map((email: string) => email.trim()),
-      subject: emailSubject,
-      message: emailMessage,
-      reportDate: dashboardDate,
-      reportData: eodData,
-      template: selectedTemplate,
-      schedule: scheduleEmail ? {
-        enabled: true,
-        time: scheduleTime,
-        frequency: scheduleFrequency
-      } : null
-    };
+    if (!eodData) return;
 
-    // Simulate API call
-    console.log('Sending email with data:', emailData);
+    // Generate the professional HTML email
+    const logoBaseUrl = window.location.origin;
+    const bamCycleData: BAMCycleData = {
+      currentRevenue: dashboardData.bamCurrentRevenue,
+      targetGoal: dashboardData.bamTargetGoal,
+      practiceGoal: dashboardData.practiceGoal,
+      cycleStart: dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      cycleEnd: dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      daysRemaining: dashboardData.bamDaysRemaining,
+      nextCycleStart: dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
+    const html = generateEODEmailHTML({
+      eodData,
+      reportDate: eodData.reportDate,
+      message: emailMessage || undefined,
+      template: selectedTemplate,
+      logoBaseUrl,
+      bamCycle: bamCycleData,
+      topProcedures,
+    });
+
+    // Copy HTML to clipboard for pasting into email clients
+    navigator.clipboard.writeText(html).catch(() => {});
+
+    // Open mailto with subject and recipients
+    const recipients = emailRecipients.split(',').map((e: string) => e.trim()).join(',');
+    const mailtoUrl = `mailto:${recipients}?subject=${encodeURIComponent(emailSubject)}`;
+    window.open(mailtoUrl, '_blank');
+
+    // Also open a preview window with the formatted report
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(html);
+      previewWindow.document.close();
+    }
 
     if (scheduleEmail) {
       const template = reportTemplates[selectedTemplate as keyof typeof reportTemplates];
-      alert(`EOD Report scheduled successfully!\nRecipients: ${emailRecipients}\nFrequency: ${scheduleFrequency} at ${scheduleTime}\nTemplate: ${template.name}`);
+      alert(`EOD Report preview opened and mailto launched.\nRecipients: ${emailRecipients}\nFrequency: ${scheduleFrequency} at ${scheduleTime}\nTemplate: ${template.name}`);
     } else {
-      alert(`EOD Report sent successfully to: ${emailRecipients}`);
+      alert('EOD Report preview opened in a new tab. You can print or copy it into your email.');
     }
 
     setShowEmailModal(false);
     setEmailRecipients('');
     setEmailMessage('');
     setScheduleEmail(false);
+  };
+
+  const handlePreviewEmail = () => {
+    if (!eodData) return;
+
+    const logoBaseUrl = window.location.origin;
+    const bamCycleData: BAMCycleData = {
+      currentRevenue: dashboardData.bamCurrentRevenue,
+      targetGoal: dashboardData.bamTargetGoal,
+      practiceGoal: dashboardData.practiceGoal,
+      cycleStart: dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      cycleEnd: dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      daysRemaining: dashboardData.bamDaysRemaining,
+      nextCycleStart: dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
+    const html = generateEODEmailHTML({
+      eodData,
+      reportDate: eodData.reportDate,
+      message: emailMessage || undefined,
+      template: selectedTemplate,
+      logoBaseUrl,
+      bamCycle: bamCycleData,
+      topProcedures,
+    });
+
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) {
+      previewWindow.document.write(html);
+      previewWindow.document.close();
+    }
   };
 
   // Loading state - wait for all data to load from Supabase
@@ -5913,7 +5935,7 @@ const CourtStreetRCM = () => {
                   <thead>
                     <tr className="bg-gray-100 border-b-2 border-gray-200">
                       <th className="text-left p-3 font-semibold text-gray-700">Week</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Date</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Week Of</th>
                       <th className="text-left p-3 font-semibold text-gray-700">Show Rate Dr</th>
                       <th className="text-left p-3 font-semibold text-gray-700">Show Rate Hyg</th>
                       <th className="text-left p-3 font-semibold text-gray-700">New Pts</th>
@@ -7228,70 +7250,6 @@ const CourtStreetRCM = () => {
               </div>
             </div>
 
-            {/* Claims Summary Section */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <div className="flex items-center justify-between mb-5">
-                <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                  Claims Management Summary
-                </h3>
-                <button
-                  onClick={() => setShowRCMMetricsModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span className="text-sm">Upload RCM Metrics</span>
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Claims Over 60 Days</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {realTimeClaimsStats.overSixtyDays}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need follow-up</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Denied Claims</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.deniedClaimsToResubmit}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need resubmission</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Pre-Auths Approved</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.preAuthsApproved}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Ready for treatment</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Active Claims</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {metricsData?.dashboard.activeClaims ?? 0}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>In system</p>
-                  </div>
-                </div>
-              </div>
-              <p className={`text-xs mt-4 text-center ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Real-time data from Claims Management - updated automatically
-              </p>
-            </div>
-
             {/* Important Notes Section */}
             <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} hover-lift relative overflow-hidden group`}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
@@ -7507,9 +7465,16 @@ const CourtStreetRCM = () => {
                     <div className="flex gap-3 mt-6">
                       <button
                         onClick={() => setShowEmailModal(false)}
-                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
                       >
                         Cancel
+                      </button>
+                      <button
+                        onClick={handlePreviewEmail}
+                        className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-all font-medium shadow-md flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Preview
                       </button>
                       <button
                         onClick={handleSendEmail}
@@ -9997,7 +9962,7 @@ const CourtStreetRCM = () => {
                       <thead>
                         <tr className={`border-b-2 ${isDayMode ? 'bg-gray-100 border-gray-200' : 'bg-gray-700 border-gray-600'}`}>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Week</th>
-                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Date</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Week Of</th>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Dr</th>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Hyg</th>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>New Pts</th>
