@@ -16,12 +16,14 @@ import {
   Clock,
   MessageSquare,
   History,
+  ArrowRightCircle,
 } from 'lucide-react';
 import type {
   Claim,
   UnifiedClaimStatus,
   NoteEntry,
   AuditTrailEntry,
+  InsuranceIssueType,
 } from '../types/database.types';
 import {
   getClaims,
@@ -31,6 +33,7 @@ import {
   calculateInsuranceARSummaryFromClaims,
 } from '../services/claimsService';
 import type { InsuranceARSummary } from '../services/claimsService';
+import { insertInsuranceIssue } from '../services/insuranceIssuesService';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
@@ -66,6 +69,23 @@ const ALL_AGING_STATUSES: AgingStatus[] = [
   '91-120 Days',
   '121+ Days',
 ];
+
+// Issue types & providers for transfer dialog (match InsuranceIssuesTracker)
+const TRANSFER_ISSUE_TYPES: InsuranceIssueType[] = [
+  'Needs Perio Chart',
+  'Invalid Tooth Code for Carrier',
+  'Invalid Number of Surfaces',
+  'Invalid Surface Code for Carrier',
+  'Tooth Code Required by Carrier',
+  'Oral Cavity Code Required by Carrier',
+  'Needs Narrative',
+  'Need Provider Change',
+  'Invalid Tooth/Surface Code',
+  'Pre-Auth Required',
+  'Other',
+];
+
+const TRANSFER_PROVIDERS = ['DDS1', 'DDS2', 'DMD1', 'HYG2', 'HYG3', 'HYG5', 'Daniely'];
 
 const EMPTY_CLAIM_FORM: ClaimFormData = {
   patient_name: '',
@@ -227,6 +247,12 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   // Notes & Audit drawer
   const [drawerClaimId, setDrawerClaimId] = useState<string | null>(null);
+
+  // Transfer to Insurance Issues
+  const [transferClaim, setTransferClaim] = useState<Claim | null>(null);
+  const [transferIssueType, setTransferIssueType] = useState<InsuranceIssueType>('Other');
+  const [transferProvider, setTransferProvider] = useState('');
+  const [transferring, setTransferring] = useState(false);
 
   // Clear all data
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -533,6 +559,87 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     } catch (err) {
       console.error('Error deleting claim:', err);
       setError('Failed to delete claim. Please try again.');
+    }
+  };
+
+  // =====================================================
+  // TRANSFER TO INSURANCE ISSUES
+  // =====================================================
+
+  const openTransferDialog = (claim: Claim) => {
+    setTransferClaim(claim);
+    setTransferIssueType('Other');
+    setTransferProvider('');
+  };
+
+  const closeTransferDialog = () => {
+    setTransferClaim(null);
+    setTransferring(false);
+  };
+
+  const handleTransferToInsuranceIssues = async () => {
+    if (!transferClaim) return;
+    try {
+      setTransferring(true);
+
+      // Build structured notes from the claim's notes
+      const transferredNotes: NoteEntry[] = [];
+
+      // 1. Carry over all existing structured notes
+      if (transferClaim.structured_notes && transferClaim.structured_notes.length > 0) {
+        transferredNotes.push(...transferClaim.structured_notes);
+      }
+
+      // 2. Convert plain-text notes field into a structured note
+      if (transferClaim.notes && transferClaim.notes.trim()) {
+        transferredNotes.push({
+          text: transferClaim.notes,
+          source: 'stellar',
+          author: transferClaim.assigned_to || transferClaim.completed_by || 'staff',
+          created_at: transferClaim.updated_at || transferClaim.created_at || new Date().toISOString(),
+        });
+      }
+
+      // 3. Add a system note documenting the transfer
+      transferredNotes.push({
+        text: `Transferred from Insurance A/R (Status: ${transferClaim.status}, Insurance: ${transferClaim.insurance_company}, Claim Amount: $${transferClaim.claim_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })})`,
+        source: 'stellar',
+        author: 'system',
+        created_at: new Date().toISOString(),
+      });
+
+      // Build audit trail
+      const auditTrail: AuditTrailEntry[] = [
+        createAuditEntry('created', 'system', {
+          notes: `Transferred from Insurance A/R claim for ${transferClaim.insurance_company}`,
+        }),
+      ];
+
+      await insertInsuranceIssue({
+        patient_id: transferClaim.patient_id || null,
+        patient_name: transferClaim.patient_name,
+        date_of_service: transferClaim.date_of_service,
+        procedure_codes: transferClaim.procedure_types || transferClaim.procedure_code || '',
+        in_charge: transferProvider,
+        issue_type: transferIssueType,
+        in_vyne: false,
+        status: 'Open',
+        submission_status: null,
+        submitted_by: null,
+        submitted_at: null,
+        resolved_at: null,
+        notes: transferClaim.notes || null,
+        structured_notes: transferredNotes,
+        audit_trail: auditTrail,
+        is_pre_auth: false,
+      });
+
+      closeTransferDialog();
+      setToastMessage(`${transferClaim.patient_name} transferred to Insurance Issues with notes`);
+    } catch (err) {
+      console.error('Error transferring claim to insurance issues:', err);
+      setError('Failed to transfer claim. Please try again.');
+      setTransferring(false);
     }
   };
 
@@ -1131,6 +1238,13 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     <td className="px-3 py-3 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          onClick={() => openTransferDialog(claim)}
+                          className={`p-1.5 rounded-md ${isDayMode ? 'hover:bg-amber-50' : 'hover:bg-amber-900/30'} transition-colors`}
+                          title="Send to Insurance Issues"
+                        >
+                          <ArrowRightCircle className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
+                        </button>
+                        <button
                           onClick={() => openEditModal(claim)}
                           className={`p-1.5 rounded-md ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}
                           title="Edit claim"
@@ -1416,6 +1530,125 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     ? 'Update Claim'
                     : 'Add Claim'}
               </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          TRANSFER TO INSURANCE ISSUES DIALOG
+          ===================================================== */}
+      {transferClaim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={closeTransferDialog} />
+          <div className={`relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl ${bgPrimary} ${cardShadow} border ${borderColor}`}>
+            {/* Header */}
+            <div className={`sticky top-0 ${bgPrimary} border-b ${borderColor} px-6 py-4 flex items-center justify-between z-10`}>
+              <div className="flex items-center gap-2">
+                <ArrowRightCircle className={`w-5 h-5 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>
+                  Send to Insurance Issues
+                </h2>
+              </div>
+              <button
+                onClick={closeTransferDialog}
+                className={`p-1.5 rounded-md ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}
+              >
+                <X className={`w-5 h-5 ${textMuted}`} />
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-4">
+              {/* Claim summary */}
+              <div className={`p-3 rounded-lg ${bgSecondary} border ${borderColor}`}>
+                <p className={`text-sm font-medium ${textPrimary}`}>{transferClaim.patient_name}</p>
+                <div className={`mt-1 text-xs ${textMuted} space-y-0.5`}>
+                  <p>DOS: {formatDate(transferClaim.date_of_service)} &bull; {transferClaim.insurance_company}</p>
+                  <p>Amount: {formatCurrency(transferClaim.claim_amount)} &bull; Status: {transferClaim.status}</p>
+                  {transferClaim.procedure_types && <p>Procedures: {transferClaim.procedure_types}</p>}
+                </div>
+              </div>
+
+              {/* Notes preview */}
+              {((transferClaim.notes && transferClaim.notes.trim()) || (transferClaim.structured_notes && transferClaim.structured_notes.length > 0)) && (
+                <div className={`p-3 rounded-lg border ${isDayMode ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/20 border-amber-800'}`}>
+                  <p className={`text-xs font-semibold mb-2 ${isDayMode ? 'text-amber-800' : 'text-amber-300'}`}>
+                    Notes that will transfer:
+                  </p>
+                  {transferClaim.structured_notes && transferClaim.structured_notes.length > 0 && (
+                    <div className="space-y-1.5 mb-2">
+                      {transferClaim.structured_notes.map((note, idx) => (
+                        <div key={idx} className={`text-xs ${isDayMode ? 'text-amber-700' : 'text-amber-200'}`}>
+                          <span className="font-medium">[{note.source}/{note.author}]</span> {note.text}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {transferClaim.notes && transferClaim.notes.trim() && (
+                    <p className={`text-xs ${isDayMode ? 'text-amber-700' : 'text-amber-200'}`}>
+                      <span className="font-medium">[Plain text note]</span> {transferClaim.notes}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Issue type selector */}
+              <div>
+                <label className={`block text-sm font-medium ${textSecondary} mb-1`}>
+                  Issue Type <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={transferIssueType}
+                    onChange={(e) => setTransferIssueType(e.target.value as InsuranceIssueType)}
+                    className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    {TRANSFER_ISSUE_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 ${textMuted} pointer-events-none`} />
+                </div>
+              </div>
+
+              {/* Provider selector */}
+              <div>
+                <label className={`block text-sm font-medium ${textSecondary} mb-1`}>
+                  Provider (In Charge) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={transferProvider}
+                    onChange={(e) => setTransferProvider(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${inputBorder} ${inputBg} ${inputText} text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Select provider...</option>
+                    {TRANSFER_PROVIDERS.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 ${textMuted} pointer-events-none`} />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={`sticky bottom-0 ${bgPrimary} border-t ${borderColor} px-6 py-4`}>
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={closeTransferDialog}
+                  className={`px-4 py-2 rounded-lg border ${inputBorder} ${textSecondary} text-sm font-medium hover:${bgTertiary} transition-colors`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleTransferToInsuranceIssues}
+                  disabled={transferring || !transferProvider}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {transferring ? 'Transferring...' : 'Transfer with Notes'}
+                </button>
               </div>
             </div>
           </div>
