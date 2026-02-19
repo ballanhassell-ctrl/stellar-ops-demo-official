@@ -30,12 +30,32 @@ const COLORS = {
   white: '#ffffff',
 };
 
+export interface BAMCycleData {
+  currentRevenue: number;
+  targetGoal: number;
+  practiceGoal: number;
+  cycleStart: string;
+  cycleEnd: string;
+  daysRemaining: number;
+  nextCycleStart: string;
+  nextCycleEnd: string;
+}
+
+export interface ProcedureItem {
+  procedure_code: string;
+  procedure_name: string;
+  count: number;
+  revenue: number;
+}
+
 interface EmailTemplateOptions {
   eodData: EODData;
   reportDate: string;
   message?: string;
   template: string;
   logoBaseUrl: string;
+  bamCycle?: BAMCycleData;
+  topProcedures?: ProcedureItem[];
 }
 
 function formatCurrency(value: number): string {
@@ -49,7 +69,7 @@ function formatNumber(value: number): string {
 
 
 export function generateEODEmailHTML(options: EmailTemplateOptions): string {
-  const { eodData, reportDate, message, template, logoBaseUrl } = options;
+  const { eodData, reportDate, message, template, logoBaseUrl, bamCycle, topProcedures } = options;
 
   const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
   const csdLogoUrl = `${logoBaseUrl}/Cris%20Dental%20Image.jpg`;
@@ -182,6 +202,78 @@ ${includeSections.dailySummary ? `
           </tr>
 ` : ''}
 
+${includeSections.bamCycle && bamCycle ? `
+          <!-- BAM Cycle Revenue -->
+          <tr>
+            <td style="padding: 28px 40px 0 40px;">
+              ${sectionHeading('BAM Cycle Revenue')}
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px; background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border-radius: 12px; border: 1px solid #a7f3d0;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <!-- Cycle date range -->
+                    <p style="margin: 0 0 4px 0; font-size: 11px; color: ${COLORS.green}; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Current Cycle</p>
+                    <p style="margin: 0 0 16px 0; font-size: 13px; color: ${COLORS.gray600};">${bamCycle.cycleStart} &ndash; ${bamCycle.cycleEnd}</p>
+
+                    <!-- Revenue & Goals -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td width="50%" valign="top">
+                          <p style="margin: 0; font-size: 12px; color: ${COLORS.gray500}; font-weight: 600;">Current Revenue</p>
+                          <p style="margin: 4px 0 0 0; font-size: 28px; color: ${COLORS.green}; font-weight: 800; letter-spacing: -0.5px;">${formatCurrency(bamCycle.currentRevenue)}</p>
+                        </td>
+                        <td width="50%" valign="top">
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                              <td style="padding-bottom: 6px;">
+                                <p style="margin: 0; font-size: 12px; color: ${COLORS.gray500}; font-weight: 600;">BAM Target</p>
+                                <p style="margin: 2px 0 0 0; font-size: 16px; color: ${COLORS.gray900}; font-weight: 700;">${formatCurrency(bamCycle.targetGoal)}</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <p style="margin: 0; font-size: 12px; color: ${COLORS.gray500}; font-weight: 600;">Practice Goal</p>
+                                <p style="margin: 2px 0 0 0; font-size: 16px; color: ${COLORS.gray900}; font-weight: 700;">${formatCurrency(bamCycle.practiceGoal)}</p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Progress bar -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px;">
+                      <tr>
+                        <td>
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #d1fae5; border-radius: 6px; overflow: hidden;">
+                            <tr>
+                              <td style="background: linear-gradient(90deg, ${COLORS.green}, ${COLORS.greenLight}); height: 10px; width: ${Math.min(Math.round((bamCycle.currentRevenue / bamCycle.targetGoal) * 100), 100)}%; border-radius: 6px;"></td>
+                              ${Math.round((bamCycle.currentRevenue / bamCycle.targetGoal) * 100) < 100 ? `<td style="height: 10px;"></td>` : ''}
+                            </tr>
+                          </table>
+                          <p style="margin: 6px 0 0 0; font-size: 12px; color: ${COLORS.gray500}; text-align: right;">${Math.round((bamCycle.currentRevenue / bamCycle.targetGoal) * 100)}% of BAM target</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Days remaining & next cycle -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 12px; border-top: 1px solid #a7f3d0; padding-top: 12px;">
+                      <tr>
+                        <td style="font-size: 13px; color: ${COLORS.gray600}; font-weight: 600;">Days Remaining</td>
+                        <td align="right" style="font-size: 13px; color: ${COLORS.gray900}; font-weight: 700;">${bamCycle.daysRemaining} business days</td>
+                      </tr>
+                      <tr><td colspan="2" height="6"></td></tr>
+                      <tr>
+                        <td style="font-size: 12px; color: ${COLORS.gray500};">Next Cycle</td>
+                        <td align="right" style="font-size: 12px; color: ${COLORS.gray500};">${bamCycle.nextCycleStart} &ndash; ${bamCycle.nextCycleEnd}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+` : ''}
+
 ${includeSections.paymentMethods ? `
           <!-- Payment Methods -->
           <tr>
@@ -269,6 +361,75 @@ ${includeSections.mtdSummary ? `
             </td>
           </tr>
 ` : ''}
+
+${includeSections.topProcedures && topProcedures && topProcedures.length > 0 ? (() => {
+    const hygieneRecareCodesArray = ['D1110', 'D1120', 'D4910', 'D1206', 'D1351', 'D4341', 'D4342', 'D4000'];
+    const excludedCodesArray = ['D0150', 'D0180', 'D0140', 'D0277', 'D0274', 'D0220', 'D0230', 'D0210', 'D0120', 'D9987', 'D9986', 'D9150'];
+
+    const hygieneProcedures = topProcedures
+      .filter(p => {
+        const code = (p.procedure_code || '').toUpperCase().trim();
+        return hygieneRecareCodesArray.includes(code) && !excludedCodesArray.includes(code);
+      })
+      .slice(0, 8);
+
+    const operativeProcedures = topProcedures
+      .filter(p => {
+        const code = (p.procedure_code || '').toUpperCase().trim();
+        return !hygieneRecareCodesArray.includes(code) && !excludedCodesArray.includes(code);
+      })
+      .slice(0, 8);
+
+    const buildProcTable = (procs: ProcedureItem[], accentColor: string, label: string) => {
+      if (procs.length === 0) return `
+        <td width="50%" valign="top">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${COLORS.gray50}; border-radius: 10px; border: 1px solid ${COLORS.gray200};">
+            <tr><td style="padding: 12px 16px; font-size: 12px; font-weight: 700; color: ${accentColor};">${label}</td></tr>
+            <tr><td style="padding: 12px 16px; font-size: 12px; color: ${COLORS.gray500}; text-align: center;">No procedures this month</td></tr>
+          </table>
+        </td>`;
+
+      const maxRevenue = Math.max(...procs.map(p => p.revenue));
+      const rows = procs.map((p, i) => {
+        const barPct = maxRevenue > 0 ? Math.round((p.revenue / maxRevenue) * 100) : 0;
+        const bgColor = i % 2 === 0 ? COLORS.white : COLORS.gray50;
+        return `
+          <tr style="background-color: ${bgColor};">
+            <td style="padding: 8px 16px; font-size: 12px; color: ${COLORS.gray700}; font-weight: 600; white-space: nowrap;">${p.procedure_code}</td>
+            <td style="padding: 8px 4px; width: 100%;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="width: ${barPct}%; min-width: 4px;">
+                <tr><td style="background-color: ${accentColor}; height: 18px; border-radius: 4px; text-align: right; padding-right: 6px; font-size: 10px; color: ${COLORS.white}; font-weight: 700;">${p.count}</td></tr>
+              </table>
+            </td>
+            <td align="right" style="padding: 8px 16px; font-size: 12px; color: ${COLORS.gray900}; font-weight: 700; white-space: nowrap;">$${p.revenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+          </tr>`;
+      }).join('');
+
+      return `
+        <td width="50%" valign="top">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${COLORS.gray50}; border-radius: 10px; border: 1px solid ${COLORS.gray200}; overflow: hidden;">
+            <tr><td colspan="3" style="padding: 12px 16px 8px 16px; font-size: 12px; font-weight: 700; color: ${accentColor};">${label}</td></tr>
+            ${rows}
+          </table>
+        </td>`;
+    };
+
+    return `
+          <!-- Top Procedures Monthly -->
+          <tr>
+            <td style="padding: 28px 40px 0 40px;">
+              ${sectionHeading('Top Procedures Monthly')}
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px;">
+                <tr>
+                  ${buildProcTable(hygieneProcedures, COLORS.blue, 'Hygiene / Recare')}
+                  <td width="16"></td>
+                  ${buildProcTable(operativeProcedures, COLORS.purple, 'Operative / Major Treatment')}
+                </tr>
+              </table>
+            </td>
+          </tr>
+`;
+  })() : ''}
 
 ${includeSections.importantNotes ? `
           <!-- Important Notes -->
@@ -395,13 +556,13 @@ function paymentMethodRow(label: string, amount: number, isAlt: boolean): string
 function getTemplateSections(template: string): Record<string, boolean> {
   switch (template) {
     case 'executive':
-      return { dailySummary: true, paymentMethods: false, actionItems: true, mtdSummary: true, importantNotes: false };
+      return { dailySummary: true, bamCycle: true, paymentMethods: false, actionItems: true, mtdSummary: true, topProcedures: false, importantNotes: false };
     case 'financial':
-      return { dailySummary: true, paymentMethods: true, actionItems: false, mtdSummary: true, importantNotes: false };
+      return { dailySummary: true, bamCycle: true, paymentMethods: true, actionItems: false, mtdSummary: true, topProcedures: true, importantNotes: false };
     case 'actionItems':
-      return { dailySummary: false, paymentMethods: false, actionItems: true, mtdSummary: false, importantNotes: true };
+      return { dailySummary: false, bamCycle: false, paymentMethods: false, actionItems: true, mtdSummary: false, topProcedures: false, importantNotes: true };
     case 'full':
     default:
-      return { dailySummary: true, paymentMethods: true, actionItems: true, mtdSummary: true, importantNotes: true };
+      return { dailySummary: true, bamCycle: true, paymentMethods: true, actionItems: true, mtdSummary: true, topProcedures: true, importantNotes: true };
   }
 }

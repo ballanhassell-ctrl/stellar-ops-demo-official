@@ -33,7 +33,7 @@ import { generatePaymentInsights, PaymentInsight } from './services/paymentInsig
 import { getTopProceduresForDateRange } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
 import { getLatestMetricValue } from './services/metrics';
-import { generateEODEmailHTML } from './services/eodEmailTemplate';
+import { generateEODEmailHTML, type BAMCycleData } from './services/eodEmailTemplate';
 import {
   getClaims, insertClaim, updateClaim, deleteClaim, getClaimAuditHistory,
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
@@ -1410,17 +1410,17 @@ const CourtStreetRCM = () => {
     full: {
       name: 'Full Report',
       description: 'Complete EOD report with all sections',
-      includes: ['Daily Summary', 'Payments Detail', 'Action Items', 'Top Procedures', 'MTD Summary', 'Important Notes']
+      includes: ['Daily Summary', 'BAM Cycle', 'Payments Detail', 'Action Items', 'MTD Summary', 'Top Procedures', 'Important Notes']
     },
     executive: {
       name: 'Executive Summary',
       description: 'High-level overview for management',
-      includes: ['Daily Summary', 'Action Items', 'MTD Summary']
+      includes: ['Daily Summary', 'BAM Cycle', 'Action Items', 'MTD Summary']
     },
     financial: {
       name: 'Financial Focus',
       description: 'Payment and collection details',
-      includes: ['Daily Summary', 'Payments Detail', 'Payment Methods', 'MTD Summary']
+      includes: ['Daily Summary', 'BAM Cycle', 'Payments Detail', 'MTD Summary', 'Top Procedures']
     },
     actionItems: {
       name: 'Action Items Only',
@@ -2216,12 +2216,24 @@ const CourtStreetRCM = () => {
 
     // Generate the professional HTML email
     const logoBaseUrl = window.location.origin;
+    const bamCycleData: BAMCycleData = {
+      currentRevenue: dashboardData.bamCurrentRevenue,
+      targetGoal: dashboardData.bamTargetGoal,
+      practiceGoal: dashboardData.practiceGoal,
+      cycleStart: dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      cycleEnd: dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      daysRemaining: dashboardData.bamDaysRemaining,
+      nextCycleStart: dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
     const html = generateEODEmailHTML({
       eodData,
       reportDate: eodData.reportDate,
       message: emailMessage || undefined,
       template: selectedTemplate,
       logoBaseUrl,
+      bamCycle: bamCycleData,
+      topProcedures,
     });
 
     // Copy HTML to clipboard for pasting into email clients
@@ -2256,12 +2268,24 @@ const CourtStreetRCM = () => {
     if (!eodData) return;
 
     const logoBaseUrl = window.location.origin;
+    const bamCycleData: BAMCycleData = {
+      currentRevenue: dashboardData.bamCurrentRevenue,
+      targetGoal: dashboardData.bamTargetGoal,
+      practiceGoal: dashboardData.practiceGoal,
+      cycleStart: dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      cycleEnd: dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      daysRemaining: dashboardData.bamDaysRemaining,
+      nextCycleStart: dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
     const html = generateEODEmailHTML({
       eodData,
       reportDate: eodData.reportDate,
       message: emailMessage || undefined,
       template: selectedTemplate,
       logoBaseUrl,
+      bamCycle: bamCycleData,
+      topProcedures,
     });
 
     const previewWindow = window.open('', '_blank');
