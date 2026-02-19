@@ -850,7 +850,7 @@ const CourtStreetRCM = () => {
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
 
   // Archive date filter state
-  const [archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
+  const [_archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
   const [archiveInsuranceChecksDateFilter, setArchiveInsuranceChecksDateFilter] = useState<string>('');
 
   // Add Update modal state
@@ -1878,26 +1878,7 @@ const CourtStreetRCM = () => {
     });
   }, [claims]);
 
-  // Filter functions for search
-  const _filteredClaims = claims.filter((claim: ClaimRecord) => {
-    // Apply search query filter
-    const matchesSearch = searchQuery === '' ||
-      claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.dateOfService.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply archive date filter if viewing archived items and date filter is set
-    if (showArchivedClaims && archiveClaimsDateFilter && claim.archivedAt) {
-      const archivedDate = claim.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
-      return matchesSearch && archivedDate === archiveClaimsDateFilter;
-    }
-
-    return matchesSearch;
-  });
 
 
 
