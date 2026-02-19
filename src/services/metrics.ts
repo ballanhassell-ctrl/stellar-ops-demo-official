@@ -932,7 +932,9 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
   try {
     const today = new Date();
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - (numWeeks * 7));
+    // Fetch an extra week of data to account for the prior-week attribution shift:
+    // metrics entered during week N represent week N-1's performance
+    startDate.setDate(today.getDate() - ((numWeeks + 1) * 7));
 
     const startDateStr = startDate.toISOString().split('T')[0];
     const todayStr = today.toISOString().split('T')[0];
@@ -967,18 +969,26 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
       return [];
     }
 
-    // Group data by week
-    // Week starts on Monday
+    // Group data by week (weeks run Monday–Sunday).
+    // Scorecard metrics are entered via the Monday metrics report (or anytime
+    // during a calendar week) and represent the PRIOR week's performance.
+    // Therefore we attribute each record to the previous week by subtracting
+    // 7 days before computing the week's Monday.
     const weeklyData: Map<string, any> = new Map();
 
     data.forEach((record) => {
       const date = new Date(record.as_of_date);
 
-      // Get the Monday of the week this date belongs to
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      // Shift back 7 days so metrics entered during week N are
+      // attributed to week N-1 (the week the data actually represents)
+      const priorWeekDate = new Date(date);
+      priorWeekDate.setDate(date.getDate() - 7);
+
+      // Get the Monday of the prior week
+      const dayOfWeek = priorWeekDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
       const daysFromMonday = (dayOfWeek + 6) % 7; // Monday = 0, Tuesday = 1, ..., Sunday = 6
-      const monday = new Date(date);
-      monday.setDate(date.getDate() - daysFromMonday);
+      const monday = new Date(priorWeekDate);
+      monday.setDate(priorWeekDate.getDate() - daysFromMonday);
       const weekKey = monday.toISOString().split('T')[0];
 
       if (!weeklyData.has(weekKey)) {
@@ -1025,12 +1035,16 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
       }
     });
 
-    // Calculate weekly averages/sums and format output
-    const result = Array.from(weeklyData.entries())
-      .map(([weekStart, data], index) => {
-        const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
-        const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+    // Calculate weekly averages/sums and format output.
+    // Sort by week-start date chronologically, then limit to the requested
+    // number of weeks (we fetched one extra week of raw data above).
+    const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+    const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
+    const result = Array.from(weeklyData.entries())
+      .sort(([a], [b]) => a.localeCompare(b)) // sort by week-start ISO date
+      .slice(-numWeeks) // keep only the most recent numWeeks
+      .map(([weekStart, data], index) => {
         const weekDate = new Date(weekStart);
         const formattedDate = `${weekDate.getMonth() + 1}/${weekDate.getDate()}/${weekDate.getFullYear()}`;
 
@@ -1046,8 +1060,7 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
           collectionPct: avg(data.collectionRate),
           fiveStars: sum(data.fiveStars)
         };
-      })
-      .sort((a, b) => a.week - b.week);
+      });
 
     console.log('[getWeeklyScorecardData] Aggregated', result.length, 'weeks of data');
     return result;

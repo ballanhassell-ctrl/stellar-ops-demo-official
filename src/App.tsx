@@ -5935,7 +5935,7 @@ const CourtStreetRCM = () => {
                   <thead>
                     <tr className="bg-gray-100 border-b-2 border-gray-200">
                       <th className="text-left p-3 font-semibold text-gray-700">Week</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Date</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Week Of</th>
                       <th className="text-left p-3 font-semibold text-gray-700">Show Rate Dr</th>
                       <th className="text-left p-3 font-semibold text-gray-700">Show Rate Hyg</th>
                       <th className="text-left p-3 font-semibold text-gray-700">New Pts</th>
@@ -9962,7 +9962,7 @@ const CourtStreetRCM = () => {
                       <thead>
                         <tr className={`border-b-2 ${isDayMode ? 'bg-gray-100 border-gray-200' : 'bg-gray-700 border-gray-600'}`}>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Week</th>
-                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Date</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Week Of</th>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Dr</th>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Hyg</th>
                           <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>New Pts</th>
