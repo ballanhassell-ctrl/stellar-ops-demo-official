@@ -768,6 +768,33 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     try {
       setTransferring(true);
       const c = transferClaim.claim;
+
+      // Build structured notes - carry over all notes from the claim
+      const transferredNotes: NoteEntry[] = [];
+
+      // 1. Carry over existing structured notes
+      if (c.structured_notes && c.structured_notes.length > 0) {
+        transferredNotes.push(...c.structured_notes);
+      }
+
+      // 2. Convert plain-text notes field into a structured note
+      if (c.notes && c.notes.trim()) {
+        transferredNotes.push({
+          text: c.notes,
+          source: 'stellar',
+          author: c.assigned_to || c.completed_by || 'staff',
+          created_at: c.updated_at || c.created_at || new Date().toISOString(),
+        });
+      }
+
+      // 3. Add a system note documenting the transfer context
+      transferredNotes.push({
+        text: `Transferred from Insurance A/R (Status: ${c.status}, Insurance: ${c.insurance_company}, Claim Amount: $${c.claim_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })})`,
+        source: 'stellar',
+        author: 'system',
+        created_at: new Date().toISOString(),
+      });
+
       await insertInsuranceIssue({
         patient_id: c.patient_id || null,
         patient_name: c.patient_name,
@@ -782,9 +809,9 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         submitted_at: null,
         resolved_at: null,
         notes: c.notes || null,
-        structured_notes: [],
+        structured_notes: transferredNotes,
         audit_trail: [createAuditEntry('created', transferForm.in_charge, {
-          notes: `Auto-created from Insurance A/R claim (status: Waiting for CSD/Moved to IIR)`,
+          notes: `Transferred from Insurance A/R claim for ${c.insurance_company}`,
         })],
         is_pre_auth: false,
       });
@@ -792,7 +819,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       setTransferClaim(null);
       setEditingClaim(null);
       setFormData({ ...EMPTY_CLAIM_FORM });
-      setToastMessage(`Claim transferred to Insurance Issues (assigned to ${transferForm.in_charge})`);
+      setToastMessage(`${c.patient_name} transferred to Insurance Issues with notes`);
     } catch (err) {
       console.error('Error transferring to insurance issues:', err);
       setError('Failed to create insurance issue. You can add it manually in the Insurance Issues tab.');
@@ -2152,6 +2179,29 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                 <strong>{transferClaim.claim.patient_name}</strong> has been marked as "Waiting for CSD/Moved to IIR". Add the details below to automatically create an entry in the Insurance Issues tracker.
               </p>
             </div>
+
+            {/* Notes preview - show what notes will carry over */}
+            {((transferClaim.claim.notes && transferClaim.claim.notes.trim()) || (transferClaim.claim.structured_notes && transferClaim.claim.structured_notes.length > 0)) && (
+              <div className={`mx-6 mt-3 p-3 rounded-lg border ${isDayMode ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/20 border-amber-800'}`}>
+                <p className={`text-xs font-semibold mb-2 ${isDayMode ? 'text-amber-800' : 'text-amber-300'}`}>
+                  Notes that will transfer:
+                </p>
+                {transferClaim.claim.structured_notes && transferClaim.claim.structured_notes.length > 0 && (
+                  <div className="space-y-1.5 mb-2">
+                    {transferClaim.claim.structured_notes.map((note: NoteEntry, idx: number) => (
+                      <div key={idx} className={`text-xs ${isDayMode ? 'text-amber-700' : 'text-amber-200'}`}>
+                        <span className="font-medium">[{note.source}/{note.author}]</span> {note.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {transferClaim.claim.notes && transferClaim.claim.notes.trim() && (
+                  <p className={`text-xs ${isDayMode ? 'text-amber-700' : 'text-amber-200'}`}>
+                    <span className="font-medium">[Plain text]</span> {transferClaim.claim.notes}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Form */}
             <div className="px-6 py-4 space-y-4">
