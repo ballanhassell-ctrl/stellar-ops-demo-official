@@ -29,10 +29,26 @@ UPDATE insurance_issues
 CREATE INDEX IF NOT EXISTS idx_insurance_issues_corrected_at
   ON insurance_issues(corrected_at);
 
--- 4. Update status constraint (drop old if exists, add new)
+-- 4. Drop any existing status CHECK constraint (handles both named and auto-named)
 ALTER TABLE insurance_issues
   DROP CONSTRAINT IF EXISTS insurance_issues_status_check;
 
+-- Also drop any auto-generated constraint that references the status column
+DO $$
+DECLARE
+  _con TEXT;
+BEGIN
+  FOR _con IN
+    SELECT conname FROM pg_constraint
+    WHERE conrelid = 'insurance_issues'::regclass
+      AND contype = 'c'
+      AND pg_get_constraintdef(oid) ILIKE '%status%'
+  LOOP
+    EXECUTE format('ALTER TABLE insurance_issues DROP CONSTRAINT %I', _con);
+  END LOOP;
+END $$;
+
+-- 5. Add the new three-value status constraint
 ALTER TABLE insurance_issues
   ADD CONSTRAINT insurance_issues_status_check
   CHECK (status IN ('Open', 'Corrected', 'Resolved'));

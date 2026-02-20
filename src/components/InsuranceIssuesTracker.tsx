@@ -14,7 +14,6 @@ import {
   X,
   AlertTriangle,
   CheckCircle,
-  Clock,
   FileWarning,
   MessageSquare,
   Timer,
@@ -22,7 +21,6 @@ import {
   History,
   Wrench,
   Zap,
-  ChevronDown,
 } from 'lucide-react';
 import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry, NoteSource, AuditTrailEntry } from '../types/database.types';
 import {
