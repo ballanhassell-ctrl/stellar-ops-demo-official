@@ -14,12 +14,13 @@ import {
   X,
   AlertTriangle,
   CheckCircle,
-  Clock,
   FileWarning,
   MessageSquare,
   Timer,
   Archive,
   History,
+  Wrench,
+  Zap,
 } from 'lucide-react';
 import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry, NoteSource, AuditTrailEntry } from '../types/database.types';
 import {
@@ -81,6 +82,9 @@ const EMPTY_FORM: NewIssueForm = {
   issue_type: 'Needs Perio Chart',
   in_vyne: false,
   status: 'Open',
+  corrected_at: null,
+  corrected_by: null,
+  correction_note: null,
   submission_status: null,
   submitted_by: null,
   submitted_at: null,
@@ -96,7 +100,7 @@ const EMPTY_FORM: NewIssueForm = {
 // =====================================================
 
 function isResolved(issue: InsuranceIssue): boolean {
-  return issue.status === 'Corrected';
+  return issue.status === 'Resolved';
 }
 
 function getProviderColor(provider: string, isDayMode: boolean) {
@@ -339,8 +343,15 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   // CSV upload
   const [showCSVUpload, setShowCSVUpload] = useState(false);
 
-  // Resolve confirmation
-  const [confirmResolveIssue, setConfirmResolveIssue] = useState<InsuranceIssue | null>(null);
+  // Status change popup (replaces old confirmResolveIssue)
+  const [statusPopupIssue, setStatusPopupIssue] = useState<InsuranceIssue | null>(null);
+  // Form state for the status change popup
+  const [statusFormInitials, setStatusFormInitials] = useState('');
+  const [statusFormNote, setStatusFormNote] = useState('');
+  const [statusFormDate, setStatusFormDate] = useState('');
+  const [statusFormSubmittedBy, setStatusFormSubmittedBy] = useState('');
+  const [statusFormSubmittedDate, setStatusFormSubmittedDate] = useState('');
+  const [statusSaving, setStatusSaving] = useState(false);
 
   // Notes & Audit drawer
   const [drawerIssueId, setDrawerIssueId] = useState<string | null>(null);
@@ -407,8 +418,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const regularIssues = useMemo(() => filteredIssues.filter((i) => !i.is_pre_auth), [filteredIssues]);
   const preAuthIssues = useMemo(() => filteredIssues.filter((i) => i.is_pre_auth), [filteredIssues]);
 
-  // Counts for tab badges
+  // Counts for tab badges (Open tab shows both Open + Corrected; Resolved tab shows Resolved)
   const openCount = useMemo(() => issues.filter((i) => !isResolved(i)).length, [issues]);
+  const correctedCount = useMemo(() => issues.filter((i) => i.status === 'Corrected').length, [issues]);
   const resolvedCount = useMemo(() => issues.filter((i) => isResolved(i)).length, [issues]);
 
   // ----- CRUD handlers -----
@@ -425,8 +437,11 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         notes: formData.notes?.trim() || null,
         // Auto-log submitted_at if marking as Submitted
         submitted_at: formData.submission_status === 'Submitted' ? new Date().toISOString() : null,
-        // Auto-log resolved_at if marking as Corrected
-        resolved_at: formData.status === 'Corrected' ? new Date().toISOString() : null,
+        // Auto-log corrected_at/resolved_at based on status
+        corrected_at: (formData.status === 'Corrected' || formData.status === 'Resolved') ? new Date().toISOString() : null,
+        corrected_by: null,
+        correction_note: null,
+        resolved_at: formData.status === 'Resolved' ? new Date().toISOString() : null,
         audit_trail: [createAuditEntry('created', formData.submitted_by || 'staff', { notes: 'Issue created' })],
       };
       const created = await insertInsuranceIssue(issueToInsert);
@@ -458,12 +473,21 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       const currentIssue = issues.find((i) => i.id === id);
       const updates = { ...editData };
 
-      // Auto-log resolved_at when toggling status to Corrected
-      if (updates.status === 'Corrected' && currentIssue?.status !== 'Corrected') {
-        updates.resolved_at = new Date().toISOString();
+      // Auto-log timestamps based on status transitions
+      if (updates.status === 'Corrected' && currentIssue?.status === 'Open') {
+        updates.corrected_at = new Date().toISOString();
       }
-      // Clear resolved_at when toggling status back to Open
-      if (updates.status === 'Open' && currentIssue?.status === 'Corrected') {
+      if (updates.status === 'Resolved' && currentIssue?.status !== 'Resolved') {
+        updates.resolved_at = new Date().toISOString();
+        if (!currentIssue?.corrected_at) {
+          updates.corrected_at = new Date().toISOString();
+        }
+      }
+      // Clear timestamps when going back to Open
+      if (updates.status === 'Open') {
+        updates.corrected_at = null;
+        updates.corrected_by = null;
+        updates.correction_note = null;
         updates.resolved_at = null;
       }
       // Auto-log submitted_at when marking as Submitted for the first time
@@ -530,39 +554,136 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     }
   };
 
-  // ----- Status toggle handler (direct click, no edit mode needed) -----
-  const handleToggleStatus = (issue: InsuranceIssue) => {
-    // If marking as resolved (Open → Corrected), show confirmation first
-    if (issue.status !== 'Corrected') {
-      setConfirmResolveIssue(issue);
-      return;
-    }
-    // If toggling back to Open, no confirmation needed
-    performStatusToggle(issue);
+  // ----- Status click handler → opens status popup -----
+  const handleStatusClick = (issue: InsuranceIssue) => {
+    setStatusPopupIssue(issue);
+    setStatusFormInitials(issue.corrected_by || '');
+    setStatusFormNote('');
+    setStatusFormDate(issue.corrected_at ? issue.corrected_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setStatusFormSubmittedBy(issue.submitted_by || '');
+    setStatusFormSubmittedDate(issue.submitted_at ? issue.submitted_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setStatusSaving(false);
   };
 
-  const performStatusToggle = async (issue: InsuranceIssue) => {
-    const newStatus: InsuranceIssueStatus = issue.status === 'Corrected' ? 'Open' : 'Corrected';
-    const auditEntry = createAuditEntry('status_changed', issue.submitted_by || 'staff', {
-      field: 'status', oldValue: issue.status, newValue: newStatus,
-    });
-    const updates: Partial<InsuranceIssue> = {
-      status: newStatus,
-      resolved_at: newStatus === 'Corrected' ? new Date().toISOString() : null,
-      audit_trail: [...(issue.audit_trail || []), auditEntry],
-    };
+  const closeStatusPopup = () => {
+    setStatusPopupIssue(null);
+    setStatusFormInitials('');
+    setStatusFormNote('');
+    setStatusFormDate('');
+    setStatusFormSubmittedBy('');
+    setStatusFormSubmittedDate('');
+  };
+
+  // Open → Corrected (in-charge completed their edits)
+  const handleMarkCorrected = async () => {
+    if (!statusPopupIssue || !statusFormInitials.trim()) return;
+    setStatusSaving(true);
     try {
-      const updated = await updateInsuranceIssue(issue.id, updates);
-      setIssues((prev) => prev.map((i) => (i.id === issue.id ? updated : i)));
+      const now = new Date().toISOString();
+      const correctedDate = statusFormDate ? new Date(statusFormDate + 'T12:00:00').toISOString() : now;
+
+      const newAuditEntries: AuditTrailEntry[] = [
+        createAuditEntry('status_changed', statusFormInitials.trim(), {
+          field: 'status', oldValue: 'Open', newValue: 'Corrected',
+          notes: statusFormNote.trim() || undefined,
+        }),
+      ];
+
+      // Also add note to structured_notes if provided
+      const updatedNotes = [...(statusPopupIssue.structured_notes || [])];
+      if (statusFormNote.trim()) {
+        updatedNotes.push({
+          text: statusFormNote.trim(),
+          source: 'office' as NoteSource,
+          author: statusFormInitials.trim(),
+          created_at: now,
+        });
+      }
+
+      const updates: Partial<InsuranceIssue> = {
+        status: 'Corrected',
+        corrected_at: correctedDate,
+        corrected_by: statusFormInitials.trim(),
+        correction_note: statusFormNote.trim() || null,
+        structured_notes: updatedNotes,
+        audit_trail: [...(statusPopupIssue.audit_trail || []), ...newAuditEntries],
+      };
+
+      const updated = await updateInsuranceIssue(statusPopupIssue.id, updates);
+      setIssues((prev) => prev.map((i) => (i.id === statusPopupIssue.id ? updated : i)));
+      setToastMessage(`Marked as Corrected by ${statusFormInitials.trim()}`);
+      closeStatusPopup();
     } catch (err) {
-      console.error('Error toggling status:', err);
+      console.error('Error marking corrected:', err);
+    } finally {
+      setStatusSaving(false);
     }
   };
 
-  const handleConfirmResolve = () => {
-    if (confirmResolveIssue) {
-      performStatusToggle(confirmResolveIssue);
-      setConfirmResolveIssue(null);
+  // Corrected → Resolved (submitted and fully resolved)
+  const handleMarkResolved = async () => {
+    if (!statusPopupIssue || !statusFormSubmittedBy.trim()) return;
+    setStatusSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const submittedDate = statusFormSubmittedDate ? new Date(statusFormSubmittedDate + 'T12:00:00').toISOString() : now;
+
+      const newAuditEntries: AuditTrailEntry[] = [
+        createAuditEntry('status_changed', statusFormSubmittedBy.trim(), {
+          field: 'status', oldValue: statusPopupIssue.status, newValue: 'Resolved',
+        }),
+      ];
+
+      const updates: Partial<InsuranceIssue> = {
+        status: 'Resolved',
+        resolved_at: now,
+        submission_status: 'Submitted',
+        submitted_by: statusFormSubmittedBy.trim(),
+        submitted_at: submittedDate,
+        audit_trail: [...(statusPopupIssue.audit_trail || []), ...newAuditEntries],
+      };
+
+      // If going straight from Open → Resolved (bypass), set corrected fields too
+      if (statusPopupIssue.status === 'Open') {
+        updates.corrected_at = now;
+        updates.corrected_by = statusFormSubmittedBy.trim();
+      }
+
+      const updated = await updateInsuranceIssue(statusPopupIssue.id, updates);
+      setIssues((prev) => prev.map((i) => (i.id === statusPopupIssue.id ? updated : i)));
+      setToastMessage(`Issue resolved by ${statusFormSubmittedBy.trim()}`);
+      closeStatusPopup();
+    } catch (err) {
+      console.error('Error resolving issue:', err);
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
+  // Reopen: Corrected/Resolved → Open
+  const handleReopenIssue = async () => {
+    if (!statusPopupIssue) return;
+    setStatusSaving(true);
+    try {
+      const auditEntry = createAuditEntry('status_changed', 'staff', {
+        field: 'status', oldValue: statusPopupIssue.status, newValue: 'Open',
+      });
+      const updates: Partial<InsuranceIssue> = {
+        status: 'Open',
+        corrected_at: null,
+        corrected_by: null,
+        correction_note: null,
+        resolved_at: null,
+        audit_trail: [...(statusPopupIssue.audit_trail || []), auditEntry],
+      };
+      const updated = await updateInsuranceIssue(statusPopupIssue.id, updates);
+      setIssues((prev) => prev.map((i) => (i.id === statusPopupIssue.id ? updated : i)));
+      setToastMessage('Issue reopened');
+      closeStatusPopup();
+    } catch (err) {
+      console.error('Error reopening issue:', err);
+    } finally {
+      setStatusSaving(false);
     }
   };
 
@@ -690,37 +811,52 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     );
   };
 
-  // ----- Render: status toggle -----
-  const renderStatusToggle = (issue: InsuranceIssue) => {
-    const resolved = isResolved(issue);
+  // ----- Render: status badge (clickable → opens status popup) -----
+  const renderStatusBadge = (issue: InsuranceIssue) => {
+    const s = issue.status;
+    let badgeCls = '';
+    let icon = null;
+    let label = '';
+
+    if (s === 'Open') {
+      badgeCls = isDayMode
+        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+        : 'bg-amber-900/40 text-amber-300 hover:bg-amber-900/60';
+      icon = <AlertTriangle className="w-3 h-3" />;
+      label = 'Open';
+    } else if (s === 'Corrected') {
+      badgeCls = isDayMode
+        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+        : 'bg-blue-900/40 text-blue-300 hover:bg-blue-900/60';
+      icon = <Wrench className="w-3 h-3" />;
+      label = 'Corrected';
+    } else {
+      badgeCls = isDayMode
+        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+        : 'bg-green-900/40 text-green-300 hover:bg-green-900/60';
+      icon = <CheckCircle className="w-3 h-3" />;
+      label = 'Resolved';
+    }
+
     return (
       <button
-        onClick={() => handleToggleStatus(issue)}
-        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
-          resolved
-            ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60'
-            : 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
-        }`}
-        title={resolved ? 'Click to mark as Open' : 'Click to mark as Corrected'}
+        onClick={() => handleStatusClick(issue)}
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${badgeCls}`}
+        title="Click to change status"
       >
-        {resolved ? (
-          <CheckCircle className="w-3 h-3" />
-        ) : (
-          <AlertTriangle className="w-3 h-3" />
-        )}
-        {resolved ? 'Corrected' : 'Open'}
+        {icon}
+        {label}
       </button>
     );
   };
 
   // ----- Render: table row -----
   const renderRow = (issue: InsuranceIssue) => {
-    const resolved = isResolved(issue);
-    const rowBg = resolved
-      ? isDayMode
-        ? 'bg-green-50/50'
-        : 'bg-green-900/10'
-      : '';
+    const rowBg = issue.status === 'Resolved'
+      ? isDayMode ? 'bg-green-50/50' : 'bg-green-900/10'
+      : issue.status === 'Corrected'
+        ? isDayMode ? 'bg-blue-50/30' : 'bg-blue-900/10'
+        : '';
 
     return (
       <tr key={issue.id} className={`${rowBg} ${rowHover} transition-colors`}>
@@ -771,9 +907,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
           {renderVyneBadge(issue.in_vyne)}
         </td>
 
-        {/* Status Toggle */}
+        {/* Status Badge */}
         <td className={`px-3 py-2 border-b ${tableBorder}`}>
-          {renderStatusToggle(issue)}
+          {renderStatusBadge(issue)}
         </td>
 
         {/* Submitted + Submitted By */}
@@ -964,7 +1100,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       </div>
 
       {/* ===== Summary Stats ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {/* Total */}
         <div className={`rounded-lg p-4 ${card}`}>
           <div className="flex items-center gap-2 mb-1">
@@ -977,11 +1113,22 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         {/* Open */}
         <div className={`rounded-lg p-4 ${card}`}>
           <div className="flex items-center gap-2 mb-1">
-            <Clock className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
-            <span className={`text-xs font-medium ${subText}`}>Open Issues</span>
+            <AlertTriangle className={`w-4 h-4 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`} />
+            <span className={`text-xs font-medium ${subText}`}>Open</span>
           </div>
           <span className={`text-2xl font-bold ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>
             {summary.openIssues}
+          </span>
+        </div>
+
+        {/* Corrected */}
+        <div className={`rounded-lg p-4 ${card}`}>
+          <div className="flex items-center gap-2 mb-1">
+            <Wrench className={`w-4 h-4 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`} />
+            <span className={`text-xs font-medium ${subText}`}>Corrected</span>
+          </div>
+          <span className={`text-2xl font-bold ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>
+            {summary.correctedIssues}
           </span>
         </div>
 
@@ -989,7 +1136,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         <div className={`rounded-lg p-4 ${card}`}>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
-            <span className={`text-xs font-medium ${subText}`}>Corrected</span>
+            <span className={`text-xs font-medium ${subText}`}>Resolved</span>
           </div>
           <span className={`text-2xl font-bold ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>
             {summary.resolvedIssues}
@@ -1070,7 +1217,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
             }`}
           >
             <AlertTriangle className="w-4 h-4" />
-            Open Issues
+            Active Issues
             <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
               viewTab === 'open'
                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
@@ -1078,6 +1225,15 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
             }`}>
               {openCount}
             </span>
+            {correctedCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                viewTab === 'open'
+                  ? isDayMode ? 'bg-blue-100 text-blue-700' : 'bg-blue-900/40 text-blue-300'
+                  : isDayMode ? 'bg-gray-100 text-gray-600' : 'bg-gray-700 text-gray-400'
+              }`}>
+                {correctedCount} corrected
+              </span>
+            )}
           </button>
           <button
             onClick={() => setViewTab('resolved')}
@@ -1352,6 +1508,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   >
                     <option value="Open">Open / Needs Fix</option>
                     <option value="Corrected">Corrected</option>
+                    <option value="Resolved">Resolved</option>
                   </select>
                 </div>
                 <div>
@@ -1527,8 +1684,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                     onChange={(e) => setFormData((d) => ({ ...d, status: e.target.value as InsuranceIssueStatus }))}
                     className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
                   >
-                    <option value="Open">Open/Needs Fix</option>
+                    <option value="Open">Open / Needs Fix</option>
                     <option value="Corrected">Corrected</option>
+                    <option value="Resolved">Resolved</option>
                   </select>
                 </div>
                 <div>
@@ -1625,48 +1783,312 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         </div>
       )}
 
-      {/* ===== Resolve Confirmation Modal ===== */}
-      {confirmResolveIssue && (
+      {/* ===== Status Change Popup ===== */}
+      {statusPopupIssue && (
         <div
           className={modalOverlay}
-          onClick={() => setConfirmResolveIssue(null)}
+          onClick={closeStatusPopup}
         >
           <div
-            className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-xl shadow-xl max-w-sm w-full mx-4`}
+            className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
             style={{ animation: 'notesPopupFadeIn 0.15s ease-out' }}
           >
             {/* Header */}
             <div className={`flex items-center justify-between px-6 py-4 border-b ${tableBorder}`}>
-              <div className="flex items-center gap-2">
-                <CheckCircle className={`w-5 h-5 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
-                <h3 className={`text-lg font-semibold ${headerText}`}>Mark as Resolved</h3>
+              <div>
+                <h3 className={`text-lg font-semibold ${headerText}`}>Update Status</h3>
+                <p className={`text-xs mt-0.5 ${subText}`}>
+                  {statusPopupIssue.patient_name} &middot; {formatDate(statusPopupIssue.date_of_service)}
+                </p>
               </div>
               <button
-                onClick={() => setConfirmResolveIssue(null)}
+                onClick={closeStatusPopup}
                 className={`p-1 rounded ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'}`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Body */}
-            <div className="px-6 py-5">
-              <p className={`text-sm ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
-                Are you sure you want to mark this claim as resolved?
-              </p>
-              <div className={`mt-3 p-3 rounded-lg ${isDayMode ? 'bg-gray-50 border border-gray-100' : 'bg-gray-700/50 border border-gray-600'}`}>
-                <p className={`text-sm font-medium ${headerText}`}>{confirmResolveIssue.patient_name}</p>
-                <p className={`text-xs mt-0.5 ${subText}`}>
-                  {formatDate(confirmResolveIssue.date_of_service)} &middot; {confirmResolveIssue.procedure_codes}
-                </p>
+            {/* Current status indicator */}
+            <div className="px-6 pt-4">
+              <div className={`flex items-center gap-3 p-3 rounded-lg ${isDayMode ? 'bg-gray-50 border border-gray-100' : 'bg-gray-700/50 border border-gray-600'}`}>
+                <span className={`text-xs font-medium ${subText}`}>Current:</span>
+                <div className="flex items-center gap-3 flex-1">
+                  {/* Open */}
+                  <div className={`flex items-center gap-1 text-xs font-semibold ${
+                    statusPopupIssue.status === 'Open'
+                      ? isDayMode ? 'text-amber-700' : 'text-amber-300'
+                      : isDayMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Open
+                  </div>
+                  <span className={subText}>&rarr;</span>
+                  {/* Corrected */}
+                  <div className={`flex items-center gap-1 text-xs font-semibold ${
+                    statusPopupIssue.status === 'Corrected'
+                      ? isDayMode ? 'text-blue-700' : 'text-blue-300'
+                      : isDayMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    <Wrench className="w-3.5 h-3.5" />
+                    Corrected
+                  </div>
+                  <span className={subText}>&rarr;</span>
+                  {/* Resolved */}
+                  <div className={`flex items-center gap-1 text-xs font-semibold ${
+                    statusPopupIssue.status === 'Resolved'
+                      ? isDayMode ? 'text-green-700' : 'text-green-300'
+                      : isDayMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Resolved
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* PART 1: Mark as Corrected (shown when status is Open) */}
+            {statusPopupIssue.status === 'Open' && (
+              <div className="px-6 py-4">
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-blue-50 border-blue-200' : 'bg-blue-900/20 border-blue-800'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wrench className={`w-4 h-4 ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`} />
+                    <h4 className={`text-sm font-semibold ${isDayMode ? 'text-blue-800' : 'text-blue-200'}`}>
+                      Mark as Corrected
+                    </h4>
+                  </div>
+                  <p className={`text-xs mb-3 ${isDayMode ? 'text-blue-600' : 'text-blue-300'}`}>
+                    The person in charge has completed their edits/corrections.
+                  </p>
+
+                  <div className="space-y-3">
+                    {/* Correction date */}
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-300'}`}>
+                        Correction Date
+                      </label>
+                      <input
+                        type="date"
+                        value={statusFormDate}
+                        onChange={(e) => setStatusFormDate(e.target.value)}
+                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                      />
+                    </div>
+
+                    {/* Initials */}
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-300'}`}>
+                        Initials (who corrected) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={statusFormInitials}
+                        onChange={(e) => setStatusFormInitials(e.target.value.toUpperCase())}
+                        placeholder="e.g. DG, BH"
+                        maxLength={10}
+                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                      />
+                    </div>
+
+                    {/* Optional note */}
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-300'}`}>
+                        Note (optional)
+                      </label>
+                      <textarea
+                        value={statusFormNote}
+                        onChange={(e) => setStatusFormNote(e.target.value)}
+                        placeholder="Brief description of what was corrected..."
+                        rows={2}
+                        className={`w-full text-sm rounded-md border px-3 py-2 resize-y ${inputCls}`}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleMarkCorrected}
+                    disabled={statusSaving || !statusFormInitials.trim()}
+                    className="mt-3 w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  >
+                    <Wrench className="w-4 h-4" />
+                    {statusSaving ? 'Saving...' : 'Mark as Corrected'}
+                  </button>
+                </div>
+
+                {/* Divider with bypass option */}
+                <div className="relative my-4">
+                  <div className={`absolute inset-0 flex items-center`}>
+                    <div className={`w-full border-t ${isDayMode ? 'border-gray-200' : 'border-gray-600'}`} />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className={`px-3 ${isDayMode ? 'bg-white text-gray-500' : 'bg-gray-800 text-gray-400'}`}>
+                      or skip correction step
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bypass: go straight to Resolved */}
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/20 border-green-800'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
+                    <h4 className={`text-sm font-semibold ${isDayMode ? 'text-green-800' : 'text-green-200'}`}>
+                      Resolve Directly
+                    </h4>
+                  </div>
+                  <p className={`text-xs mb-3 ${isDayMode ? 'text-green-600' : 'text-green-300'}`}>
+                    Team member was able to resolve this without needing the correction step.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
+                        Resolved By (initials) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={statusFormSubmittedBy}
+                        onChange={(e) => setStatusFormSubmittedBy(e.target.value.toUpperCase())}
+                        placeholder="e.g. BH, LP"
+                        maxLength={10}
+                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
+                        Submitted Date
+                      </label>
+                      <input
+                        type="date"
+                        value={statusFormSubmittedDate}
+                        onChange={(e) => setStatusFormSubmittedDate(e.target.value)}
+                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleMarkResolved}
+                    disabled={statusSaving || !statusFormSubmittedBy.trim()}
+                    className="mt-3 w-full px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    {statusSaving ? 'Saving...' : 'Resolve Directly'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* PART 2: Corrected → Resolved (shown when status is Corrected) */}
+            {statusPopupIssue.status === 'Corrected' && (
+              <div className="px-6 py-4 space-y-4">
+                {/* Show correction info */}
+                {statusPopupIssue.corrected_by && (
+                  <div className={`p-3 rounded-lg ${isDayMode ? 'bg-blue-50 border border-blue-100' : 'bg-blue-900/20 border border-blue-800'}`}>
+                    <p className={`text-xs ${isDayMode ? 'text-blue-700' : 'text-blue-300'}`}>
+                      Corrected by <strong>{statusPopupIssue.corrected_by}</strong>
+                      {statusPopupIssue.corrected_at && <> on {formatDate(statusPopupIssue.corrected_at.split('T')[0])}</>}
+                      {statusPopupIssue.correction_note && <> &mdash; "{statusPopupIssue.correction_note}"</>}
+                    </p>
+                  </div>
+                )}
+
+                {/* Resolve form */}
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/20 border-green-800'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
+                    <h4 className={`text-sm font-semibold ${isDayMode ? 'text-green-800' : 'text-green-200'}`}>
+                      Mark as Resolved
+                    </h4>
+                  </div>
+                  <p className={`text-xs mb-3 ${isDayMode ? 'text-green-600' : 'text-green-300'}`}>
+                    Claim has been resubmitted and the issue is fully resolved.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
+                        Submitted Date
+                      </label>
+                      <input
+                        type="date"
+                        value={statusFormSubmittedDate}
+                        onChange={(e) => setStatusFormSubmittedDate(e.target.value)}
+                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
+                        Submitted By (initials) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={statusFormSubmittedBy}
+                        onChange={(e) => setStatusFormSubmittedBy(e.target.value.toUpperCase())}
+                        placeholder="e.g. BH, LP"
+                        maxLength={10}
+                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleMarkResolved}
+                    disabled={statusSaving || !statusFormSubmittedBy.trim()}
+                    className="mt-3 w-full px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    {statusSaving ? 'Saving...' : 'Mark as Resolved'}
+                  </button>
+                </div>
+
+                {/* Reopen option */}
+                <button
+                  onClick={handleReopenIssue}
+                  disabled={statusSaving}
+                  className={`w-full px-4 py-2 text-sm rounded-md border transition-colors font-medium inline-flex items-center justify-center gap-2 ${
+                    isDayMode
+                      ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                      : 'border-gray-600 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Reopen Issue
+                </button>
+              </div>
+            )}
+
+            {/* PART 3: Resolved → Reopen (shown when status is Resolved) */}
+            {statusPopupIssue.status === 'Resolved' && (
+              <div className="px-6 py-4 space-y-4">
+                {/* Resolved info */}
+                <div className={`p-3 rounded-lg ${isDayMode ? 'bg-green-50 border border-green-100' : 'bg-green-900/20 border border-green-800'}`}>
+                  <p className={`text-xs ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
+                    This issue has been resolved.
+                    {statusPopupIssue.submitted_by && <> Submitted by <strong>{statusPopupIssue.submitted_by}</strong></>}
+                    {statusPopupIssue.submitted_at && <> on {formatDate(statusPopupIssue.submitted_at.split('T')[0])}</>}
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleReopenIssue}
+                  disabled={statusSaving}
+                  className={`w-full px-4 py-2 text-sm rounded-md border transition-colors font-medium inline-flex items-center justify-center gap-2 ${
+                    isDayMode
+                      ? 'border-amber-300 text-amber-700 hover:bg-amber-50'
+                      : 'border-amber-600 text-amber-300 hover:bg-amber-900/30'
+                  }`}
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  {statusSaving ? 'Reopening...' : 'Reopen Issue'}
+                </button>
+              </div>
+            )}
+
             {/* Footer */}
-            <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t ${tableBorder}`}>
+            <div className={`flex items-center justify-end px-6 py-3 border-t ${tableBorder}`}>
               <button
-                onClick={() => setConfirmResolveIssue(null)}
+                onClick={closeStatusPopup}
                 className={`px-4 py-2 text-sm rounded-md border transition-colors ${
                   isDayMode
                     ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -1674,12 +2096,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                 }`}
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleConfirmResolve}
-                className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
-              >
-                Confirm
               </button>
             </div>
           </div>

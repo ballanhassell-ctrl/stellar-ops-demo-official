@@ -22,17 +22,24 @@ function isTableNotFoundError(error: any): boolean {
 /** Normalize rows coming from Supabase to ensure correct types.
  *  Handles pre-migration data where status may still be free-text like "corrected & rebatched". */
 function normalizeIssue(row: any): InsuranceIssue {
-  // Normalize status: anything containing "corrected" → 'Corrected', else 'Open'
-  let status: 'Open' | 'Corrected' = 'Open';
+  // Normalize status: Open → Corrected → Resolved
+  let status: 'Open' | 'Corrected' | 'Resolved' = 'Open';
   if (row.status) {
-    status = row.status === 'Corrected' || row.status.toLowerCase().includes('corrected')
-      ? 'Corrected'
-      : row.status === 'Open' ? 'Open' : 'Open';
+    if (row.status === 'Resolved') {
+      status = 'Resolved';
+    } else if (row.status === 'Corrected' || row.status.toLowerCase().includes('corrected')) {
+      status = 'Corrected';
+    } else if (row.status === 'Open') {
+      status = 'Open';
+    }
   }
 
   return {
     ...row,
     status,
+    corrected_at: row.corrected_at ?? null,
+    corrected_by: row.corrected_by ?? null,
+    correction_note: row.correction_note ?? null,
     structured_notes: Array.isArray(row.structured_notes) ? row.structured_notes : [],
   };
 }
@@ -72,7 +79,7 @@ function sanitizeForDb(
 ): typeof issue {
   const nullableStringFields: (keyof typeof issue)[] = [
     'patient_id', 'submission_status', 'submitted_by', 'submitted_at',
-    'resolved_at', 'notes',
+    'resolved_at', 'corrected_at', 'corrected_by', 'correction_note', 'notes',
   ];
   const cleaned = { ...issue };
   for (const field of nullableStringFields) {
@@ -216,18 +223,20 @@ export const RESOLUTION_TARGET_DAYS = 3;
 export interface InsuranceIssuesSummary {
   totalIssues: number;
   openIssues: number;
+  correctedIssues: number;
   resolvedIssues: number;
   preAuthIssues: number;
   byIssueType: Record<string, number>;
   byProvider: Record<string, number>;
   inVyneCount: number;
   notInVyneCount: number;
-  avgDaysOnList: number | null; // avg days from created_at → resolved_at (resolved) or → now (open)
+  avgDaysOnList: number | null; // avg days from created_at → resolved_at (resolved) or → now (open/corrected)
 }
 
 export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssuesSummary {
-  const resolved = issues.filter(i => i.status === 'Corrected');
-  const open = issues.filter(i => i.status !== 'Corrected');
+  const resolved = issues.filter(i => i.status === 'Resolved');
+  const corrected = issues.filter(i => i.status === 'Corrected');
+  const open = issues.filter(i => i.status === 'Open');
 
   const byIssueType: Record<string, number> = {};
   const byProvider: Record<string, number> = {};
@@ -239,7 +248,7 @@ export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssue
 
   // Calculate avg days on the list:
   //   Resolved items: created_at → resolved_at
-  //   Open items: created_at → now (still sitting)
+  //   Open/Corrected items: created_at → now (still in progress)
   const now = Date.now();
   const allDays: number[] = [];
 
@@ -252,7 +261,7 @@ export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssue
       if (days >= 0) allDays.push(days);
     });
 
-  open
+  [...open, ...corrected]
     .filter(i => i.created_at)
     .forEach(i => {
       const created = new Date(i.created_at!).getTime();
@@ -270,6 +279,7 @@ export function calculateIssuesSummary(issues: InsuranceIssue[]): InsuranceIssue
   return {
     totalIssues: issues.length,
     openIssues: open.length,
+    correctedIssues: corrected.length,
     resolvedIssues: resolved.length,
     preAuthIssues: issues.filter(i => i.is_pre_auth).length,
     byIssueType,

@@ -318,10 +318,11 @@ export default function InsuranceIssuesCSVUpload({
                         (obj.in_vyne || '').toLowerCase() === 'true' ||
                         (obj.in_vyne || '') === '1';
 
-        // Determine status: normalize "corrected" variants to 'Corrected', else 'Open'
+        // Determine status: normalize variants → 'Open', 'Corrected', or 'Resolved'
         const rawStatus = (obj.status || '').toLowerCase();
+        const isResolved = rawStatus.includes('resolved');
         const isCorrected = rawStatus.includes('corrected');
-        const status: InsuranceIssueStatus = isCorrected ? 'Corrected' : 'Open';
+        const status: InsuranceIssueStatus = isResolved ? 'Resolved' : isCorrected ? 'Corrected' : 'Open';
 
         // Extract submitted_by from submission_status like "Submitted - BH"
         const rawSubmission = obj.submission_status || '';
@@ -334,7 +335,7 @@ export default function InsuranceIssuesCSVUpload({
 
         // Build structured notes from status text (if it has detail) and notes field
         const structuredNotes: NoteEntry[] = [];
-        if (obj.status && obj.status.trim() && obj.status.trim() !== 'Open' && obj.status.trim().toLowerCase() !== 'corrected') {
+        if (obj.status && obj.status.trim() && obj.status.trim() !== 'Open' && obj.status.trim().toLowerCase() !== 'corrected' && obj.status.trim().toLowerCase() !== 'resolved') {
           structuredNotes.push({
             text: obj.status.trim(),
             source: 'stellar',
@@ -362,8 +363,11 @@ export default function InsuranceIssuesCSVUpload({
           status,
           submission_status: isSubmitted ? 'Submitted' : null,
           submitted_by: submittedBy,
+          corrected_at: isCorrected || isResolved ? new Date().toISOString() : null,
+          corrected_by: null,
+          correction_note: null,
           submitted_at: isSubmitted ? new Date().toISOString() : null,
-          resolved_at: isCorrected ? new Date().toISOString() : null,
+          resolved_at: isResolved ? new Date().toISOString() : null,
           notes: obj.notes || null,
           structured_notes: structuredNotes,
           audit_trail: [],

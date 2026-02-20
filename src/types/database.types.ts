@@ -443,7 +443,7 @@ export type InsuranceIssueType =
   | 'Pre-Auth Required'
   | 'Other';
 
-export type InsuranceIssueStatus = 'Open' | 'Corrected';
+export type InsuranceIssueStatus = 'Open' | 'Corrected' | 'Resolved';
 
 export type NoteSource = 'office' | 'stellar';
 
@@ -488,11 +488,14 @@ export type InsuranceIssue = {
   in_charge: string; // provider code e.g. "DDS1", "HYG2", "DMD1", "Daniely"
   issue_type: InsuranceIssueType;
   in_vyne: boolean;
-  status: InsuranceIssueStatus; // "Open" or "Corrected"
+  status: InsuranceIssueStatus; // "Open" → "Corrected" → "Resolved"
+  corrected_at: string | null; // ISO timestamp - when in-charge marked correction done
+  corrected_by: string | null; // initials of person who completed correction
+  correction_note: string | null; // optional note from corrector
   submission_status: string | null; // "Submitted" or null
   submitted_by: string | null; // initials e.g. "BH", "LP", "BH/LP"
   submitted_at: string | null; // ISO timestamp - auto-logged when marked Submitted
-  resolved_at: string | null; // ISO timestamp - auto-logged when status → Corrected
+  resolved_at: string | null; // ISO timestamp - auto-logged when status → Resolved
   notes: string | null; // legacy plain-text (kept for backward compat)
   structured_notes: NoteEntry[]; // structured notes with source tagging
   audit_trail: AuditTrailEntry[]; // audit trail entries
