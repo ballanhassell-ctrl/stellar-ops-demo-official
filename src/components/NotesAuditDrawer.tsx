@@ -19,12 +19,6 @@ import {
 import type { NoteEntry, NoteSource, AuditTrailEntry } from '../types/database.types';
 
 // =====================================================
-// CONSTANTS
-// =====================================================
-
-const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
-
-// =====================================================
 // HELPERS
 // =====================================================
 
@@ -100,8 +94,6 @@ interface NotesAuditDrawerProps {
   notes: NoteEntry[];
   auditTrail: AuditTrailEntry[];
   onAddNote: (note: NoteEntry) => void;
-  /** Optional: additional staff initials to include beyond the defaults */
-  staffInitials?: string[];
 }
 
 // =====================================================
@@ -117,7 +109,6 @@ export default function NotesAuditDrawer({
   notes,
   auditTrail,
   onAddNote,
-  staffInitials,
 }: NotesAuditDrawerProps) {
   type Tab = 'notes' | 'audit';
   const [activeTab, setActiveTab] = useState<Tab>('notes');
@@ -130,11 +121,6 @@ export default function NotesAuditDrawer({
 
   const drawerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const allInitials = useMemo(() => {
-    const combined = new Set([...STAFF_INITIALS, ...(staffInitials || [])]);
-    return Array.from(combined).sort();
-  }, [staffInitials]);
 
   // Sort notes newest first
   const sortedNotes = useMemo(
@@ -342,25 +328,20 @@ export default function NotesAuditDrawer({
                         className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
                       >
                         <option value="stellar">Stellar Team</option>
-                        <option value="office">In-Office Staff</option>
+                        <option value="office">Court Street Dental Team</option>
                       </select>
                     </div>
                     <div>
                       <label className={`block text-xs font-medium mb-1 ${textSecondary}`}>
                         Author Initials
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={noteAuthor}
                         onChange={(e) => setNoteAuthor(e.target.value)}
+                        placeholder="Enter initials..."
                         className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
-                      >
-                        <option value="">-- Select --</option>
-                        {allInitials.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
                   </div>
                   <div>
