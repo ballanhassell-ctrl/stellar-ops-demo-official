@@ -1383,22 +1383,19 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
                 >
                   <option value="stellar">Stellar Team</option>
-                  <option value="office">In-Office Staff</option>
+                  <option value="office">Court Street Dental Team</option>
                 </select>
               </div>
               {/* Author initials */}
               <div>
                 <label className={`block text-xs font-medium mb-1 ${subText}`}>Author Initials</label>
-                <select
+                <input
+                  type="text"
                   value={newNoteAuthor}
                   onChange={(e) => setNewNoteAuthor(e.target.value)}
+                  placeholder="Enter initials..."
                   className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
-                >
-                  <option value="">-- Select --</option>
-                  {SUBMITTER_INITIALS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                />
               </div>
               {/* Note text */}
               <div>
