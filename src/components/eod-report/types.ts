@@ -61,6 +61,8 @@ export interface EODReportProps {
   // Navigation callbacks
   onNavigateToPatientAR: () => void;
   onOpenTopProceduresModal: () => void;
+  // Refresh callback to get fresh action items before sending email
+  onRefreshActionItems?: () => Promise<EODData | null>;
 }
 
 // Email-related types

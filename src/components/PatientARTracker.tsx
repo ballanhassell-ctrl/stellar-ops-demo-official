@@ -69,7 +69,7 @@ type ActiveTab = 'collectible' | 'non_collectible';
 
 type EditingCell = {
   recordId: string;
-  field: 'patient_name' | 'related_family' | 'current_balance' | 'dos' | 'background_notes' | 'team_discussion_notes' | 'action_needed' | 'dr_decision' | 'write_off_reason';
+  field: 'patient_name' | 'patient_id' | 'related_family' | 'current_balance' | 'dos' | 'background_notes' | 'team_discussion_notes' | 'action_needed' | 'dr_decision' | 'write_off_reason';
 } | null;
 
 type EditingContact = {
@@ -244,7 +244,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     setSaving(true);
     try {
       const record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'> = {
-        patient_id: newForm.patient_id || null,
+        patient_id: newForm.patient_id.trim() || null,
         patient_name: sanitizePatientName(newForm.patient_name.trim()),
         related_family: newForm.related_family.trim() || null,
         dos: newForm.dos,
@@ -744,7 +744,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
     if (isEditing) {
       const inputType = field === 'current_balance' ? 'number' : field === 'dos' ? 'date' : 'text';
-      const useTextarea = !['patient_name', 'related_family', 'current_balance', 'dos'].includes(field);
+      const useTextarea = !['patient_name', 'patient_id', 'related_family', 'current_balance', 'dos'].includes(field);
 
       return (
         <div className="flex items-center gap-1">
@@ -1219,6 +1219,9 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                     Patient Name
                   </th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Patient ID
+                  </th>
+                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Family
                   </th>
                   <th className={`text-right text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -1281,6 +1284,17 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                         record.patient_name,
                         record.patient_name,
                         `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-medium ${isDayMode ? 'text-gray-900 hover:bg-gray-100' : 'text-white hover:bg-white/5'}`,
+                      )}
+                    </td>
+
+                    {/* Patient ID */}
+                    <td className="py-2.5 px-2">
+                      {renderEditableCell(
+                        record,
+                        'patient_id',
+                        record.patient_id,
+                        record.patient_id || '--',
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'} ${!record.patient_id ? 'italic opacity-40' : ''}`,
                       )}
                     </td>
 
