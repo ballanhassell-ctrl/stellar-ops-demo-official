@@ -38,12 +38,20 @@ export interface DailyARReportItem {
   notes: string | null;
 }
 
+export interface DailyARReportSummary {
+  openPatientARCount: number;
+  openPatientARBalance: number;
+  openInsuranceIssuesCount: number;
+  priorDayCollected: number;
+}
+
 export interface DailyARReportData {
   reportDate: string;
   newPatientAR: DailyARReportItem[];
   newNonCollectible: DailyARReportItem[];
   newCredits: DailyARReportItem[];
   newInsuranceIssues: DailyARReportItem[];
+  summary: DailyARReportSummary;
 }
 
 /**
@@ -77,12 +85,59 @@ export async function fetchDailyARReportData(reportDate?: string): Promise<Daily
     .gte('created_at', startOfDay)
     .lte('created_at', endOfDay);
 
-  // Fetch new Insurance Issues added today
+  // Fetch new Insurance Issues added today (only Open items)
   const { data: issuesData } = await supabase
     .from('insurance_issues')
     .select('patient_name, date_of_service, issue_type, status, notes, created_at')
     .gte('created_at', startOfDay)
-    .lte('created_at', endOfDay);
+    .lte('created_at', endOfDay)
+    .eq('status', 'Open');
+
+  // --- Summary queries: open counts & prior-day collected ---
+
+  // Open (active, non-completed) Patient A/R accounts
+  const { count: openARCount } = await supabase
+    .from('patient_ar')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_collectible', true)
+    .not('status', 'in', '("paid","completed")');
+
+  // Sum of current_balance for open A/R
+  const { data: openARBalanceData } = await supabase
+    .from('patient_ar')
+    .select('current_balance')
+    .eq('is_collectible', true)
+    .not('status', 'in', '("paid","completed")');
+
+  const openARBalance = (openARBalanceData || []).reduce(
+    (sum, r) => sum + (Number(r.current_balance) || 0),
+    0,
+  );
+
+  // Open Insurance Issues
+  const { count: openIssuesCount } = await supabase
+    .from('insurance_issues')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'Open');
+
+  // Prior-day collected from Patient A/R (collected_amount updated yesterday)
+  const yesterday = new Date(today + 'T00:00:00');
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = yesterday.toISOString().split('T')[0];
+  const yStart = `${yStr}T00:00:00.000Z`;
+  const yEnd = `${yStr}T23:59:59.999Z`;
+
+  const { data: priorDayData } = await supabase
+    .from('patient_ar')
+    .select('collected_amount')
+    .eq('status', 'paid')
+    .gte('updated_at', yStart)
+    .lte('updated_at', yEnd);
+
+  const priorDayCollected = (priorDayData || []).reduce(
+    (sum, r) => sum + (Number(r.collected_amount) || 0),
+    0,
+  );
 
   return {
     reportDate: today,
@@ -118,6 +173,12 @@ export async function fetchDailyARReportData(reportDate?: string): Promise<Daily
       status: r.status,
       notes: r.notes,
     })),
+    summary: {
+      openPatientARCount: openARCount || 0,
+      openPatientARBalance: openARBalance,
+      openInsuranceIssuesCount: openIssuesCount || 0,
+      priorDayCollected,
+    },
   };
 }
 
@@ -237,7 +298,7 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
                 <tr>
                   <td style="padding: 16px 20px; text-align: center;">
                     <p style="margin: 0; color: ${COLORS.gray700}; font-size: 14px; line-height: 1.6;">
-                      <strong>${totalNewItems}</strong> new account${totalNewItems !== 1 ? 's' : ''} added today across all categories.
+                      <strong>${totalNewItems}</strong> new item${totalNewItems !== 1 ? 's' : ''} added today across all categories.
                     </p>
                   </td>
                 </tr>
@@ -296,10 +357,50 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
           ${totalNewItems === 0 ? `
           <tr>
             <td style="padding: 40px; text-align: center;">
-              <p style="margin: 0; color: ${COLORS.gray500}; font-size: 14px;">No new accounts were added today.</p>
+              <p style="margin: 0; color: ${COLORS.gray500}; font-size: 14px;">No new items were added today.</p>
             </td>
           </tr>
           ` : ''}
+
+          <!-- End-of-Day Summary -->
+          <tr>
+            <td style="padding: 24px 40px 0 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding-bottom: 12px;">
+                    <h2 style="margin: 0; color: ${COLORS.gray800}; font-size: 16px; font-weight: 700;">
+                      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${COLORS.primary}; margin-right: 8px; vertical-align: middle;"></span>
+                      Outstanding Reports Snapshot
+                    </h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid ${COLORS.gray200}; border-radius: 8px; overflow: hidden;">
+                      <tr style="background-color: ${COLORS.gray50};">
+                        <td style="padding: 14px 16px; border-bottom: 1px solid ${COLORS.gray200}; width: 50%;">
+                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Open Patient A/R Accounts</p>
+                          <p style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; color: ${COLORS.blue};">${data.summary.openPatientARCount}</p>
+                          <p style="margin: 2px 0 0 0; font-size: 12px; color: ${COLORS.gray500};">Total balance: ${formatCurrency(data.summary.openPatientARBalance)}</p>
+                        </td>
+                        <td style="padding: 14px 16px; border-bottom: 1px solid ${COLORS.gray200}; border-left: 1px solid ${COLORS.gray200}; width: 50%;">
+                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Open Insurance Issues</p>
+                          <p style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; color: ${COLORS.orange};">${data.summary.openInsuranceIssuesCount}</p>
+                          <p style="margin: 2px 0 0 0; font-size: 12px; color: ${COLORS.gray500};">Still unresolved</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding: 14px 16px; text-align: center;">
+                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Prior Day A/R Collected</p>
+                          <p style="margin: 4px 0 0 0; font-size: 24px; font-weight: 800; color: ${COLORS.green};">${formatCurrency(data.summary.priorDayCollected)}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
           <!-- Footer -->
           <tr>
@@ -340,7 +441,7 @@ export async function sendDailyARReport(
     const { data: result, error } = await supabase.functions.invoke('send-eod-email', {
       body: {
         to: recipients,
-        subject: `Daily A/R Report - ${formatDate(data.reportDate)} (${totalNew} new account${totalNew !== 1 ? 's' : ''})`,
+        subject: `Daily A/R Report - ${formatDate(data.reportDate)} (${totalNew} new item${totalNew !== 1 ? 's' : ''})`,
         htmlBody,
         reportDate: data.reportDate,
       },
