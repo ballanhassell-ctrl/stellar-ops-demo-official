@@ -99,10 +99,17 @@ export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
 export async function insertPatientAR(
   record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>
 ): Promise<PatientAR> {
+  // Validate patient_id: if the DB column is still UUID-typed (pre-migration),
+  // only send values that are valid UUIDs.  Otherwise set to null so the insert
+  // doesn't fail with "invalid input syntax for type uuid".
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const rawPatientId = record.patient_id?.trim() || null;
+  const safePatientId = rawPatientId && !UUID_RE.test(rawPatientId) ? null : rawPatientId;
+
   // Build a clean record with only the columns that exist in the patient_ar table.
   // This prevents 400 errors if certain migrations haven't been applied yet.
   const insertRecord: Record<string, unknown> = {
-    patient_id: record.patient_id,
+    patient_id: safePatientId,
     patient_name: record.patient_name,
     dos: record.dos,
     original_balance: record.original_balance ?? record.current_balance,
@@ -150,7 +157,7 @@ export async function insertPatientAR(
   if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.code === '42703')) {
     console.warn('Full insert failed, retrying with minimal columns:', error.message);
     const minimalRecord: Record<string, unknown> = {
-      patient_id: record.patient_id || null,
+      patient_id: safePatientId,
       patient_name: record.patient_name,
       dos: record.dos,
       original_balance: record.original_balance ?? record.current_balance,
@@ -191,6 +198,15 @@ export async function updatePatientAR(
   }
   if ('audit_trail' in sanitizedUpdates && sanitizedUpdates.audit_trail === null) {
     sanitizedUpdates.audit_trail = [];
+  }
+
+  // Sanitize patient_id for UUID-typed columns (pre-migration compatibility)
+  if ('patient_id' in sanitizedUpdates && sanitizedUpdates.patient_id != null) {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const pid = String(sanitizedUpdates.patient_id).trim();
+    if (pid && !UUID_RE.test(pid)) {
+      sanitizedUpdates.patient_id = null;
+    }
   }
 
   const { data, error } = await supabase
