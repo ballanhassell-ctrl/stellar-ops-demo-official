@@ -46,7 +46,7 @@ import SuccessToast from './SuccessToast';
 // =====================================================
 
 const CLAIM_TYPES = ['VCC Standard'];
-const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
+const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM', 'EY', 'MT', 'KM'];
 
 type FilterId = 'all' | 'needs_posting' | 'awaiting_deposit' | 'complete' | 'exceptions';
 

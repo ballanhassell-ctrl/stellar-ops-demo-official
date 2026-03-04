@@ -23,6 +23,7 @@ import {
   Trash2,
   MessageSquare,
   History,
+  Mail,
 } from 'lucide-react';
 import type { PatientAR, PatientARStatus, NoteEntry } from '../types/database.types';
 import {
@@ -34,6 +35,7 @@ import {
 import { isStaticDataMode } from '../config/dataMode';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import { fetchDailyARReportData, generateDailyARReportHTML, sendDailyARReport } from '../services/dailyARReportService';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 
@@ -154,6 +156,11 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   // Notes & Audit drawer state
   const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Daily report state
+  const [sendingReport, setSendingReport] = useState(false);
+  const [showReportPreview, setShowReportPreview] = useState(false);
+  const [reportPreviewHtml, setReportPreviewHtml] = useState('');
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -450,12 +457,20 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         return;
       }
       try {
+        const record = records.find((r) => r.id === recordId);
+        const oldValue = record ? String(record.current_balance) : '';
+        const auditEntry = createAuditEntry('updated', 'staff', {
+          field: 'current_balance',
+          oldValue,
+          newValue: String(numValue),
+        });
         if (isStaticDataMode()) {
           setRecords((prev) =>
-            prev.map((r) => (r.id === recordId ? { ...r, current_balance: numValue, updated_at: new Date().toISOString() } : r)),
+            prev.map((r) => (r.id === recordId ? { ...r, current_balance: numValue, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() } : r)),
           );
         } else {
-          await updatePatientAR(recordId, { current_balance: numValue, updated_by: 'staff' });
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(recordId, { current_balance: numValue, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
           await fetchData();
         }
       } catch (err) {
@@ -501,6 +516,14 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
           : 'final_contact_initials';
 
     try {
+      const record = records.find((r) => r.id === recordId);
+      const auditEntry = createAuditEntry('updated', contactInitials.trim() || 'staff', {
+        field: `${contactType}_contact`,
+        oldValue: (record as Record<string, unknown>)?.[dateField] as string || null,
+        newValue: contactDate || null,
+        notes: `${contactType} contact set: ${contactDate || 'cleared'} by ${contactInitials.trim() || 'staff'}`,
+      });
+
       if (isStaticDataMode()) {
         setRecords((prev) =>
           prev.map((r) =>
@@ -509,15 +532,18 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                   ...r,
                   [dateField]: contactDate || null,
                   [initialsField]: contactInitials.trim() || null,
+                  audit_trail: [...(r.audit_trail || []), auditEntry],
                   updated_at: new Date().toISOString(),
                 }
               : r,
           ),
         );
       } else {
+        const existingTrail = record?.audit_trail || [];
         await updatePatientAR(recordId, {
           [dateField]: contactDate || null,
           [initialsField]: contactInitials.trim() || null,
+          audit_trail: [...existingTrail, auditEntry],
           updated_by: 'staff',
         });
         await fetchData();
@@ -566,6 +592,52 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
       setShowClearConfirm(false);
     } finally {
       setClearing(false);
+    }
+  }, []);
+
+  // ---------------------------------------------------
+  // DAILY REPORT HANDLERS
+  // ---------------------------------------------------
+
+  const handlePreviewDailyReport = useCallback(async () => {
+    try {
+      const data = await fetchDailyARReportData();
+      const logoBaseUrl = window.location.origin;
+      const html = generateDailyARReportHTML(data, logoBaseUrl);
+      setReportPreviewHtml(html);
+      setShowReportPreview(true);
+    } catch (err) {
+      console.error('Error generating daily report preview:', err);
+      setError('Failed to generate daily report preview.');
+    }
+  }, []);
+
+  const handleSendDailyReport = useCallback(async () => {
+    setSendingReport(true);
+    try {
+      const data = await fetchDailyARReportData();
+      const logoBaseUrl = window.location.origin;
+      const result = await sendDailyARReport(
+        ['daniely@stellarconsults.com', 'dr.gajjar@courtstreetdental.com'],
+        data,
+        logoBaseUrl,
+      );
+      if (result.success) {
+        setToastMessage('Daily A/R report sent successfully!');
+      } else {
+        // Fallback: open in new tab for manual sending
+        const html = generateDailyARReportHTML(data, logoBaseUrl);
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setToastMessage('Report opened in new tab (email service not configured). You can print or forward it.');
+      }
+      setShowReportPreview(false);
+    } catch (err) {
+      console.error('Error sending daily report:', err);
+      setError('Failed to send daily report.');
+    } finally {
+      setSendingReport(false);
     }
   }, []);
 
@@ -905,6 +977,17 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
           >
             <Plus className="w-4 h-4" />
             Add Patient A/R
+          </button>
+          <button
+            onClick={handlePreviewDailyReport}
+            disabled={sendingReport}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
+              isDayMode ? 'border-blue-300 text-blue-600 hover:bg-blue-50' : 'border-blue-700 text-blue-400 hover:bg-blue-900/30'
+            }`}
+            title="Preview & send daily A/R report to Daniely and Dr. Gajjar"
+          >
+            <Mail className="w-4 h-4" />
+            Daily Report
           </button>
           <button
             onClick={() => setShowClearConfirm(true)}
@@ -1556,6 +1639,52 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Daily Report Preview Modal */}
+      {showReportPreview && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowReportPreview(false)}
+        >
+          <div
+            className={`w-full max-w-3xl max-h-[85vh] rounded-2xl ${isDayMode ? 'glass-card border border-white/40' : 'glass-card-dark border border-white/10'} shadow-2xl flex flex-col`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/10">
+              <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                Daily A/R Report Preview
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSendDailyReport}
+                  disabled={sendingReport}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-sm disabled:opacity-50"
+                >
+                  {sendingReport ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />Sending...</>
+                  ) : (
+                    <><Mail className="w-4 h-4" />Send to Daniely & Dr. Gajjar</>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowReportPreview(false)}
+                  className={`p-2 rounded-lg ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-white/10 text-gray-400'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <iframe
+                srcDoc={reportPreviewHtml}
+                className="w-full h-full min-h-[500px]"
+                title="Daily A/R Report Preview"
+                sandbox="allow-same-origin"
+              />
             </div>
           </div>
         </div>

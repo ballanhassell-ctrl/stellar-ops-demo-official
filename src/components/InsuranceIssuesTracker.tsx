@@ -56,7 +56,7 @@ const ISSUE_TYPES: InsuranceIssueType[] = [
 
 const PROVIDERS = ['DDS1', 'DDS2', 'DMD1', 'HYG2', 'HYG3', 'HYG5', 'Daniely'];
 
-const SUBMITTER_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM'];
+const SUBMITTER_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM', 'EY', 'MT', 'KM'];
 
 /** Provider-to-color mapping matching the spreadsheet */
 const PROVIDER_COLORS: Record<string, { bg: string; text: string; darkBg: string; darkText: string }> = {

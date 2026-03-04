@@ -505,6 +505,31 @@ export type InsuranceIssue = {
 };
 
 // =====================================================
+// Patient Credits Types (unapplied credits and credit tracking)
+// =====================================================
+
+export type PatientCreditStatus = 'unapplied' | 'applied' | 'refunded' | 'pending_refund';
+
+export type PatientCredit = {
+  id: string;
+  patient_id: string | null;
+  patient_name: string;
+  credit_date: string; // ISO date string - when the credit was created
+  credit_amount: number;
+  credit_source: 'overpayment' | 'insurance_overpayment' | 'refund_pending' | 'adjustment' | 'other';
+  status: PatientCreditStatus;
+  applied_to: string | null; // description of what the credit was applied to
+  applied_date: string | null; // ISO date string
+  notes: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
+  created_by: string;
+  updated_by: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// =====================================================
 // A/R Snapshot Types (bi-monthly aggregates on 1st and 15th)
 // =====================================================
 
@@ -597,4 +622,5 @@ export type Database = {
   insurance_ar_claims: InsuranceARClaim;
   insurance_issues: InsuranceIssue;
   ar_snapshots: ARSnapshot;
+  patient_credits: PatientCredit;
 };
