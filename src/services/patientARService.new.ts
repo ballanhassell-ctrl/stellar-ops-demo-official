@@ -99,21 +99,78 @@ export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
 export async function insertPatientAR(
   record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>
 ): Promise<PatientAR> {
-  // Ensure JSONB fields are proper arrays before insert
-  const sanitizedRecord = {
-    ...record,
+  // Build a clean record with only the columns that exist in the patient_ar table.
+  // This prevents 400 errors if certain migrations haven't been applied yet.
+  const insertRecord: Record<string, unknown> = {
+    patient_id: record.patient_id,
+    patient_name: record.patient_name,
+    dos: record.dos,
+    original_balance: record.original_balance ?? record.current_balance,
+    current_balance: record.current_balance,
+    status: record.status,
+    created_by: record.created_by,
+    updated_by: record.updated_by,
+    // Columns from revamp migration
+    related_family: record.related_family ?? null,
+    is_collectible: record.is_collectible ?? true,
+    background_notes: record.background_notes ?? null,
+    team_discussion_notes: record.team_discussion_notes ?? null,
+    action_needed: record.action_needed ?? null,
+    dr_decision: record.dr_decision ?? null,
+    first_contact_date: record.first_contact_date ?? null,
+    first_contact_initials: record.first_contact_initials ?? null,
+    second_contact_date: record.second_contact_date ?? null,
+    second_contact_initials: record.second_contact_initials ?? null,
+    final_contact_date: record.final_contact_date ?? null,
+    final_contact_initials: record.final_contact_initials ?? null,
+    write_off_suggested_date: record.write_off_suggested_date ?? null,
+    write_off_reason: record.write_off_reason ?? null,
+    collected_amount: record.collected_amount ?? 0,
+    // JSONB columns from structured notes migration
     structured_notes: record.structured_notes || [],
     audit_trail: record.audit_trail || [],
   };
 
-  const { data, error } = await supabase
+  // Remove any undefined values to avoid sending them to Supabase
+  Object.keys(insertRecord).forEach((key) => {
+    if (insertRecord[key] === undefined) {
+      delete insertRecord[key];
+    }
+  });
+
+  // First attempt: insert with all columns (post-revamp schema)
+  let { data, error } = await supabase
     .from('patient_ar')
-    .insert(sanitizedRecord)
+    .insert(insertRecord)
     .select()
     .single();
 
+  // If the insert fails (e.g. columns don't exist yet), try a minimal insert
+  // compatible with the original schema (pre-revamp)
+  if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.code === '42703')) {
+    console.warn('Full insert failed, retrying with minimal columns:', error.message);
+    const minimalRecord: Record<string, unknown> = {
+      patient_id: record.patient_id,
+      patient_name: record.patient_name,
+      dos: record.dos,
+      original_balance: record.original_balance ?? record.current_balance,
+      current_balance: record.current_balance,
+      balance_created_date: record.dos, // legacy required field
+      status: 'active', // legacy status value
+      created_by: record.created_by,
+      updated_by: record.updated_by,
+    };
+    const retryResult = await supabase
+      .from('patient_ar')
+      .insert(minimalRecord)
+      .select()
+      .single();
+    data = retryResult.data;
+    error = retryResult.error;
+  }
+
   if (error) {
-    console.error('Error inserting patient A/R:', error);
+    console.error('Error inserting patient A/R:', error.message, error.details, error.hint, error.code);
     throw error;
   }
 
@@ -144,7 +201,7 @@ export async function updatePatientAR(
     .single();
 
   if (error) {
-    console.error('Error updating patient A/R:', error);
+    console.error('Error updating patient A/R:', error.message, error.details, error.hint, error.code);
     throw error;
   }
 
