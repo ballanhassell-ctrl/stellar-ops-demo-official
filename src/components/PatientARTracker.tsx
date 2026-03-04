@@ -248,7 +248,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         patient_name: sanitizePatientName(newForm.patient_name.trim()),
         related_family: newForm.related_family.trim() || null,
         dos: newForm.dos,
-        original_balance: newForm.original_balance ? parseFloat(newForm.original_balance) : null,
+        original_balance: newForm.original_balance ? parseFloat(newForm.original_balance) : parseFloat(newForm.current_balance),
         current_balance: parseFloat(newForm.current_balance),
         is_collectible: newForm.is_collectible,
         status: newForm.status,
