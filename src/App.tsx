@@ -25,6 +25,7 @@ import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
 import ARAgingChart from './components/ARAgingChart';
 import OpenDentalImport from './components/OpenDentalImport';
 import PatientARTracker from './components/PatientARTracker';
+import CreditsTracker from './components/CreditsTracker';
 import VCCPaymentsTracker from './components/VCCPaymentsTracker';
 import { EODReport } from './components/eod-report';
 import { sanitizePatientName } from './utils/sanitizePatientName';
@@ -3060,6 +3061,18 @@ const CourtStreetRCM = () => {
                   Patient A/R
                 </button>
                 <button
+                  onClick={() => setPatientManagementView('credits')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'credits'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Credits
+                </button>
+                <button
                   onClick={() => setPatientManagementView('insurance-issues')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'insurance-issues'
@@ -3584,6 +3597,9 @@ const CourtStreetRCM = () => {
 
             {patientManagementView === 'patients' && (
               <PatientARTracker isDayMode={isDayMode} />
+            )}
+            {patientManagementView === 'credits' && (
+              <CreditsTracker isDayMode={isDayMode} />
             )}
             {/* Insurance Checks/EFT's View */}
             {patientManagementView === 'insurance-checks' && (

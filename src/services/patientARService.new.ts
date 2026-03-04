@@ -41,7 +41,12 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
     throw error;
   }
 
-  return data || [];
+  // Coalesce null JSONB fields to empty arrays to prevent spread errors
+  return (data || []).map((record: PatientAR) => ({
+    ...record,
+    structured_notes: record.structured_notes || [],
+    audit_trail: record.audit_trail || [],
+  }));
 }
 
 /**
@@ -94,9 +99,16 @@ export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
 export async function insertPatientAR(
   record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>
 ): Promise<PatientAR> {
+  // Ensure JSONB fields are proper arrays before insert
+  const sanitizedRecord = {
+    ...record,
+    structured_notes: record.structured_notes || [],
+    audit_trail: record.audit_trail || [],
+  };
+
   const { data, error } = await supabase
     .from('patient_ar')
-    .insert(record)
+    .insert(sanitizedRecord)
     .select()
     .single();
 
@@ -115,9 +127,18 @@ export async function updatePatientAR(
   id: string,
   updates: Partial<Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>>
 ): Promise<PatientAR> {
+  // Ensure JSONB fields are proper arrays, not null
+  const sanitizedUpdates = { ...updates };
+  if ('structured_notes' in sanitizedUpdates && sanitizedUpdates.structured_notes === null) {
+    sanitizedUpdates.structured_notes = [];
+  }
+  if ('audit_trail' in sanitizedUpdates && sanitizedUpdates.audit_trail === null) {
+    sanitizedUpdates.audit_trail = [];
+  }
+
   const { data, error } = await supabase
     .from('patient_ar')
-    .update(updates)
+    .update(sanitizedUpdates)
     .eq('id', id)
     .select()
     .single();
