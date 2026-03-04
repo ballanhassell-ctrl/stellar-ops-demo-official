@@ -150,13 +150,13 @@ export async function insertPatientAR(
   if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.code === '42703')) {
     console.warn('Full insert failed, retrying with minimal columns:', error.message);
     const minimalRecord: Record<string, unknown> = {
-      patient_id: record.patient_id,
+      patient_id: record.patient_id || null,
       patient_name: record.patient_name,
       dos: record.dos,
       original_balance: record.original_balance ?? record.current_balance,
       current_balance: record.current_balance,
       balance_created_date: record.dos, // legacy required field
-      status: 'active', // legacy status value
+      status: record.status || 'active', // use provided status, fall back to legacy value
       created_by: record.created_by,
       updated_by: record.updated_by,
     };

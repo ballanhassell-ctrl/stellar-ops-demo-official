@@ -890,7 +890,7 @@ const CourtStreetRCM = () => {
 
   // Fetch all metrics from Supabase using unified date
   const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate, bamCycleDates);
-  const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
+  const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD, refreshActionItems } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
   const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
   const { data: weeklyScorecardData } = useWeeklyScorecardData(12);
@@ -6063,6 +6063,7 @@ const CourtStreetRCM = () => {
               setPatientManagementView('patient-ar');
             }}
             onOpenTopProceduresModal={() => setShowTopProceduresModal(true)}
+            onRefreshActionItems={refreshActionItems}
           />
         ) : currentView === 'administration' ? (
           <div className="space-y-6">

@@ -14,6 +14,7 @@ interface EmailReportModalProps {
   dashboardData: DashboardData;
   topProcedures: TopProcedure[];
   onClose: () => void;
+  onRefreshActionItems?: () => Promise<EODData | null>;
 }
 
 export default function EmailReportModal({
@@ -23,6 +24,7 @@ export default function EmailReportModal({
   dashboardData,
   topProcedures,
   onClose,
+  onRefreshActionItems,
 }: EmailReportModalProps) {
   const [recipients, setRecipients] = useState('');
   const [subject, setSubject] = useState('EOD Report - Court Street Dental');
@@ -50,10 +52,11 @@ export default function EmailReportModal({
     nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
   });
 
-  const generateHTML = () => {
+  const generateHTML = (freshData?: EODData) => {
+    const dataToUse = freshData || eodData;
     return generateEODEmailHTML({
-      eodData,
-      reportDate: eodData.reportDate,
+      eodData: dataToUse,
+      reportDate: dataToUse.reportDate,
       message: message || undefined,
       template: selectedTemplate,
       logoBaseUrl: window.location.origin,
@@ -77,7 +80,17 @@ export default function EmailReportModal({
       return;
     }
 
-    const html = generateHTML();
+    // Refresh action items before sending to ensure resolved items are excluded
+    let freshData: EODData | null = null;
+    if (onRefreshActionItems) {
+      try {
+        freshData = await onRefreshActionItems();
+      } catch (err) {
+        console.warn('[EOD Email] Could not refresh action items before send:', err);
+      }
+    }
+
+    const html = generateHTML(freshData || undefined);
     const recipientList = recipients.split(',').map((e: string) => e.trim()).filter(Boolean);
 
     setSending(true);
