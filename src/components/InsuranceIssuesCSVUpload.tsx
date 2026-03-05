@@ -3,6 +3,7 @@
 // CSV Upload modal for bulk-importing insurance issues
 // =====================================================
 
+import { getLocalDateString } from '../utils/dateUtils';
 import { useState, useRef } from 'react';
 import { Upload, X, CheckCircle, AlertCircle, FileText, Download } from 'lucide-react';
 import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry } from '../types/database.types';
@@ -285,7 +286,7 @@ export default function InsuranceIssuesCSVUpload({
 
         if (isPreAuth) {
           // Use today's date as placeholder for pre-auth items
-          dateOfService = new Date().toISOString().split('T')[0];
+          dateOfService = getLocalDateString();
         } else {
           const parsed = parseDate(rawDate);
           if (!parsed) {
@@ -294,7 +295,7 @@ export default function InsuranceIssuesCSVUpload({
               field: 'date_of_service',
               message: `Could not parse date "${rawDate}", using today's date`,
             });
-            dateOfService = new Date().toISOString().split('T')[0];
+            dateOfService = getLocalDateString();
           } else {
             dateOfService = parsed;
           }

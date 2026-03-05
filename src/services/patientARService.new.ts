@@ -4,6 +4,7 @@
 // =====================================================
 
 import { supabase } from '../lib/supabaseClient';
+import { getLocalDateString } from '../utils/dateUtils';
 import type {
   PatientAR,
   PatientARContact,
@@ -484,7 +485,7 @@ export async function approveWriteOffSuggestion(
     .update({
       status: 'approved',
       reviewed_by: reviewedBy,
-      reviewed_date: new Date().toISOString().split('T')[0],
+      reviewed_date: getLocalDateString(),
       review_notes: reviewNotes
     })
     .eq('id', suggestionId);
@@ -535,7 +536,7 @@ export async function rejectWriteOffSuggestion(
     .update({
       status: 'rejected',
       reviewed_by: reviewedBy,
-      reviewed_date: new Date().toISOString().split('T')[0],
+      reviewed_date: getLocalDateString(),
       review_notes: reviewNotes
     })
     .eq('id', suggestionId);

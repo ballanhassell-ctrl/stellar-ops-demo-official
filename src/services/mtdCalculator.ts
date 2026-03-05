@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import { toLocalDateString } from '../utils/dateUtils';
 
 /**
  * Calculate MTD Production by reading the most recent eod_mtd_production value for the month.
@@ -19,13 +20,13 @@ export async function calculateMTDProduction(date: string): Promise<number> {
 
     // First day of current month
     const monthStart = new Date(year, month, 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     // Last day of current month or current date, whichever is earlier
     const monthEnd = new Date(year, month + 1, 0);
     const currentDate = new Date(date);
     const endDate = currentDate < monthEnd ? currentDate : monthEnd;
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const endDateStr = toLocalDateString(endDate);
 
     console.log(`Calculating MTD Production from ${monthStartStr} to ${endDateStr}`);
 
@@ -81,13 +82,13 @@ export async function calculateMTDCollected(date: string): Promise<number> {
 
     // First day of current month
     const monthStart = new Date(year, month, 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     // Last day of current month or current date, whichever is earlier
     const monthEnd = new Date(year, month + 1, 0);
     const currentDate = new Date(date);
     const endDate = currentDate < monthEnd ? currentDate : monthEnd;
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const endDateStr = toLocalDateString(endDate);
 
     console.log(`Calculating MTD Collected from ${monthStartStr} to ${endDateStr}`);
 
@@ -149,7 +150,7 @@ export async function calculateMTDNewPatients(date: string): Promise<number> {
     const month = targetDate.getMonth();
 
     const monthStart = new Date(year, month, 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     const endDateStr = date;
 

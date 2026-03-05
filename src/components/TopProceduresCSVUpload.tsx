@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { toLocalDateString } from '../utils/dateUtils';
 
 interface Procedure {
   procedure_name: string;
@@ -183,8 +184,8 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
       const month = date.getMonth();
       const monthStart = new Date(year, month, 1);
       const monthEnd = new Date(year, month + 1, 0);
-      const monthStartStr = monthStart.toISOString().split('T')[0];
-      const monthEndStr = monthEnd.toISOString().split('T')[0];
+      const monthStartStr = toLocalDateString(monthStart);
+      const monthEndStr = toLocalDateString(monthEnd);
 
       console.log(`Uploading procedures for month: ${monthStartStr} to ${monthEndStr}`);
 

@@ -9,6 +9,7 @@ import { isStaticDataMode } from '../config/dataMode';
 import { sampleARSnapshots } from '../data/sampleData';
 import { getPatientARMetrics } from './patientARService.new';
 import { getInsuranceARClaims, calculateInsuranceARSummary } from './insuranceARService';
+import { getLocalDateString } from '../utils/dateUtils';
 
 /** Check if error indicates the table doesn't exist in Supabase */
 function isTableNotFoundError(error: any): boolean {
@@ -111,7 +112,7 @@ export async function getLatestSnapshot(): Promise<ARSnapshot | null> {
  * Designed to be called on the 1st and 15th of each month.
  */
 export async function generateSnapshot(snapshotDate?: string): Promise<ARSnapshot> {
-  const date = snapshotDate || new Date().toISOString().split('T')[0];
+  const date = snapshotDate || getLocalDateString();
 
   // Gather current metrics
   const [patientMetrics, insuranceClaims] = await Promise.all([

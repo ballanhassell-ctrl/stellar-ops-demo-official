@@ -4,6 +4,7 @@
 // overpayments, insurance overpayments, and refunds
 // =====================================================
 
+import { getLocalDateString } from '../utils/dateUtils';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Search,
@@ -77,7 +78,7 @@ type NewCreditForm = {
 const EMPTY_FORM: NewCreditForm = {
   patient_name: '',
   patient_id: '',
-  credit_date: new Date().toISOString().split('T')[0],
+  credit_date: getLocalDateString(),
   credit_amount: '',
   credit_source: 'overpayment',
   status: 'unapplied',
@@ -280,7 +281,7 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
 
         const extraUpdates: Record<string, unknown> = {};
         if (newStatus === 'applied' && !record?.applied_date) {
-          extraUpdates.applied_date = new Date().toISOString().split('T')[0];
+          extraUpdates.applied_date = getLocalDateString();
         }
 
         if (isStaticDataMode()) {
