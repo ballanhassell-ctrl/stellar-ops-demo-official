@@ -48,6 +48,8 @@ import { insertInsuranceIssue } from '../services/insuranceIssuesService';
 import { insertPatientAR } from '../services/patientARService.new';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -296,6 +298,10 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
 
   // Notes & Audit drawer
   const [drawerClaimId, setDrawerClaimId] = useState<string | null>(null);
+
+  // Draggable edit modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalClaim, setEditModalClaim] = useState<Claim | null>(null);
 
   // Clear all data
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -971,7 +977,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const inputBg = isDayMode ? 'bg-white' : 'bg-gray-800';
   const inputBorder = isDayMode ? 'border-gray-300' : 'border-gray-600';
   const inputText = isDayMode ? 'text-gray-900' : 'text-white';
-  const hoverRow = isDayMode ? 'hover:bg-gray-50' : 'hover:bg-gray-800';
+  const hoverRow = isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark';
   const cardShadow = isDayMode ? 'shadow-sm' : 'shadow-lg shadow-black/20';
 
   // =====================================================
@@ -1543,6 +1549,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                   <tr
                     key={claim.id}
                     onClick={() => setSelectedClaimId(selectedClaimId === claim.id ? null : claim.id)}
+                    onDoubleClick={() => { setEditModalClaim(claim); setEditModalOpen(true); }}
                     className={`cursor-pointer transition-colors ${
                       selectedClaimId === claim.id
                         ? isDayMode
@@ -2383,6 +2390,66 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
         message={toastMessage || ''}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalClaim(null); }}
+        onSave={async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+          const auditEntry = createAuditEntry(isNewEntry ? 'created' : 'updated', 'staff');
+          const claimData = {
+            patient_name: String(data.patient_name || ''),
+            patient_id: String(data.patient_id || ''),
+            insurance_company: String(data.insurance_company || ''),
+            date_of_service: String(data.date_of_service || getLocalDateString()),
+            claim_number: String(data.claim_number || '') || null,
+            claim_amount: Number(data.claim_amount) || 0,
+            collected: Number(data.collected) || 0,
+            outstanding: Number(data.outstanding) || 0,
+            pri_sec: (String(data.pri_sec) || null) as Claim['pri_sec'],
+            procedure_code: String(data.procedure_code || ''),
+            assigned_to: String(data.assigned_to || '') || null,
+            notes: String(data.notes || '') || null,
+          };
+          if (isNewEntry) {
+            await insertClaim({
+              ...claimData,
+              claim_detail: '',
+              status: 'Pending Review',
+              date_submitted: getLocalDateString(),
+              follow_up_date: getLocalDateString(),
+              created_by: 'staff',
+              completed_by: '',
+              aging_days: 0,
+              archived: false,
+              archived_at: null,
+              archived_by: null,
+              date_sent_orig: null,
+              carrier_phone: null,
+              reference_number: null,
+              rep_name: null,
+              procedure_types: null,
+              aging_status: '0-30 Days',
+              structured_notes: [],
+              audit_trail: [auditEntry],
+            });
+          } else {
+            const id = String(data.id);
+            const claim = claims.find((c) => c.id === id);
+            const existingTrail = claim?.audit_trail || [];
+            await updateClaim(id, {
+              ...claimData,
+              audit_trail: [...existingTrail, auditEntry],
+            });
+          }
+          await loadClaims();
+          setEditModalOpen(false);
+          setEditModalClaim(null);
+        }}
+        initialTab="insurance_ar"
+        initialData={editModalClaim}
         isDayMode={isDayMode}
       />
     </div>

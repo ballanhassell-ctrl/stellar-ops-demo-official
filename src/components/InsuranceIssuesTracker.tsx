@@ -36,6 +36,8 @@ import { sanitizePatientName } from '../utils/sanitizePatientName';
 import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -356,6 +358,10 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
   // Notes & Audit drawer
   const [drawerIssueId, setDrawerIssueId] = useState<string | null>(null);
+
+  // Draggable edit modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalIssue, setEditModalIssue] = useState<InsuranceIssue | null>(null);
 
   // Success toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -765,7 +771,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500'
     : 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-400 focus:border-blue-400';
   const tableBorder = isDayMode ? 'border-gray-200' : 'border-gray-700';
-  const rowHover = isDayMode ? 'hover:bg-gray-50' : 'hover:bg-gray-750 hover:bg-gray-700/50';
+  const rowHover = isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark';
   const thBg = isDayMode ? 'bg-gray-50 text-gray-700' : 'bg-gray-900 text-gray-300';
   const modalOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60';
   const modalCard = isDayMode
@@ -860,7 +866,11 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         : '';
 
     return (
-      <tr key={issue.id} className={`${rowBg} ${rowHover} transition-colors`}>
+      <tr
+        key={issue.id}
+        className={`${rowBg} ${rowHover} cursor-pointer transition-colors`}
+        onDoubleClick={() => { setEditModalIssue(issue); setEditModalOpen(true); }}
+      >
         {/* Patient ID */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap`}>
           {issue.patient_id ?? '--'}
@@ -2117,6 +2127,55 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         message={toastMessage || ''}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalIssue(null); }}
+        onSave={async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+          const auditEntry = createAuditEntry(isNewEntry ? 'created' : 'updated', 'staff');
+          const issueData = {
+            patient_name: sanitizePatientName(String(data.patient_name || '')),
+            patient_id: String(data.patient_id || '') || null,
+            date_of_service: String(data.date_of_service || ''),
+            procedure_codes: String(data.procedure_codes || ''),
+            in_charge: String(data.in_charge || ''),
+            issue_type: (String(data.issue_type) || 'Other') as InsuranceIssue['issue_type'],
+            status: (String(data.status) || 'Open') as InsuranceIssue['status'],
+            notes: String(data.notes || '') || null,
+          };
+          if (isNewEntry) {
+            await insertInsuranceIssue({
+              ...issueData,
+              in_vyne: false,
+              is_pre_auth: false,
+              corrected_at: null,
+              corrected_by: null,
+              correction_note: null,
+              submission_status: null,
+              submitted_by: null,
+              submitted_at: null,
+              resolved_at: null,
+              structured_notes: [],
+              audit_trail: [auditEntry],
+            });
+          } else {
+            const id = String(data.id);
+            const issue = issues.find((i) => i.id === id);
+            const existingTrail = issue?.audit_trail || [];
+            await updateInsuranceIssue(id, {
+              ...issueData,
+              audit_trail: [...existingTrail, auditEntry],
+            });
+          }
+          await loadIssues();
+          setEditModalOpen(false);
+          setEditModalIssue(null);
+        }}
+        initialTab="insurance_issues"
+        initialData={editModalIssue}
         isDayMode={isDayMode}
       />
     </div>

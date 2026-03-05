@@ -33,6 +33,8 @@ import { isStaticDataMode } from '../config/dataMode';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -129,6 +131,10 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
   // Notes & Audit drawer state
   const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Draggable edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalRecord, setEditModalRecord] = useState<PatientCredit | null>(null);
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -514,6 +520,60 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
   }
 
   // ---------------------------------------------------
+  // MODAL SAVE HANDLER
+  // ---------------------------------------------------
+  const handleModalSave = async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+    if (isNewEntry) {
+      const newRecord = {
+        patient_name: sanitizePatientName(String(data.patient_name || '')),
+        patient_id: String(data.patient_id || '') || null,
+        credit_amount: Number(data.credit_amount) || 0,
+        credit_date: String(data.credit_date || getLocalDateString()),
+        credit_source: (String(data.credit_source) || 'other') as PatientCredit['credit_source'],
+        status: (String(data.status) || 'unapplied') as PatientCreditStatus,
+        applied_to: String(data.applied_to || '') || null,
+        applied_date: null,
+        notes: String(data.notes || '') || null,
+        structured_notes: [] as NoteEntry[],
+        audit_trail: [createAuditEntry('created', 'staff')],
+        created_by: 'staff',
+        updated_by: 'staff',
+      };
+      if (isStaticDataMode()) {
+        setRecords((prev) => [{ ...newRecord, id: crypto.randomUUID() } as PatientCredit, ...prev]);
+      } else {
+        await insertPatientCredit(newRecord);
+        await fetchData();
+      }
+    } else {
+      const id = String(data.id);
+      const record = records.find((r) => r.id === id);
+      const auditEntry = createAuditEntry('updated', 'staff');
+      const existingTrail = record?.audit_trail || [];
+      const updates: Record<string, unknown> = {
+        patient_name: sanitizePatientName(String(data.patient_name || '')),
+        patient_id: String(data.patient_id || '') || null,
+        credit_amount: Number(data.credit_amount) || 0,
+        credit_date: String(data.credit_date || ''),
+        credit_source: String(data.credit_source) || 'other',
+        status: String(data.status) || 'unapplied',
+        applied_to: String(data.applied_to || '') || null,
+        notes: String(data.notes || '') || null,
+        audit_trail: [...existingTrail, auditEntry],
+        updated_by: 'staff',
+      };
+      if (isStaticDataMode()) {
+        setRecords((prev) => prev.map((r) => r.id === id ? { ...r, ...updates, updated_at: new Date().toISOString() } as PatientCredit : r));
+      } else {
+        await updatePatientCredit(id, updates);
+        await fetchData();
+      }
+    }
+    setEditModalOpen(false);
+    setEditModalRecord(null);
+  };
+
+  // ---------------------------------------------------
   // RENDER
   // ---------------------------------------------------
 
@@ -687,8 +747,14 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                 {filteredRecords.map((record) => (
                   <tr
                     key={record.id}
-                    className={`${isDayMode ? 'hover:bg-white/40' : 'hover:bg-white/5'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
-                    onClick={(e) => e.stopPropagation()}
+                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} cursor-pointer transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, select, input, textarea, [role="button"]')) return;
+                      e.stopPropagation();
+                      setEditModalRecord(record);
+                      setEditModalOpen(true);
+                    }}
                   >
                     <td className="py-2.5 px-2">
                       {renderEditableCell(
@@ -892,6 +958,16 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
         message={toastMessage || ''}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalRecord(null); }}
+        onSave={handleModalSave}
+        initialTab="credits"
+        initialData={editModalRecord}
         isDayMode={isDayMode}
       />
     </div>

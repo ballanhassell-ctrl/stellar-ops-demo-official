@@ -39,6 +39,8 @@ import { fetchDailyARReportData, generateDailyARReportHTML, sendDailyARReport } 
 import { getLocalDateString } from '../utils/dateUtils';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -157,6 +159,10 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   // Notes & Audit drawer state
   const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Draggable edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalRecord, setEditModalRecord] = useState<PatientAR | null>(null);
 
   // Daily report state
   const [sendingReport, setSendingReport] = useState(false);
@@ -977,6 +983,76 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   }
 
   // ---------------------------------------------------
+  // MODAL SAVE HANDLER
+  // ---------------------------------------------------
+  const handleModalSave = useCallback(async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+    try {
+      if (isNewEntry) {
+        const newRecord = {
+          patient_name: sanitizePatientName(String(data.patient_name || '')),
+          patient_id: String(data.patient_id || '') || null,
+          related_family: String(data.related_family || '') || null,
+          dos: String(data.dos || getLocalDateString()),
+          current_balance: Number(data.current_balance) || 0,
+          original_balance: data.original_balance ? Number(data.original_balance) : null,
+          status: (String(data.status) || 'not_started') as PatientARStatus,
+          action_needed: String(data.action_needed || '') || null,
+          background_notes: String(data.background_notes || '') || null,
+          is_collectible: activeTab === 'collectible',
+          collected_amount: 0,
+          team_discussion_notes: null,
+          dr_decision: null,
+          first_contact_date: null,
+          first_contact_initials: null,
+          second_contact_date: null,
+          second_contact_initials: null,
+          final_contact_date: null,
+          final_contact_initials: null,
+          write_off_suggested_date: null,
+          write_off_reason: null,
+          created_by: 'staff',
+          updated_by: 'staff',
+          structured_notes: [] as NoteEntry[],
+          audit_trail: [createAuditEntry('created', 'staff')],
+        };
+        if (isStaticDataMode()) {
+          setRecords((prev) => [{ ...newRecord, id: crypto.randomUUID(), aging_days: 0, aging_bucket: '0-30' as const }, ...prev]);
+        } else {
+          await insertPatientAR(newRecord);
+          await fetchData();
+        }
+      } else {
+        const id = String(data.id);
+        const record = records.find((r) => r.id === id);
+        const auditEntry = createAuditEntry('updated', 'staff');
+        const existingTrail = record?.audit_trail || [];
+        const updates: Record<string, unknown> = {
+          patient_name: sanitizePatientName(String(data.patient_name || '')),
+          patient_id: String(data.patient_id || '') || null,
+          related_family: String(data.related_family || '') || null,
+          dos: String(data.dos || ''),
+          current_balance: Number(data.current_balance) || 0,
+          status: String(data.status) || 'not_started',
+          action_needed: String(data.action_needed || '') || null,
+          background_notes: String(data.background_notes || '') || null,
+          audit_trail: [...existingTrail, auditEntry],
+          updated_by: 'staff',
+        };
+        if (isStaticDataMode()) {
+          setRecords((prev) => prev.map((r) => r.id === id ? { ...r, ...updates, updated_at: new Date().toISOString() } as PatientAR : r));
+        } else {
+          await updatePatientAR(id, updates);
+          await fetchData();
+        }
+      }
+      setEditModalOpen(false);
+      setEditModalRecord(null);
+    } catch (err) {
+      throw err;
+    }
+  }, [activeTab, fetchData, records]);
+
+  // ---------------------------------------------------
   // RENDER: MAIN
   // ---------------------------------------------------
   return (
@@ -1255,8 +1331,15 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
                 {activeRecords.map((record) => (
                   <tr
                     key={record.id}
-                    className={`${isDayMode ? 'hover:bg-white/40' : 'hover:bg-white/5'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
-                    onClick={(e) => e.stopPropagation()}
+                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} cursor-pointer transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
+                    onClick={(e) => {
+                      // Don't open modal if clicking on interactive elements
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, select, input, textarea, [role="button"]')) return;
+                      e.stopPropagation();
+                      setEditModalRecord(record);
+                      setEditModalOpen(true);
+                    }}
                   >
                     {/* Patient Name */}
                     <td className="py-1.5 px-1.5">
@@ -1719,6 +1802,16 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
         message={toastMessage || ''}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalRecord(null); }}
+        onSave={handleModalSave}
+        initialTab="patient_ar"
+        initialData={editModalRecord}
         isDayMode={isDayMode}
       />
     </div>

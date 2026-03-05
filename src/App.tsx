@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Toaster } from 'sonner';
+import VersionBanner from './components/VersionBanner';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
@@ -2067,6 +2069,8 @@ const CourtStreetRCM = () => {
 
   return (
     <div className={`min-h-screen ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 gradient-mesh-dark'}`}>
+      <Toaster position="top-right" theme={isDayMode ? 'light' : 'dark'} richColors closeButton />
+      <VersionBanner />
       {/* Header */}
       <div className={`sticky top-0 z-50 ${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} animate-slide-down`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
