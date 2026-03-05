@@ -39,8 +39,8 @@ import { fetchDailyARReportData, generateDailyARReportHTML, sendDailyARReport } 
 import { getLocalDateString } from '../utils/dateUtils';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
-import InlineEditableField from './InlineEditableField';
-import type { AuditTrailEntry } from '../types/database.types';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -147,6 +147,8 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newForm, setNewForm] = useState<NewRecordForm>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [editingCell, setEditingCell] = useState<EditingCell>(null);
+  const [editingValue, setEditingValue] = useState('');
   const [editingContact, setEditingContact] = useState<EditingContact>(null);
   const [contactDate, setContactDate] = useState('');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -157,6 +159,10 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   // Notes & Audit drawer state
   const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Draggable edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalRecord, setEditModalRecord] = useState<PatientAR | null>(null);
 
   // Daily report state
   const [sendingReport, setSendingReport] = useState(false);
@@ -311,22 +317,43 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     }
   }, [newForm, fetchData]);
 
+  const handleUpdateField = useCallback(
+    async (id: string, field: string, value: string | null) => {
+      try {
+        const record = records.find((r) => r.id === id);
+        const oldValue = record ? String((record as Record<string, unknown>)[field] ?? '') : '';
+        const auditEntry = createAuditEntry('updated', 'staff', {
+          field,
+          oldValue: oldValue || null,
+          newValue: value,
+        });
+
+        if (isStaticDataMode()) {
+          setRecords((prev) =>
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, [field]: value, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
+                : r,
+            ),
+          );
+        } else {
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(id, { [field]: value, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
+          await fetchData();
+        }
+      } catch (err) {
+        console.error('Error updating field:', err);
+        setError('Failed to update. Please try again.');
+      }
+    },
+    [fetchData, records],
+  );
+
   const handleStatusChange = useCallback(
     async (id: string, newStatus: PatientARStatus) => {
-      const record = records.find((r) => r.id === id);
-      const oldStatus = record?.status || '';
-
-      // Confirmation before overriding existing status
-      if (oldStatus && oldStatus !== newStatus) {
-        const oldLabel = getStatusLabel(oldStatus as PatientARStatus);
-        const newLabel = getStatusLabel(newStatus);
-        if (!window.confirm(`Change status from "${oldLabel}" to "${newLabel}"?`)) {
-          setStatusDropdownOpen(null);
-          return;
-        }
-      }
-
       try {
+        const record = records.find((r) => r.id === id);
+        const oldStatus = record?.status || '';
         const auditEntry = createAuditEntry('status_changed', 'staff', {
           field: 'status',
           oldValue: oldStatus,
@@ -427,6 +454,60 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     [fetchData],
   );
 
+  const handleSaveEditingCell = useCallback(async () => {
+    if (!editingCell) return;
+    const { recordId, field } = editingCell;
+
+    if (field === 'current_balance') {
+      const numValue = parseFloat(editingValue);
+      if (isNaN(numValue) || numValue < 0) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      try {
+        const record = records.find((r) => r.id === recordId);
+        const oldValue = record ? String(record.current_balance) : '';
+        const auditEntry = createAuditEntry('updated', 'staff', {
+          field: 'current_balance',
+          oldValue,
+          newValue: String(numValue),
+        });
+        if (isStaticDataMode()) {
+          setRecords((prev) =>
+            prev.map((r) => (r.id === recordId ? { ...r, current_balance: numValue, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() } : r)),
+          );
+        } else {
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(recordId, { current_balance: numValue, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
+          await fetchData();
+        }
+      } catch (err) {
+        console.error('Error updating field:', err);
+        setError('Failed to update. Please try again.');
+      }
+    } else if (field === 'patient_name') {
+      const trimmed = sanitizePatientName(editingValue.trim());
+      if (!trimmed) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, trimmed);
+    } else if (field === 'dos') {
+      if (!editingValue) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, editingValue);
+    } else {
+      await handleUpdateField(recordId, field, editingValue.trim() || null);
+    }
+    setEditingCell(null);
+    setEditingValue('');
+  }, [editingCell, editingValue, handleUpdateField, fetchData]);
+
   const handleSaveContact = useCallback(async () => {
     if (!editingContact) return;
     const { recordId, contactType } = editingContact;
@@ -484,6 +565,14 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     setContactDate('');
     setContactInitials('');
   }, [editingContact, contactDate, contactInitials, fetchData]);
+
+  const startEditCell = useCallback(
+    (recordId: string, field: EditingCell extends null ? never : NonNullable<EditingCell>['field'], currentValue: string | null) => {
+      setEditingCell({ recordId, field });
+      setEditingValue(currentValue || '');
+    },
+    [],
+  );
 
   const startEditContact = useCallback(
     (recordId: string, contactType: '1st' | '2nd' | 'final', currentDate: string | null, currentInitials: string | null) => {
@@ -630,14 +719,11 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
 
   function renderStatusDropdown(record: PatientAR) {
     const isOpen = statusDropdownOpen === record.id;
-    const highlightClass = isDayMode
-      ? 'bg-amber-50/60 hover:bg-amber-100/80 border-amber-200/50'
-      : 'bg-amber-900/10 hover:bg-amber-900/20 border-amber-700/30';
     return (
       <div className="relative">
         <button
           onClick={() => setStatusDropdownOpen(isOpen ? null : record.id)}
-          className={`flex items-center gap-1 w-full px-1.5 py-0.5 rounded border transition-all ${highlightClass}`}
+          className="flex items-center gap-1 w-full"
         >
           {renderStatusBadge(record.status)}
           <ChevronDown className="w-3 h-3 flex-shrink-0 opacity-50" />
@@ -661,78 +747,111 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     );
   }
 
-  const fieldLabels: Record<string, string> = {
-    patient_name: 'Patient Name',
-    patient_id: 'Patient ID',
-    related_family: 'Related Family',
-    current_balance: 'Balance',
-    dos: 'Date of Service',
-    background_notes: 'Background Notes',
-    team_discussion_notes: 'Team Discussion',
-    action_needed: 'Action Needed',
-    dr_decision: 'Dr. Gajjar Decision',
-    write_off_reason: 'Write-Off Reason',
-  };
-
-  function renderInlineEditable(
+  function renderEditableCell(
     record: PatientAR,
     field: NonNullable<EditingCell>['field'],
-    value: string | number | null,
-    options?: {
-      fieldType?: 'text' | 'number' | 'date' | 'textarea' | 'currency';
-      displayValue?: string;
-    },
+    value: string | null,
+    displayValue?: string,
+    customClassName?: string,
   ) {
-    const fieldType = options?.fieldType || (
-      field === 'current_balance' ? 'currency' :
-      field === 'dos' ? 'date' :
-      ['background_notes', 'team_discussion_notes', 'action_needed', 'dr_decision', 'write_off_reason'].includes(field) ? 'textarea' :
-      'text'
-    );
+    const isEditing = editingCell?.recordId === record.id && editingCell?.field === field;
+    const inputType = field === 'current_balance' ? 'number' : field === 'dos' ? 'date' : 'text';
+    const useTextarea = !['patient_name', 'patient_id', 'related_family', 'current_balance', 'dos'].includes(field);
 
-    const handleFieldSave = async (newValue: string | number | boolean | null, auditEntry: AuditTrailEntry) => {
-      try {
-        let processedValue = newValue;
-        if (field === 'patient_name' && typeof newValue === 'string') {
-          processedValue = sanitizePatientName(newValue);
-          if (!processedValue) return;
-        }
-
-        const updatePayload: Record<string, unknown> = {
-          [field]: processedValue,
-          audit_trail: [...(record.audit_trail || []), auditEntry],
-          updated_by: 'staff',
-        };
-
-        if (isStaticDataMode()) {
-          setRecords((prev) =>
-            prev.map((r) =>
-              r.id === record.id
-                ? { ...r, ...updatePayload, updated_at: new Date().toISOString() }
-                : r,
-            ),
-          );
-        } else {
-          await updatePatientAR(record.id, updatePayload);
-          await fetchData();
-        }
-      } catch (err) {
-        console.error('Error updating field:', err);
-        setError('Failed to update. Please try again.');
-      }
+    const fieldLabels: Record<string, string> = {
+      patient_name: 'Patient Name',
+      patient_id: 'Patient ID',
+      related_family: 'Related Family',
+      current_balance: 'Balance',
+      dos: 'Date of Service',
+      background_notes: 'Background Notes',
+      team_discussion_notes: 'Team Discussion',
+      action_needed: 'Action Needed',
+      dr_decision: 'Dr. Gajjar Decision',
+      write_off_reason: 'Write-Off Reason',
     };
 
+    const shownValue = displayValue || value;
+
     return (
-      <InlineEditableField
-        value={value}
-        displayValue={options?.displayValue}
-        fieldLabel={fieldLabels[field] || field}
-        fieldType={fieldType}
-        isDayMode={isDayMode}
-        onSave={handleFieldSave}
-        min={field === 'current_balance' ? 0 : undefined}
-        step={field === 'current_balance' ? '0.01' : undefined}
-      />
+      <div className="relative">
+        <div
+          onClick={() => startEditCell(record.id, field, value)}
+          className={customClassName || `cursor-pointer min-h-[24px] px-1 py-0.5 rounded text-xs leading-snug ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${shownValue ? '' : 'italic opacity-40'}`}
+          title="Click to edit"
+        >
+          {shownValue || '--'}
+        </div>
+
+        {/* Floating edit popover */}
+        {isEditing && (
+          <div
+            className={`absolute z-50 left-0 top-full mt-1 rounded-xl shadow-2xl border ${isDayMode ? 'bg-white border-gray-200' : 'bg-gray-800 border-white/15'} p-3`}
+            style={{ minWidth: useTextarea ? '280px' : '220px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-1.5 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {fieldLabels[field] || field}
+            </p>
+            {useTextarea ? (
+              <textarea
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                autoFocus
+                rows={3}
+                className={`w-full px-3 py-2 rounded-lg border text-sm resize-none ${isDayMode ? 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-300' : 'bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500/40'} focus:outline-none`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveEditingCell();
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingCell(null);
+                    setEditingValue('');
+                  }
+                }}
+              />
+            ) : (
+              <input
+                type={inputType}
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                autoFocus
+                step={field === 'current_balance' ? '0.01' : undefined}
+                min={field === 'current_balance' ? '0' : undefined}
+                className={`w-full px-3 py-2 rounded-lg border text-sm ${isDayMode ? 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-300' : 'bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500/40'} focus:outline-none`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSaveEditingCell();
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingCell(null);
+                    setEditingValue('');
+                  }
+                }}
+              />
+            )}
+            <div className="flex items-center justify-end gap-2 mt-2">
+              <button
+                onClick={() => {
+                  setEditingCell(null);
+                  setEditingValue('');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/10'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditingCell}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -742,19 +861,15 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     dateValue: string | null,
     initialsValue: string | null,
   ) {
-    const isEditingThis = editingContact?.recordId === record.id && editingContact?.contactType === contactType;
+    const isEditing = editingContact?.recordId === record.id && editingContact?.contactType === contactType;
     const hasData = dateValue || initialsValue;
     const contactLabel = contactType === 'final' ? 'Final Contact' : `${contactType} Contact`;
-
-    const highlightClass = isDayMode
-      ? 'bg-amber-50/60 hover:bg-amber-100/80 border-amber-200/50'
-      : 'bg-amber-900/10 hover:bg-amber-900/20 border-amber-700/30';
 
     return (
       <div className="relative">
         <div
           onClick={() => startEditContact(record.id, contactType, dateValue, initialsValue)}
-          className={`cursor-pointer min-h-[24px] px-1.5 py-0.5 rounded text-xs text-center border transition-all ${highlightClass} ${hasData ? '' : 'italic opacity-50'}`}
+          className={`cursor-pointer min-h-[24px] px-1 py-0.5 rounded text-xs text-center ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${hasData ? '' : 'italic opacity-40'}`}
           title="Click to set contact"
         >
           {hasData ? (
@@ -768,7 +883,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
         </div>
 
         {/* Floating contact popover */}
-        {isEditingThis && (
+        {isEditing && (
           <div
             className={`absolute z-50 left-1/2 -translate-x-1/2 top-full mt-1 rounded-xl shadow-2xl border ${isDayMode ? 'bg-white border-gray-200' : 'bg-gray-800 border-white/15'} p-3`}
             style={{ minWidth: '200px' }}
@@ -866,6 +981,76 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
       </div>
     );
   }
+
+  // ---------------------------------------------------
+  // MODAL SAVE HANDLER
+  // ---------------------------------------------------
+  const handleModalSave = useCallback(async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+    try {
+      if (isNewEntry) {
+        const newRecord = {
+          patient_name: sanitizePatientName(String(data.patient_name || '')),
+          patient_id: String(data.patient_id || '') || null,
+          related_family: String(data.related_family || '') || null,
+          dos: String(data.dos || getLocalDateString()),
+          current_balance: Number(data.current_balance) || 0,
+          original_balance: data.original_balance ? Number(data.original_balance) : null,
+          status: (String(data.status) || 'not_started') as PatientARStatus,
+          action_needed: String(data.action_needed || '') || null,
+          background_notes: String(data.background_notes || '') || null,
+          is_collectible: activeTab === 'collectible',
+          collected_amount: 0,
+          team_discussion_notes: null,
+          dr_decision: null,
+          first_contact_date: null,
+          first_contact_initials: null,
+          second_contact_date: null,
+          second_contact_initials: null,
+          final_contact_date: null,
+          final_contact_initials: null,
+          write_off_suggested_date: null,
+          write_off_reason: null,
+          created_by: 'staff',
+          updated_by: 'staff',
+          structured_notes: [] as NoteEntry[],
+          audit_trail: [createAuditEntry('created', 'staff')],
+        };
+        if (isStaticDataMode()) {
+          setRecords((prev) => [{ ...newRecord, id: crypto.randomUUID(), aging_days: 0, aging_bucket: '0-30' as const }, ...prev]);
+        } else {
+          await insertPatientAR(newRecord);
+          await fetchData();
+        }
+      } else {
+        const id = String(data.id);
+        const record = records.find((r) => r.id === id);
+        const auditEntry = createAuditEntry('updated', 'staff');
+        const existingTrail = record?.audit_trail || [];
+        const updates: Record<string, unknown> = {
+          patient_name: sanitizePatientName(String(data.patient_name || '')),
+          patient_id: String(data.patient_id || '') || null,
+          related_family: String(data.related_family || '') || null,
+          dos: String(data.dos || ''),
+          current_balance: Number(data.current_balance) || 0,
+          status: String(data.status) || 'not_started',
+          action_needed: String(data.action_needed || '') || null,
+          background_notes: String(data.background_notes || '') || null,
+          audit_trail: [...existingTrail, auditEntry],
+          updated_by: 'staff',
+        };
+        if (isStaticDataMode()) {
+          setRecords((prev) => prev.map((r) => r.id === id ? { ...r, ...updates, updated_at: new Date().toISOString() } as PatientAR : r));
+        } else {
+          await updatePatientAR(id, updates);
+          await fetchData();
+        }
+      }
+      setEditModalOpen(false);
+      setEditModalRecord(null);
+    } catch (err) {
+      throw err;
+    }
+  }, [activeTab, fetchData, records]);
 
   // ---------------------------------------------------
   // RENDER: MAIN
@@ -1146,43 +1331,74 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
                 {activeRecords.map((record) => (
                   <tr
                     key={record.id}
-                    className={`${isDayMode ? 'hover:bg-white/40' : 'hover:bg-white/5'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
-                    onClick={(e) => e.stopPropagation()}
+                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} cursor-pointer transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
+                    onClick={(e) => {
+                      // Don't open modal if clicking on interactive elements
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, select, input, textarea, [role="button"]')) return;
+                      e.stopPropagation();
+                      setEditModalRecord(record);
+                      setEditModalOpen(true);
+                    }}
                   >
                     {/* Patient Name */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'patient_name', record.patient_name)}
+                      {renderEditableCell(
+                        record,
+                        'patient_name',
+                        record.patient_name,
+                        record.patient_name,
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-medium ${isDayMode ? 'text-gray-900 hover:bg-gray-100' : 'text-white hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* Patient ID */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'patient_id', record.patient_id)}
+                      {renderEditableCell(
+                        record,
+                        'patient_id',
+                        record.patient_id,
+                        record.patient_id || '--',
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'} ${!record.patient_id ? 'italic opacity-40' : ''}`,
+                      )}
                     </td>
 
                     {/* Related Family */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'related_family', record.related_family)}
+                      {renderEditableCell(
+                        record,
+                        'related_family',
+                        record.related_family,
+                        record.related_family || '--',
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'} ${!record.related_family ? 'italic opacity-40' : ''}`,
+                      )}
                     </td>
 
                     {/* Balance */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'current_balance', record.current_balance, {
-                        fieldType: 'currency',
-                        displayValue: formatCurrency(record.current_balance),
-                      })}
+                      {renderEditableCell(
+                        record,
+                        'current_balance',
+                        String(record.current_balance),
+                        formatCurrency(record.current_balance),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-semibold text-right ${record.current_balance >= 500 ? 'text-red-500' : isDayMode ? 'text-gray-900' : 'text-white'} ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* DOS */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'dos', record.dos, {
-                        fieldType: 'date',
-                        displayValue: formatDate(record.dos),
-                      })}
+                      {renderEditableCell(
+                        record,
+                        'dos',
+                        record.dos,
+                        formatDate(record.dos),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* Background Notes */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'background_notes', record.background_notes)}
+                      {renderEditableCell(record, 'background_notes', record.background_notes)}
                     </td>
 
                     {/* Status */}
@@ -1207,12 +1423,12 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
 
                     {/* Team Discussion Notes */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'team_discussion_notes', record.team_discussion_notes)}
+                      {renderEditableCell(record, 'team_discussion_notes', record.team_discussion_notes)}
                     </td>
 
                     {/* Action Needed */}
                     <td className="py-1.5 px-1.5">
-                      {renderInlineEditable(record, 'action_needed', record.action_needed)}
+                      {renderEditableCell(record, 'action_needed', record.action_needed)}
                     </td>
 
                     {/* Notes & Audit Trail */}
@@ -1240,10 +1456,10 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
                     {activeTab === 'non_collectible' && (
                       <>
                         <td className="py-1.5 px-1.5">
-                          {renderInlineEditable(record, 'dr_decision', record.dr_decision)}
+                          {renderEditableCell(record, 'dr_decision', record.dr_decision)}
                         </td>
                         <td className="py-1.5 px-1.5">
-                          {renderInlineEditable(record, 'write_off_reason', record.write_off_reason)}
+                          {renderEditableCell(record, 'write_off_reason', record.write_off_reason)}
                         </td>
                       </>
                     )}
@@ -1586,6 +1802,16 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
         message={toastMessage || ''}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalRecord(null); }}
+        onSave={handleModalSave}
+        initialTab="patient_ar"
+        initialData={editModalRecord}
         isDayMode={isDayMode}
       />
     </div>

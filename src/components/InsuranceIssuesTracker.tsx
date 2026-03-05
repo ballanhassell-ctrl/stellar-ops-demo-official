@@ -36,8 +36,8 @@ import { sanitizePatientName } from '../utils/sanitizePatientName';
 import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
-import InlineEditableField from './InlineEditableField';
-import type { AuditTrailEntry as AuditType } from '../types/database.types';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -358,6 +358,10 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
   // Notes & Audit drawer
   const [drawerIssueId, setDrawerIssueId] = useState<string | null>(null);
+
+  // Draggable edit modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalIssue, setEditModalIssue] = useState<InsuranceIssue | null>(null);
 
   // Success toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -767,7 +771,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500'
     : 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-400 focus:border-blue-400';
   const tableBorder = isDayMode ? 'border-gray-200' : 'border-gray-700';
-  const rowHover = isDayMode ? 'hover:bg-gray-50' : 'hover:bg-gray-750 hover:bg-gray-700/50';
+  const rowHover = isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark';
   const thBg = isDayMode ? 'bg-gray-50 text-gray-700' : 'bg-gray-900 text-gray-300';
   const modalOverlay = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60';
   const modalCard = isDayMode
@@ -853,44 +857,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     );
   };
 
-  // ----- Inline editable save handler -----
-  const handleInlineSave = async (issue: InsuranceIssue, field: string, newValue: string | number | boolean | null, auditEntry: AuditType) => {
-    try {
-      let processedValue = newValue;
-      if (field === 'patient_name' && typeof newValue === 'string') {
-        processedValue = sanitizePatientName(newValue);
-        if (!processedValue) return;
-      }
-
-      const updates: Record<string, unknown> = {
-        [field]: processedValue,
-        audit_trail: [...(issue.audit_trail || []), auditEntry],
-      };
-
-      // Handle status transitions
-      if (field === 'status') {
-        if (newValue === 'Corrected' && issue.status === 'Open') {
-          updates.corrected_at = new Date().toISOString();
-        }
-        if (newValue === 'Resolved' && issue.status !== 'Resolved') {
-          updates.resolved_at = new Date().toISOString();
-          if (!issue.corrected_at) updates.corrected_at = new Date().toISOString();
-        }
-        if (newValue === 'Open') {
-          updates.corrected_at = null;
-          updates.corrected_by = null;
-          updates.correction_note = null;
-          updates.resolved_at = null;
-        }
-      }
-
-      const updated = await updateInsuranceIssue(issue.id, updates);
-      setIssues((prev) => prev.map((i) => (i.id === issue.id ? updated : i)));
-    } catch (err) {
-      console.error('Error updating issue field:', err);
-    }
-  };
-
   // ----- Render: table row -----
   const renderRow = (issue: InsuranceIssue) => {
     const rowBg = issue.status === 'Resolved'
@@ -900,100 +866,61 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         : '';
 
     return (
-      <tr key={issue.id} className={`${rowBg} ${rowHover} transition-colors`}>
+      <tr
+        key={issue.id}
+        className={`${rowBg} ${rowHover} cursor-pointer transition-colors`}
+        onDoubleClick={() => { setEditModalIssue(issue); setEditModalOpen(true); }}
+      >
         {/* Patient ID */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.patient_id}
-            fieldLabel="Patient ID"
-            fieldType="text"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'patient_id', v, a)}
-          />
+          {issue.patient_id ?? '--'}
         </td>
 
-        {/* Patient Name */}
+        {/* Patient Name (clickable → opens edit modal) */}
         <td className={`px-3 py-2 text-sm font-medium border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.patient_name}
-            fieldLabel="Patient Name"
-            fieldType="text"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'patient_name', v, a)}
-          />
+          <button
+            onClick={() => handleStartEdit(issue)}
+            className={`text-left font-medium underline decoration-dotted underline-offset-2 cursor-pointer transition-colors ${
+              isDayMode
+                ? 'text-blue-700 hover:text-blue-900'
+                : 'text-blue-400 hover:text-blue-200'
+            }`}
+            title={`Edit ${issue.patient_name}`}
+          >
+            {issue.patient_name}
+          </button>
         </td>
 
         {/* Date of Service */}
-        <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.date_of_service}
-            displayValue={formatDate(issue.date_of_service)}
-            fieldLabel="Date of Service"
-            fieldType="date"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'date_of_service', v, a)}
-          />
+        <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap ${subText}`}>
+          {formatDate(issue.date_of_service)}
         </td>
 
         {/* Procedure */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap font-mono`}>
-          <InlineEditableField
-            value={issue.procedure_codes}
-            fieldLabel="Procedure Codes"
-            fieldType="text"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'procedure_codes', v, a)}
-          />
+          {issue.procedure_codes}
         </td>
 
         {/* In Charge */}
         <td className={`px-3 py-2 border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.in_charge}
-            fieldLabel="In Charge"
-            fieldType="select"
-            isDayMode={isDayMode}
-            selectOptions={PROVIDERS.map((p) => ({ value: p, label: p }))}
-            onSave={(v, a) => handleInlineSave(issue, 'in_charge', v, a)}
-            renderDisplay={() => renderProviderBadge(issue.in_charge)}
-          />
+          {renderProviderBadge(issue.in_charge)}
         </td>
 
         {/* Issue Type */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} max-w-[180px]`}>
-          <InlineEditableField
-            value={issue.issue_type}
-            fieldLabel="Issue Type"
-            fieldType="select"
-            isDayMode={isDayMode}
-            selectOptions={ISSUE_TYPES.map((t) => ({ value: t, label: t }))}
-            onSave={(v, a) => handleInlineSave(issue, 'issue_type', v, a)}
-          />
+          <span className="truncate block" title={issue.issue_type}>
+            {issue.issue_type}
+          </span>
         </td>
 
         {/* In Vyne? */}
         <td className={`px-3 py-2 border-b ${tableBorder} text-center`}>
-          <InlineEditableField
-            value={issue.in_vyne}
-            fieldLabel="In Vyne"
-            fieldType="checkbox"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'in_vyne', v, a)}
-            renderDisplay={() => renderVyneBadge(issue.in_vyne)}
-          />
+          {renderVyneBadge(issue.in_vyne)}
         </td>
 
         {/* Status Badge */}
         <td className={`px-3 py-2 border-b ${tableBorder}`}>
-          <InlineEditableField
-            value={issue.status}
-            fieldLabel="Status"
-            fieldType="select"
-            isDayMode={isDayMode}
-            selectOptions={(['Open', 'Corrected', 'Resolved'] as InsuranceIssueStatus[]).map((s) => ({ value: s, label: s }))}
-            onSave={(v, a) => handleInlineSave(issue, 'status', v, a)}
-            renderDisplay={() => renderStatusBadge(issue)}
-          />
+          {renderStatusBadge(issue)}
         </td>
 
         {/* Submitted + Submitted By */}
@@ -1016,21 +943,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                 )}
               </div>
             ) : (
-              <InlineEditableField
-                value={issue.submission_status}
-                fieldLabel="Submission Status"
-                fieldType="select"
-                isDayMode={isDayMode}
-                selectOptions={[{ value: 'Submitted', label: 'Submitted' }, { value: '', label: 'Not Submitted' }]}
-                onSave={(v, a) => {
-                  const updates: Record<string, unknown> = { submission_status: v || null };
-                  if (v === 'Submitted' && !issue.submitted_at) {
-                    updates.submitted_at = new Date().toISOString();
-                  }
-                  handleInlineSave(issue, 'submission_status', v, a);
-                }}
-                placeholder="--"
-              />
+              <span className={subText}>--</span>
             )}
           </div>
         </td>
@@ -2214,6 +2127,55 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         message={toastMessage || ''}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalIssue(null); }}
+        onSave={async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+          const auditEntry = createAuditEntry(isNewEntry ? 'created' : 'updated', 'staff');
+          const issueData = {
+            patient_name: sanitizePatientName(String(data.patient_name || '')),
+            patient_id: String(data.patient_id || '') || null,
+            date_of_service: String(data.date_of_service || ''),
+            procedure_codes: String(data.procedure_codes || ''),
+            in_charge: String(data.in_charge || ''),
+            issue_type: (String(data.issue_type) || 'Other') as InsuranceIssue['issue_type'],
+            status: (String(data.status) || 'Open') as InsuranceIssue['status'],
+            notes: String(data.notes || '') || null,
+          };
+          if (isNewEntry) {
+            await insertInsuranceIssue({
+              ...issueData,
+              in_vyne: false,
+              is_pre_auth: false,
+              corrected_at: null,
+              corrected_by: null,
+              correction_note: null,
+              submission_status: null,
+              submitted_by: null,
+              submitted_at: null,
+              resolved_at: null,
+              structured_notes: [],
+              audit_trail: [auditEntry],
+            });
+          } else {
+            const id = String(data.id);
+            const issue = issues.find((i) => i.id === id);
+            const existingTrail = issue?.audit_trail || [];
+            await updateInsuranceIssue(id, {
+              ...issueData,
+              audit_trail: [...existingTrail, auditEntry],
+            });
+          }
+          await loadIssues();
+          setEditModalOpen(false);
+          setEditModalIssue(null);
+        }}
+        initialTab="insurance_issues"
+        initialData={editModalIssue}
         isDayMode={isDayMode}
       />
     </div>

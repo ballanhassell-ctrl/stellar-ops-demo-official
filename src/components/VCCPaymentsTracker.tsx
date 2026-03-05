@@ -41,7 +41,6 @@ import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 
-
 // =====================================================
 // CONSTANTS
 // =====================================================

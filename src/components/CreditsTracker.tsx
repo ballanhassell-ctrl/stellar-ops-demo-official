@@ -14,6 +14,7 @@ import {
   DollarSign,
   AlertTriangle,
   ChevronDown,
+  Save,
   Loader2,
   RefreshCw,
   CreditCard,
@@ -32,8 +33,8 @@ import { isStaticDataMode } from '../config/dataMode';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
-import InlineEditableField from './InlineEditableField';
-import type { AuditTrailEntry } from '../types/database.types';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -122,12 +123,18 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newForm, setNewForm] = useState<NewCreditForm>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [editingCell, setEditingCell] = useState<EditingCell>(null);
+  const [editingValue, setEditingValue] = useState('');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<PatientCreditStatus | 'all'>('all');
 
   // Notes & Audit drawer state
   const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Draggable edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalRecord, setEditModalRecord] = useState<PatientCredit | null>(null);
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -235,21 +242,43 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
     }
   }, [newForm, fetchData]);
 
+  const handleUpdateField = useCallback(
+    async (id: string, field: string, value: string | number | null) => {
+      try {
+        const record = records.find((r) => r.id === id);
+        const oldValue = record ? String((record as Record<string, unknown>)[field] ?? '') : '';
+        const auditEntry = createAuditEntry('updated', 'staff', {
+          field,
+          oldValue: oldValue || null,
+          newValue: value !== null ? String(value) : null,
+        });
+
+        if (isStaticDataMode()) {
+          setRecords((prev) =>
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, [field]: value, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
+                : r,
+            ),
+          );
+        } else {
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientCredit(id, { [field]: value, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
+          await fetchData();
+        }
+      } catch (err) {
+        console.error('Error updating field:', err);
+        setError('Failed to update. Please try again.');
+      }
+    },
+    [fetchData, records],
+  );
+
   const handleStatusChange = useCallback(
     async (id: string, newStatus: PatientCreditStatus) => {
-      const record = records.find((r) => r.id === id);
-      const oldStatus = record?.status || '';
-
-      if (oldStatus && oldStatus !== newStatus) {
-        const oldLabel = getStatusLabel(oldStatus as PatientCreditStatus);
-        const newLabel = getStatusLabel(newStatus);
-        if (!window.confirm(`Change status from "${oldLabel}" to "${newLabel}"?`)) {
-          setStatusDropdownOpen(null);
-          return;
-        }
-      }
-
       try {
+        const record = records.find((r) => r.id === id);
+        const oldStatus = record?.status || '';
         const auditEntry = createAuditEntry('status_changed', 'staff', {
           field: 'status',
           oldValue: oldStatus,
@@ -301,6 +330,40 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
     [fetchData],
   );
 
+  const handleSaveEditingCell = useCallback(async () => {
+    if (!editingCell) return;
+    const { recordId, field } = editingCell;
+
+    if (field === 'credit_amount') {
+      const numValue = parseFloat(editingValue);
+      if (isNaN(numValue) || numValue < 0) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, numValue);
+    } else if (field === 'patient_name') {
+      const trimmed = sanitizePatientName(editingValue.trim());
+      if (!trimmed) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, trimmed);
+    } else {
+      await handleUpdateField(recordId, field, editingValue.trim() || null);
+    }
+    setEditingCell(null);
+    setEditingValue('');
+  }, [editingCell, editingValue, handleUpdateField]);
+
+  const startEditCell = useCallback(
+    (recordId: string, field: NonNullable<EditingCell>['field'], currentValue: string | null) => {
+      setEditingCell({ recordId, field });
+      setEditingValue(currentValue || '');
+    },
+    [],
+  );
 
   // Notes drawer
   const drawerRecord = useMemo(
@@ -363,14 +426,11 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
 
   function renderStatusDropdown(record: PatientCredit) {
     const isOpen = statusDropdownOpen === record.id;
-    const highlightClass = isDayMode
-      ? 'bg-amber-50/60 hover:bg-amber-100/80 border-amber-200/50'
-      : 'bg-amber-900/10 hover:bg-amber-900/20 border-amber-700/30';
     return (
       <div className="relative">
         <button
           onClick={() => setStatusDropdownOpen(isOpen ? null : record.id)}
-          className={`flex items-center gap-1 w-full px-1.5 py-0.5 rounded border transition-all ${highlightClass}`}
+          className="flex items-center gap-1 w-full"
         >
           {renderStatusBadge(record.status)}
           <ChevronDown className="w-3 h-3 flex-shrink-0 opacity-50" />
@@ -394,72 +454,124 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
     );
   }
 
-  const creditFieldLabels: Record<string, string> = {
-    patient_name: 'Patient Name',
-    credit_amount: 'Amount',
-    credit_date: 'Credit Date',
-    notes: 'Notes',
-    applied_to: 'Applied To',
-  };
-
-  function renderInlineEditable(
+  function renderEditableCell(
     record: PatientCredit,
     field: NonNullable<EditingCell>['field'],
-    value: string | number | null,
-    options?: { fieldType?: 'text' | 'number' | 'date' | 'textarea' | 'currency'; displayValue?: string },
+    value: string | null,
+    displayValue?: string,
+    customClassName?: string,
   ) {
-    const fieldType = options?.fieldType || (
-      field === 'credit_amount' ? 'currency' :
-      field === 'credit_date' ? 'date' :
-      ['notes', 'applied_to'].includes(field) ? 'textarea' :
-      'text'
-    );
+    const isEditing = editingCell?.recordId === record.id && editingCell?.field === field;
 
-    const handleFieldSave = async (newValue: string | number | boolean | null, auditEntry: AuditTrailEntry) => {
-      try {
-        let processedValue = newValue;
-        if (field === 'patient_name' && typeof newValue === 'string') {
-          processedValue = sanitizePatientName(newValue);
-          if (!processedValue) return;
-        }
+    if (isEditing) {
+      const inputType = field === 'credit_amount' ? 'number' : field === 'credit_date' ? 'date' : 'text';
+      const useTextarea = field === 'notes' || field === 'applied_to';
 
-        const updatePayload: Record<string, unknown> = {
-          [field]: processedValue,
-          audit_trail: [...(record.audit_trail || []), auditEntry],
-          updated_by: 'staff',
-        };
+      return (
+        <div className="flex items-center gap-1">
+          {useTextarea ? (
+            <textarea
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              autoFocus
+              rows={2}
+              className={`w-full px-2 py-1 rounded-lg border text-xs resize-none ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEditingCell(); }
+                if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
+              }}
+            />
+          ) : (
+            <input
+              type={inputType}
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              autoFocus
+              step={field === 'credit_amount' ? '0.01' : undefined}
+              min={field === 'credit_amount' ? '0' : undefined}
+              className={`w-full px-2 py-1 rounded-lg border text-xs ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleSaveEditingCell(); }
+                if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
+              }}
+            />
+          )}
+          <button onClick={handleSaveEditingCell} className="p-1 text-emerald-500 hover:text-emerald-600 flex-shrink-0" title="Save">
+            <Save className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => { setEditingCell(null); setEditingValue(''); }} className="p-1 text-red-400 hover:text-red-500 flex-shrink-0" title="Cancel">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      );
+    }
 
-        if (isStaticDataMode()) {
-          setRecords((prev) =>
-            prev.map((r) =>
-              r.id === record.id
-                ? { ...r, ...updatePayload, updated_at: new Date().toISOString() }
-                : r,
-            ),
-          );
-        } else {
-          await updatePatientCredit(record.id, updatePayload);
-          await fetchData();
-        }
-      } catch (err) {
-        console.error('Error updating field:', err);
-        setError('Failed to update. Please try again.');
-      }
-    };
+    const shownValue = displayValue || value;
 
     return (
-      <InlineEditableField
-        value={value}
-        displayValue={options?.displayValue}
-        fieldLabel={creditFieldLabels[field] || field}
-        fieldType={fieldType}
-        isDayMode={isDayMode}
-        onSave={handleFieldSave}
-        min={field === 'credit_amount' ? 0 : undefined}
-        step={field === 'credit_amount' ? '0.01' : undefined}
-      />
+      <div
+        onClick={() => startEditCell(record.id, field, value)}
+        className={customClassName || `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs leading-relaxed ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${shownValue ? '' : 'italic opacity-40'}`}
+        title="Click to edit"
+      >
+        {shownValue || 'Click to add...'}
+      </div>
     );
   }
+
+  // ---------------------------------------------------
+  // MODAL SAVE HANDLER
+  // ---------------------------------------------------
+  const handleModalSave = async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+    if (isNewEntry) {
+      const newRecord = {
+        patient_name: sanitizePatientName(String(data.patient_name || '')),
+        patient_id: String(data.patient_id || '') || null,
+        credit_amount: Number(data.credit_amount) || 0,
+        credit_date: String(data.credit_date || getLocalDateString()),
+        credit_source: (String(data.credit_source) || 'other') as PatientCredit['credit_source'],
+        status: (String(data.status) || 'unapplied') as PatientCreditStatus,
+        applied_to: String(data.applied_to || '') || null,
+        applied_date: null,
+        notes: String(data.notes || '') || null,
+        structured_notes: [] as NoteEntry[],
+        audit_trail: [createAuditEntry('created', 'staff')],
+        created_by: 'staff',
+        updated_by: 'staff',
+      };
+      if (isStaticDataMode()) {
+        setRecords((prev) => [{ ...newRecord, id: crypto.randomUUID() } as PatientCredit, ...prev]);
+      } else {
+        await insertPatientCredit(newRecord);
+        await fetchData();
+      }
+    } else {
+      const id = String(data.id);
+      const record = records.find((r) => r.id === id);
+      const auditEntry = createAuditEntry('updated', 'staff');
+      const existingTrail = record?.audit_trail || [];
+      const updates: Record<string, unknown> = {
+        patient_name: sanitizePatientName(String(data.patient_name || '')),
+        patient_id: String(data.patient_id || '') || null,
+        credit_amount: Number(data.credit_amount) || 0,
+        credit_date: String(data.credit_date || ''),
+        credit_source: String(data.credit_source) || 'other',
+        status: String(data.status) || 'unapplied',
+        applied_to: String(data.applied_to || '') || null,
+        notes: String(data.notes || '') || null,
+        audit_trail: [...existingTrail, auditEntry],
+        updated_by: 'staff',
+      };
+      if (isStaticDataMode()) {
+        setRecords((prev) => prev.map((r) => r.id === id ? { ...r, ...updates, updated_at: new Date().toISOString() } as PatientCredit : r));
+      } else {
+        await updatePatientCredit(id, updates);
+        await fetchData();
+      }
+    }
+    setEditModalOpen(false);
+    setEditModalRecord(null);
+  };
 
   // ---------------------------------------------------
   // RENDER
@@ -635,23 +747,32 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                 {filteredRecords.map((record) => (
                   <tr
                     key={record.id}
-                    className={`${isDayMode ? 'hover:bg-white/40' : 'hover:bg-white/5'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
-                    onClick={(e) => e.stopPropagation()}
+                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} cursor-pointer transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, select, input, textarea, [role="button"]')) return;
+                      e.stopPropagation();
+                      setEditModalRecord(record);
+                      setEditModalOpen(true);
+                    }}
                   >
                     <td className="py-2.5 px-2">
-                      {renderInlineEditable(record, 'patient_name', record.patient_name)}
+                      {renderEditableCell(
+                        record, 'patient_name', record.patient_name, record.patient_name,
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-medium ${isDayMode ? 'text-gray-900 hover:bg-gray-100' : 'text-white hover:bg-white/5'}`,
+                      )}
                     </td>
                     <td className="py-2.5 px-2">
-                      {renderInlineEditable(record, 'credit_amount', record.credit_amount, {
-                        fieldType: 'currency',
-                        displayValue: formatCurrency(record.credit_amount),
-                      })}
+                      {renderEditableCell(
+                        record, 'credit_amount', String(record.credit_amount), formatCurrency(record.credit_amount),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-semibold text-right ${isDayMode ? 'text-gray-900 hover:bg-gray-100' : 'text-white hover:bg-white/5'}`,
+                      )}
                     </td>
                     <td className="py-2.5 px-2">
-                      {renderInlineEditable(record, 'credit_date', record.credit_date, {
-                        fieldType: 'date',
-                        displayValue: formatDate(record.credit_date),
-                      })}
+                      {renderEditableCell(
+                        record, 'credit_date', record.credit_date, formatDate(record.credit_date),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'}`,
+                      )}
                     </td>
                     <td className="py-2.5 px-2">
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${isDayMode ? 'bg-gray-100 text-gray-700' : 'bg-white/10 text-gray-300'}`}>
@@ -662,10 +783,10 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                       {renderStatusDropdown(record)}
                     </td>
                     <td className="py-2.5 px-2">
-                      {renderInlineEditable(record, 'applied_to', record.applied_to)}
+                      {renderEditableCell(record, 'applied_to', record.applied_to)}
                     </td>
                     <td className="py-2.5 px-2">
-                      {renderInlineEditable(record, 'notes', record.notes)}
+                      {renderEditableCell(record, 'notes', record.notes)}
                     </td>
                     <td className="py-2.5 px-2">
                       <div className="flex items-center justify-center gap-1">
@@ -837,6 +958,16 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
         message={toastMessage || ''}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalRecord(null); }}
+        onSave={handleModalSave}
+        initialTab="credits"
+        initialData={editModalRecord}
         isDayMode={isDayMode}
       />
     </div>
