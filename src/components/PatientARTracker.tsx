@@ -163,6 +163,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   const [showReportPreview, setShowReportPreview] = useState(false);
   const [reportPreviewHtml, setReportPreviewHtml] = useState('');
   const [reportDate, setReportDate] = useState(dashboardDate || '');
+  const [reportRecipients, setReportRecipients] = useState('');
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -615,12 +616,17 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   }, [reportDate]);
 
   const handleSendDailyReport = useCallback(async () => {
+    const recipientList = reportRecipients.split(',').map(e => e.trim()).filter(Boolean);
+    if (recipientList.length === 0) {
+      setError('Please enter at least one email recipient.');
+      return;
+    }
     setSendingReport(true);
     try {
       const data = await fetchDailyARReportData(reportDate || undefined);
       const logoBaseUrl = window.location.origin;
       const result = await sendDailyARReport(
-        ['daniely@stellarconsults.com', 'dr.gajjar@courtstreetdental.com'],
+        recipientList,
         data,
         logoBaseUrl,
       );
@@ -641,7 +647,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     } finally {
       setSendingReport(false);
     }
-  }, [reportDate]);
+  }, [reportDate, reportRecipients]);
 
   // ---------------------------------------------------
   // NOTES & AUDIT DRAWER HANDLERS
@@ -1034,7 +1040,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
                 isDayMode ? 'border-blue-300 text-blue-600 hover:bg-blue-50' : 'border-blue-700 text-blue-400 hover:bg-blue-900/30'
               }`}
-              title="Preview & send daily A/R report to Daniely and Dr. Gajjar"
+              title="Preview & send daily A/R report"
             >
               <Mail className="w-4 h-4" />
               Daily Report{isAdmin && reportDate && reportDate !== getLocalDateString() ? ` (${reportDate})` : ''}
@@ -1644,27 +1650,43 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
             className={`w-full max-w-3xl max-h-[85vh] rounded-2xl ${isDayMode ? 'glass-card border border-white/40' : 'glass-card-dark border border-white/10'} shadow-2xl flex flex-col`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/10">
-              <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                Daily A/R Report Preview
-              </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleSendDailyReport}
-                  disabled={sendingReport}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-sm disabled:opacity-50"
-                >
-                  {sendingReport ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" />Sending...</>
-                  ) : (
-                    <><Mail className="w-4 h-4" />Send to Daniely & Dr. Gajjar</>
-                  )}
-                </button>
+            <div className="p-4 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                  Daily A/R Report Preview
+                </h3>
                 <button
                   onClick={() => setShowReportPreview(false)}
                   className={`p-2 rounded-lg ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-white/10 text-gray-400'}`}
                 >
                   <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Recipients (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={reportRecipients}
+                    onChange={(e) => setReportRecipients(e.target.value)}
+                    placeholder="email@example.com, another@example.com"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-white/20 bg-white/10 text-white'
+                    }`}
+                  />
+                </div>
+                <button
+                  onClick={handleSendDailyReport}
+                  disabled={sendingReport || !reportRecipients.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-sm disabled:opacity-50"
+                >
+                  {sendingReport ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />Sending...</>
+                  ) : (
+                    <><Mail className="w-4 h-4" />Email Report</>
+                  )}
                 </button>
               </div>
             </div>
