@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { getLocalDateString, toLocalDateString, getUTCBoundariesForLocalDate } from '../utils/dateUtils';
+import { buildLogoAttachments } from './emailService';
 
 // Brand colors matching the EOD report template
 const COLORS = {
@@ -196,7 +197,7 @@ function formatDate(dateStr: string): string {
  * Generates the HTML email for the daily A/R report
  */
 export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string): string {
-  const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
+  const stellarLogoUrl = logoBaseUrl === 'cid' ? 'cid:stellar-logo' : `${logoBaseUrl}/Stellar2%20copy.jpg`;
   const totalNewItems =
     data.newPatientAR.length +
     data.newNonCollectible.length +
@@ -406,7 +407,7 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
           <tr>
             <td style="padding: 24px 40px 32px 40px; text-align: center; border-top: 1px solid ${COLORS.gray200}; margin-top: 24px;">
               <p style="margin: 0; color: ${COLORS.gray500}; font-size: 12px;">
-                This is an automated daily report from the Stellar Dashboard.
+                This is an automated daily report from the Stellar OPS Dashboard.
               </p>
               <p style="margin: 4px 0 0 0; color: ${COLORS.gray500}; font-size: 11px;">
                 Patient information has been sanitized for security.
@@ -431,7 +432,9 @@ export async function sendDailyARReport(
   logoBaseUrl: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const htmlBody = generateDailyARReportHTML(data, logoBaseUrl);
+    // Use CID references for email so logos display correctly in email clients
+    const htmlBody = generateDailyARReportHTML(data, 'cid');
+    const attachments = await buildLogoAttachments();
     const totalNew =
       data.newPatientAR.length +
       data.newNonCollectible.length +
@@ -444,6 +447,7 @@ export async function sendDailyARReport(
         subject: `Daily A/R Report - ${formatDate(data.reportDate)} (${totalNew} new item${totalNew !== 1 ? 's' : ''})`,
         htmlBody,
         reportDate: data.reportDate,
+        attachments,
       },
     });
 
