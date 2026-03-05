@@ -29,6 +29,7 @@ import CreditsTracker from './components/CreditsTracker';
 import VCCPaymentsTracker from './components/VCCPaymentsTracker';
 import { EODReport } from './components/eod-report';
 import { sanitizePatientName } from './utils/sanitizePatientName';
+import { getLocalDateString, toLocalDateString } from './utils/dateUtils';
 import { useAuth } from './contexts/AuthContext';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
@@ -56,13 +57,6 @@ import {
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem } from './types/database.types';
 
 // BAM Cycle Helper Functions
-// Get local date string in YYYY-MM-DD format (respects user's timezone)
-const getLocalDateString = (date: Date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 const isWeekend = (date: Date) => {
   const day = date.getDay();
@@ -517,7 +511,7 @@ const getLast5BusinessDays = (): Date[] => {
 
 // Helper function to check if a follow-up is due (today or earlier)
 const isFollowUpDue = (followUpDate: string): boolean => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   return followUpDate <= today;
 };
 
@@ -750,7 +744,7 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
 
 const recordToInsuranceCheck = (record: InsuranceCheckRecord): any => {
   // For insurance checks, payment_date should default to dateEntered if not provided
-  const paymentDate = record.dateEntered || new Date().toISOString().split('T')[0];
+  const paymentDate = record.dateEntered || getLocalDateString();
 
   // Build base fields without id (for inserts)
   const baseFields = {
@@ -1787,7 +1781,7 @@ const CourtStreetRCM = () => {
   // Calculate follow-up counts based on current date
   useEffect(() => {
     const calculateFollowUpCounts = async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
 
       // Count claims due for follow-up
       const claimsDue = claims.filter((claim: ClaimRecord) => claim.followUpDate <= today).length;
@@ -4004,7 +3998,7 @@ const CourtStreetRCM = () => {
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                         {getLast5BusinessDays().map((date, index) => {
-                          const dateStr = date.toISOString().split('T')[0];
+                          const dateStr = toLocalDateString(date);
                           const dayTotal = filteredInsuranceChecks
                             .filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr))
                             .reduce((sum, c) => sum + c.totalAmount, 0);
@@ -4565,7 +4559,7 @@ const CourtStreetRCM = () => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     // Use dateEntered if provided, otherwise use today's date
-                    const dateEntered = formData.get('dateEntered') as string || new Date().toISOString().split('T')[0];
+                    const dateEntered = formData.get('dateEntered') as string || getLocalDateString();
                     const newCheck: InsuranceCheckRecord = {
                       id: '', // Let database auto-generate the UUID
                       checkEftNumber: formData.get('checkEftNumber') as string,

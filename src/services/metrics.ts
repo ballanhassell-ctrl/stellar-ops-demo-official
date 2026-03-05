@@ -1,6 +1,7 @@
 // src/services/metrics.ts
 import { supabase } from '../lib/supabaseClient';
 import { isStaticDataMode } from '../config/dataMode';
+import { toLocalDateString } from '../utils/dateUtils';
 import {
   sampleWeeklyScorecardData,
   sampleMonthlyNewPatients,
@@ -178,13 +179,13 @@ export async function getMonthlyNewPatientMTD(numMonths: number = 6): Promise<Ar
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = date.getFullYear();
       const month = date.getMonth(); // 0-indexed
-      const monthStart = date.toISOString().split('T')[0];
+      const monthStart = toLocalDateString(date);
       const lastDay = new Date(year, month + 1, 0);
       // For current month, cap at today
       const effectiveEnd = (year === now.getFullYear() && month === now.getMonth())
         ? now
         : lastDay;
-      const monthEnd = effectiveEnd.toISOString().split('T')[0];
+      const monthEnd = toLocalDateString(effectiveEnd);
       const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       monthRanges.push({ year, month: month + 1, monthStart, monthEnd, monthName });
     }
@@ -300,8 +301,8 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
     startDate.setMonth(startDate.getMonth() - (numMonths - 1));
     startDate.setDate(1); // First day of the start month
 
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const startDateStr = toLocalDateString(startDate);
+    const endDateStr = toLocalDateString(endDate);
 
     // Fetch all new patient data for the date range
     const { data, error } = await supabase
@@ -423,22 +424,22 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
     console.log('[getNewPatientsAggregates] Calculating from eod_mtd_new_patients and daily values...');
 
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = toLocalDateString(today);
     const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon ... 5=Fri, 6=Sat
 
     // --- Date ranges ---
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     // Current business week (Mon-Fri)
     // getDay(): 0=Sun,1=Mon..6=Sat  →  daysFromMonday: Mon=0..Sun=6
     const daysFromMonday = (dayOfWeek + 6) % 7;
     const monday = new Date(today);
     monday.setDate(today.getDate() - daysFromMonday);
-    const mondayStr = monday.toISOString().split('T')[0];
+    const mondayStr = toLocalDateString(monday);
     const friday = new Date(monday);
     friday.setDate(monday.getDate() + 4);
-    const fridayStr = friday.toISOString().split('T')[0];
+    const fridayStr = toLocalDateString(friday);
 
     // --- Quarter info ---
     const currentMonth = today.getMonth(); // 0-11
@@ -473,8 +474,8 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
           .from('csd_metric_values')
           .select('value, as_of_date')
           .eq('field_key', 'eod_mtd_new_patients')
-          .gte('as_of_date', mStart.toISOString().split('T')[0])
-          .lte('as_of_date', mEnd.toISOString().split('T')[0])
+          .gte('as_of_date', toLocalDateString(mStart))
+          .lte('as_of_date', toLocalDateString(mEnd))
           .order('as_of_date', { ascending: false })
           .limit(1);
       });
@@ -687,16 +688,16 @@ export async function getPaymentAggregates() {
         .from('csd_metric_values')
         .select('value')
         .eq('field_key', 'todays_payments')
-        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .gte('as_of_date', toLocalDateString(sevenDaysAgo))
+        .lte('as_of_date', toLocalDateString(today)),
 
       // Current month
       supabase
         .from('csd_metric_values')
         .select('value')
         .eq('field_key', 'todays_payments')
-        .gte('as_of_date', monthStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .gte('as_of_date', toLocalDateString(monthStart))
+        .lte('as_of_date', toLocalDateString(today)),
     ]);
 
     // Sum up the values
@@ -731,8 +732,8 @@ export async function getBAMCycleRevenue(cycleStartDate: Date | null, cycleEndDa
       return 0;
     }
 
-    const startDateStr = cycleStartDate.toISOString().split('T')[0];
-    const endDateStr = cycleEndDate.toISOString().split('T')[0];
+    const startDateStr = toLocalDateString(cycleStartDate);
+    const endDateStr = toLocalDateString(cycleEndDate);
 
     console.log('[getBAMCycleRevenue] Fetching BAM revenue for cycle:', startDateStr, 'to', endDateStr);
 
@@ -773,7 +774,7 @@ export async function getClaimsTotals() {
 
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
+    const sixtyDaysAgoStr = toLocalDateString(sixtyDaysAgo);
 
     const [activeClaimsResult, pendingResult, deniedResult, oldClaimsResult] = await Promise.all([
       // Total active claims (not archived)
@@ -936,8 +937,8 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
     // metrics entered during week N represent week N-1's performance
     startDate.setDate(today.getDate() - ((numWeeks + 1) * 7));
 
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const todayStr = today.toISOString().split('T')[0];
+    const startDateStr = toLocalDateString(startDate);
+    const todayStr = toLocalDateString(today);
 
     console.log('[getWeeklyScorecardData] Fetching data from', startDateStr, 'to', todayStr);
 
@@ -989,7 +990,7 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
       const daysFromMonday = (dayOfWeek + 6) % 7; // Monday = 0, Tuesday = 1, ..., Sunday = 6
       const monday = new Date(priorWeekDate);
       monday.setDate(priorWeekDate.getDate() - daysFromMonday);
-      const weekKey = monday.toISOString().split('T')[0];
+      const weekKey = toLocalDateString(monday);
 
       if (!weeklyData.has(weekKey)) {
         weeklyData.set(weekKey, {

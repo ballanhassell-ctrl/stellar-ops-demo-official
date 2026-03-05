@@ -1,6 +1,7 @@
 // src/components/InsuranceARReport.tsx
 // Insurance A/R Report - mirrors "Stellar X Court Street Dental - Insurance A/R Report" spreadsheet
 
+import { getLocalDateString } from '../utils/dateUtils';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Search,
@@ -176,7 +177,7 @@ function isFollowUpRequired(status: UnifiedClaimStatus): boolean {
 }
 
 function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  return getLocalDateString();
 }
 
 // =====================================================

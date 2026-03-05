@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
 
 // Brand colors matching the EOD report template
 const COLORS = {
@@ -58,7 +59,7 @@ export interface DailyARReportData {
  * Fetches all new records added today across tracked categories
  */
 export async function fetchDailyARReportData(reportDate?: string): Promise<DailyARReportData> {
-  const today = reportDate || new Date().toISOString().split('T')[0];
+  const today = reportDate || getLocalDateString();
   const startOfDay = `${today}T00:00:00.000Z`;
   const endOfDay = `${today}T23:59:59.999Z`;
 
@@ -123,7 +124,7 @@ export async function fetchDailyARReportData(reportDate?: string): Promise<Daily
   // Prior-day collected from Patient A/R (collected_amount updated yesterday)
   const yesterday = new Date(today + 'T00:00:00');
   yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().split('T')[0];
+  const yStr = toLocalDateString(yesterday);
   const yStart = `${yStr}T00:00:00.000Z`;
   const yEnd = `${yStr}T23:59:59.999Z`;
 

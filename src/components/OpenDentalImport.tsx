@@ -1,5 +1,6 @@
 // src/components/OpenDentalImport.tsx
 // Import Open Dental CSV data (Claims and Patient A/R) into Supabase
+import { getLocalDateString } from '../utils/dateUtils';
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Upload, FileText, CheckCircle, AlertCircle, X, ArrowRight, Trash2 } from 'lucide-react';
@@ -314,7 +315,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
         setStatus('error'); return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const rows: PatientARRow[] = [];
       for (let i = si + 1; i < lines.length; i++) {
         const c = splitLine(lines[i], delimiter);
@@ -362,7 +363,7 @@ export default function OpenDentalImport({ isDayMode, onImportComplete }: OpenDe
 
   const importClaims = async () => {
     const BS = 50, total = allClaimsData.length;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     for (let i = 0; i < total; i += BS) {
       const batch = allClaimsData.slice(i, i + BS).map(r => {
         const dos = r.date_of_service || today;

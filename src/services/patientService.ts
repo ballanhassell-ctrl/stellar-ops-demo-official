@@ -1,5 +1,6 @@
 // src/services/patientService.ts
 import { supabase } from '../lib/supabaseClient';
+import { getLocalDateString } from '../utils/dateUtils';
 import type { Patient, Appointment, PatientRevenue, LifecycleMetrics } from '../types/database.types';
 import { isStaticDataMode } from '../config/dataMode';
 import { samplePatients } from '../data/sampleData';
@@ -145,7 +146,7 @@ export async function getRevenueByPatient(patientId: string) {
 // =====================================================
 
 export async function calculateLifecycleMetrics(): Promise<LifecycleMetrics> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
 
   // Get all patients
   const patients = await getPatients();

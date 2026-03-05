@@ -24,18 +24,25 @@ import type {
   InsuranceIssue,
   ARSnapshot,
 } from '../types/database.types';
+import { getLocalDateString } from '../utils/dateUtils';
 
 // Helper function to generate dates
 const daysAgo = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const daysFromNow = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() + days);
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // ===== PATIENTS =====
@@ -1444,7 +1451,7 @@ export const sampleMetricsData = {
 
 // ===== EOD REPORT DATA =====
 export const sampleEODData = {
-  reportDate: new Date().toISOString().split('T')[0],
+  reportDate: getLocalDateString(),
   dailyProduction: 12700.00,
   dailyProductionGoal: 15000.00,
   paymentsCollected: 12650.00,
@@ -1535,7 +1542,7 @@ export const sampleNewPatientAggregates = {
 export const sampleProviderMetrics = [
   {
     field_key: 'provider_dr_gajjar',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 4250.00,
     source: 'manual',
     notes: null,
@@ -1548,7 +1555,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_dr_judge',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 3850.00,
     source: 'manual',
     notes: null,
@@ -1561,7 +1568,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_dr_strachan',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 4100.00,
     source: 'manual',
     notes: null,
@@ -1574,7 +1581,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_farah',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 1850.00,
     source: 'manual',
     notes: null,
@@ -1587,7 +1594,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_olga',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 1650.00,
     source: 'manual',
     notes: null,
@@ -1600,7 +1607,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_jissel',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 1750.00,
     source: 'manual',
     notes: null,
@@ -1613,7 +1620,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_temp_hyg',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 0.00,
     source: 'manual',
     notes: null,

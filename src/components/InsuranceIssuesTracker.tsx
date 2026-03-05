@@ -3,6 +3,7 @@
 // Insurance Issues Tracker - mirrors "Insurance Issues Report" spreadsheet
 // =====================================================
 
+import { getLocalDateString } from '../utils/dateUtils';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   Search,
@@ -559,9 +560,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     setStatusPopupIssue(issue);
     setStatusFormInitials(issue.corrected_by || '');
     setStatusFormNote('');
-    setStatusFormDate(issue.corrected_at ? issue.corrected_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setStatusFormDate(issue.corrected_at ? issue.corrected_at.split('T')[0] : getLocalDateString());
     setStatusFormSubmittedBy(issue.submitted_by || '');
-    setStatusFormSubmittedDate(issue.submitted_at ? issue.submitted_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setStatusFormSubmittedDate(issue.submitted_at ? issue.submitted_at.split('T')[0] : getLocalDateString());
     setStatusSaving(false);
   };
 

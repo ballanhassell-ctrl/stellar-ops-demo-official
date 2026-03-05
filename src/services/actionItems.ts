@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
 
 export interface ActionItemsData {
   claimsToSubmit: number;
@@ -60,11 +61,11 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     // - Patient AR past due
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = toLocalDateString(thirtyDaysAgo);
 
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-    const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0];
+    const fourteenDaysAgoStr = toLocalDateString(fourteenDaysAgo);
 
     // Claims pending > 30 days
     const { count: oldClaimsCount } = await supabase
@@ -107,7 +108,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     });
 
     // 5. Missed Appointments - AUTO-CALCULATED from appointments table
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const { count: missedAppointments } = await supabase
       .from('appointments')
       .select('id', { count: 'exact', head: true })
@@ -120,7 +121,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     // Patients who haven't been seen in 6+ months
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
+    const sixMonthsAgoStr = toLocalDateString(sixMonthsAgo);
 
     const { count: recallCount } = await supabase
       .from('patients')
@@ -165,11 +166,11 @@ export async function getFollowUpCounts() {
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = toLocalDateString(thirtyDaysAgo);
 
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-    const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0];
+    const fourteenDaysAgoStr = toLocalDateString(fourteenDaysAgo);
 
     // Claims needing follow-up (pending > 30 days)
     const { count: claimsCount } = await supabase

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { toLocalDateString } from '../utils/dateUtils';
 import {
   LineChart,
   Line,
@@ -72,7 +73,7 @@ function filterSnapshotsByRange(
       return snapshots;
   }
 
-  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const cutoffStr = toLocalDateString(cutoff);
   return snapshots.filter((s) => s.snapshot_date >= cutoffStr);
 }
 
