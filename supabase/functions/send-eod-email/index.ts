@@ -19,19 +19,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface InlineAttachment {
-  Name: string;
-  Content: string;
-  ContentType: string;
-  ContentID: string;
-}
-
 interface EmailRequest {
   to: string[];
   subject: string;
   htmlBody: string;
   reportDate: string;
-  attachments?: InlineAttachment[];
 }
 
 serve(async (req: Request) => {
@@ -54,7 +46,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const { to, subject, htmlBody, reportDate, attachments }: EmailRequest = await req.json();
+    const { to, subject, htmlBody, reportDate }: EmailRequest = await req.json();
 
     if (!to || to.length === 0) {
       return new Response(
@@ -83,7 +75,6 @@ serve(async (req: Request) => {
           reportDate,
           source: 'stellar-ops-dashboard',
         },
-        ...(attachments && attachments.length > 0 ? { Attachments: attachments } : {}),
       }),
     });
 

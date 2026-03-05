@@ -4,13 +4,6 @@
 
 import { supabase } from '../lib/supabaseClient';
 
-interface InlineAttachment {
-  Name: string;
-  Content: string;
-  ContentType: string;
-  ContentID: string;
-}
-
 interface SendEmailRequest {
   to: string[];
   subject: string;
@@ -27,40 +20,6 @@ interface SendEmailResult {
   method: 'postmark' | 'fallback';
 }
 
-async function fetchLogoAsBase64(path: string): Promise<string | null> {
-  try {
-    const response = await fetch(`${window.location.origin}${path}`);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        // Strip the data:image/...;base64, prefix to get raw base64
-        resolve(dataUrl.split(',')[1] || null);
-      };
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
-
-export async function buildLogoAttachments(): Promise<InlineAttachment[]> {
-  const [stellarB64, csdB64] = await Promise.all([
-    fetchLogoAsBase64('/Stellar2 copy.jpg'),
-    fetchLogoAsBase64('/Cris Dental Image.jpg'),
-  ]);
-  const attachments: InlineAttachment[] = [];
-  if (stellarB64) {
-    attachments.push({ Name: 'stellar-logo.jpg', Content: stellarB64, ContentType: 'image/jpeg', ContentID: 'cid:stellar-logo' });
-  }
-  if (csdB64) {
-    attachments.push({ Name: 'csd-logo.jpg', Content: csdB64, ContentType: 'image/jpeg', ContentID: 'cid:csd-logo' });
-  }
-  return attachments;
-}
-
 /**
  * Sends an EOD report email via Postmark (through Supabase Edge Function)
  * or falls back to clipboard+mailto if Postmark is not configured.
@@ -73,9 +32,6 @@ export async function buildLogoAttachments(): Promise<InlineAttachment[]> {
  */
 export async function sendEODReportEmail(request: SendEmailRequest): Promise<SendEmailResult> {
   try {
-    // Fetch logo images and encode as base64 for CID inline attachments
-    const attachments = await buildLogoAttachments();
-
     // Attempt to send via Supabase Edge Function (Postmark)
     const { data, error } = await supabase.functions.invoke('send-eod-email', {
       body: {
@@ -83,7 +39,6 @@ export async function sendEODReportEmail(request: SendEmailRequest): Promise<Sen
         subject: request.subject,
         htmlBody: request.htmlBody,
         reportDate: request.reportDate,
-        attachments,
       },
     });
 
