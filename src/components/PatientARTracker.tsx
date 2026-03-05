@@ -311,38 +311,6 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     }
   }, [newForm, fetchData]);
 
-  const handleUpdateField = useCallback(
-    async (id: string, field: string, value: string | null) => {
-      try {
-        const record = records.find((r) => r.id === id);
-        const oldValue = record ? String((record as Record<string, unknown>)[field] ?? '') : '';
-        const auditEntry = createAuditEntry('updated', 'staff', {
-          field,
-          oldValue: oldValue || null,
-          newValue: value,
-        });
-
-        if (isStaticDataMode()) {
-          setRecords((prev) =>
-            prev.map((r) =>
-              r.id === id
-                ? { ...r, [field]: value, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
-                : r,
-            ),
-          );
-        } else {
-          const existingTrail = record?.audit_trail || [];
-          await updatePatientAR(id, { [field]: value, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
-          await fetchData();
-        }
-      } catch (err) {
-        console.error('Error updating field:', err);
-        setError('Failed to update. Please try again.');
-      }
-    },
-    [fetchData, records],
-  );
-
   const handleStatusChange = useCallback(
     async (id: string, newStatus: PatientARStatus) => {
       const record = records.find((r) => r.id === id);
