@@ -429,7 +429,6 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
 export async function sendDailyARReport(
   recipients: string[],
   data: DailyARReportData,
-  logoBaseUrl: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Use CID references for email so logos display correctly in email clients
