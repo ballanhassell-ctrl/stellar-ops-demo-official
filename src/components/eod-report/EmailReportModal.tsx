@@ -79,7 +79,7 @@ export default function EmailReportModal({
 
   const generateDailyARHTML = async (logoBase?: string) => {
     const data = await fetchDailyARReportData(effectiveDate);
-    return generateDailyARReportHTML(data, logoBase || window.location.origin);
+    return generateDailyARReportHTML(data, logoBase || window.location.origin, message || undefined);
   };
 
   const buildFinalHTML = async (freshData?: EODData, logoBase?: string): Promise<string> => {
