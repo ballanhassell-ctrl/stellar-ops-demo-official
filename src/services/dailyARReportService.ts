@@ -7,7 +7,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
-import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
+import { getLocalDateString, toLocalDateString, getUTCBoundariesForLocalDate } from '../utils/dateUtils';
 
 // Brand colors matching the EOD report template
 const COLORS = {
@@ -60,8 +60,7 @@ export interface DailyARReportData {
  */
 export async function fetchDailyARReportData(reportDate?: string): Promise<DailyARReportData> {
   const today = reportDate || getLocalDateString();
-  const startOfDay = `${today}T00:00:00.000Z`;
-  const endOfDay = `${today}T23:59:59.999Z`;
+  const { start: startOfDay, end: endOfDay } = getUTCBoundariesForLocalDate(today);
 
   // Fetch new Patient A/R records (collectible) added today
   const { data: patientARData } = await supabase
@@ -122,11 +121,11 @@ export async function fetchDailyARReportData(reportDate?: string): Promise<Daily
     .eq('status', 'Open');
 
   // Prior-day collected from Patient A/R (collected_amount updated yesterday)
-  const yesterday = new Date(today + 'T00:00:00');
+  const [yr, mo, dy] = today.split('-').map(Number);
+  const yesterday = new Date(yr, mo - 1, dy);
   yesterday.setDate(yesterday.getDate() - 1);
   const yStr = toLocalDateString(yesterday);
-  const yStart = `${yStr}T00:00:00.000Z`;
-  const yEnd = `${yStr}T23:59:59.999Z`;
+  const { start: yStart, end: yEnd } = getUTCBoundariesForLocalDate(yStr);
 
   const { data: priorDayData } = await supabase
     .from('patient_ar')
