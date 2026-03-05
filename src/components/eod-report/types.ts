@@ -98,6 +98,16 @@ export const REPORT_TEMPLATES: Record<string, ReportTemplate> = {
     description: 'Focus on tasks requiring attention',
     includes: ['Action Items', 'Important Notes'],
   },
+  dailyAR: {
+    name: 'Daily A/R Report',
+    description: 'New items added to Patient A/R, Credits, Insurance Issues',
+    includes: ['Patient A/R', 'Non-Collectible', 'Credits', 'Insurance Issues', 'Outstanding Snapshot'],
+  },
+  combined: {
+    name: 'EOD + Daily A/R (Combined)',
+    description: 'Full EOD report with the Daily A/R report appended',
+    includes: ['Full EOD Report', 'Daily A/R Report'],
+  },
 };
 
 export { type EODData, type PaymentInsight, type BAMCycleData };
