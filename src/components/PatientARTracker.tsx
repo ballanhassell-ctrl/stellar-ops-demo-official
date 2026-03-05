@@ -461,7 +461,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     [fetchData],
   );
 
-  const handleSaveEditingCell = useCallback(async () => {
+  const _handleSaveEditingCell = useCallback(async () => {
     if (!editingCell) return;
     const { recordId, field } = editingCell;
 
@@ -573,7 +573,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     setContactInitials('');
   }, [editingContact, contactDate, contactInitials, fetchData]);
 
-  const startEditCell = useCallback(
+  const _startEditCell = useCallback(
     (recordId: string, field: EditingCell extends null ? never : NonNullable<EditingCell>['field'], currentValue: string | null) => {
       setEditingCell({ recordId, field });
       setEditingValue(currentValue || '');

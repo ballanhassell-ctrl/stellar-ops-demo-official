@@ -40,7 +40,6 @@ import type { NoteEntry } from '../types/database.types';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
-import InlineEditableField from './InlineEditableField';
 import type { AuditTrailEntry } from '../types/database.types';
 
 // =====================================================
@@ -486,7 +485,7 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
     '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
   // Inline save handler for VCC fields
-  const handleInlineVCCSave = async (payment: VCCPayment, field: string, newValue: string | number | boolean | null, auditEntry: AuditTrailEntry) => {
+  const _handleInlineVCCSave = async (payment: VCCPayment, field: string, newValue: string | number | boolean | null, auditEntry: AuditTrailEntry) => {
     try {
       let processedValue = newValue;
       if (field === 'patient_name' && typeof newValue === 'string') {

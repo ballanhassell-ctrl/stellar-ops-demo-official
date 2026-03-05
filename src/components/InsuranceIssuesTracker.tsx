@@ -891,10 +891,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     }
   };
 
-  const highlightClass = isDayMode
-    ? 'bg-amber-50/60 hover:bg-amber-100/80 border-amber-200/50'
-    : 'bg-amber-900/10 hover:bg-amber-900/20 border-amber-700/30';
-
   // ----- Render: table row -----
   const renderRow = (issue: InsuranceIssue) => {
     const rowBg = issue.status === 'Resolved'

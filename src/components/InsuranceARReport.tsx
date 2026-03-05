@@ -49,7 +49,6 @@ import { insertPatientAR } from '../services/patientARService.new';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 import InlineEditableField from './InlineEditableField';
-import type { AuditTrailEntry } from '../types/database.types';
 
 // =====================================================
 // CONSTANTS
@@ -993,7 +992,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       }
 
       await updateClaim(claim.id, updates);
-      await fetchClaims();
+      await loadClaims();
     } catch (err) {
       console.error('Error updating claim field:', err);
       setError('Failed to update claim.');

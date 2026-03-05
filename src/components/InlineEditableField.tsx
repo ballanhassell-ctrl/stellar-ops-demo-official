@@ -184,8 +184,6 @@ export default function InlineEditableField({
     if (fieldType === 'checkbox') {
       // For checkboxes, toggle immediately
       const newVal = !value;
-      const oldStr = value ? 'Yes' : 'No';
-      const newStr = newVal ? 'Yes' : 'No';
       setPendingValue(String(newVal));
       setShowConfirmation(true);
       return;
