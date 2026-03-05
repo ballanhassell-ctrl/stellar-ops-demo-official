@@ -284,7 +284,7 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
                 </tr>
                 <tr>
                   <td align="center">
-                    <h1 style="margin: 0; color: ${COLORS.white}; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">Daily A/R Activity Report</h1>
+                    <h1 style="margin: 0; color: ${COLORS.white}; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">Court Street Dental | Daily RCM Activity Report</h1>
                     <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.85); font-size: 15px; font-weight: 400;">${formatDate(data.reportDate)}</p>
                   </td>
                 </tr>
