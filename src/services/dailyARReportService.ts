@@ -196,7 +196,7 @@ function formatDate(dateStr: string): string {
 /**
  * Generates the HTML email for the daily A/R report
  */
-export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string): string {
+export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string, message?: string): string {
   const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
   const totalNewItems =
     data.newPatientAR.length +
@@ -306,6 +306,21 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
               </table>
             </td>
           </tr>
+
+${message ? `
+          <!-- Custom Message -->
+          <tr>
+            <td style="padding: 24px 40px 0 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${COLORS.gray50}; border-radius: 10px; border: 1px solid ${COLORS.gray200};">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0; color: ${COLORS.gray700}; font-size: 14px; line-height: 1.6;">${message}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+` : ''}
 
           <!-- Summary Cards -->
           <tr>
@@ -429,11 +444,12 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
 export async function sendDailyARReport(
   recipients: string[],
   data: DailyARReportData,
+  message?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Resolve logo URLs from Supabase Storage for email compatibility
     const logoBase = await getEmailLogoBaseUrl();
-    const htmlBody = generateDailyARReportHTML(data, logoBase);
+    const htmlBody = generateDailyARReportHTML(data, logoBase, message);
     const totalNew =
       data.newPatientAR.length +
       data.newNonCollectible.length +
