@@ -36,8 +36,6 @@ import { sanitizePatientName } from '../utils/sanitizePatientName';
 import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
-import InlineEditableField from './InlineEditableField';
-import type { AuditTrailEntry as AuditType } from '../types/database.types';
 
 // =====================================================
 // CONSTANTS
@@ -853,44 +851,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     );
   };
 
-  // ----- Inline editable save handler -----
-  const handleInlineSave = async (issue: InsuranceIssue, field: string, newValue: string | number | boolean | null, auditEntry: AuditType) => {
-    try {
-      let processedValue = newValue;
-      if (field === 'patient_name' && typeof newValue === 'string') {
-        processedValue = sanitizePatientName(newValue);
-        if (!processedValue) return;
-      }
-
-      const updates: Record<string, unknown> = {
-        [field]: processedValue,
-        audit_trail: [...(issue.audit_trail || []), auditEntry],
-      };
-
-      // Handle status transitions
-      if (field === 'status') {
-        if (newValue === 'Corrected' && issue.status === 'Open') {
-          updates.corrected_at = new Date().toISOString();
-        }
-        if (newValue === 'Resolved' && issue.status !== 'Resolved') {
-          updates.resolved_at = new Date().toISOString();
-          if (!issue.corrected_at) updates.corrected_at = new Date().toISOString();
-        }
-        if (newValue === 'Open') {
-          updates.corrected_at = null;
-          updates.corrected_by = null;
-          updates.correction_note = null;
-          updates.resolved_at = null;
-        }
-      }
-
-      const updated = await updateInsuranceIssue(issue.id, updates);
-      setIssues((prev) => prev.map((i) => (i.id === issue.id ? updated : i)));
-    } catch (err) {
-      console.error('Error updating issue field:', err);
-    }
-  };
-
   // ----- Render: table row -----
   const renderRow = (issue: InsuranceIssue) => {
     const rowBg = issue.status === 'Resolved'
@@ -903,97 +863,54 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       <tr key={issue.id} className={`${rowBg} ${rowHover} transition-colors`}>
         {/* Patient ID */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.patient_id}
-            fieldLabel="Patient ID"
-            fieldType="text"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'patient_id', v, a)}
-          />
+          {issue.patient_id ?? '--'}
         </td>
 
-        {/* Patient Name */}
+        {/* Patient Name (clickable → opens edit modal) */}
         <td className={`px-3 py-2 text-sm font-medium border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.patient_name}
-            fieldLabel="Patient Name"
-            fieldType="text"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'patient_name', v, a)}
-          />
+          <button
+            onClick={() => handleStartEdit(issue)}
+            className={`text-left font-medium underline decoration-dotted underline-offset-2 cursor-pointer transition-colors ${
+              isDayMode
+                ? 'text-blue-700 hover:text-blue-900'
+                : 'text-blue-400 hover:text-blue-200'
+            }`}
+            title={`Edit ${issue.patient_name}`}
+          >
+            {issue.patient_name}
+          </button>
         </td>
 
         {/* Date of Service */}
-        <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.date_of_service}
-            displayValue={formatDate(issue.date_of_service)}
-            fieldLabel="Date of Service"
-            fieldType="date"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'date_of_service', v, a)}
-          />
+        <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap ${subText}`}>
+          {formatDate(issue.date_of_service)}
         </td>
 
         {/* Procedure */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap font-mono`}>
-          <InlineEditableField
-            value={issue.procedure_codes}
-            fieldLabel="Procedure Codes"
-            fieldType="text"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'procedure_codes', v, a)}
-          />
+          {issue.procedure_codes}
         </td>
 
         {/* In Charge */}
         <td className={`px-3 py-2 border-b ${tableBorder} whitespace-nowrap`}>
-          <InlineEditableField
-            value={issue.in_charge}
-            fieldLabel="In Charge"
-            fieldType="select"
-            isDayMode={isDayMode}
-            selectOptions={PROVIDERS.map((p) => ({ value: p, label: p }))}
-            onSave={(v, a) => handleInlineSave(issue, 'in_charge', v, a)}
-            renderDisplay={() => renderProviderBadge(issue.in_charge)}
-          />
+          {renderProviderBadge(issue.in_charge)}
         </td>
 
         {/* Issue Type */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} max-w-[180px]`}>
-          <InlineEditableField
-            value={issue.issue_type}
-            fieldLabel="Issue Type"
-            fieldType="select"
-            isDayMode={isDayMode}
-            selectOptions={ISSUE_TYPES.map((t) => ({ value: t, label: t }))}
-            onSave={(v, a) => handleInlineSave(issue, 'issue_type', v, a)}
-          />
+          <span className="truncate block" title={issue.issue_type}>
+            {issue.issue_type}
+          </span>
         </td>
 
         {/* In Vyne? */}
         <td className={`px-3 py-2 border-b ${tableBorder} text-center`}>
-          <InlineEditableField
-            value={issue.in_vyne}
-            fieldLabel="In Vyne"
-            fieldType="checkbox"
-            isDayMode={isDayMode}
-            onSave={(v, a) => handleInlineSave(issue, 'in_vyne', v, a)}
-            renderDisplay={() => renderVyneBadge(issue.in_vyne)}
-          />
+          {renderVyneBadge(issue.in_vyne)}
         </td>
 
         {/* Status Badge */}
         <td className={`px-3 py-2 border-b ${tableBorder}`}>
-          <InlineEditableField
-            value={issue.status}
-            fieldLabel="Status"
-            fieldType="select"
-            isDayMode={isDayMode}
-            selectOptions={(['Open', 'Corrected', 'Resolved'] as InsuranceIssueStatus[]).map((s) => ({ value: s, label: s }))}
-            onSave={(v, a) => handleInlineSave(issue, 'status', v, a)}
-            renderDisplay={() => renderStatusBadge(issue)}
-          />
+          {renderStatusBadge(issue)}
         </td>
 
         {/* Submitted + Submitted By */}
@@ -1016,21 +933,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                 )}
               </div>
             ) : (
-              <InlineEditableField
-                value={issue.submission_status}
-                fieldLabel="Submission Status"
-                fieldType="select"
-                isDayMode={isDayMode}
-                selectOptions={[{ value: 'Submitted', label: 'Submitted' }, { value: '', label: 'Not Submitted' }]}
-                onSave={(v, a) => {
-                  const updates: Record<string, unknown> = { submission_status: v || null };
-                  if (v === 'Submitted' && !issue.submitted_at) {
-                    updates.submitted_at = new Date().toISOString();
-                  }
-                  handleInlineSave(issue, 'submission_status', v, a);
-                }}
-                placeholder="--"
-              />
+              <span className={subText}>--</span>
             )}
           </div>
         </td>
