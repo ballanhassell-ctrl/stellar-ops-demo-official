@@ -48,6 +48,7 @@ import { insertInsuranceIssue } from '../services/insuranceIssuesService';
 import { insertPatientAR } from '../services/patientARService.new';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
+import InlineEditableField from './InlineEditableField';
 
 // =====================================================
 // CONSTANTS
@@ -974,6 +975,30 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const hoverRow = isDayMode ? 'hover:bg-gray-50' : 'hover:bg-gray-800';
   const cardShadow = isDayMode ? 'shadow-sm' : 'shadow-lg shadow-black/20';
 
+  // Inline save handler for claim fields
+  const handleInlineClaimSave = async (claim: Claim, field: string, newValue: string | number | boolean | null, auditEntry: AuditTrailEntry) => {
+    try {
+      const updates: Record<string, unknown> = {
+        [field]: newValue,
+        audit_trail: [...(claim.audit_trail || []), auditEntry],
+      };
+
+      // Auto-calculate outstanding when collected changes
+      if (field === 'collected' && typeof newValue === 'number') {
+        updates.outstanding = claim.claim_amount - newValue;
+      }
+      if (field === 'claim_amount' && typeof newValue === 'number') {
+        updates.outstanding = newValue - claim.collected;
+      }
+
+      await updateClaim(claim.id, updates);
+      await loadClaims();
+    } catch (err) {
+      console.error('Error updating claim field:', err);
+      setError('Failed to update claim.');
+    }
+  };
+
   // =====================================================
   // RENDER: LOADING
   // =====================================================
@@ -1551,64 +1576,161 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                         : hoverRow
                     }`}
                   >
-                    <td className={`px-3 py-3 whitespace-nowrap font-medium ${textPrimary}`}>
-                      {claim.patient_name}
+                    <td className={`px-3 py-3 whitespace-nowrap font-medium ${textPrimary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.patient_name}
+                        fieldLabel="Patient Name"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'patient_name', v, a)}
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`}>
-                      {formatDate(claim.date_of_service)}
+                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.date_of_service}
+                        displayValue={formatDate(claim.date_of_service)}
+                        fieldLabel="Date of Service"
+                        fieldType="date"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'date_of_service', v, a)}
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`}>
-                      {claim.insurance_company}
+                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.insurance_company}
+                        fieldLabel="Insurance Company"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'insurance_company', v, a)}
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`}>
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                        claim.pri_sec === 'Primary'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'bg-purple-50 text-purple-700 border border-purple-200'
-                      }`}>
-                        {claim.pri_sec}
-                      </span>
+                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.pri_sec}
+                        fieldLabel="Pri/Sec"
+                        fieldType="select"
+                        isDayMode={isDayMode}
+                        selectOptions={[{ value: 'Primary', label: 'Primary' }, { value: 'Secondary', label: 'Secondary' }]}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'pri_sec', v, a)}
+                        renderDisplay={() => (
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                            claim.pri_sec === 'Primary'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-purple-50 text-purple-700 border border-purple-200'
+                          }`}>
+                            {claim.pri_sec}
+                          </span>
+                        )}
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap text-right font-medium ${textPrimary}`}>
-                      {formatCurrency(claim.claim_amount)}
+                    <td className={`px-3 py-3 whitespace-nowrap text-right font-medium ${textPrimary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.claim_amount}
+                        displayValue={formatCurrency(claim.claim_amount)}
+                        fieldLabel="Total Claim"
+                        fieldType="currency"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'claim_amount', v, a)}
+                        min={0}
+                        step="0.01"
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap text-right ${textSecondary}`}>
-                      {formatCurrency(claim.collected)}
+                    <td className={`px-3 py-3 whitespace-nowrap text-right ${textSecondary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.collected}
+                        displayValue={formatCurrency(claim.collected)}
+                        fieldLabel="Collected"
+                        fieldType="currency"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'collected', v, a)}
+                        min={0}
+                        step="0.01"
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap text-right font-medium ${textPrimary}`}>
-                      {formatCurrency(claim.outstanding)}
+                    <td className={`px-3 py-3 whitespace-nowrap text-right font-medium ${textPrimary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.outstanding}
+                        displayValue={formatCurrency(claim.outstanding)}
+                        fieldLabel="Outstanding"
+                        fieldType="currency"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'outstanding', v, a)}
+                        min={0}
+                        step="0.01"
+                      />
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.status)}`}>
-                        {claim.status}
-                      </span>
+                    <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.status}
+                        fieldLabel="Status"
+                        fieldType="select"
+                        isDayMode={isDayMode}
+                        selectOptions={ALL_STATUSES.map((s) => ({ value: s, label: s }))}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'status', v, a)}
+                        renderDisplay={() => (
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.status)}`}>
+                            {claim.status}
+                          </span>
+                        )}
+                      />
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      {claim.aging_status && (
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getAgingColor(claim.aging_status)}`}>
-                          {claim.aging_status}
-                        </span>
-                      )}
+                    <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.aging_status}
+                        fieldLabel="Aging"
+                        fieldType="select"
+                        isDayMode={isDayMode}
+                        selectOptions={ALL_AGING_STATUSES.map((s) => ({ value: s, label: s }))}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'aging_status', v, a)}
+                        renderDisplay={() => claim.aging_status ? (
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getAgingColor(claim.aging_status)}`}>
+                            {claim.aging_status}
+                          </span>
+                        ) : <span>--</span>}
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`}>
-                      {claim.assigned_to || '-'}
+                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.assigned_to}
+                        fieldLabel="Assigned To"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'assigned_to', v, a)}
+                      />
                     </td>
-                    <td className={`px-3 py-3 max-w-[160px] truncate ${textSecondary}`} title={claim.procedure_types || ''}>
-                      {claim.procedure_types || '-'}
+                    <td className={`px-3 py-3 max-w-[160px] ${textSecondary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.procedure_types}
+                        fieldLabel="Procedures"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'procedure_types', v, a)}
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`}>
-                      {claim.rep_name || '-'}
+                    <td className={`px-3 py-3 whitespace-nowrap ${textSecondary}`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.rep_name}
+                        fieldLabel="Rep Name"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'rep_name', v, a)}
+                      />
                     </td>
-                    <td className={`px-3 py-3 whitespace-nowrap ${textMuted} text-xs font-mono`}>
-                      {claim.reference_number || '-'}
+                    <td className={`px-3 py-3 whitespace-nowrap ${textMuted} text-xs font-mono`} onClick={(e) => e.stopPropagation()}>
+                      <InlineEditableField
+                        value={claim.reference_number}
+                        fieldLabel="Reference #"
+                        isDayMode={isDayMode}
+                        onSave={(v, a) => handleInlineClaimSave(claim, 'reference_number', v, a)}
+                      />
                     </td>
                     <td className={`px-3 py-3 ${textMuted} text-xs`}>
                       <div className="flex items-center gap-1.5">
-                        {claim.notes && (
-                          <span className="truncate max-w-[120px]" title={claim.notes}>
-                            {claim.notes}
-                          </span>
-                        )}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <InlineEditableField
+                            value={claim.notes}
+                            fieldLabel="Notes"
+                            fieldType="textarea"
+                            isDayMode={isDayMode}
+                            onSave={(v, a) => handleInlineClaimSave(claim, 'notes', v, a)}
+                            placeholder="Add notes..."
+                          />
+                        </div>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDrawerClaimId(claim.id); }}
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors flex-shrink-0 ${
