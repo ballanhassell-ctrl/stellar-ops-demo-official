@@ -1,6 +1,6 @@
 // src/components/eod-report/EmailReportModal.tsx
 import { useState } from 'react';
-import { Mail, X, ExternalLink, Send, CheckCircle, Repeat, Loader2, Calendar, ShieldCheck } from 'lucide-react';
+import { Mail, X, ExternalLink, Send, CheckCircle, Repeat, Loader2, ShieldCheck } from 'lucide-react';
 import type { EODData } from '../../hooks/useEODMetrics';
 import type { DashboardData, TopProcedure } from './types';
 import { REPORT_TEMPLATES } from './types';
