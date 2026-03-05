@@ -174,6 +174,7 @@ export default function EODReport({
         isDayMode={isDayMode}
         dashboardDate={dashboardDate}
         setDashboardDate={setDashboardDate}
+        isAdmin={isAdmin}
         onPrint={handlePrint}
         onExportPDF={handleExportPDF}
         onEmailReport={() => setShowEmailModal(true)}
