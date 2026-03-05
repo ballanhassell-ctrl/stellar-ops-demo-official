@@ -8,7 +8,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { getLocalDateString, toLocalDateString, getUTCBoundariesForLocalDate } from '../utils/dateUtils';
-import { buildLogoAttachments } from './emailService';
 
 // Brand colors matching the EOD report template
 const COLORS = {
@@ -197,7 +196,7 @@ function formatDate(dateStr: string): string {
  * Generates the HTML email for the daily A/R report
  */
 export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string): string {
-  const stellarLogoUrl = logoBaseUrl === 'cid' ? 'cid:stellar-logo' : `${logoBaseUrl}/Stellar2%20copy.jpg`;
+  const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
   const totalNewItems =
     data.newPatientAR.length +
     data.newNonCollectible.length +
@@ -429,11 +428,10 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
 export async function sendDailyARReport(
   recipients: string[],
   data: DailyARReportData,
+  logoBaseUrl: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Use CID references for email so logos display correctly in email clients
-    const htmlBody = generateDailyARReportHTML(data, 'cid');
-    const attachments = await buildLogoAttachments();
+    const htmlBody = generateDailyARReportHTML(data, logoBaseUrl);
     const totalNew =
       data.newPatientAR.length +
       data.newNonCollectible.length +
@@ -446,7 +444,6 @@ export async function sendDailyARReport(
         subject: `Daily A/R Report - ${formatDate(data.reportDate)} (${totalNew} new item${totalNew !== 1 ? 's' : ''})`,
         htmlBody,
         reportDate: data.reportDate,
-        attachments,
       },
     });
 

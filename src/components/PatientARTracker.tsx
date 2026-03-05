@@ -630,15 +630,17 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     setSendingReport(true);
     try {
       const data = await fetchDailyARReportData(reportDate || undefined);
+      const logoBaseUrl = window.location.origin;
       const result = await sendDailyARReport(
         recipientList,
         data,
+        logoBaseUrl,
       );
       if (result.success) {
         setToastMessage('Daily A/R report sent successfully!');
       } else {
         // Fallback: open in new tab for manual sending
-        const html = generateDailyARReportHTML(data, window.location.origin);
+        const html = generateDailyARReportHTML(data, logoBaseUrl);
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');

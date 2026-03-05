@@ -60,7 +60,7 @@ export default function EmailReportModal({
     nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
   });
 
-  const generateEODHTML = (freshData?: EODData, forEmail = false) => {
+  const generateEODHTML = (freshData?: EODData) => {
     const dataToUse = freshData || eodData;
     const [ey, em, ed] = effectiveDate.split('-').map(Number);
     const reportDateStr = new Date(ey, em - 1, ed).toLocaleDateString('en-US', {
@@ -71,29 +71,29 @@ export default function EmailReportModal({
       reportDate: reportDateStr,
       message: message || undefined,
       template: selectedTemplate === 'combined' ? 'full' : selectedTemplate,
-      logoBaseUrl: forEmail ? 'cid' : window.location.origin,
+      logoBaseUrl: window.location.origin,
       bamCycle: buildBAMCycleData(),
       topProcedures,
     });
   };
 
-  const generateDailyARHTML = async (forEmail = false) => {
+  const generateDailyARHTML = async () => {
     const data = await fetchDailyARReportData(effectiveDate);
-    return generateDailyARReportHTML(data, forEmail ? 'cid' : window.location.origin);
+    return generateDailyARReportHTML(data, window.location.origin);
   };
 
-  const buildFinalHTML = async (freshData?: EODData, forEmail = false): Promise<string> => {
+  const buildFinalHTML = async (freshData?: EODData): Promise<string> => {
     if (selectedTemplate === 'dailyAR') {
-      return generateDailyARHTML(forEmail);
+      return generateDailyARHTML();
     }
     if (selectedTemplate === 'combined') {
       const [eodHtml, arHtml] = await Promise.all([
-        Promise.resolve(generateEODHTML(freshData, forEmail)),
-        generateDailyARHTML(forEmail),
+        Promise.resolve(generateEODHTML(freshData)),
+        generateDailyARHTML(),
       ]);
       return eodHtml + '<hr style="border:none;border-top:3px solid #B8985F;margin:40px 0;" />' + arHtml;
     }
-    return generateEODHTML(freshData, forEmail);
+    return generateEODHTML(freshData);
   };
 
   const [generating, setGenerating] = useState(false);
@@ -130,7 +130,7 @@ export default function EmailReportModal({
       }
     }
 
-    const html = await buildFinalHTML(freshData || undefined, true);
+    const html = await buildFinalHTML(freshData || undefined);
     const recipientList = recipients.split(',').map((e: string) => e.trim()).filter(Boolean);
 
     setSending(true);

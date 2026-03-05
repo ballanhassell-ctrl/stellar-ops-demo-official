@@ -71,8 +71,8 @@ function formatNumber(value: number): string {
 export function generateEODEmailHTML(options: EmailTemplateOptions): string {
   const { eodData, reportDate, message, template, logoBaseUrl, bamCycle, topProcedures } = options;
 
-  const stellarLogoUrl = logoBaseUrl === 'cid' ? 'cid:stellar-logo' : `${logoBaseUrl}/Stellar2%20copy.jpg`;
-  const csdLogoUrl = logoBaseUrl === 'cid' ? 'cid:csd-logo' : `${logoBaseUrl}/Cris%20Dental%20Image.jpg`;
+  const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
+  const csdLogoUrl = `${logoBaseUrl}/Cris%20Dental%20Image.jpg`;
 
   const includeSections = getTemplateSections(template);
 
