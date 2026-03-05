@@ -9,6 +9,8 @@ interface SendEmailRequest {
   subject: string;
   htmlBody: string;
   reportDate: string;
+  template?: string;
+  sentBy?: string;
 }
 
 interface SendEmailResult {
@@ -84,6 +86,8 @@ async function logReportSend(request: SendEmailRequest): Promise<void> {
       report_date: request.reportDate,
       recipients: request.to,
       subject: request.subject,
+      template: request.template || 'full',
+      sent_by: request.sentBy || 'system',
       sent_at: new Date().toISOString(),
       delivery_method: 'postmark',
     });

@@ -30,6 +30,7 @@ export default function EODReport({
   topProcedures,
   onNavigateToPatientAR,
   onOpenTopProceduresModal,
+  isAdmin,
   onRefreshActionItems,
 }: EODReportProps) {
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -264,6 +265,7 @@ export default function EODReport({
           eodData={eodData}
           dashboardData={dashboardData}
           topProcedures={topProcedures}
+          isAdmin={isAdmin}
           onClose={() => setShowEmailModal(false)}
           onRefreshActionItems={onRefreshActionItems}
         />

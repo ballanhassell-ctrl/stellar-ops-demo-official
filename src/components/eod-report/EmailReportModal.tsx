@@ -1,11 +1,12 @@
 // src/components/eod-report/EmailReportModal.tsx
 import { useState } from 'react';
-import { Mail, X, ExternalLink, Send, CheckCircle, Repeat, Loader2 } from 'lucide-react';
+import { Mail, X, ExternalLink, Send, CheckCircle, Repeat, Loader2, Calendar, ShieldCheck } from 'lucide-react';
 import type { EODData } from '../../hooks/useEODMetrics';
 import type { DashboardData, TopProcedure } from './types';
 import { REPORT_TEMPLATES } from './types';
 import { generateEODEmailHTML, type BAMCycleData } from '../../services/eodEmailTemplate';
 import { sendEODReportEmail } from '../../services/emailService';
+import { getLocalDateString } from '../../utils/dateUtils';
 
 interface EmailReportModalProps {
   isDayMode: boolean;
@@ -13,6 +14,7 @@ interface EmailReportModalProps {
   eodData: EODData;
   dashboardData: DashboardData;
   topProcedures: TopProcedure[];
+  isAdmin?: boolean;
   onClose: () => void;
   onRefreshActionItems?: () => Promise<EODData | null>;
 }
@@ -23,6 +25,7 @@ export default function EmailReportModal({
   eodData,
   dashboardData,
   topProcedures,
+  isAdmin,
   onClose,
   onRefreshActionItems,
 }: EmailReportModalProps) {
@@ -35,9 +38,13 @@ export default function EmailReportModal({
   const [scheduleTime, setScheduleTime] = useState('17:00');
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
+  // Admin-only: override report date to send prior-day reports
+  const [reportDateOverride, setReportDateOverride] = useState(dashboardDate);
+
+  const effectiveDate = isAdmin ? reportDateOverride : dashboardDate;
 
   const formattedDate = (() => {
-    const [year, month, day] = dashboardDate.split('-').map(Number);
+    const [year, month, day] = effectiveDate.split('-').map(Number);
     return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   })();
 
@@ -54,9 +61,14 @@ export default function EmailReportModal({
 
   const generateHTML = (freshData?: EODData) => {
     const dataToUse = freshData || eodData;
+    // Use effectiveDate for the report header (allows admin to override)
+    const [ey, em, ed] = effectiveDate.split('-').map(Number);
+    const reportDateStr = new Date(ey, em - 1, ed).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
     return generateEODEmailHTML({
       eodData: dataToUse,
-      reportDate: dataToUse.reportDate,
+      reportDate: reportDateStr,
       message: message || undefined,
       template: selectedTemplate,
       logoBaseUrl: window.location.origin,
@@ -101,7 +113,9 @@ export default function EmailReportModal({
         to: recipientList,
         subject,
         htmlBody: html,
-        reportDate: dashboardDate,
+        reportDate: effectiveDate,
+        template: selectedTemplate,
+        sentBy: isAdmin ? 'admin' : 'team',
       });
 
       if (result.success) {
@@ -197,6 +211,31 @@ export default function EmailReportModal({
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${isDayMode ? 'border-gray-300 bg-white' : 'border-gray-600 bg-gray-700 text-white'}`}
               />
             </div>
+
+            {/* Admin-only: Report Date Override */}
+            {isAdmin && (
+              <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/20 border-amber-700'}`}>
+                <label className={`flex items-center gap-2 text-sm font-medium mb-2 ${isDayMode ? 'text-amber-800' : 'text-amber-300'}`}>
+                  <ShieldCheck className="w-4 h-4" />
+                  Admin: Report Date Override
+                </label>
+                <p className={`text-xs mb-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>
+                  Send an EOD report for a prior day. The report will pull data for the selected date.
+                </p>
+                <input
+                  type="date"
+                  value={reportDateOverride}
+                  max={getLocalDateString()}
+                  onChange={(e) => setReportDateOverride(e.target.value)}
+                  className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm ${isDayMode ? 'border-amber-300 bg-white' : 'border-amber-600 bg-gray-700 text-white'}`}
+                />
+                {reportDateOverride !== dashboardDate && (
+                  <span className={`ml-3 text-xs font-semibold ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>
+                    Sending for: {formattedDate}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Message */}
             <div>

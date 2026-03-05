@@ -58,6 +58,7 @@ export interface EODReportProps {
   patientARMetrics: PatientARMetricsData | null;
   paymentInsights: PaymentInsight[];
   topProcedures: TopProcedure[];
+  isAdmin?: boolean;
   // Navigation callbacks
   onNavigateToPatientAR: () => void;
   onOpenTopProceduresModal: () => void;

@@ -6052,6 +6052,7 @@ const CourtStreetRCM = () => {
             patientARMetrics={patientARMetrics}
             paymentInsights={paymentInsights}
             topProcedures={topProcedures}
+            isAdmin={isAdmin}
             onNavigateToPatientAR={() => {
               setCurrentView('patient-management');
               setPatientManagementView('patient-ar');
