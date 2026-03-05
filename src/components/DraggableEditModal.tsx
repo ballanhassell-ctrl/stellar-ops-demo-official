@@ -204,33 +204,42 @@ const FIELD_MAP: Record<TabKey, FieldDef[]> = {
   insurance_issues: INSURANCE_ISSUES_FIELDS,
 };
 
+// ── Inline SVG icons for pop-out (Lucide isn't available there) ──
+const SVG_PLUS = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>';
+const SVG_SAVE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>';
+const SVG_GRIP = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>';
+const SVG_USERS = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+const SVG_CREDIT = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>';
+const SVG_FILE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>';
+const SVG_ALERT = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+const TAB_ICONS: Record<string, string> = { patient_ar: SVG_USERS, credits: SVG_CREDIT, insurance_ar: SVG_FILE, insurance_issues: SVG_ALERT };
+
 // ── Standalone pop-out HTML builder ──────────────────────────────
-function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>): string {
+function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>, isDayMode: boolean): string {
   const fields = FIELD_MAP[activeTab];
   const tabLabel = TABS.find((t) => t.key === activeTab)?.label || activeTab;
 
-  const fieldRows = fields
-    .map((field) => {
-      const val = String(formData[field.key] ?? '');
-      const escapedVal = val.replace(/"/g, '&quot;').replace(/</g, '&lt;');
-      const req = field.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
+  const renderField = (field: FieldDef, val: string): string => {
+    const escapedVal = val.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const req = field.required ? '<span class="req">*</span>' : '';
+    const cls = field.type === 'textarea' ? ' class="full"' : '';
 
-      if (field.type === 'select') {
-        const opts = (field.options || [])
-          .map((o) => `<option value="${o.value}"${o.value === val ? ' selected' : ''}>${o.label}</option>`)
-          .join('');
-        return `<div><label>${field.label}${req}</label><select name="${field.key}"><option value="">Select...</option>${opts}</select></div>`;
-      }
-      if (field.type === 'textarea') {
-        return `<div class="full"><label>${field.label}${req}</label><textarea name="${field.key}" rows="3">${escapedVal}</textarea></div>`;
-      }
-      return `<div><label>${field.label}${req}</label><input type="${field.type}" name="${field.key}" value="${escapedVal}" /></div>`;
-    })
-    .join('');
+    if (field.type === 'select') {
+      const opts = (field.options || [])
+        .map((o) => `<option value="${o.value}"${o.value === val ? ' selected' : ''}>${o.label}</option>`)
+        .join('');
+      return `<div${cls}><label>${field.label}${req}</label><select name="${field.key}"><option value="">Select...</option>${opts}</select></div>`;
+    }
+    if (field.type === 'textarea') {
+      return `<div class="full"><label>${field.label}${req}</label><textarea name="${field.key}" rows="3">${escapedVal}</textarea></div>`;
+    }
+    return `<div${cls}><label>${field.label}${req}</label><input type="${field.type}" name="${field.key}" value="${escapedVal}" /></div>`;
+  };
+
+  const fieldRows = fields.map((f) => renderField(f, String(formData[f.key] ?? ''))).join('');
 
   const tabButtons = TABS.map(
-    (t) =>
-      `<button type="button" class="tab-btn${t.key === activeTab ? ' active' : ''}" data-tab="${t.key}">${t.label}</button>`,
+    (t) => `<button type="button" class="tab-btn${t.key === activeTab ? ' active' : ''}" data-tab="${t.key}"><span class="tab-icon">${TAB_ICONS[t.key]}</span>${t.label}</button>`,
   ).join('');
 
   const fieldMapJSON = JSON.stringify(
@@ -242,69 +251,151 @@ function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>): 
     ),
   );
 
+  // Color tokens that exactly match the Tailwind theme in tailwind.config.js
+  const c = isDayMode
+    ? {
+        bodyBg: '#ffffff',
+        headerFrom: '#0066FF', headerTo: '#0052CC',
+        tabBarBg: '#f9fafb', tabBarBorder: '#e5e7eb',
+        tabText: '#6b7280', tabHoverText: '#374151', tabHoverBg: '#f3f4f6',
+        tabActiveText: '#0066FF', tabActiveBorder: '#0066FF', tabActiveBg: '#ffffff',
+        formBg: '#ffffff',
+        labelText: '#4b5563',
+        inputBg: '#ffffff', inputBorder: '#d1d5db', inputText: '#111827',
+        inputFocus: '#0066FF', inputFocusRing: 'rgba(0,102,255,0.2)',
+        divider: '#e5e7eb',
+        newBtnText: '#0066FF', newBtnHover: '#E6F0FF',
+        cancelText: '#4b5563', cancelHover: '#f3f4f6',
+        saveBg: '#0066FF', saveHover: '#0052CC',
+      }
+    : {
+        bodyBg: '#111827',
+        headerFrom: '#003D99', headerTo: '#002966',
+        tabBarBg: 'rgba(31,41,55,0.6)', tabBarBorder: 'rgba(255,255,255,0.1)',
+        tabText: '#9ca3af', tabHoverText: '#e5e7eb', tabHoverBg: 'rgba(55,65,81,0.4)',
+        tabActiveText: '#3385FF', tabActiveBorder: '#3385FF', tabActiveBg: '#111827',
+        formBg: '#111827',
+        labelText: '#9ca3af',
+        inputBg: '#1f2937', inputBorder: '#4b5563', inputText: '#ffffff',
+        inputFocus: '#3385FF', inputFocusRing: 'rgba(51,133,255,0.2)',
+        divider: 'rgba(255,255,255,0.1)',
+        newBtnText: '#3385FF', newBtnHover: 'rgba(0,20,51,0.3)',
+        cancelText: '#9ca3af', cancelHover: '#1f2937',
+        saveBg: '#0066FF', saveHover: '#0052CC',
+      };
+
+  // Build actions HTML (reused in initial render and tab-switch rebuilds)
+  const actionsHTML = `<div class="actions"><button type="button" class="btn btn-new" id="newEntryBtn">${SVG_PLUS} Create New Entry</button><div class="actions-right"><button type="button" class="btn btn-cancel" onclick="window.close()">Cancel</button><button type="submit" class="btn btn-save">${SVG_SAVE} Save</button></div></div>`;
+
   return `<!DOCTYPE html>
 <html><head><title>Stellar OPS - ${tabLabel}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#111827;color:#e5e7eb;min-height:100vh}
-.header{background:linear-gradient(135deg,#6366f1,#4f46e5);padding:10px 14px;display:flex;align-items:center;gap:8px;user-select:none}
-.header h1{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tabs{display:flex;background:#1f2937;border-bottom:1px solid rgba(255,255,255,0.1);overflow-x:auto}
-.tab-btn{padding:8px 12px;font-size:11px;font-weight:500;color:#9ca3af;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
-.tab-btn:hover{color:#e5e7eb;background:#374151}
-.tab-btn.active{color:#818cf8;border-bottom-color:#818cf8;background:#111827}
-.form{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form .full{grid-column:1/-1}
-label{display:block;font-size:11px;font-weight:500;color:#9ca3af;margin-bottom:3px}
-input,select,textarea{width:100%;padding:7px 10px;border-radius:6px;border:1px solid #374151;background:#1f2937;color:#e5e7eb;font-size:12px;outline:none;transition:border-color .2s}
-input:focus,select:focus,textarea:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,0.15)}
-textarea{resize:vertical}
-.actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);margin-top:4px}
-.btn{padding:7px 14px;border-radius:6px;font-size:11px;font-weight:600;border:none;cursor:pointer;transition:all .2s}
-.btn-cancel{background:#374151;color:#9ca3af}.btn-cancel:hover{background:#4b5563}
-.btn-save{background:#6366f1;color:#fff}.btn-save:hover{background:#4f46e5}
-.toast{position:fixed;top:10px;right:10px;background:#059669;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:${c.bodyBg};color:${c.inputText};min-height:100vh;overflow-x:hidden}
+
+.header{background:linear-gradient(to right,${c.headerFrom},${c.headerTo});padding:12px 16px;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{width:28px;height:28px;border-radius:6px;object-fit:cover}
+.header h1{font-size:14px;font-weight:600;color:#fff;letter-spacing:0.025em}
+.header .grip{color:rgba(255,255,255,0.4);display:flex;align-items:center}
+
+.tabs{display:flex;gap:0;background:${c.tabBarBg};border-bottom:1px solid ${c.tabBarBorder};overflow-x:auto}
+.tab-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;font-size:12px;font-weight:500;color:${c.tabText};background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s}
+.tab-btn:hover{color:${c.tabHoverText};background:${c.tabHoverBg}}
+.tab-btn.active{color:${c.tabActiveText};border-bottom-color:${c.tabActiveBorder};background:${c.tabActiveBg}}
+.tab-icon{display:inline-flex;align-items:center}
+
+.form-body{background:${c.formBg};padding:20px;overflow-y:auto}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.form-grid .full{grid-column:1/-1}
+label{display:block;font-size:12px;font-weight:500;color:${c.labelText};margin-bottom:4px}
+.req{color:#ef4444;margin-left:2px}
+input,select,textarea{width:100%;padding:8px 12px;border-radius:8px;border:1px solid ${c.inputBorder};background:${c.inputBg};color:${c.inputText};font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:${c.inputFocus};box-shadow:0 0 0 3px ${c.inputFocusRing}}
+textarea{resize:none}
+
+.actions{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid ${c.divider};margin-top:8px}
+.actions-right{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .15s}
+.btn-new{background:none;color:${c.newBtnText};font-weight:500}
+.btn-new:hover{background:${c.newBtnHover}}
+.btn-cancel{background:none;color:${c.cancelText}}
+.btn-cancel:hover{background:${c.cancelHover}}
+.btn-save{background:${c.saveBg};color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+.btn-save:hover{background:${c.saveHover};box-shadow:0 4px 12px rgba(0,0,0,0.25)}
+
+.toast{position:fixed;top:12px;right:12px;background:#059669;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
 .toast.show{opacity:1}
 </style></head><body>
-<div class="header"><h1>Stellar OPS - ${tabLabel}</h1></div>
+<div class="header">
+  <div class="header-left">
+    <h1>Stellar OPS Dashboard</h1>
+    <span class="grip">${SVG_GRIP}</span>
+  </div>
+</div>
 <div class="tabs">${tabButtons}</div>
-<form class="form" id="popoutForm">${fieldRows}<div class="actions"><button type="button" class="btn btn-cancel" onclick="window.close()">Close</button><button type="submit" class="btn btn-save">Save</button></div></form>
+<div class="form-body">
+  <form id="popoutForm">
+    <div class="form-grid" id="formGrid">${fieldRows}${actionsHTML}</div>
+  </form>
+</div>
 <div class="toast" id="toast">Saved!</div>
 <script>
-var FIELD_MAP = ${fieldMapJSON};
-document.querySelectorAll('.tab-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+var FIELD_MAP=${fieldMapJSON};
+var TAB_ICONS=${JSON.stringify(TAB_ICONS)};
+var ACTIONS_HTML='${actionsHTML.replace(/'/g, "\\'")}';
+
+function buildFieldsHTML(fields){
+  var h='';
+  for(var i=0;i<fields.length;i++){
+    var f=fields[i];
+    var req=f.required?'<span class="req">*</span>':'';
+    var cls=f.type==='textarea'?' class="full"':'';
+    if(f.type==='select'){
+      var opts=(f.options||[]).map(function(o){return '<option value="'+o.value+'">'+o.label+'</option>';}).join('');
+      h+='<div'+cls+'><label>'+f.label+req+'</label><select name="'+f.key+'"><option value="">Select...</option>'+opts+'</select></div>';
+    }else if(f.type==='textarea'){
+      h+='<div class="full"><label>'+f.label+req+'</label><textarea name="'+f.key+'" rows="3"></textarea></div>';
+    }else{
+      h+='<div'+cls+'><label>'+f.label+req+'</label><input type="'+f.type+'" name="'+f.key+'" value="" /></div>';
+    }
+  }
+  return h;
+}
+
+function clearForm(){
+  var els=document.querySelectorAll('#popoutForm input,#popoutForm select,#popoutForm textarea');
+  els.forEach(function(el){el.value='';});
+}
+
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('#newEntryBtn');
+  if(btn) clearForm();
+});
+
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
     this.classList.add('active');
-    var tab = this.dataset.tab;
-    var fields = FIELD_MAP[tab] || [];
-    var form = document.getElementById('popoutForm');
-    var actionsHtml = '<div class="actions"><button type="button" class="btn btn-cancel" onclick="window.close()">Close</button><button type="submit" class="btn btn-save">Save</button></div>';
-    form.innerHTML = fields.map(function(f) {
-      var req = f.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
-      if (f.type === 'select') {
-        var opts = (f.options||[]).map(function(o) { return '<option value="'+o.value+'">'+o.label+'</option>'; }).join('');
-        return '<div><label>'+f.label+req+'</label><select name="'+f.key+'"><option value="">Select...</option>'+opts+'</select></div>';
-      }
-      if (f.type === 'textarea') return '<div class="full"><label>'+f.label+req+'</label><textarea name="'+f.key+'" rows="3"></textarea></div>';
-      return '<div><label>'+f.label+req+'</label><input type="'+f.type+'" name="'+f.key+'" value="" /></div>';
-    }).join('') + actionsHtml;
-    document.querySelector('.header h1').textContent = 'Stellar OPS - ' + this.textContent.trim();
+    var tab=this.dataset.tab;
+    var fields=FIELD_MAP[tab]||[];
+    document.getElementById('formGrid').innerHTML=buildFieldsHTML(fields)+ACTIONS_HTML;
   });
 });
-document.getElementById('popoutForm').addEventListener('submit', function(e) {
+
+document.getElementById('popoutForm').addEventListener('submit',function(e){
   e.preventDefault();
-  var fd = new FormData(this);
-  var data = {};
-  fd.forEach(function(v, k) { data[k] = v; });
-  try {
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage({ type: 'STELLAR_POPOUT_SAVE', tab: document.querySelector('.tab-btn.active').dataset.tab, data: data }, '*');
+  var fd=new FormData(this);
+  var data={};
+  fd.forEach(function(v,k){data[k]=v;});
+  try{
+    if(window.opener&&!window.opener.closed){
+      window.opener.postMessage({type:'STELLAR_POPOUT_SAVE',tab:document.querySelector('.tab-btn.active').dataset.tab,data:data},'*');
     }
-  } catch(_) {}
-  var t = document.getElementById('toast');
+  }catch(ex){}
+  var t=document.getElementById('toast');
   t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 2000);
+  setTimeout(function(){t.classList.remove('show');},2000);
 });
 </script></body></html>`;
 }
@@ -361,7 +452,6 @@ export default function DraggableEditModal({
 
   const handleTabChange = useCallback((tab: TabKey) => {
     setActiveTab(tab);
-    // Clear form when switching to a different category (new entry mode)
     setFormData({});
   }, []);
 
@@ -390,10 +480,9 @@ export default function DraggableEditModal({
   }, []);
 
   const handlePopOut = useCallback(async () => {
-    const html = buildPopoutHTML(activeTab, formData);
+    const html = buildPopoutHTML(activeTab, formData, isDayMode);
 
     // Try Document Picture-in-Picture API first (Chrome 116+)
-    // This creates a true always-on-top floating window like YouTube/Twitch PiP
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const docPiP = (window as any).documentPictureInPicture;
     if (docPiP) {
@@ -408,14 +497,14 @@ export default function DraggableEditModal({
       }
     }
 
-    // Fallback: regular popup window (not always-on-top, but still a separate resizable window)
+    // Fallback: regular popup window
     const popup = window.open('', '_blank', 'popup=true,width=520,height=640,resizable=yes,scrollbars=yes');
     if (popup) {
       popup.document.write(html);
       popup.document.close();
       onClose();
     }
-  }, [activeTab, formData, onClose]);
+  }, [activeTab, formData, isDayMode, onClose]);
 
   if (!isOpen) return null;
 
