@@ -147,8 +147,6 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newForm, setNewForm] = useState<NewRecordForm>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
-  const [editingCell, setEditingCell] = useState<EditingCell>(null);
-  const [editingValue, setEditingValue] = useState('');
   const [editingContact, setEditingContact] = useState<EditingContact>(null);
   const [contactDate, setContactDate] = useState('');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -461,60 +459,6 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     [fetchData],
   );
 
-  const _handleSaveEditingCell = useCallback(async () => {
-    if (!editingCell) return;
-    const { recordId, field } = editingCell;
-
-    if (field === 'current_balance') {
-      const numValue = parseFloat(editingValue);
-      if (isNaN(numValue) || numValue < 0) {
-        setEditingCell(null);
-        setEditingValue('');
-        return;
-      }
-      try {
-        const record = records.find((r) => r.id === recordId);
-        const oldValue = record ? String(record.current_balance) : '';
-        const auditEntry = createAuditEntry('updated', 'staff', {
-          field: 'current_balance',
-          oldValue,
-          newValue: String(numValue),
-        });
-        if (isStaticDataMode()) {
-          setRecords((prev) =>
-            prev.map((r) => (r.id === recordId ? { ...r, current_balance: numValue, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() } : r)),
-          );
-        } else {
-          const existingTrail = record?.audit_trail || [];
-          await updatePatientAR(recordId, { current_balance: numValue, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
-          await fetchData();
-        }
-      } catch (err) {
-        console.error('Error updating field:', err);
-        setError('Failed to update. Please try again.');
-      }
-    } else if (field === 'patient_name') {
-      const trimmed = sanitizePatientName(editingValue.trim());
-      if (!trimmed) {
-        setEditingCell(null);
-        setEditingValue('');
-        return;
-      }
-      await handleUpdateField(recordId, field, trimmed);
-    } else if (field === 'dos') {
-      if (!editingValue) {
-        setEditingCell(null);
-        setEditingValue('');
-        return;
-      }
-      await handleUpdateField(recordId, field, editingValue);
-    } else {
-      await handleUpdateField(recordId, field, editingValue.trim() || null);
-    }
-    setEditingCell(null);
-    setEditingValue('');
-  }, [editingCell, editingValue, handleUpdateField, fetchData]);
-
   const handleSaveContact = useCallback(async () => {
     if (!editingContact) return;
     const { recordId, contactType } = editingContact;
@@ -572,14 +516,6 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     setContactDate('');
     setContactInitials('');
   }, [editingContact, contactDate, contactInitials, fetchData]);
-
-  const _startEditCell = useCallback(
-    (recordId: string, field: EditingCell extends null ? never : NonNullable<EditingCell>['field'], currentValue: string | null) => {
-      setEditingCell({ recordId, field });
-      setEditingValue(currentValue || '');
-    },
-    [],
-  );
 
   const startEditContact = useCallback(
     (recordId: string, contactType: '1st' | '2nd' | 'final', currentDate: string | null, currentInitials: string | null) => {

@@ -40,7 +40,7 @@ import type { NoteEntry } from '../types/database.types';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
-import type { AuditTrailEntry } from '../types/database.types';
+
 
 // =====================================================
 // CONSTANTS
@@ -483,33 +483,6 @@ export default function VCCPaymentsTracker({ isDayMode }: VCCPaymentsTrackerProp
 
   const formatCurrency = (amount: number) =>
     '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2 });
-
-  // Inline save handler for VCC fields
-  const _handleInlineVCCSave = async (payment: VCCPayment, field: string, newValue: string | number | boolean | null, auditEntry: AuditTrailEntry) => {
-    try {
-      let processedValue = newValue;
-      if (field === 'patient_name' && typeof newValue === 'string') {
-        processedValue = sanitizePatientName(newValue);
-        if (!processedValue) return;
-      }
-
-      const updates: Partial<VCCPayment> = {
-        [field]: processedValue,
-        audit_trail: [...(payment.audit_trail || []), auditEntry],
-      } as Partial<VCCPayment>;
-
-      if (localMode) {
-        setPayments(prev =>
-          prev.map(p => (p.id === payment.id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p))
-        );
-      } else {
-        await updateVCCPayment(payment.id, updates as NewVCCPayment);
-        await fetchPayments();
-      }
-    } catch (err) {
-      console.error('Error updating VCC field:', err);
-    }
-  };
 
   // --------------------------------------------------
   // Render
