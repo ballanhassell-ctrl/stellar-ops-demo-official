@@ -1,7 +1,7 @@
 // src/services/metrics.ts
 import { supabase } from '../lib/supabaseClient';
 import { isStaticDataMode } from '../config/dataMode';
-import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
+import { toLocalDateString } from '../utils/dateUtils';
 import {
   sampleWeeklyScorecardData,
   sampleMonthlyNewPatients,

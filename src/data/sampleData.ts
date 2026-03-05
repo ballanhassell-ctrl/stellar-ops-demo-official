@@ -24,6 +24,7 @@ import type {
   InsuranceIssue,
   ARSnapshot,
 } from '../types/database.types';
+import { getLocalDateString } from '../utils/dateUtils';
 
 // Helper function to generate dates
 const daysAgo = (days: number): string => {
