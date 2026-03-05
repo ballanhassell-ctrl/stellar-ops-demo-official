@@ -2,7 +2,7 @@
 // Daily A/R Report Email Service
 // Sends a daily summary of new accounts added to:
 // Patient A/R, Insurance Issues, Credits, Non-Collectible
-// Recipients: Daniely and Dr. Gajjar
+// Recipients: configurable via UI
 // =====================================================
 
 import { supabase } from '../lib/supabaseClient';
