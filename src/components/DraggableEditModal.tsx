@@ -14,8 +14,10 @@ import {
 } from 'lucide-react';
 // Types used for RecordData field mapping
 
-// ── Lightweight drag hook (replaces react-draggable for React 19 compat) ──
-function useDrag(handleRef: React.RefObject<HTMLDivElement | null>) {
+// ── Lightweight drag hook ──
+// `isVisible` is needed so the effect re-runs once the ref is actually attached
+// to the DOM (when isOpen goes from false → true the ref target becomes non-null).
+function useDrag(handleRef: React.RefObject<HTMLDivElement | null>, isVisible: boolean) {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
   const start = useRef({ x: 0, y: 0 });
@@ -51,7 +53,7 @@ function useDrag(handleRef: React.RefObject<HTMLDivElement | null>) {
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
     };
-  }, [handleRef]);
+  }, [handleRef, isVisible]);
 
   const resetPos = useCallback(() => setPos({ x: 0, y: 0 }), []);
 
@@ -202,6 +204,111 @@ const FIELD_MAP: Record<TabKey, FieldDef[]> = {
   insurance_issues: INSURANCE_ISSUES_FIELDS,
 };
 
+// ── Standalone pop-out HTML builder ──────────────────────────────
+function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>): string {
+  const fields = FIELD_MAP[activeTab];
+  const tabLabel = TABS.find((t) => t.key === activeTab)?.label || activeTab;
+
+  const fieldRows = fields
+    .map((field) => {
+      const val = String(formData[field.key] ?? '');
+      const escapedVal = val.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      const req = field.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
+
+      if (field.type === 'select') {
+        const opts = (field.options || [])
+          .map((o) => `<option value="${o.value}"${o.value === val ? ' selected' : ''}>${o.label}</option>`)
+          .join('');
+        return `<div><label>${field.label}${req}</label><select name="${field.key}"><option value="">Select...</option>${opts}</select></div>`;
+      }
+      if (field.type === 'textarea') {
+        return `<div class="full"><label>${field.label}${req}</label><textarea name="${field.key}" rows="3">${escapedVal}</textarea></div>`;
+      }
+      return `<div><label>${field.label}${req}</label><input type="${field.type}" name="${field.key}" value="${escapedVal}" /></div>`;
+    })
+    .join('');
+
+  const tabButtons = TABS.map(
+    (t) =>
+      `<button type="button" class="tab-btn${t.key === activeTab ? ' active' : ''}" data-tab="${t.key}">${t.label}</button>`,
+  ).join('');
+
+  const fieldMapJSON = JSON.stringify(
+    Object.fromEntries(
+      Object.entries(FIELD_MAP).map(([k, v]) => [
+        k,
+        v.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options, required: f.required })),
+      ]),
+    ),
+  );
+
+  return `<!DOCTYPE html>
+<html><head><title>Stellar OPS - ${tabLabel}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#111827;color:#e5e7eb;min-height:100vh}
+.header{background:linear-gradient(135deg,#6366f1,#4f46e5);padding:10px 14px;display:flex;align-items:center;gap:8px;user-select:none}
+.header h1{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;background:#1f2937;border-bottom:1px solid rgba(255,255,255,0.1);overflow-x:auto}
+.tab-btn{padding:8px 12px;font-size:11px;font-weight:500;color:#9ca3af;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab-btn:hover{color:#e5e7eb;background:#374151}
+.tab-btn.active{color:#818cf8;border-bottom-color:#818cf8;background:#111827}
+.form{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form .full{grid-column:1/-1}
+label{display:block;font-size:11px;font-weight:500;color:#9ca3af;margin-bottom:3px}
+input,select,textarea{width:100%;padding:7px 10px;border-radius:6px;border:1px solid #374151;background:#1f2937;color:#e5e7eb;font-size:12px;outline:none;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,0.15)}
+textarea{resize:vertical}
+.actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);margin-top:4px}
+.btn{padding:7px 14px;border-radius:6px;font-size:11px;font-weight:600;border:none;cursor:pointer;transition:all .2s}
+.btn-cancel{background:#374151;color:#9ca3af}.btn-cancel:hover{background:#4b5563}
+.btn-save{background:#6366f1;color:#fff}.btn-save:hover{background:#4f46e5}
+.toast{position:fixed;top:10px;right:10px;background:#059669;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1}
+</style></head><body>
+<div class="header"><h1>Stellar OPS - ${tabLabel}</h1></div>
+<div class="tabs">${tabButtons}</div>
+<form class="form" id="popoutForm">${fieldRows}<div class="actions"><button type="button" class="btn btn-cancel" onclick="window.close()">Close</button><button type="submit" class="btn btn-save">Save</button></div></form>
+<div class="toast" id="toast">Saved!</div>
+<script>
+var FIELD_MAP = ${fieldMapJSON};
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+    var tab = this.dataset.tab;
+    var fields = FIELD_MAP[tab] || [];
+    var form = document.getElementById('popoutForm');
+    var actionsHtml = '<div class="actions"><button type="button" class="btn btn-cancel" onclick="window.close()">Close</button><button type="submit" class="btn btn-save">Save</button></div>';
+    form.innerHTML = fields.map(function(f) {
+      var req = f.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
+      if (f.type === 'select') {
+        var opts = (f.options||[]).map(function(o) { return '<option value="'+o.value+'">'+o.label+'</option>'; }).join('');
+        return '<div><label>'+f.label+req+'</label><select name="'+f.key+'"><option value="">Select...</option>'+opts+'</select></div>';
+      }
+      if (f.type === 'textarea') return '<div class="full"><label>'+f.label+req+'</label><textarea name="'+f.key+'" rows="3"></textarea></div>';
+      return '<div><label>'+f.label+req+'</label><input type="'+f.type+'" name="'+f.key+'" value="" /></div>';
+    }).join('') + actionsHtml;
+    document.querySelector('.header h1').textContent = 'Stellar OPS - ' + this.textContent.trim();
+  });
+});
+document.getElementById('popoutForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var fd = new FormData(this);
+  var data = {};
+  fd.forEach(function(v, k) { data[k] = v; });
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ type: 'STELLAR_POPOUT_SAVE', tab: document.querySelector('.tab-btn.active').dataset.tab, data: data }, '*');
+    }
+  } catch(_) {}
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+});
+</script></body></html>`;
+}
+
 // ── Props ────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RecordData = Record<string, any> | null;
@@ -228,7 +335,7 @@ export default function DraggableEditModal({
   const [saving, setSaving] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const handleRef = useRef<HTMLDivElement>(null);
-  const { pos, resetPos } = useDrag(handleRef);
+  const { pos, resetPos } = useDrag(handleRef, isOpen);
   const isNew = !initialData?.id;
 
   // Sync initial data when modal opens or tab changes
@@ -282,109 +389,33 @@ export default function DraggableEditModal({
     setFormData({});
   }, []);
 
-  const handlePopOut = useCallback(() => {
-    const fields = FIELD_MAP[activeTab];
-    const tabLabel = TABS.find((t) => t.key === activeTab)?.label || activeTab;
+  const handlePopOut = useCallback(async () => {
+    const html = buildPopoutHTML(activeTab, formData);
 
-    // Build standalone HTML form for the pop-out window
-    const fieldRows = fields
-      .map((field) => {
-        const val = String(formData[field.key] ?? '');
-        const escapedVal = val.replace(/"/g, '&quot;').replace(/</g, '&lt;');
-        const req = field.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
-
-        if (field.type === 'select') {
-          const opts = (field.options || [])
-            .map((o) => `<option value="${o.value}"${o.value === val ? ' selected' : ''}>${o.label}</option>`)
-            .join('');
-          return `<div><label>${field.label}${req}</label><select name="${field.key}"><option value="">Select...</option>${opts}</select></div>`;
-        }
-        if (field.type === 'textarea') {
-          return `<div class="full"><label>${field.label}${req}</label><textarea name="${field.key}" rows="3">${escapedVal}</textarea></div>`;
-        }
-        return `<div><label>${field.label}${req}</label><input type="${field.type}" name="${field.key}" value="${escapedVal}" /></div>`;
-      })
-      .join('');
-
-    // Tab buttons
-    const tabButtons = TABS.map(
-      (t) =>
-        `<button type="button" class="tab-btn${t.key === activeTab ? ' active' : ''}" data-tab="${t.key}">${t.label}</button>`,
-    ).join('');
-
-    const html = `<!DOCTYPE html>
-<html><head><title>Stellar OPS - ${tabLabel}</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#111827;color:#e5e7eb;min-height:100vh}
-.header{background:linear-gradient(135deg,#6366f1,#4f46e5);padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:default;user-select:none}
-.header h1{font-size:14px;font-weight:600;color:#fff}
-.tabs{display:flex;background:#1f2937;border-bottom:1px solid rgba(255,255,255,0.1);overflow-x:auto}
-.tab-btn{padding:10px 16px;font-size:12px;font-weight:500;color:#9ca3af;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
-.tab-btn:hover{color:#e5e7eb;background:#374151}
-.tab-btn.active{color:#818cf8;border-bottom-color:#818cf8;background:#111827}
-.form{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form .full{grid-column:1/-1}
-label{display:block;font-size:11px;font-weight:500;color:#9ca3af;margin-bottom:4px}
-input,select,textarea{width:100%;padding:8px 12px;border-radius:8px;border:1px solid #374151;background:#1f2937;color:#e5e7eb;font-size:13px;outline:none;transition:border-color .2s}
-input:focus,select:focus,textarea:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.15)}
-textarea{resize:none}
-.actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);margin-top:4px}
-.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s}
-.btn-cancel{background:#374151;color:#9ca3af}.btn-cancel:hover{background:#4b5563}
-.btn-save{background:#6366f1;color:#fff}.btn-save:hover{background:#4f46e5}
-.toast{position:fixed;top:12px;right:12px;background:#059669;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
-.toast.show{opacity:1}
-</style></head><body>
-<div class="header"><h1>Stellar OPS - ${tabLabel}</h1></div>
-<div class="tabs">${tabButtons}</div>
-<form class="form" id="popoutForm">${fieldRows}<div class="actions"><button type="button" class="btn btn-cancel" onclick="window.close()">Cancel</button><button type="submit" class="btn btn-save">Save</button></div></form>
-<div class="toast" id="toast">Saved!</div>
-<script>
-const FIELD_MAP = ${JSON.stringify(Object.fromEntries(Object.entries(FIELD_MAP).map(([k, v]) => [k, v.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options, required: f.required }))])))};
-const formData = ${JSON.stringify(formData)};
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-    const tab = this.dataset.tab;
-    const fields = FIELD_MAP[tab] || [];
-    const form = document.getElementById('popoutForm');
-    const actionsHtml = '<div class="actions"><button type="button" class="btn btn-cancel" onclick="window.close()">Cancel</button><button type="submit" class="btn btn-save">Save</button></div>';
-    form.innerHTML = fields.map(f => {
-      const val = '';
-      const req = f.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
-      if (f.type === 'select') {
-        const opts = (f.options||[]).map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('');
-        return '<div class="'+(f.type==='textarea'?'full':'')+'"><label>'+f.label+req+'</label><select name="'+f.key+'"><option value="">Select...</option>'+opts+'</select></div>';
+    // Try Document Picture-in-Picture API first (Chrome 116+)
+    // This creates a true always-on-top floating window like YouTube/Twitch PiP
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const docPiP = (window as any).documentPictureInPicture;
+    if (docPiP) {
+      try {
+        const pipWindow = await docPiP.requestWindow({ width: 520, height: 640 });
+        pipWindow.document.write(html);
+        pipWindow.document.close();
+        onClose();
+        return;
+      } catch {
+        // User denied or API failed — fall through to window.open
       }
-      if (f.type === 'textarea') return '<div class="full"><label>'+f.label+req+'</label><textarea name="'+f.key+'" rows="3">'+val+'</textarea></div>';
-      return '<div><label>'+f.label+req+'</label><input type="'+f.type+'" name="'+f.key+'" value="'+val+'" /></div>';
-    }).join('') + actionsHtml;
-    document.querySelector('.header h1').textContent = 'Stellar OPS - ' + this.textContent;
-  });
-});
+    }
 
-document.getElementById('popoutForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const fd = new FormData(this);
-  const data = Object.fromEntries(fd.entries());
-  if (window.opener && !window.opener.closed) {
-    window.opener.postMessage({ type: 'STELLAR_POPOUT_SAVE', tab: document.querySelector('.tab-btn.active').dataset.tab, data: data }, '*');
-  }
-  const toast = document.getElementById('toast');
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2000);
-});
-</script></body></html>`;
-
-    const popup = window.open('', '_blank', 'width=700,height=800,resizable=yes,scrollbars=yes');
+    // Fallback: regular popup window (not always-on-top, but still a separate resizable window)
+    const popup = window.open('', '_blank', 'popup=true,width=520,height=640,resizable=yes,scrollbars=yes');
     if (popup) {
       popup.document.write(html);
       popup.document.close();
+      onClose();
     }
-  }, [activeTab, formData]);
+  }, [activeTab, formData, onClose]);
 
   if (!isOpen) return null;
 
@@ -440,7 +471,7 @@ document.getElementById('popoutForm').addEventListener('submit', function(e) {
             <button
               onClick={handlePopOut}
               className="p-1.5 rounded-md hover:bg-white/20 text-white/80 hover:text-white transition-colors"
-              title="Pop out to new window"
+              title="Pop out to floating window (stays on top)"
             >
               <ExternalLink size={15} />
             </button>
