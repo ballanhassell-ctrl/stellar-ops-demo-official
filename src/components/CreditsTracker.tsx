@@ -747,14 +747,9 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                 {filteredRecords.map((record) => (
                   <tr
                     key={record.id}
-                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} cursor-pointer transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
-                    onClick={(e) => {
-                      const target = e.target as HTMLElement;
-                      if (target.closest('button, select, input, textarea, [role="button"]')) return;
-                      e.stopPropagation();
-                      setEditModalRecord(record);
-                      setEditModalOpen(true);
-                    }}
+                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={() => { setEditModalRecord(record); setEditModalOpen(true); }}
                   >
                     <td className="py-2.5 px-2">
                       {renderEditableCell(

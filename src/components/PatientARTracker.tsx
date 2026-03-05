@@ -1331,15 +1331,9 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
                 {activeRecords.map((record) => (
                   <tr
                     key={record.id}
-                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} cursor-pointer transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
-                    onClick={(e) => {
-                      // Don't open modal if clicking on interactive elements
-                      const target = e.target as HTMLElement;
-                      if (target.closest('button, select, input, textarea, [role="button"]')) return;
-                      e.stopPropagation();
-                      setEditModalRecord(record);
-                      setEditModalOpen(true);
-                    }}
+                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={() => { setEditModalRecord(record); setEditModalOpen(true); }}
                   >
                     {/* Patient Name */}
                     <td className="py-1.5 px-1.5">

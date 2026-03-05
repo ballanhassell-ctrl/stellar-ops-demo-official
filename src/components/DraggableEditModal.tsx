@@ -19,16 +19,17 @@ function useDrag(handleRef: React.RefObject<HTMLDivElement | null>) {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
   const start = useRef({ x: 0, y: 0 });
+  const posRef = useRef(pos);
+  posRef.current = pos;
 
   useEffect(() => {
     const handle = handleRef.current;
     if (!handle) return;
 
     const onPointerDown = (e: PointerEvent) => {
-      // Only drag from the handle itself, not child buttons
-      if ((e.target as HTMLElement).closest('button')) return;
+      if ((e.target as HTMLElement).closest('button, img')) return;
       dragging.current = true;
-      start.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+      start.current = { x: e.clientX - posRef.current.x, y: e.clientY - posRef.current.y };
       handle.setPointerCapture(e.pointerId);
     };
 
@@ -49,9 +50,8 @@ function useDrag(handleRef: React.RefObject<HTMLDivElement | null>) {
       handle.removeEventListener('pointermove', onPointerMove);
       handle.removeEventListener('pointerup', onPointerUp);
     };
-  });
+  }, [handleRef]);
 
-  // Reset position when modal reopens
   const resetPos = useCallback(() => setPos({ x: 0, y: 0 }), []);
 
   return { pos, resetPos };
