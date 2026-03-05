@@ -6,6 +6,7 @@ import type { DashboardData, TopProcedure } from './types';
 import { REPORT_TEMPLATES } from './types';
 import { generateEODEmailHTML, type BAMCycleData } from '../../services/eodEmailTemplate';
 import { sendEODReportEmail } from '../../services/emailService';
+import { fetchDailyARReportData, generateDailyARReportHTML } from '../../services/dailyARReportService';
 import { getLocalDateString } from '../../utils/dateUtils';
 
 interface EmailReportModalProps {
@@ -59,9 +60,8 @@ export default function EmailReportModal({
     nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
   });
 
-  const generateHTML = (freshData?: EODData) => {
+  const generateEODHTML = (freshData?: EODData) => {
     const dataToUse = freshData || eodData;
-    // Use effectiveDate for the report header (allows admin to override)
     const [ey, em, ed] = effectiveDate.split('-').map(Number);
     const reportDateStr = new Date(ey, em - 1, ed).toLocaleDateString('en-US', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -70,19 +70,47 @@ export default function EmailReportModal({
       eodData: dataToUse,
       reportDate: reportDateStr,
       message: message || undefined,
-      template: selectedTemplate,
+      template: selectedTemplate === 'combined' ? 'full' : selectedTemplate,
       logoBaseUrl: window.location.origin,
       bamCycle: buildBAMCycleData(),
       topProcedures,
     });
   };
 
-  const handlePreview = () => {
-    const html = generateHTML();
-    const previewWindow = window.open('', '_blank');
-    if (previewWindow) {
-      previewWindow.document.write(html);
-      previewWindow.document.close();
+  const generateDailyARHTML = async () => {
+    const data = await fetchDailyARReportData(effectiveDate);
+    return generateDailyARReportHTML(data, window.location.origin);
+  };
+
+  const buildFinalHTML = async (freshData?: EODData): Promise<string> => {
+    if (selectedTemplate === 'dailyAR') {
+      return generateDailyARHTML();
+    }
+    if (selectedTemplate === 'combined') {
+      const [eodHtml, arHtml] = await Promise.all([
+        Promise.resolve(generateEODHTML(freshData)),
+        generateDailyARHTML(),
+      ]);
+      return eodHtml + '<hr style="border:none;border-top:3px solid #B8985F;margin:40px 0;" />' + arHtml;
+    }
+    return generateEODHTML(freshData);
+  };
+
+  const [generating, setGenerating] = useState(false);
+
+  const handlePreview = async () => {
+    setGenerating(true);
+    try {
+      const html = await buildFinalHTML();
+      const previewWindow = window.open('', '_blank');
+      if (previewWindow) {
+        previewWindow.document.write(html);
+        previewWindow.document.close();
+      }
+    } catch (err) {
+      console.error('Error generating preview:', err);
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -94,7 +122,7 @@ export default function EmailReportModal({
 
     // Refresh action items before sending to ensure resolved items are excluded
     let freshData: EODData | null = null;
-    if (onRefreshActionItems) {
+    if (onRefreshActionItems && selectedTemplate !== 'dailyAR') {
       try {
         freshData = await onRefreshActionItems();
       } catch (err) {
@@ -102,7 +130,7 @@ export default function EmailReportModal({
       }
     }
 
-    const html = generateHTML(freshData || undefined);
+    const html = await buildFinalHTML(freshData || undefined);
     const recipientList = recipients.split(',').map((e: string) => e.trim()).filter(Boolean);
 
     setSending(true);
@@ -374,10 +402,14 @@ export default function EmailReportModal({
             </button>
             <button
               onClick={handlePreview}
-              className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-all font-medium shadow-md flex items-center justify-center gap-2"
+              disabled={generating}
+              className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-all font-medium shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <ExternalLink className="w-4 h-4" />
-              Preview
+              {generating ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Generating...</>
+              ) : (
+                <><ExternalLink className="w-4 h-4" />Preview</>
+              )}
             </button>
             <button
               onClick={handleSend}

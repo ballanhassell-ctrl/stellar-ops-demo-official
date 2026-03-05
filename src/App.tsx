@@ -3590,7 +3590,7 @@ const CourtStreetRCM = () => {
             )}
 
             {patientManagementView === 'patients' && (
-              <PatientARTracker isDayMode={isDayMode} />
+              <PatientARTracker isDayMode={isDayMode} isAdmin={isAdmin} dashboardDate={dashboardDate} />
             )}
             {patientManagementView === 'credits' && (
               <CreditsTracker isDayMode={isDayMode} />

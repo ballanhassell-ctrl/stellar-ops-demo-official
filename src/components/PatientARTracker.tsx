@@ -36,6 +36,7 @@ import { isStaticDataMode } from '../config/dataMode';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { fetchDailyARReportData, generateDailyARReportHTML, sendDailyARReport } from '../services/dailyARReportService';
+import { getLocalDateString } from '../utils/dateUtils';
 import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 
@@ -132,7 +133,7 @@ function getStatusLabel(status: PatientARStatus): string {
 // COMPONENT
 // =====================================================
 
-export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) {
+export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: { isDayMode: boolean; isAdmin?: boolean; dashboardDate?: string }) {
   // ---------------------------------------------------
   // STATE
   // ---------------------------------------------------
@@ -161,6 +162,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   const [sendingReport, setSendingReport] = useState(false);
   const [showReportPreview, setShowReportPreview] = useState(false);
   const [reportPreviewHtml, setReportPreviewHtml] = useState('');
+  const [reportDate, setReportDate] = useState(dashboardDate || '');
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -599,9 +601,9 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   // DAILY REPORT HANDLERS
   // ---------------------------------------------------
 
-  const handlePreviewDailyReport = useCallback(async () => {
+  const handlePreviewDailyReport = useCallback(async (dateOverride?: string) => {
     try {
-      const data = await fetchDailyARReportData();
+      const data = await fetchDailyARReportData(dateOverride || reportDate || undefined);
       const logoBaseUrl = window.location.origin;
       const html = generateDailyARReportHTML(data, logoBaseUrl);
       setReportPreviewHtml(html);
@@ -610,12 +612,12 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
       console.error('Error generating daily report preview:', err);
       setError('Failed to generate daily report preview.');
     }
-  }, []);
+  }, [reportDate]);
 
   const handleSendDailyReport = useCallback(async () => {
     setSendingReport(true);
     try {
-      const data = await fetchDailyARReportData();
+      const data = await fetchDailyARReportData(reportDate || undefined);
       const logoBaseUrl = window.location.origin;
       const result = await sendDailyARReport(
         ['daniely@stellarconsults.com', 'dr.gajjar@courtstreetdental.com'],
@@ -639,7 +641,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     } finally {
       setSendingReport(false);
     }
-  }, []);
+  }, [reportDate]);
 
   // ---------------------------------------------------
   // NOTES & AUDIT DRAWER HANDLERS
@@ -1014,17 +1016,30 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
             <Plus className="w-4 h-4" />
             Add Patient A/R
           </button>
-          <button
-            onClick={handlePreviewDailyReport}
-            disabled={sendingReport}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
-              isDayMode ? 'border-blue-300 text-blue-600 hover:bg-blue-50' : 'border-blue-700 text-blue-400 hover:bg-blue-900/30'
-            }`}
-            title="Preview & send daily A/R report to Daniely and Dr. Gajjar"
-          >
-            <Mail className="w-4 h-4" />
-            Daily Report
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <input
+                type="date"
+                value={reportDate}
+                max={getLocalDateString()}
+                onChange={(e) => setReportDate(e.target.value)}
+                className={`px-2 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/10 border-white/20 text-white'
+                }`}
+              />
+            )}
+            <button
+              onClick={() => handlePreviewDailyReport()}
+              disabled={sendingReport}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
+                isDayMode ? 'border-blue-300 text-blue-600 hover:bg-blue-50' : 'border-blue-700 text-blue-400 hover:bg-blue-900/30'
+              }`}
+              title="Preview & send daily A/R report to Daniely and Dr. Gajjar"
+            >
+              <Mail className="w-4 h-4" />
+              Daily Report{isAdmin && reportDate && reportDate !== getLocalDateString() ? ` (${reportDate})` : ''}
+            </button>
+          </div>
           <button
             onClick={() => setShowClearConfirm(true)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
