@@ -20,6 +20,57 @@ interface SendEmailResult {
   method: 'postmark' | 'fallback';
 }
 
+// Cached Supabase Storage base URL for email logos
+let cachedLogoBaseUrl: string | null = null;
+
+const EMAIL_LOGO_FILES = [
+  { local: '/Stellar2 copy.jpg', remote: 'Stellar2 copy.jpg' },
+  { local: '/Cris Dental Image.jpg', remote: 'Cris Dental Image.jpg' },
+];
+
+/**
+ * Uploads logo images to Supabase Storage (public bucket) if not already present,
+ * and returns the base URL for referencing them in email HTML.
+ *
+ * This ensures email clients can load the logos from a permanent public CDN URL
+ * rather than the app's origin (which may be localhost or blocked by email clients).
+ *
+ * Requires the `email-assets` bucket to exist (see create_email_assets_bucket.sql).
+ * Falls back to window.location.origin if storage is unavailable.
+ */
+export async function getEmailLogoBaseUrl(): Promise<string> {
+  if (cachedLogoBaseUrl) return cachedLogoBaseUrl;
+
+  const BUCKET = 'email-assets';
+
+  try {
+    // Check which files already exist in the bucket
+    const { data: existing } = await supabase.storage.from(BUCKET).list();
+    const existingNames = new Set((existing || []).map(f => f.name));
+
+    // Upload any missing logos
+    for (const logo of EMAIL_LOGO_FILES) {
+      if (existingNames.has(logo.remote)) continue;
+
+      const response = await fetch(logo.local);
+      if (!response.ok) continue;
+      const blob = await response.blob();
+      await supabase.storage.from(BUCKET).upload(logo.remote, blob, {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+    }
+
+    // Build the base URL: <supabase-url>/storage/v1/object/public/<bucket>
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    cachedLogoBaseUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}`;
+    return cachedLogoBaseUrl;
+  } catch (err) {
+    console.warn('Could not upload logos to Supabase Storage, falling back to origin:', err);
+    return window.location.origin;
+  }
+}
+
 /**
  * Sends an EOD report email via Postmark (through Supabase Edge Function)
  * or falls back to clipboard+mailto if Postmark is not configured.
