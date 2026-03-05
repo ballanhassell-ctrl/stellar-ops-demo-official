@@ -948,42 +948,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   }
 
   // ---------------------------------------------------
-  // RENDER: LOADING / ERROR
-  // ---------------------------------------------------
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-gold-500" />
-        <span className={`ml-3 text-lg ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-          Loading Patient A/R data...
-        </span>
-      </div>
-    );
-  }
-
-  if (error && records.length === 0) {
-    return (
-      <div
-        className={`rounded-2xl p-8 text-center ${isDayMode ? 'glass-card border border-white/40' : 'glass-card-dark border border-white/10'}`}
-      >
-        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-        <h3 className={`text-xl font-semibold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-          Error Loading Data
-        </h3>
-        <p className={`mb-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>{error}</p>
-        <button
-          onClick={fetchData}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm mx-auto"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------
-  // MODAL SAVE HANDLER
+  // MODAL SAVE HANDLER (must be before early returns to satisfy hooks rules)
   // ---------------------------------------------------
   const handleModalSave = useCallback(async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
     try {
@@ -1051,6 +1016,41 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
       throw err;
     }
   }, [activeTab, fetchData, records]);
+
+  // ---------------------------------------------------
+  // RENDER: LOADING / ERROR
+  // ---------------------------------------------------
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-gold-500" />
+        <span className={`ml-3 text-lg ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+          Loading Patient A/R data...
+        </span>
+      </div>
+    );
+  }
+
+  if (error && records.length === 0) {
+    return (
+      <div
+        className={`rounded-2xl p-8 text-center ${isDayMode ? 'glass-card border border-white/40' : 'glass-card-dark border border-white/10'}`}
+      >
+        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+        <h3 className={`text-xl font-semibold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+          Error Loading Data
+        </h3>
+        <p className={`mb-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>{error}</p>
+        <button
+          onClick={fetchData}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm mx-auto"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   // ---------------------------------------------------
   // RENDER: MAIN
