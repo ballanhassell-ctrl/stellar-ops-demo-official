@@ -198,6 +198,7 @@ function formatDate(dateStr: string): string {
  */
 export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string, message?: string): string {
   const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
+  const csdLogoUrl = `${logoBaseUrl}/Cris%20Dental%20Image.jpg`;
   const totalNewItems =
     data.newPatientAR.length +
     data.newNonCollectible.length +
@@ -279,7 +280,17 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 20px;">
-                    <img src="${stellarLogoUrl}" alt="Stellar Consults" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding-right: 12px;">
+                          <img src="${stellarLogoUrl}" alt="Stellar Consults" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
+                        </td>
+                        <td style="color: rgba(255,255,255,0.5); font-size: 24px; font-weight: 300; padding: 0 8px; vertical-align: middle;">&times;</td>
+                        <td style="padding-left: 12px;">
+                          <img src="${csdLogoUrl}" alt="Court Street Dental" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
