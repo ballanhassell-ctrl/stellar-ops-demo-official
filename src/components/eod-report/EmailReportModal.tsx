@@ -5,7 +5,7 @@ import type { EODData } from '../../hooks/useEODMetrics';
 import type { DashboardData, TopProcedure } from './types';
 import { REPORT_TEMPLATES } from './types';
 import { generateEODEmailHTML, type BAMCycleData } from '../../services/eodEmailTemplate';
-import { sendEODReportEmail } from '../../services/emailService';
+import { sendEODReportEmail, getEmailLogoBaseUrl } from '../../services/emailService';
 import { fetchDailyARReportData, generateDailyARReportHTML } from '../../services/dailyARReportService';
 import { getLocalDateString } from '../../utils/dateUtils';
 
@@ -60,7 +60,7 @@ export default function EmailReportModal({
     nextCycleEnd: dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
   });
 
-  const generateEODHTML = (freshData?: EODData) => {
+  const generateEODHTML = (freshData?: EODData, logoBase?: string) => {
     const dataToUse = freshData || eodData;
     const [ey, em, ed] = effectiveDate.split('-').map(Number);
     const reportDateStr = new Date(ey, em - 1, ed).toLocaleDateString('en-US', {
@@ -71,29 +71,29 @@ export default function EmailReportModal({
       reportDate: reportDateStr,
       message: message || undefined,
       template: selectedTemplate === 'combined' ? 'full' : selectedTemplate,
-      logoBaseUrl: window.location.origin,
+      logoBaseUrl: logoBase || window.location.origin,
       bamCycle: buildBAMCycleData(),
       topProcedures,
     });
   };
 
-  const generateDailyARHTML = async () => {
+  const generateDailyARHTML = async (logoBase?: string) => {
     const data = await fetchDailyARReportData(effectiveDate);
-    return generateDailyARReportHTML(data, window.location.origin);
+    return generateDailyARReportHTML(data, logoBase || window.location.origin);
   };
 
-  const buildFinalHTML = async (freshData?: EODData): Promise<string> => {
+  const buildFinalHTML = async (freshData?: EODData, logoBase?: string): Promise<string> => {
     if (selectedTemplate === 'dailyAR') {
-      return generateDailyARHTML();
+      return generateDailyARHTML(logoBase);
     }
     if (selectedTemplate === 'combined') {
       const [eodHtml, arHtml] = await Promise.all([
-        Promise.resolve(generateEODHTML(freshData)),
-        generateDailyARHTML(),
+        Promise.resolve(generateEODHTML(freshData, logoBase)),
+        generateDailyARHTML(logoBase),
       ]);
       return eodHtml + '<hr style="border:none;border-top:3px solid #B8985F;margin:40px 0;" />' + arHtml;
     }
-    return generateEODHTML(freshData);
+    return generateEODHTML(freshData, logoBase);
   };
 
   const [generating, setGenerating] = useState(false);
@@ -130,7 +130,9 @@ export default function EmailReportModal({
       }
     }
 
-    const html = await buildFinalHTML(freshData || undefined);
+    // Resolve logo URLs from Supabase Storage for email compatibility
+    const logoBase = await getEmailLogoBaseUrl();
+    const html = await buildFinalHTML(freshData || undefined, logoBase);
     const recipientList = recipients.split(',').map((e: string) => e.trim()).filter(Boolean);
 
     setSending(true);

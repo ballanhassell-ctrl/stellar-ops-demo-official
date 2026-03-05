@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { getLocalDateString, toLocalDateString, getUTCBoundariesForLocalDate } from '../utils/dateUtils';
+import { getEmailLogoBaseUrl } from './emailService';
 
 // Brand colors matching the EOD report template
 const COLORS = {
@@ -428,10 +429,11 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
 export async function sendDailyARReport(
   recipients: string[],
   data: DailyARReportData,
-  logoBaseUrl: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const htmlBody = generateDailyARReportHTML(data, logoBaseUrl);
+    // Resolve logo URLs from Supabase Storage for email compatibility
+    const logoBase = await getEmailLogoBaseUrl();
+    const htmlBody = generateDailyARReportHTML(data, logoBase);
     const totalNew =
       data.newPatientAR.length +
       data.newNonCollectible.length +
