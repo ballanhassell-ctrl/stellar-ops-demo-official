@@ -1927,11 +1927,11 @@ const CourtStreetRCM = () => {
   // Loading state - wait for all data to load from Supabase
   if (metricsLoading || eodLoading || providerLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
-        <div className={`text-center p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} animate-fade-in`}>
-          <RefreshCw className="w-16 h-16 text-primary-500 animate-spin mx-auto mb-6" />
-          <p className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Loading dashboard data...</p>
-          <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fetching from Supabase</p>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-warm-cream via-warm-cream-dark to-warm-beige' : 'bg-gradient-to-br from-warm-charcoal via-warm-charcoal-light to-warm-slate'}`}>
+        <div className={`text-center p-12 rounded-3xl backdrop-blur-xl animate-fade-in ${isDayMode ? 'bg-white/80 border border-warm-beige-dark shadow-lg' : 'bg-warm-slate/85 border border-warm-slate-dark shadow-2xl'}`}>
+          <RefreshCw className={`w-16 h-16 animate-spin mx-auto mb-6 ${isDayMode ? 'text-warm-gold' : 'text-warm-copper'}`} />
+          <p className={`text-xl font-semibold ${isDayMode ? 'text-warm-brown-dark' : 'text-warm-cream'}`}>Loading dashboard data...</p>
+          <p className={`text-sm mt-2 ${isDayMode ? 'text-warm-brown' : 'text-warm-sand'}`}>Fetching from Supabase</p>
         </div>
       </div>
     );
@@ -1940,11 +1940,11 @@ const CourtStreetRCM = () => {
   // Error state
   if (metricsError || eodError || providerError) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
-        <div className={`text-center max-w-md p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} animate-scale-in`}>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-warm-cream via-warm-cream-dark to-warm-beige' : 'bg-gradient-to-br from-warm-charcoal via-warm-charcoal-light to-warm-slate'}`}>
+        <div className={`text-center max-w-md p-12 rounded-3xl backdrop-blur-xl animate-scale-in ${isDayMode ? 'bg-white/80 border border-warm-beige-dark shadow-lg' : 'bg-warm-slate/85 border border-warm-slate-dark shadow-2xl'}`}>
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-          <h2 className={`text-2xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Error Loading Data</h2>
-          <p className={`mb-6 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+          <h2 className={`text-2xl font-bold mb-3 ${isDayMode ? 'text-warm-brown-dark' : 'text-warm-cream'}`}>Error Loading Data</h2>
+          <p className={`mb-6 ${isDayMode ? 'text-warm-brown' : 'text-warm-sand'}`}>
             {metricsError || eodError || providerError}
           </p>
           <button
@@ -1953,7 +1953,7 @@ const CourtStreetRCM = () => {
               refreshEOD();
               refreshProvider();
             }}
-            className="px-6 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transform hover:scale-105 transition-all shadow-lg hover:shadow-glow-primary"
+            className={`px-6 py-3 rounded-xl font-semibold transform hover:scale-105 transition-all shadow-lg ${isDayMode ? 'bg-warm-gold text-white hover:bg-warm-gold-hover' : 'bg-warm-copper text-warm-charcoal hover:bg-warm-copper-light hover:shadow-xl'}`}
           >
             Retry
           </button>
@@ -1965,19 +1965,19 @@ const CourtStreetRCM = () => {
   // Null safety guard - ensure data is loaded
   if (!eodData || !dailyProductionByProvider) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
-        <div className={`text-center p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'}`}>
-          <p className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
-          <p className={`text-sm mt-3 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-warm-cream via-warm-cream-dark to-warm-beige' : 'bg-gradient-to-br from-warm-charcoal via-warm-charcoal-light to-warm-slate'}`}>
+        <div className={`text-center p-12 rounded-3xl backdrop-blur-xl ${isDayMode ? 'bg-white/80 border border-warm-beige-dark shadow-lg' : 'bg-warm-slate/85 border border-warm-slate-dark shadow-2xl'}`}>
+          <p className={`text-xl font-semibold ${isDayMode ? 'text-warm-brown-dark' : 'text-warm-cream'}`}>No data available for selected date</p>
+          <p className={`text-sm mt-3 ${isDayMode ? 'text-warm-brown' : 'text-warm-sand'}`}>Try selecting a different date or adding data to Supabase</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen font-sans ${isDayMode ? 'bg-gradient-to-br from-purple-50 via-white to-coral-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-purple-950/50 to-gray-800 gradient-mesh-dark'}`}>
+    <div className={`min-h-screen font-sans transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-[#FAF8F5] via-[#F5F3EF] to-[#F0EDE7]' : 'bg-gradient-to-br from-[#1A1614] via-[#211D1A] to-[#2D2622]'}`}>
       {/* Header */}
-      <div className={`sticky top-0 z-50 ${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} animate-slide-down`}>
+      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/80 border-[#E8E3DB] shadow-sm' : 'bg-[#2D2622]/85 border-[#4A403A] shadow-2xl'} animate-slide-down`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
             {/* Mobile Menu Button */}
@@ -2019,25 +2019,27 @@ const CourtStreetRCM = () => {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              {/* Day/Night Mode Button - Icon only on mobile */}
+              {/* Theme Toggle: Minimalist Light ↔ Future Dark */}
               <button
                 onClick={toggleTheme}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
+                className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-2xl font-medium transition-all duration-300 min-h-[44px] ${
                   isDayMode
-                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    : 'bg-[#00D4FF] text-black hover:bg-[#00b8e6]'
+                    ? 'bg-[#8B7355] text-white hover:bg-[#6B5D52] shadow-md hover:shadow-lg'
+                    : 'bg-[#D4A574] text-[#1A1614] hover:bg-[#E6B886] shadow-lg hover:shadow-xl'
                 }`}
-                title={isDayMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                title={isDayMode ? 'Switch to Future Dark Mode' : 'Switch to Minimalist Light Mode'}
               >
                 {isDayMode ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    <span className="hidden md:inline text-sm font-medium">Dark</span>
+                    <span className="hidden lg:inline text-sm font-semibold tracking-wide">Future Dark</span>
+                    <span className="hidden md:inline lg:hidden text-sm font-semibold">Dark</span>
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" />
-                    <span className="hidden md:inline text-sm font-medium">Light</span>
+                    <span className="hidden lg:inline text-sm font-semibold tracking-wide">Minimalist Light</span>
+                    <span className="hidden md:inline lg:hidden text-sm font-semibold">Light</span>
                   </>
                 )}
               </button>
