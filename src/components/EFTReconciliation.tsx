@@ -20,7 +20,6 @@ import {
   RefreshCw,
   FileText,
   MessageSquare,
-  History,
 } from 'lucide-react';
 import type {
   EFTReconciliationPeriod,
@@ -40,7 +39,7 @@ import {
   formatPeriodLabel,
 } from '../services/eftReconciliationService';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
-import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
+import NotesAuditDrawer from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 
 // =====================================================
@@ -66,8 +65,6 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; darkBg: string; 
   exception: { bg: 'bg-red-100', text: 'text-red-700', darkBg: 'bg-red-900/40', darkText: 'text-red-300', dot: 'bg-red-500' },
   reconciled: { bg: 'bg-emerald-100', text: 'text-emerald-700', darkBg: 'bg-emerald-900/40', darkText: 'text-emerald-300', dot: 'bg-emerald-500' },
 };
-
-const STAFF_INITIALS = ['BH', 'LP', 'VM', 'DM', 'LM', 'EY', 'MT', 'KM'];
 
 type NewPeriodForm = {
   period_start: string;
@@ -393,6 +390,7 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
       {toast && (
         <SuccessToast
           message={toast.message}
+          isVisible={!!toast}
           onClose={() => setToast(null)}
         />
       )}
@@ -403,10 +401,11 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
           isOpen={!!drawerEntry}
           onClose={() => setDrawerEntry(null)}
           isDayMode={isDayMode}
+          entityType="EFT Entry"
+          entityLabel={`${drawerEntry.insurance_company} - ${drawerEntry.trn_number}`}
           notes={drawerEntry.structured_notes}
           auditTrail={drawerEntry.audit_trail}
-          onSaveNotes={(newNotes) => handleNotesUpdate(drawerEntry, newNotes)}
-          title={`${drawerEntry.insurance_company} - ${drawerEntry.trn_number}`}
+          onAddNote={(note: NoteEntry) => handleNotesUpdate(drawerEntry, [...drawerEntry.structured_notes, note])}
         />
       )}
 
