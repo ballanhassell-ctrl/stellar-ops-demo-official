@@ -269,6 +269,9 @@ export default function InsuranceCheckStation({
     const confirmed = scanSessionItems.filter(i => i.status === 'confirmed');
     if (confirmed.length === 0) return;
 
+    let successCount = 0;
+    const failedItems: string[] = [];
+
     for (const item of confirmed) {
       const newCheck: InsuranceCheckRecord = {
         id: '',
@@ -287,17 +290,27 @@ export default function InsuranceCheckStation({
       try {
         const saved = await insertInsuranceCheck(recordToInsuranceCheck(newCheck));
         setInsuranceChecks(prev => [...prev, insuranceCheckToRecord(saved)]);
+        successCount++;
+
+        // Only revoke and remove successful items
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        setScanSessionItems(prev => prev.filter(si => si.id !== item.id));
       } catch (error) {
         console.error('Error saving scanned check:', error);
+        failedItems.push(item.extractedData.checkNumber || 'Unknown');
+        // Mark item as error so user can see what failed
+        setScanSessionItems(prev => prev.map(si =>
+          si.id === item.id ? { ...si, status: 'error' as const } : si
+        ));
       }
     }
 
-    // Clear session
-    scanSessionItems.forEach(item => {
-      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-    });
-    setScanSessionItems([]);
-    setSessionActive(false);
+    // Show user feedback
+    if (failedItems.length > 0) {
+      alert(`Successfully saved ${successCount} check(s). Failed to save ${failedItems.length} check(s): ${failedItems.join(', ')}. Please review and retry.`);
+    } else {
+      setSessionActive(false);
+    }
   };
 
   const clearSession = () => {
