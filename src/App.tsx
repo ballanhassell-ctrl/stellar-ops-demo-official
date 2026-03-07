@@ -2014,7 +2014,7 @@ const CourtStreetRCM = () => {
                 <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.02em'}}>
                   Court Street Dental RCM
                 </h1>
-                <p className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'} truncate`}>
+                <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
                   Powered by Stellar OPS
                 </p>
               </div>
