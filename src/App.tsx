@@ -29,6 +29,7 @@ import OpenDentalImport from './components/OpenDentalImport';
 import PatientARTracker from './components/PatientARTracker';
 import CreditsTracker from './components/CreditsTracker';
 import VCCPaymentsTracker from './components/VCCPaymentsTracker';
+import EFTReconciliation from './components/EFTReconciliation';
 import { EODReport } from './components/eod-report';
 import { sanitizePatientName } from './utils/sanitizePatientName';
 import { getLocalDateString, toLocalDateString } from './utils/dateUtils';
@@ -3107,6 +3108,18 @@ const CourtStreetRCM = () => {
                   Insurance Checks/EFT's
                 </button>
                 <button
+                  onClick={() => setPatientManagementView('eft-reconciliation')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'eft-reconciliation'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  EFT Reconciliation
+                </button>
+                <button
                   onClick={() => setPatientManagementView('ar-trends')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'ar-trends'
@@ -5173,6 +5186,10 @@ const CourtStreetRCM = () => {
 
             {patientManagementView === 'vcc-payments' && (
               <VCCPaymentsTracker isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'eft-reconciliation' && (
+              <EFTReconciliation isDayMode={isDayMode} />
             )}
 
             {patientManagementView === 'od-import' && (

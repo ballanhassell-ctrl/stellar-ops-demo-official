@@ -11,6 +11,7 @@ import {
   FileText,
   AlertTriangle,
   GripHorizontal,
+  DollarSign,
 } from 'lucide-react';
 // Types used for RecordData field mapping
 
@@ -61,13 +62,14 @@ function useDrag(handleRef: React.RefObject<HTMLDivElement | null>, isVisible: b
 }
 
 // ── Tab definitions ──────────────────────────────────────────────
-type TabKey = 'patient_ar' | 'credits' | 'insurance_ar' | 'insurance_issues';
+type TabKey = 'patient_ar' | 'credits' | 'insurance_ar' | 'insurance_issues' | 'eft_reconciliation';
 
 const TABS: { key: TabKey; label: string; icon: typeof Users }[] = [
   { key: 'patient_ar', label: 'Patient A/R', icon: Users },
   { key: 'credits', label: 'Credits', icon: CreditCard },
   { key: 'insurance_ar', label: 'Insurance A/R', icon: FileText },
   { key: 'insurance_issues', label: 'Insurance Issues', icon: AlertTriangle },
+  { key: 'eft_reconciliation', label: 'EFT Reconciliation', icon: DollarSign },
 ];
 
 // ── Field schema per tab ─────────────────────────────────────────
@@ -197,11 +199,34 @@ const INSURANCE_ISSUES_FIELDS: FieldDef[] = [
   { key: 'notes', label: 'Notes', type: 'textarea' },
 ];
 
+const EFT_RECONCILIATION_FIELDS: FieldDef[] = [
+  { key: 'insurance_company', label: 'Insurance Company', type: 'text', required: true },
+  { key: 'payment_date', label: 'Payment Date', type: 'date', required: true },
+  { key: 'trn_number', label: 'TRN #', type: 'text', required: true },
+  { key: 'date_posted', label: 'Date Posted', type: 'date' },
+  { key: 'amount', label: 'Amount', type: 'number', required: true },
+  {
+    key: 'status',
+    label: 'Status',
+    type: 'select',
+    options: [
+      { value: '', label: 'None' },
+      { value: 'posted', label: 'Posted' },
+      { value: 'pending', label: 'Pending' },
+      { value: 'posted already by via', label: 'Posted Already' },
+      { value: 'exception', label: 'Exception' },
+      { value: 'reconciled', label: 'Reconciled' },
+    ],
+  },
+  { key: 'notes', label: 'Notes', type: 'textarea' },
+];
+
 const FIELD_MAP: Record<TabKey, FieldDef[]> = {
   patient_ar: PATIENT_AR_FIELDS,
   credits: CREDITS_FIELDS,
   insurance_ar: INSURANCE_AR_FIELDS,
   insurance_issues: INSURANCE_ISSUES_FIELDS,
+  eft_reconciliation: EFT_RECONCILIATION_FIELDS,
 };
 
 // ── Inline SVG icons for pop-out (Lucide isn't available there) ──
@@ -212,7 +237,8 @@ const SVG_USERS = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14
 const SVG_CREDIT = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>';
 const SVG_FILE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>';
 const SVG_ALERT = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
-const TAB_ICONS: Record<string, string> = { patient_ar: SVG_USERS, credits: SVG_CREDIT, insurance_ar: SVG_FILE, insurance_issues: SVG_ALERT };
+const SVG_DOLLAR = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+const TAB_ICONS: Record<string, string> = { patient_ar: SVG_USERS, credits: SVG_CREDIT, insurance_ar: SVG_FILE, insurance_issues: SVG_ALERT, eft_reconciliation: SVG_DOLLAR };
 
 // ── Standalone pop-out HTML builder ──────────────────────────────
 function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>, isDayMode: boolean): string {

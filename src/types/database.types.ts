@@ -598,6 +598,43 @@ export type PatientAREnhanced = PatientAR & {
   doctor_decision: string | null; // Dr. Gajjar's decision on non-collectible accounts
 };
 
+// =====================================================
+// EFT Reconciliation Types
+// Tracks weekly EFT payment periods and individual entries
+// =====================================================
+
+export type EFTReconciliationEntryStatus = '' | 'posted' | 'pending' | 'posted already by via' | 'exception' | 'reconciled';
+
+export type EFTReconciliationPeriod = {
+  id: string;
+  period_start: string; // ISO date string
+  period_end: string; // ISO date string
+  period_label: string; // e.g., "EFT (02/07/2026 - 02/13/2026)"
+  total_amount: number;
+  entry_count: number;
+  notes: string | null;
+  created_by: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type EFTReconciliationEntry = {
+  id: string;
+  period_id: string;
+  insurance_company: string;
+  payment_date: string; // ISO date string
+  trn_number: string; // Transaction/trace number
+  date_posted: string | null; // ISO date string, nullable for pending
+  amount: number;
+  status: EFTReconciliationEntryStatus;
+  notes: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
+  entered_by: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type Database = {
   patients: Patient;
   appointments: Appointment;
@@ -623,4 +660,6 @@ export type Database = {
   insurance_issues: InsuranceIssue;
   ar_snapshots: ARSnapshot;
   patient_credits: PatientCredit;
+  eft_reconciliation_periods: EFTReconciliationPeriod;
+  eft_reconciliation_entries: EFTReconciliationEntry;
 };
