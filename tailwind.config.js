@@ -12,27 +12,19 @@ export default {
         display: ['Manrope', 'sans-serif'],
       },
       colors: {
-        // Warm Minimalist Theme Colors (inspired by modern interior design)
-        warm: {
-          // Light mode
-          'cream': '#FAF8F5',
-          'cream-dark': '#F5F3EF',
-          'beige': '#F0EDE7',
-          'beige-dark': '#E8E3DB',
-          'sand': '#D4CFC7',
-          'brown-light': '#8B7F77',
-          'brown': '#6B5D52',
-          'brown-dark': '#8B7355',
-          'gold': '#B8976A',
-          'gold-hover': '#A68658',
-          // Dark mode
-          'charcoal': '#1A1614',
-          'charcoal-light': '#211D1A',
-          'slate': '#2D2622',
-          'slate-light': '#3D3530',
-          'slate-dark': '#4A403A',
-          'copper': '#D4A574',
-          'copper-light': '#E6B886',
+        // Modern theme colors
+        cyan: {
+          DEFAULT: '#00D4FF',
+          50: '#E5F9FF',
+          100: '#CCF3FF',
+          200: '#99E7FF',
+          300: '#66DBFF',
+          400: '#33CFFF',
+          500: '#00D4FF',
+          600: '#00B8E6',
+          700: '#008DB3',
+          800: '#006280',
+          900: '#00374D',
         },
         // Stellar Consults Brand Colors
         purple: {

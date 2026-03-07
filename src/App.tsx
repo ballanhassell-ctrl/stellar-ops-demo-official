@@ -1927,11 +1927,11 @@ const CourtStreetRCM = () => {
   // Loading state - wait for all data to load from Supabase
   if (metricsLoading || eodLoading || providerLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-warm-cream via-warm-cream-dark to-warm-beige' : 'bg-gradient-to-br from-warm-charcoal via-warm-charcoal-light to-warm-slate'}`}>
-        <div className={`text-center p-12 rounded-3xl backdrop-blur-xl animate-fade-in ${isDayMode ? 'bg-white/80 border border-warm-beige-dark shadow-lg' : 'bg-warm-slate/85 border border-warm-slate-dark shadow-2xl'}`}>
-          <RefreshCw className={`w-16 h-16 animate-spin mx-auto mb-6 ${isDayMode ? 'text-warm-gold' : 'text-warm-copper'}`} />
-          <p className={`text-xl font-semibold ${isDayMode ? 'text-warm-brown-dark' : 'text-warm-cream'}`}>Loading dashboard data...</p>
-          <p className={`text-sm mt-2 ${isDayMode ? 'text-warm-brown' : 'text-warm-sand'}`}>Fetching from Supabase</p>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
+        <div className={`text-center p-12 rounded-2xl backdrop-blur-xl animate-fade-in border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
+          <RefreshCw className={`w-16 h-16 animate-spin mx-auto mb-6 ${isDayMode ? 'text-purple-500' : 'text-cyan-500'}`} style={{filter: !isDayMode ? 'drop-shadow(0 0 10px rgba(0,212,255,0.5))' : 'none'}} />
+          <p className={`text-2xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Loading dashboard data...</p>
+          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Fetching from Supabase</p>
         </div>
       </div>
     );
@@ -1940,11 +1940,11 @@ const CourtStreetRCM = () => {
   // Error state
   if (metricsError || eodError || providerError) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-warm-cream via-warm-cream-dark to-warm-beige' : 'bg-gradient-to-br from-warm-charcoal via-warm-charcoal-light to-warm-slate'}`}>
-        <div className={`text-center max-w-md p-12 rounded-3xl backdrop-blur-xl animate-scale-in ${isDayMode ? 'bg-white/80 border border-warm-beige-dark shadow-lg' : 'bg-warm-slate/85 border border-warm-slate-dark shadow-2xl'}`}>
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-          <h2 className={`text-2xl font-bold mb-3 ${isDayMode ? 'text-warm-brown-dark' : 'text-warm-cream'}`}>Error Loading Data</h2>
-          <p className={`mb-6 ${isDayMode ? 'text-warm-brown' : 'text-warm-sand'}`}>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
+        <div className={`text-center max-w-md p-12 rounded-2xl backdrop-blur-xl animate-scale-in border-2 ${isDayMode ? 'bg-white border-red-200 shadow-xl' : 'bg-neutral-900 border-red-900 shadow-[0_0_60px_rgba(239,68,68,0.2)]'}`}>
+          <AlertCircle className={`w-16 h-16 mx-auto mb-6 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
+          <h2 className={`text-2xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Error Loading Data</h2>
+          <p className={`mb-6 ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
             {metricsError || eodError || providerError}
           </p>
           <button
@@ -1953,7 +1953,7 @@ const CourtStreetRCM = () => {
               refreshEOD();
               refreshProvider();
             }}
-            className={`px-6 py-3 rounded-xl font-semibold transform hover:scale-105 transition-all shadow-lg ${isDayMode ? 'bg-warm-gold text-white hover:bg-warm-gold-hover' : 'bg-warm-copper text-warm-charcoal hover:bg-warm-copper-light hover:shadow-xl'}`}
+            className={`px-6 py-3 rounded-xl font-semibold transform hover:scale-105 transition-all border-2 ${isDayMode ? 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600 shadow-lg hover:shadow-xl' : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'}`}
           >
             Retry
           </button>
@@ -1965,19 +1965,19 @@ const CourtStreetRCM = () => {
   // Null safety guard - ensure data is loaded
   if (!eodData || !dailyProductionByProvider) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-warm-cream via-warm-cream-dark to-warm-beige' : 'bg-gradient-to-br from-warm-charcoal via-warm-charcoal-light to-warm-slate'}`}>
-        <div className={`text-center p-12 rounded-3xl backdrop-blur-xl ${isDayMode ? 'bg-white/80 border border-warm-beige-dark shadow-lg' : 'bg-warm-slate/85 border border-warm-slate-dark shadow-2xl'}`}>
-          <p className={`text-xl font-semibold ${isDayMode ? 'text-warm-brown-dark' : 'text-warm-cream'}`}>No data available for selected date</p>
-          <p className={`text-sm mt-3 ${isDayMode ? 'text-warm-brown' : 'text-warm-sand'}`}>Try selecting a different date or adding data to Supabase</p>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
+        <div className={`text-center p-12 rounded-2xl backdrop-blur-xl border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
+          <p className={`text-xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
+          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen font-sans transition-all duration-300 ${isDayMode ? 'bg-gradient-to-br from-[#FAF8F5] via-[#F5F3EF] to-[#F0EDE7]' : 'bg-gradient-to-br from-[#1A1614] via-[#211D1A] to-[#2D2622]'}`}>
-      {/* Header */}
-      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/80 border-[#E8E3DB] shadow-sm' : 'bg-[#2D2622]/85 border-[#4A403A] shadow-2xl'} animate-slide-down`}>
+    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
+      {/* Header - Dramatic glass morphism effect */}
+      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/70 border-gray-200 shadow-sm' : 'bg-black/60 border-gray-800 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
             {/* Mobile Menu Button */}
@@ -2019,27 +2019,27 @@ const CourtStreetRCM = () => {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              {/* Theme Toggle: Minimalist Light ↔ Future Dark */}
+              {/* Theme Toggle: Minimal Light ↔ Future Dark */}
               <button
                 onClick={toggleTheme}
-                className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-2xl font-medium transition-all duration-300 min-h-[44px] ${
+                className={`group flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 min-h-[44px] border-2 ${
                   isDayMode
-                    ? 'bg-[#8B7355] text-white hover:bg-[#6B5D52] shadow-md hover:shadow-lg'
-                    : 'bg-[#D4A574] text-[#1A1614] hover:bg-[#E6B886] shadow-lg hover:shadow-xl'
+                    ? 'bg-gray-900 text-white border-gray-800 hover:bg-black hover:border-gray-700 hover:shadow-lg hover:scale-105'
+                    : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:border-cyan-300 hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] hover:scale-105'
                 }`}
-                title={isDayMode ? 'Switch to Future Dark Mode' : 'Switch to Minimalist Light Mode'}
+                title={isDayMode ? 'Switch to Future Dark Mode' : 'Switch to Minimal Light Mode'}
               >
                 {isDayMode ? (
                   <>
-                    <Moon className="w-5 h-5" />
-                    <span className="hidden lg:inline text-sm font-semibold tracking-wide">Future Dark</span>
-                    <span className="hidden md:inline lg:hidden text-sm font-semibold">Dark</span>
+                    <Moon className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                    <span className="hidden lg:inline text-sm tracking-wide">Future Dark</span>
+                    <span className="hidden md:inline lg:hidden text-sm">Dark</span>
                   </>
                 ) : (
                   <>
-                    <Sun className="w-5 h-5" />
-                    <span className="hidden lg:inline text-sm font-semibold tracking-wide">Minimalist Light</span>
-                    <span className="hidden md:inline lg:hidden text-sm font-semibold">Light</span>
+                    <Sun className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                    <span className="hidden lg:inline text-sm tracking-wide">Minimal Light</span>
+                    <span className="hidden md:inline lg:hidden text-sm">Light</span>
                   </>
                 )}
               </button>
