@@ -2,16 +2,15 @@ import { useState, useCallback, useRef, useMemo } from 'react';
 import {
   Search, Archive, ArchiveRestore, Plus, Edit, Trash2, History,
   MessageSquarePlus, CreditCard, Download, DollarSign, Clock,
-  Upload, Image, CheckCircle, X, FileText, Layers, BarChart3,
-  ScanLine, Package, AlertTriangle, Eye, ChevronDown, ChevronUp
+  Image, CheckCircle, X, FileText, Layers, BarChart3,
+  ScanLine, Package, Eye
 } from 'lucide-react';
 import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
 import {
   insertInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
-  getActiveInsuranceChecks, getArchivedInsuranceChecks, getInsuranceCheckAuditHistory,
-  getInsuranceCheckUpdates
+  getActiveInsuranceChecks, getArchivedInsuranceChecks
 } from '../services/claimsService';
-import type { InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate } from '../types/database.types';
+import type { InsuranceCheck } from '../types/database.types';
 
 // ---- Types ----
 
@@ -50,7 +49,6 @@ type SubView = 'scan-session' | 'registry' | 'analytics';
 
 interface InsuranceCheckStationProps {
   isDayMode: boolean;
-  isAdmin: boolean;
   insuranceChecks: InsuranceCheckRecord[];
   setInsuranceChecks: React.Dispatch<React.SetStateAction<InsuranceCheckRecord[]>>;
   showArchivedInsuranceChecks: boolean;
@@ -134,7 +132,6 @@ const csdGold = '#B8985F';
 
 export default function InsuranceCheckStation({
   isDayMode,
-  isAdmin,
   insuranceChecks,
   setInsuranceChecks,
   showArchivedInsuranceChecks,

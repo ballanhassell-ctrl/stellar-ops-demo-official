@@ -33,7 +33,7 @@ import EFTReconciliation from './components/EFTReconciliation';
 import InsuranceCheckStation from './components/InsuranceCheckStation';
 import { EODReport } from './components/eod-report';
 import { sanitizePatientName } from './utils/sanitizePatientName';
-import { getLocalDateString, toLocalDateString } from './utils/dateUtils';
+import { getLocalDateString } from './utils/dateUtils';
 import { useAuth } from './contexts/AuthContext';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
@@ -47,7 +47,7 @@ import {
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges,
   getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate,
-  insertInsuranceCheck, updateInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
+  updateInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
   getActiveInsuranceChecks, getArchivedInsuranceChecks, getInsuranceCheckAuditHistory,
   subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
@@ -495,23 +495,6 @@ const calculatePreAuthAging = (preAuth: PreAuth): number => {
   return Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-// Helper function to get last 5 business days
-const getLast5BusinessDays = (): Date[] => {
-  const days: Date[] = [];
-  const today = new Date();
-  let currentDate = new Date(today);
-
-  while (days.length < 5) {
-    const dayOfWeek = currentDate.getDay();
-    // Skip weekends (0 = Sunday, 6 = Saturday)
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      days.push(new Date(currentDate));
-    }
-    currentDate.setDate(currentDate.getDate() - 1);
-  }
-
-  return days.reverse();
-};
 
 // Helper function to check if a follow-up is due (today or earlier)
 const isFollowUpDue = (followUpDate: string): boolean => {
@@ -746,35 +729,6 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
   };
 };
 
-const recordToInsuranceCheck = (record: InsuranceCheckRecord): any => {
-  // For insurance checks, payment_date should default to dateEntered if not provided
-  const paymentDate = record.dateEntered || getLocalDateString();
-
-  // Build base fields without id (for inserts)
-  const baseFields = {
-    check_eft_number: record.checkEftNumber,
-    payment_type: record.paymentType,
-    insurance_company: record.insuranceCompany,
-    distribution_type: record.distributionType,
-    total_amount: record.totalAmount,
-    aging: record.aging,
-    entered_by: record.enteredBy,
-    handler: record.handler,
-    status: record.status,
-    date_of_service: record.dateOfService || undefined,
-    date_entered: record.dateEntered || paymentDate,
-    is_archived: record.isArchived || false,
-    archived_at: record.archivedAt || undefined,
-    archived_by: record.archivedBy || undefined
-  };
-
-  // Only add id if it exists and is not empty (for updates)
-  if (record.id && record.id.trim() !== '') {
-    return { ...baseFields, id: record.id };
-  }
-
-  return baseFields;
-};
 
 
 const CourtStreetRCM = () => {
@@ -854,7 +808,6 @@ const CourtStreetRCM = () => {
 
   // Insurance Checks state
   const [insuranceChecks, setInsuranceChecks] = useState<InsuranceCheckRecord[]>([]);
-  const [showAddInsuranceCheckModal, setShowAddInsuranceCheckModal] = useState(false);
   const [insuranceCheckUpdates, setInsuranceCheckUpdates] = useState<InsuranceCheckUpdate[]>([]);
   const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
   const [showArchivedInsuranceChecks, setShowArchivedInsuranceChecks] = useState(false);
@@ -1861,25 +1814,7 @@ const CourtStreetRCM = () => {
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredInsuranceChecks = insuranceChecks.filter((check: InsuranceCheckRecord) => {
-    // Apply search query filter
-    const matchesSearch = searchQuery === '' ||
-      check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.status.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply archive date filter if viewing archived items and date filter is set
-    if (showArchivedInsuranceChecks && archiveInsuranceChecksDateFilter && check.archivedAt) {
-      const archivedDate = check.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
-      return matchesSearch && archivedDate === archiveInsuranceChecksDateFilter;
-    }
-
-    return matchesSearch;
-  });
 
   // Handler functions for claims and pre-auths management
   const handleEditPreAuth = (preAuth: PreAuthRecord) => {
@@ -1973,11 +1908,6 @@ const CourtStreetRCM = () => {
     setShowEditModal(true);
   };
 
-  const handleDeleteInsuranceCheck = (id: string, checkNumber: string) => {
-    setDeleteItem({ type: 'insurance-check' as any, id, name: checkNumber });
-    setShowDeleteModal(true);
-  };
-
   const handleViewInsuranceCheckHistory = async (id: string, checkNumber: string) => {
     setHistoryItem({ type: 'insurance-check' as any, id, name: checkNumber });
     setShowHistoryModal(true);
@@ -1993,31 +1923,6 @@ const CourtStreetRCM = () => {
       setInsuranceCheckUpdates([]);
     }
   };
-
-  const handleArchiveInsuranceCheck = async (id: string, archivedBy: string) => {
-    try {
-      await archiveInsuranceCheck(id, archivedBy);
-      // Refetch based on current toggle state
-      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
-      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
-    } catch (error) {
-      console.error('Error archiving insurance check:', error);
-      alert('Failed to archive insurance check. Please try again.');
-    }
-  };
-
-  const handleUnarchiveInsuranceCheck = async (id: string) => {
-    try {
-      await unarchiveInsuranceCheck(id);
-      // Refetch based on current toggle state
-      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
-      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
-    } catch (error) {
-      console.error('Error unarchiving insurance check:', error);
-      alert('Failed to unarchive insurance check. Please try again.');
-    }
-  };
-
 
   // Loading state - wait for all data to load from Supabase
   if (metricsLoading || eodLoading || providerLoading) {
@@ -3617,7 +3522,6 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'insurance-checks' && (
               <InsuranceCheckStation
                 isDayMode={isDayMode}
-                isAdmin={isAdmin}
                 insuranceChecks={insuranceChecks}
                 setInsuranceChecks={setInsuranceChecks}
                 showArchivedInsuranceChecks={showArchivedInsuranceChecks}
