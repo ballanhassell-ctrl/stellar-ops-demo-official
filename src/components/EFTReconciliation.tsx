@@ -4,7 +4,7 @@
 // Matches Lori's spreadsheet layout with period grouping
 // =====================================================
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   Search,
   Plus,
@@ -20,6 +20,7 @@ import {
   RefreshCw,
   FileText,
   MessageSquare,
+  Filter,
 } from 'lucide-react';
 import type {
   EFTReconciliationPeriod,
@@ -96,6 +97,50 @@ const EMPTY_ENTRY_FORM: NewEntryForm = {
   notes: '',
 };
 
+// Helper: get the current month/year in EST
+function getCurrentMonthEST(): { month: number; year: number } {
+  const now = new Date();
+  const estString = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const estDate = new Date(estString);
+  return { month: estDate.getMonth(), year: estDate.getFullYear() };
+}
+
+// Build a list of month/year options from the data range
+function buildMonthOptions(periods: EFTReconciliationPeriod[]): { label: string; month: number; year: number }[] {
+  if (periods.length === 0) return [];
+  const months = new Set<string>();
+  for (const p of periods) {
+    const start = new Date(p.period_start + 'T00:00:00');
+    const end = new Date(p.period_end + 'T00:00:00');
+    months.add(`${start.getFullYear()}-${start.getMonth()}`);
+    months.add(`${end.getFullYear()}-${end.getMonth()}`);
+  }
+  const sorted = Array.from(months)
+    .map(key => {
+      const [y, m] = key.split('-').map(Number);
+      return { year: y, month: m };
+    })
+    .sort((a, b) => b.year - a.year || b.month - a.month);
+
+  return sorted.map(({ year, month }) => {
+    const d = new Date(year, month, 1);
+    const label = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    return { label, month, year };
+  });
+}
+
+// Build a list of unique years from periods
+function buildYearOptions(periods: EFTReconciliationPeriod[]): number[] {
+  const years = new Set<number>();
+  for (const p of periods) {
+    years.add(new Date(p.period_start + 'T00:00:00').getFullYear());
+    years.add(new Date(p.period_end + 'T00:00:00').getFullYear());
+  }
+  return Array.from(years).sort((a, b) => b - a);
+}
+
+type ViewFilter = 'current_month' | 'month' | 'year' | 'all';
+
 // =====================================================
 // COMPONENT
 // =====================================================
@@ -113,6 +158,14 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedPeriods, setExpandedPeriods] = useState<Set<string>>(new Set());
+  const expandedPeriodsRef = useRef<Set<string>>(new Set());
+
+  // View filter
+  const currentEST = getCurrentMonthEST();
+  const [viewFilter, setViewFilter] = useState<ViewFilter>('current_month');
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentEST.month);
+  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(currentEST.year);
+  const [selectedYear, setSelectedYear] = useState<number>(currentEST.year);
 
   // Period form
   const [showAddPeriod, setShowAddPeriod] = useState(false);
@@ -120,7 +173,7 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
 
   // Entry form
-  const [showAddEntry, setShowAddEntry] = useState<string | null>(null); // period_id or null
+  const [showAddEntry, setShowAddEntry] = useState<string | null>(null);
   const [entryForm, setEntryForm] = useState<NewEntryForm>(EMPTY_ENTRY_FORM);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
@@ -135,8 +188,16 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Track if this is the initial load
+  const isInitialLoad = useRef(true);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    expandedPeriodsRef.current = expandedPeriods;
+  }, [expandedPeriods]);
+
   // --------------------------------------------------
-  // Data Fetching
+  // Data Fetching - preserves expanded state on refresh
   // --------------------------------------------------
   const fetchData = useCallback(async () => {
     try {
@@ -147,8 +208,9 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
       ]);
       setPeriods(periodsData);
       setEntries(entriesData);
-      // Auto-expand the most recent period
-      if (periodsData.length > 0 && expandedPeriods.size === 0) {
+      // Only auto-expand on first load, not on subsequent refreshes
+      if (isInitialLoad.current && periodsData.length > 0) {
+        isInitialLoad.current = false;
         setExpandedPeriods(new Set([periodsData[0].id]));
       }
     } catch (error) {
@@ -161,7 +223,7 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // --------------------------------------------------
-  // Computed
+  // Computed - filter periods based on view selection
   // --------------------------------------------------
   const entriesByPeriod = useMemo(() => {
     const map: Record<string, EFTReconciliationEntry[]> = {};
@@ -172,10 +234,38 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
     return map;
   }, [entries]);
 
-  const filteredPeriods = useMemo(() => {
-    if (!searchTerm) return periods;
-    const lower = searchTerm.toLowerCase();
+  // Filter periods by view selection
+  const viewFilteredPeriods = useMemo(() => {
+    if (viewFilter === 'all') return periods;
+
     return periods.filter(p => {
+      const start = new Date(p.period_start + 'T00:00:00');
+      const end = new Date(p.period_end + 'T00:00:00');
+
+      if (viewFilter === 'current_month' || viewFilter === 'month') {
+        const targetMonth = viewFilter === 'current_month' ? currentEST.month : selectedMonth;
+        const targetYear = viewFilter === 'current_month' ? currentEST.year : selectedMonthYear;
+        // Include period if it overlaps with the target month at all
+        const monthStart = new Date(targetYear, targetMonth, 1);
+        const monthEnd = new Date(targetYear, targetMonth + 1, 0); // last day of month
+        return start <= monthEnd && end >= monthStart;
+      }
+
+      if (viewFilter === 'year') {
+        const yearStart = new Date(selectedYear, 0, 1);
+        const yearEnd = new Date(selectedYear, 11, 31);
+        return start <= yearEnd && end >= yearStart;
+      }
+
+      return true;
+    });
+  }, [periods, viewFilter, selectedMonth, selectedMonthYear, selectedYear, currentEST.month, currentEST.year]);
+
+  // Apply search on top of view filter
+  const filteredPeriods = useMemo(() => {
+    if (!searchTerm) return viewFilteredPeriods;
+    const lower = searchTerm.toLowerCase();
+    return viewFilteredPeriods.filter(p => {
       if (p.period_label.toLowerCase().includes(lower)) return true;
       const periodEntries = entriesByPeriod[p.id] || [];
       return periodEntries.some(e =>
@@ -184,17 +274,41 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
         (e.notes && e.notes.toLowerCase().includes(lower))
       );
     });
-  }, [periods, searchTerm, entriesByPeriod]);
+  }, [viewFilteredPeriods, searchTerm, entriesByPeriod]);
 
-  // Summary metrics
+  // Get entries that belong to the visible/filtered periods for metrics
+  const visibleEntries = useMemo(() => {
+    const visiblePeriodIds = new Set(viewFilteredPeriods.map(p => p.id));
+    return entries.filter(e => visiblePeriodIds.has(e.period_id));
+  }, [entries, viewFilteredPeriods]);
+
+  // Summary metrics scoped to the selected view period
   const summaryMetrics = useMemo(() => {
-    const totalAmount = entries.reduce((sum, e) => sum + e.amount, 0);
-    const totalEntries = entries.length;
-    const totalPeriods = periods.length;
-    const postedAmount = entries.filter(e => e.status === 'posted' || e.status === 'reconciled').reduce((sum, e) => sum + e.amount, 0);
-    const pendingAmount = entries.filter(e => e.status === '' || e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
+    const totalAmount = visibleEntries.reduce((sum, e) => sum + e.amount, 0);
+    const totalEntries = visibleEntries.length;
+    const totalPeriods = viewFilteredPeriods.length;
+    const postedAmount = visibleEntries.filter(e => e.status === 'posted' || e.status === 'reconciled').reduce((sum, e) => sum + e.amount, 0);
+    const pendingAmount = visibleEntries.filter(e => e.status === '' || e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
     return { totalAmount, totalEntries, totalPeriods, postedAmount, pendingAmount };
-  }, [periods, entries]);
+  }, [viewFilteredPeriods, visibleEntries]);
+
+  // Build month/year options for the filter dropdowns
+  const monthOptions = useMemo(() => buildMonthOptions(periods), [periods]);
+  const yearOptions = useMemo(() => buildYearOptions(periods), [periods]);
+
+  // View filter label for the metrics header
+  const viewFilterLabel = useMemo(() => {
+    if (viewFilter === 'current_month') {
+      const d = new Date(currentEST.year, currentEST.month, 1);
+      return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }) + ' (Current)';
+    }
+    if (viewFilter === 'month') {
+      const d = new Date(selectedMonthYear, selectedMonth, 1);
+      return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    }
+    if (viewFilter === 'year') return String(selectedYear);
+    return 'All Time';
+  }, [viewFilter, selectedMonth, selectedMonthYear, selectedYear, currentEST.month, currentEST.year]);
 
   // --------------------------------------------------
   // Period Handlers
@@ -323,24 +437,40 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
     }
   };
 
-  // Inline edit handler
+  // Inline edit handler - updates local state immediately so accordion stays open
   const handleInlineSave = async (entryId: string, field: string, value: string) => {
     try {
       const updates: Record<string, unknown> = {};
       if (field === 'amount') {
         updates[field] = parseFloat(value) || 0;
-      } else if (field === 'status') {
-        updates[field] = value;
       } else if (field === 'date_posted') {
         updates[field] = value || null;
       } else {
         updates[field] = value;
       }
-      await updateEFTEntry(entryId, updates as Partial<Omit<EFTReconciliationEntry, 'id' | 'created_at' | 'updated_at'>>);
+
+      // Optimistically update local entries state to avoid re-render losing accordion state
+      setEntries(prev =>
+        prev.map(e =>
+          e.id === entryId ? { ...e, ...updates } as EFTReconciliationEntry : e
+        )
+      );
       setEditingCell(null);
-      await fetchData();
+
+      // Persist to DB
+      await updateEFTEntry(entryId, updates as Partial<Omit<EFTReconciliationEntry, 'id' | 'created_at' | 'updated_at'>>);
+
+      // Refresh data in background without resetting expanded state
+      const [periodsData, entriesData] = await Promise.all([
+        getEFTPeriods(),
+        getAllEFTEntries(),
+      ]);
+      setPeriods(periodsData);
+      setEntries(entriesData);
     } catch {
       setToast({ message: 'Failed to save', type: 'error' });
+      // Revert on error
+      await fetchData();
     }
   };
 
@@ -409,23 +539,123 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
         />
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Periods', value: summaryMetrics.totalPeriods, icon: Calendar, color: 'blue' },
-          { label: 'Total Entries', value: summaryMetrics.totalEntries, icon: FileText, color: 'indigo' },
-          { label: 'Total Amount', value: `$${summaryMetrics.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'green' },
-          { label: 'Posted/Reconciled', value: `$${summaryMetrics.postedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'emerald' },
-          { label: 'Pending', value: `$${summaryMetrics.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'amber' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className={`rounded-xl p-4 ${cardClass}`}>
-            <div className="flex items-center gap-2 mb-1">
-              <Icon className={`w-4 h-4 text-${color}-500`} />
-              <span className={`text-xs font-medium ${subText}`}>{label}</span>
-            </div>
-            <div className={`text-lg font-bold ${headerText}`}>{value}</div>
+      {/* View Filter Bar */}
+      <div className={`rounded-xl p-4 ${cardClass}`}>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className={`w-4 h-4 ${subText}`} />
+            <span className={`text-sm font-medium ${subText}`}>View:</span>
           </div>
-        ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setViewFilter('current_month')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewFilter === 'current_month'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : isDayMode
+                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              Current Month
+            </button>
+            <button
+              onClick={() => setViewFilter('month')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewFilter === 'month'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : isDayMode
+                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              By Month
+            </button>
+            <button
+              onClick={() => setViewFilter('year')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewFilter === 'year'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : isDayMode
+                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              By Year
+            </button>
+            <button
+              onClick={() => setViewFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewFilter === 'all'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : isDayMode
+                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              All Time
+            </button>
+          </div>
+
+          {/* Month picker */}
+          {viewFilter === 'month' && monthOptions.length > 0 && (
+            <select
+              value={`${selectedMonthYear}-${selectedMonth}`}
+              onChange={(e) => {
+                const [y, m] = e.target.value.split('-').map(Number);
+                setSelectedMonth(m);
+                setSelectedMonthYear(y);
+              }}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${inputClass}`}
+            >
+              {monthOptions.map(opt => (
+                <option key={`${opt.year}-${opt.month}`} value={`${opt.year}-${opt.month}`}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Year picker */}
+          {viewFilter === 'year' && yearOptions.length > 0 && (
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${inputClass}`}
+            >
+              {yearOptions.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+
+      {/* Summary Cards - scoped to selected view period */}
+      <div className={`rounded-xl p-4 ${cardClass}`}>
+        <div className="flex items-center gap-2 mb-3">
+          <Calendar className={`w-4 h-4 text-blue-500`} />
+          <span className={`text-sm font-semibold ${headerText}`}>
+            Reconciliation Summary — {viewFilterLabel}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {[
+            { label: 'Periods', value: summaryMetrics.totalPeriods, icon: Calendar, color: 'blue' },
+            { label: 'Entries', value: summaryMetrics.totalEntries, icon: FileText, color: 'indigo' },
+            { label: 'Total Amount', value: `$${summaryMetrics.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'green' },
+            { label: 'Posted/Reconciled', value: `$${summaryMetrics.postedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'emerald' },
+            { label: 'Pending', value: `$${summaryMetrics.pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'amber' },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className={`rounded-lg p-3 ${isDayMode ? 'bg-gray-50' : 'bg-white/5'}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <Icon className={`w-4 h-4 text-${color}-500`} />
+                <span className={`text-xs font-medium ${subText}`}>{label}</span>
+              </div>
+              <div className={`text-lg font-bold ${headerText}`}>{value}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -535,7 +765,7 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
           <Calendar className={`w-12 h-12 mx-auto mb-3 ${subText}`} />
           <p className={`text-lg font-medium ${headerText}`}>No EFT Periods Found</p>
           <p className={`text-sm mt-1 ${subText}`}>
-            {searchTerm ? 'Try adjusting your search' : 'Create a new EFT period to get started'}
+            {searchTerm ? 'Try adjusting your search' : viewFilter !== 'all' ? 'No periods in this time range. Try "All Time" or a different month.' : 'Create a new EFT period to get started'}
           </p>
         </div>
       ) : (
