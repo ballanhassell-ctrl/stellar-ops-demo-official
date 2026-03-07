@@ -1978,86 +1978,87 @@ const CourtStreetRCM = () => {
     <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
       {/* Header - Sleek modern design */}
       <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/80 border-gray-200 shadow-sm' : 'bg-black/70 border-gray-800 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
-          <div className="flex items-center justify-between">
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`sm:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all hover-lift ${
-                isDayMode
-                  ? 'bg-white/60 text-gray-700 hover:bg-white/80'
-                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
-              }`}
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* LEFT SIDE: Mobile Menu + Branding */}
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`sm:hidden flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
+                  isDayMode
+                    ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    : 'bg-neutral-800 text-gray-300 hover:bg-neutral-700 border border-gray-700'
+                }`}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
 
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              {/* Logo Section - Responsive */}
+              {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                {/* Show only CSD logo on mobile, both on larger screens */}
                 <img
                   src="/Stellar2 copy.jpg"
                   alt="Stellar Consults Logo"
-                  className="hidden sm:block h-8 sm:h-12 w-auto object-contain"
+                  className="hidden sm:block h-8 sm:h-10 w-auto object-contain"
                 />
-                <span className={`hidden sm:block text-xl sm:text-2xl font-bold ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>×</span>
+                <span className={`hidden sm:block text-xl font-bold ${isDayMode ? 'text-gray-300' : 'text-gray-600'}`}>×</span>
                 <img
                   src="/Cris Dental Image.jpg"
                   alt="Court Street Dental Logo"
-                  className="h-8 sm:h-12 w-auto object-contain"
+                  className="h-8 sm:h-10 w-auto object-contain"
                 />
               </div>
-              <div>
-                <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent">
-                  Court Street Dental RCM Dashboard
+
+              {/* Title */}
+              <div className="hidden md:block min-w-0">
+                <h1 className="text-lg lg:text-xl font-display font-bold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent truncate">
+                  Court Street Dental RCM
                 </h1>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'} truncate`}>
                   Powered by Stellar Consults
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              {/* Theme Toggle: Minimal Light ↔ Future Dark */}
+            {/* RIGHT SIDE: Action Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className={`group flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 min-h-[44px] border-2 ${
+                className={`group flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all duration-300 min-h-[44px] border-2 ${
                   isDayMode
-                    ? 'bg-gray-900 text-white border-gray-800 hover:bg-black hover:border-gray-700 hover:shadow-lg hover:scale-105'
-                    : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:border-cyan-300 hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] hover:scale-105'
+                    ? 'bg-gray-900 text-white border-gray-800 hover:bg-black hover:shadow-lg'
+                    : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:shadow-[0_0_24px_rgba(0,212,255,0.4)]'
                 }`}
                 title={isDayMode ? 'Switch to Future Dark Mode' : 'Switch to Minimal Light Mode'}
               >
                 {isDayMode ? (
                   <>
-                    <Moon className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                    <span className="hidden lg:inline text-sm tracking-wide">Future Dark</span>
-                    <span className="hidden md:inline lg:hidden text-sm">Dark</span>
+                    <Moon className="w-4 h-4" />
+                    <span className="hidden xl:inline text-sm">Dark</span>
                   </>
                 ) : (
                   <>
-                    <Sun className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                    <span className="hidden lg:inline text-sm tracking-wide">Minimal Light</span>
-                    <span className="hidden md:inline lg:hidden text-sm">Light</span>
+                    <Sun className="w-4 h-4" />
+                    <span className="hidden xl:inline text-sm">Light</span>
                   </>
                 )}
               </button>
 
-              {/* Task Board - Moved before theme toggle */}
+              {/* Task Board */}
               <a
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
+                className={`hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
                   isDayMode
-                    ? 'bg-white text-gray-700 border-gray-300 hover:border-purple-500 hover:bg-purple-50 shadow-sm'
-                    : 'bg-neutral-800 text-gray-300 border-gray-700 hover:border-purple-500 hover:bg-neutral-700'
+                    ? 'bg-white text-purple-600 border-purple-300 hover:bg-purple-50 hover:border-purple-500'
+                    : 'bg-purple-900/30 text-purple-300 border-purple-700 hover:bg-purple-900/50 hover:border-purple-500'
                 }`}
                 title="Open Task Board"
               >
                 <ExternalLink className="w-4 h-4" />
-                <span className="text-sm">Tasks</span>
+                <span className="hidden lg:inline text-sm">Tasks</span>
               </a>
 
               {/* Sign Out */}
@@ -2065,18 +2066,14 @@ const CourtStreetRCM = () => {
                 onClick={() => signOut()}
                 className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
                   isDayMode
-                    ? 'bg-white text-red-600 border-red-200 hover:bg-red-50 hover:border-red-400'
-                    : 'bg-neutral-800 text-red-400 border-red-900 hover:bg-red-950 hover:border-red-700'
+                    ? 'bg-white text-red-600 border-red-300 hover:bg-red-50 hover:border-red-500'
+                    : 'bg-red-900/30 text-red-400 border-red-800 hover:bg-red-900/50 hover:border-red-600'
                 }`}
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="hidden md:inline text-sm">Sign Out</span>
+                <span className="hidden lg:inline text-sm">Exit</span>
               </button>
-              <div className="text-right">
-                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
-                <p className={`text-xs font-semibold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
-              </div>
             </div>
           </div>
         </div>
