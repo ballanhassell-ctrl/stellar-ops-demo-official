@@ -2137,7 +2137,7 @@ const CourtStreetRCM = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 gradient-mesh-dark'}`}>
+    <div className={`min-h-screen font-sans ${isDayMode ? 'bg-gradient-to-br from-purple-50 via-white to-coral-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-purple-950/50 to-gray-800 gradient-mesh-dark'}`}>
       {/* Header */}
       <div className={`sticky top-0 z-50 ${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} animate-slide-down`}>
         <div className="max-w-7xl mx-auto px-6 py-5">
@@ -2158,7 +2158,7 @@ const CourtStreetRCM = () => {
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent">
                   Court Street Dental RCM Dashboard
                 </h1>
                 <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -2171,8 +2171,8 @@ const CourtStreetRCM = () => {
                 onClick={() => setIsDayMode(!isDayMode)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all hover-lift ${
                   isDayMode
-                    ? 'bg-gray-800 text-white hover:bg-gray-700'
-                    : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-coral-400 text-white hover:bg-coral-500'
                 }`}
               >
                 {isDayMode ? (
@@ -2184,7 +2184,7 @@ const CourtStreetRCM = () => {
                   <>
                     <Sun className="w-5 h-5" />
                     <span className="text-sm font-medium">Day Mode</span>
-                  </>
+</>
                 )}
               </button>
               <a
@@ -2198,7 +2198,7 @@ const CourtStreetRCM = () => {
               </a>
               <div className="text-right">
                 <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
-                <p className={`text-xs font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
+                <p className={`text-xs font-semibold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
               </div>
             </div>
           </div>
@@ -2218,7 +2218,7 @@ const CourtStreetRCM = () => {
                   onClick={() => setCurrentView(item.id)}
                   className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift ${
                     isActive
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      ? 'bg-gradient-primary text-white shadow-glow-purple'
                       : isDayMode
                       ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
                       : 'bg-white/5 text-gray-300 hover:bg-white/10'
@@ -2236,16 +2236,16 @@ const CourtStreetRCM = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 pb-12">
         {currentView === 'dashboard' ? (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {/* Dashboard Header */}
-            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
-              <div className="mb-6">
+            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
+              <div className="mb-8">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className={`text-4xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                  <div className="space-y-3">
+                    <h2 className={`text-4xl font-display font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {getGreeting()}, Team! 👋
                     </h2>
-                    <h3 className="text-xl font-semibold mb-1" style={{ color: csdGold }}>
+                    <h3 className="text-xl font-display font-semibold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent">
                       Practice Overview Dashboard
                     </h3>
                     <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
@@ -2269,8 +2269,8 @@ const CourtStreetRCM = () => {
                       disabled={metricsLoading}
                       className={`p-2 rounded hover:bg-opacity-80 transition-all ${
                         isDayMode
-                          ? 'bg-blue-500 text-white hover:bg-blue-600'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                          ? 'bg-purple-500 text-white hover:bg-purple-600'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
                       } ${metricsLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       title="Refresh metrics"
                     >
@@ -2280,7 +2280,7 @@ const CourtStreetRCM = () => {
                 </div>
                 {/* Loading and Error States */}
                 {metricsLoading && (
-                  <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-blue-50 text-blue-700' : 'bg-blue-900 text-blue-200'}`}>
+                  <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-purple-50 text-purple-700' : 'bg-purple-900 text-purple-200'}`}>
                     <div className="flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin" />
                       <span>Loading metrics data...</span>
@@ -2394,14 +2394,14 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
                     <div className="flex items-center justify-between mb-3">
-                      <p className={`text-sm font-bold ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Outstanding A/R 31+</p>
-                      <div className="p-1.5 rounded-lg bg-amber-500/20">
-                        <DollarSign className="w-5 h-5 text-amber-600" />
+                      <p className={`text-sm font-bold ${isDayMode ? 'text-coral-700' : 'text-coral-300'}`}>Outstanding A/R 31+</p>
+                      <div className="p-1.5 rounded-lg bg-coral-500/20">
+                        <DollarSign className="w-5 h-5 text-coral-600" />
                       </div>
                     </div>
 
@@ -2452,18 +2452,18 @@ const CourtStreetRCM = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Claims Status */}
               <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                   Claims Status
                 </h3>
                 <div className="space-y-3">
-                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-blue-50/80' : 'bg-blue-900/20'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-700/30'} transition-all hover:scale-[1.02]`}>
+                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-purple-50/80' : 'bg-purple-900/20'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-700/30'} transition-all hover:scale-[1.02]`}>
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-blue-500/20">
-                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 rounded-lg bg-purple-500/20">
+                        <CheckCircle className="w-5 h-5 text-purple-600" />
                       </div>
                       <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Active Claims</span>
                     </div>
-                    <span className={`text-xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                    <span className={`text-xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
                       {dashboardData.activeClaims}
                     </span>
                   </div>
@@ -2505,7 +2505,7 @@ const CourtStreetRCM = () => {
 
               {/* Quick Actions */}
               <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
@@ -2513,17 +2513,17 @@ const CourtStreetRCM = () => {
                     onClick={() => setCurrentView('claims')}
                     className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-blue-100/60 to-blue-200/60 hover:from-blue-200/80 hover:to-blue-300/80 border border-blue-300/50'
-                        : 'bg-gradient-to-r from-blue-900/30 to-blue-800/30 hover:from-blue-800/50 hover:to-blue-700/50 border border-blue-700/30'
+                        ? 'bg-gradient-to-r from-purple-100/60 to-purple-200/60 hover:from-purple-200/80 hover:to-purple-300/80 border border-purple-300/50'
+                        : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/50 hover:to-purple-700/50 border border-purple-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors">
-                        <FileText className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-colors">
+                        <FileText className="w-5 h-5 text-purple-600" />
                       </div>
                       <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Review Claims</span>
                     </div>
-                    <span className="text-lg text-blue-600 group-hover:translate-x-1 transition-transform">→</span>
+                    <span className="text-lg text-purple-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('payments')}
@@ -2561,17 +2561,17 @@ const CourtStreetRCM = () => {
                     onClick={() => setCurrentView('scorecard')}
                     className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-amber-100/60 to-amber-200/60 hover:from-amber-200/80 hover:to-amber-300/80 border border-amber-300/50'
-                        : 'bg-gradient-to-r from-amber-900/30 to-amber-800/30 hover:from-amber-800/50 hover:to-amber-700/50 border border-amber-700/30'
+                        ? 'bg-gradient-to-r from-coral-100/60 to-coral-200/60 hover:from-coral-200/80 hover:to-coral-300/80 border border-coral-300/50'
+                        : 'bg-gradient-to-r from-coral-900/30 to-coral-800/30 hover:from-coral-800/50 hover:to-coral-700/50 border border-coral-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-amber-500/20 group-hover:bg-amber-500/30 transition-colors">
-                        <Award className="w-5 h-5 text-amber-600" />
+                      <div className="p-2 rounded-lg bg-coral-500/20 group-hover:bg-coral-500/30 transition-colors">
+                        <Award className="w-5 h-5 text-coral-600" />
                       </div>
                       <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>View Scorecard</span>
                     </div>
-                    <span className="text-lg text-amber-600 group-hover:translate-x-1 transition-transform">→</span>
+                    <span className="text-lg text-coral-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                 </div>
               </div>
@@ -2579,7 +2579,7 @@ const CourtStreetRCM = () => {
 
             {/* Follow-Up Tracking */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-2 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+              <h3 className={`text-xl font-display font-bold mb-2 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Follow-Up Tracking
               </h3>
               <p className={`text-sm mb-5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -2656,12 +2656,12 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowRecareList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="relative z-10 flex flex-col items-center">
-                    <div className="p-2.5 rounded-xl bg-amber-500/20 mb-3 group-hover:bg-amber-500/30 transition-colors">
-                      <Clock className="w-6 h-6 text-amber-600" />
+                    <div className="p-2.5 rounded-xl bg-coral-500/20 mb-3 group-hover:bg-coral-500/30 transition-colors">
+                      <Clock className="w-6 h-6 text-coral-600" />
                     </div>
                     <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {followUpCounts.recare}
@@ -2698,7 +2698,7 @@ const CourtStreetRCM = () => {
 
             {/* Automated Metrics Analysis */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+              <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Automated Metrics Analysis
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2724,10 +2724,10 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="relative z-10">
-                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Active Claims</p>
+                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-coral-700' : 'text-coral-400'}`}>Active Claims</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {automatedMetrics.totalActiveClaims}
                     </p>
@@ -2775,8 +2775,8 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Insurance A/R Aging Summary */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Summary
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -2809,7 +2809,7 @@ const CourtStreetRCM = () => {
 
             {/* New Patient Tracker */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+              <h3 className={`text-xl font-display font-bold mb-6 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 New Patient Tracker
               </h3>
 
@@ -2909,16 +2909,16 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Quarterly */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Quarterly</p>
+                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-coral-700' : 'text-coral-300'}`}>Quarterly</p>
                         <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>This quarter</p>
                       </div>
-                      <div className="p-2 rounded-lg bg-amber-500/20">
-                        <Users className="w-5 h-5 text-amber-600" />
+                      <div className="p-2 rounded-lg bg-coral-500/20">
+                        <Users className="w-5 h-5 text-coral-600" />
                       </div>
                     </div>
                     <div className="flex items-baseline gap-2 mb-2">
@@ -2927,9 +2927,9 @@ const CourtStreetRCM = () => {
                       </p>
                       <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.quarterlyGoal}</p>
                     </div>
-                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-amber-100/60' : 'bg-amber-950/40'}`}>
+                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-coral-100/60' : 'bg-coral-950/40'}`}>
                       <div
-                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}
+                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-coral-500 to-coral-600'}`}
                         style={{
                           width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
                         }}
