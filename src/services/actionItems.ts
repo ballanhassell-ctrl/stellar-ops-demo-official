@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
 
 export interface ActionItemsData {
   claimsToSubmit: number;
@@ -13,7 +14,7 @@ export interface ActionItemsData {
   preAuthsApproved: number;
   accountsNeedingFollowUp: number;
   missedAppointments: number;
-  unbilledProcedures: number;
+  patientsDueForRecall: number;
 }
 
 /**
@@ -60,11 +61,11 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
     // - Patient AR past due
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = toLocalDateString(thirtyDaysAgo);
 
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-    const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0];
+    const fourteenDaysAgoStr = toLocalDateString(fourteenDaysAgo);
 
     // Claims pending > 30 days
     const { count: oldClaimsCount } = await supabase
@@ -90,8 +91,8 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       .order('as_of_date', { ascending: false })
       .limit(2);
 
-    const ar6190Count = patientARData?.find(r => r.field_key === 'patient_ar_61_90_count')?.value || 0;
-    const ar90PlusCount = patientARData?.find(r => r.field_key === 'patient_ar_90_plus_count')?.value || 0;
+    const ar6190Count = patientARData?.find((r: any) => r.field_key === 'patient_ar_61_90_count')?.value || 0;
+    const ar90PlusCount = patientARData?.find((r: any) => r.field_key === 'patient_ar_90_plus_count')?.value || 0;
 
     const accountsNeedingFollowUp =
       (oldClaimsCount || 0) +
@@ -106,37 +107,38 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       ar90Plus: ar90PlusCount
     });
 
-    // 5. Missed Appointments - Get from EOD entry (still manual as it's scheduling system data)
-    const { data: missedApptsData } = await supabase
-      .from('csd_metric_values')
-      .select('value')
-      .eq('field_key', 'eod_missed_appointments')
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // 5. Missed Appointments - AUTO-CALCULATED from appointments table
+    const today = getLocalDateString();
+    const { count: missedAppointments } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'no_show')
+      .eq('appointment_date', today);
 
-    const missedAppointments = missedApptsData?.value || 0;
-    console.log('[Action Items] Missed appointments:', missedAppointments);
+    console.log('[Action Items] Missed appointments (automated):', missedAppointments || 0);
 
-    // 6. Unbilled Procedures - Get from EOD entry (still manual)
-    const { data: unbilledData } = await supabase
-      .from('csd_metric_values')
-      .select('value')
-      .eq('field_key', 'eod_unbilled_procedures')
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // 6. Patients Due for Recall - AUTO-CALCULATED from patients table
+    // Patients who haven't been seen in 6+ months
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const sixMonthsAgoStr = toLocalDateString(sixMonthsAgo);
 
-    const unbilledProcedures = unbilledData?.value || 0;
-    console.log('[Action Items] Unbilled procedures:', unbilledProcedures);
+    const { count: recallCount } = await supabase
+      .from('patients')
+      .select('patient_id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .lt('last_visit_date', sixMonthsAgoStr);
+
+    const patientsDueForRecall = recallCount || 0;
+    console.log('[Action Items] Patients due for recall (automated):', patientsDueForRecall);
 
     const result = {
       claimsToSubmit,
       deniedClaimsToResubmit,
       preAuthsApproved,
       accountsNeedingFollowUp,
-      missedAppointments,
-      unbilledProcedures
+      missedAppointments: missedAppointments || 0,
+      patientsDueForRecall,
     };
 
     console.log('[Action Items] Final real-time data:', result);
@@ -151,7 +153,7 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
       preAuthsApproved: 0,
       accountsNeedingFollowUp: 0,
       missedAppointments: 0,
-      unbilledProcedures: 0
+      patientsDueForRecall: 0,
     };
   }
 }
@@ -164,11 +166,11 @@ export async function getFollowUpCounts() {
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = toLocalDateString(thirtyDaysAgo);
 
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-    const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0];
+    const fourteenDaysAgoStr = toLocalDateString(fourteenDaysAgo);
 
     // Claims needing follow-up (pending > 30 days)
     const { count: claimsCount } = await supabase

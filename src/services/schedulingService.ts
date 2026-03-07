@@ -1,12 +1,22 @@
 // src/services/schedulingService.ts
 import { supabase } from '../lib/supabaseClient';
 import type { SchedulingListItem } from '../types/database.types';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleSchedulingListItems } from '../data/sampleData';
+import { getLocalDateString } from '../utils/dateUtils';
 
 // =====================================================
 // SCHEDULING LIST CRUD OPERATIONS
 // =====================================================
 
 export async function getSchedulingListItems(listType?: 'vip' | 'recare' | 'treatment') {
+  if (isStaticDataMode()) {
+    if (listType) {
+      return sampleSchedulingListItems.filter(item => item.list_type === listType);
+    }
+    return [...sampleSchedulingListItems];
+  }
+
   let query = supabase
     .from('scheduling_list_items')
     .select('*')
@@ -103,7 +113,7 @@ export async function getSchedulingListItemsByStatus(listType: 'vip' | 'recare' 
 }
 
 export async function getSchedulingListItemsDueForFollowUp(listType?: 'vip' | 'recare' | 'treatment') {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
 
   let query = supabase
     .from('scheduling_list_items')

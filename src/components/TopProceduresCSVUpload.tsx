@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { toLocalDateString } from '../utils/dateUtils';
 
 interface Procedure {
   procedure_name: string;
@@ -45,6 +46,30 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
     }
   };
 
+  // Helper function to parse CSV line respecting quoted fields
+  const parseCSVLine = (line: string): string[] => {
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        values.push(current.trim().replace(/^["']|["']$/g, ''));
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    // Push the last value
+    values.push(current.trim().replace(/^["']|["']$/g, ''));
+    return values;
+  };
+
   const parseCSV = async (file: File) => {
     setIsProcessing(true);
     setError(null);
@@ -61,7 +86,10 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
 
       // Parse header to find column indices
       const header = lines[0].toLowerCase();
-      const headers = header.split(',').map(h => h.trim());
+      const headers = parseCSVLine(header);
+
+      // Debug: Log the headers found
+      console.log('CSV Headers found:', headers);
 
       const nameIndex = headers.findIndex(h =>
         h.includes('procedure') && h.includes('name') || h.includes('description')
@@ -76,33 +104,54 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         h.includes('revenue') || h.includes('amount') || h.includes('total')
       );
 
-      if (nameIndex === -1 || codeIndex === -1 || countIndex === -1 || revenueIndex === -1) {
-        setError('CSV must contain columns for: Procedure Name, Code, Count, and Revenue');
+      // Debug: Log which columns were detected
+      console.log('Column detection:', {
+        nameIndex,
+        codeIndex,
+        countIndex,
+        revenueIndex,
+        headers
+      });
+
+      // Validate required columns: Procedure Name, Code, and Revenue
+      if (nameIndex === -1 || codeIndex === -1 || revenueIndex === -1) {
+        const missing = [];
+        if (nameIndex === -1) missing.push('Procedure Name (or Description)');
+        if (codeIndex === -1) missing.push('Code (or CPT/ADA)');
+        if (revenueIndex === -1) missing.push('Revenue (or Amount/Total)');
+
+        setError(`CSV is missing required columns: ${missing.join(', ')}. Found headers: ${headers.join(', ')}`);
         setIsProcessing(false);
         return;
       }
 
       // Parse data rows
       const procedures: Procedure[] = [];
+      // Calculate required length based on the position of required columns
+      const requiredLength = Math.max(nameIndex, codeIndex, revenueIndex) + 1;
+
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+        const values = parseCSVLine(line);
 
-        if (values.length >= 4) {
+        if (values.length >= requiredLength) {
           const procedure: Procedure = {
             procedure_name: values[nameIndex] || '',
             procedure_code: values[codeIndex] || '',
-            count: parseInt(values[countIndex]) || 0,
-            revenue: parseFloat(values[revenueIndex].replace(/[$,]/g, '')) || 0
+            count: countIndex !== -1 ? (parseInt(values[countIndex]?.replace(/,/g, '') || '1') || 1) : 1, // Default to 1 if Count column missing
+            revenue: parseFloat(values[revenueIndex]?.replace(/[$,]/g, '') || '0') || 0
           };
 
-          if (procedure.procedure_name && procedure.count > 0) {
+          // Only require procedure_name and procedure_code to be non-empty
+          if (procedure.procedure_name && procedure.procedure_code) {
             procedures.push(procedure);
           }
         }
       }
+
+      console.log('Parsed procedures:', procedures);
 
       if (procedures.length === 0) {
         setError('No valid procedure data found in CSV');
@@ -135,8 +184,8 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
       const month = date.getMonth();
       const monthStart = new Date(year, month, 1);
       const monthEnd = new Date(year, month + 1, 0);
-      const monthStartStr = monthStart.toISOString().split('T')[0];
-      const monthEndStr = monthEnd.toISOString().split('T')[0];
+      const monthStartStr = toLocalDateString(monthStart);
+      const monthEndStr = toLocalDateString(monthEnd);
 
       console.log(`Uploading procedures for month: ${monthStartStr} to ${monthEndStr}`);
 
@@ -154,7 +203,8 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         return;
       }
 
-      // Aggregate existing data by procedure code
+      // Aggregate data by procedure code only (codes are unique identifiers)
+      // This ensures proper aggregation even if procedure names vary slightly
       const aggregatedMap = new Map<string, Procedure>();
 
       // Add existing monthly data
@@ -165,6 +215,7 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
             const existing = aggregatedMap.get(key)!;
             existing.count += proc.count;
             existing.revenue += proc.revenue;
+            // Keep the first procedure name encountered for this code
           } else {
             aggregatedMap.set(key, {
               procedure_name: proc.procedure_name,
@@ -176,13 +227,14 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
         });
       }
 
-      // Add new CSV data
+      // Add new CSV data - aggregate by code
       parsedData.forEach(proc => {
         const key = proc.procedure_code;
         if (aggregatedMap.has(key)) {
           const existing = aggregatedMap.get(key)!;
           existing.count += proc.count;
           existing.revenue += proc.revenue;
+          // Keep existing procedure name (from database or earlier in CSV)
         } else {
           aggregatedMap.set(key, { ...proc });
         }
@@ -263,7 +315,9 @@ export const TopProceduresCSVUpload: React.FC<TopProceduresCSVUploadProps> = ({
               CSV Format Requirements
             </h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Header row must include: <code className="bg-blue-100 px-1 rounded">Procedure Name</code>, <code className="bg-blue-100 px-1 rounded">Code</code>, <code className="bg-blue-100 px-1 rounded">Count</code>, <code className="bg-blue-100 px-1 rounded">Revenue</code></li>
+              <li>• Required columns: <code className="bg-blue-100 px-1 rounded">Procedure Name</code>, <code className="bg-blue-100 px-1 rounded">Code</code> (CPT/ADA), <code className="bg-blue-100 px-1 rounded">Revenue</code></li>
+              <li>• Optional column: <code className="bg-blue-100 px-1 rounded">Count</code> (defaults to 1 if not provided)</li>
+              <li>• Column headers are case-insensitive and flexible (e.g., "revenue", "amount", or "total" all work)</li>
               <li>• Data will be aggregated with existing monthly data</li>
               <li>• Procedures with the same code will be combined</li>
             </ul>

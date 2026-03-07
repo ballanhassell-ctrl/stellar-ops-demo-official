@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Toaster } from 'sonner';
+import VersionBanner from './components/VersionBanner';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
-  Calendar, Send, Printer, Download, X, Mail, ExternalLink, Repeat, Sun, Moon, RefreshCw, Upload,
-  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, Settings
+  Calendar, Download, X, ExternalLink, Sun, Moon, RefreshCw, Upload,
+  Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog,
+  Menu, LogOut
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
@@ -17,17 +20,34 @@ import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
 import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
+import { CSDMetricsCSVUpload } from './components/CSDMetricsCSVUpload';
+import { RCMMetricsCSVUpload } from './components/RCMMetricsCSVUpload';
+import InsuranceARReport from './components/InsuranceARReport';
+import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
+import ARAgingChart from './components/ARAgingChart';
+import OpenDentalImport from './components/OpenDentalImport';
+import PatientARTracker from './components/PatientARTracker';
+import CreditsTracker from './components/CreditsTracker';
+import VCCPaymentsTracker from './components/VCCPaymentsTracker';
+import EFTReconciliation from './components/EFTReconciliation';
+import InsuranceCheckStation from './components/InsuranceCheckStation';
+import { EODReport } from './components/eod-report';
+import { sanitizePatientName } from './utils/sanitizePatientName';
+import { getLocalDateString } from './utils/dateUtils';
+import { useAuth } from './contexts/AuthContext';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
 import { getInsuranceProviders, InsuranceProvider } from './services/insuranceProvider';
+import { getLatestMetricValue } from './services/metrics';
+// EOD email generation moved to EODReport component
 import {
-  getClaims, insertClaim, updateClaim, deleteClaim, archiveClaim, unarchiveClaim, getClaimAuditHistory,
+  getClaims, insertClaim, updateClaim, deleteClaim, getClaimAuditHistory,
   getPreAuths, insertPreAuth, updatePreAuth, deletePreAuth, archivePreAuth, unarchivePreAuth, getPreAuthAuditHistory,
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges,
   getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate,
-  insertInsuranceCheck, updateInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
+  updateInsuranceCheck, deleteInsuranceCheck,
   getActiveInsuranceChecks, getArchivedInsuranceChecks, getInsuranceCheckAuditHistory,
   subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
@@ -35,16 +55,12 @@ import {
   getSchedulingListItems, insertSchedulingListItem, updateSchedulingListItem, deleteSchedulingListItem,
   calculateSchedulingMetrics
 } from './services/schedulingService';
+import {
+  getPatientARMetrics
+} from './services/patientARService.new';
 import type { Claim, PreAuth, ClaimAuditHistory, PreAuthAuditHistory, ClaimUpdate, PreAuthUpdate, InsuranceCheck, InsuranceCheckAuditHistory, InsuranceCheckUpdate, SchedulingListItem } from './types/database.types';
 
 // BAM Cycle Helper Functions
-// Get local date string in YYYY-MM-DD format (respects user's timezone)
-const getLocalDateString = (date: Date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 const isWeekend = (date: Date) => {
   const day = date.getDay();
@@ -153,6 +169,8 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
 
   let cycleStart = new Date(referenceStartDate);
   cycleStart.setHours(0, 0, 0, 0);
+  let previousCycleStart: Date | null = null;
+  let previousCycleEnd: Date | null = null;
 
   // Find the current cycle by iterating forward
   while (cycleStart < today) {
@@ -171,9 +189,15 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
         currentCycleEnd: cycleEnd,
         daysRemaining: businessDaysRemaining,
         nextCycleStart: nextCycleStart,
-        nextCycleEnd: nextCycleEnd
+        nextCycleEnd: nextCycleEnd,
+        previousCycleStart: previousCycleStart,
+        previousCycleEnd: previousCycleEnd
       };
     }
+
+    // Store this as the previous cycle before moving to next
+    previousCycleStart = new Date(cycleStart);
+    previousCycleEnd = new Date(cycleEnd);
 
     // Move to next cycle (next calendar day after cycle ends)
     cycleStart = new Date(cycleEnd);
@@ -193,7 +217,9 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
     currentCycleEnd: cycleEnd,
     daysRemaining: businessDaysRemaining,
     nextCycleStart: nextCycleStart,
-    nextCycleEnd: nextCycleEnd
+    nextCycleEnd: nextCycleEnd,
+    previousCycleStart: null,
+    previousCycleEnd: null
   };
 };
 
@@ -225,7 +251,9 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
 const STORAGE_KEYS = {
   CURRENT_DATE: 'csd_current_date',
   EOD_HISTORY: 'csd_eod_history',
-  DAILY_DATA: 'csd_daily_data'
+  DAILY_DATA: 'csd_daily_data',
+  CURRENT_VIEW: 'csd_current_view',
+  PATIENT_MGMT_VIEW: 'csd_patient_mgmt_view'
 };
 
 // DISABLED: localStorage utility functions (now using Supabase)
@@ -309,15 +337,14 @@ const getInitialEODData = () => ({
   patientsSeenToday: 0,
   newPatients: 0,
   proceduresCompleted: 0,
-  unbilledProcedures: 0,
   unappliedPayments: 0,
-  failedTransactions: 0,
   actionItems: {
     claimsToSubmit: 0,
     deniedClaimsToResubmit: 0,
     preAuthsApproved: 0,
     accountsNeedingFollowUp: 0,
-    missedAppointments: 0
+    missedAppointments: 0,
+    patientsDueForRecall: 0
   },
   payments: [],
   topProcedures: [],
@@ -394,7 +421,7 @@ interface ClaimRecord {
   procedureCode: string;
   claimDetail: string;
   claimAmount: number;
-  status: 'Pending' | 'Sent' | 'Entered' | 'Approved/Awaiting Payment' | 'Denied' | 'In Review/2nd Appeal' | 'Resubmitted with Attachments' | 'Resubmitted/1st Appeal' | 'Denied/2nd Appeal';
+  status: string; // UnifiedClaimStatus - all claim and A/R statuses
   dateSubmitted: string;
   dateOfService: string;
   followUpDate: string;
@@ -403,6 +430,16 @@ interface ClaimRecord {
   agingDays: number;
   archivedAt?: string;
   archivedBy?: string;
+  // A/R financial tracking fields
+  collected: number;
+  outstanding: number;
+  priSec: 'Primary' | 'Secondary' | null;
+  procedureTypes: string | null;
+  assignedTo: string | null;
+  repName: string | null;
+  referenceNumber: string | null;
+  agingStatus: string | null;
+  carrierPhone: string | null;
 }
 
 interface PreAuthRecord {
@@ -410,7 +447,7 @@ interface PreAuthRecord {
   patientId: string;
   patientName: string;
   insuranceCompany: string;
-  preAuthNumber: string;
+  preAuthNumber: string | null; // Optional for Pending status pre-auths
   procedureCode: string;
   treatmentDetail: string;
   requestedAmount: number;
@@ -430,6 +467,7 @@ interface SchedulingListRecord {
   patientId: string;
   patientInitials: string;
   treatmentNeeded: string;
+  lastVisitDate: string | null;
   firstContactDate: string | null;
   secondContactDate: string | null;
   thirdContactDate: string | null;
@@ -457,23 +495,33 @@ const calculatePreAuthAging = (preAuth: PreAuth): number => {
   return Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-// Helper function to get last 5 business days
-const getLast5BusinessDays = (): Date[] => {
-  const days: Date[] = [];
-  const today = new Date();
-  let currentDate = new Date(today);
 
-  while (days.length < 5) {
-    const dayOfWeek = currentDate.getDay();
-    // Skip weekends (0 = Sunday, 6 = Saturday)
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      days.push(new Date(currentDate));
-    }
-    currentDate.setDate(currentDate.getDate() - 1);
-  }
-
-  return days.reverse();
+// Helper function to check if a follow-up is due (today or earlier)
+const isFollowUpDue = (followUpDate: string): boolean => {
+  const today = getLocalDateString();
+  return followUpDate <= today;
 };
+
+// Notification Badge Component (iPhone-style)
+const NotificationBadge: React.FC = () => (
+  <div
+    className="flex items-center justify-center"
+    style={{
+      width: '20px',
+      height: '20px',
+      backgroundColor: '#FF3B30',
+      borderRadius: '50%',
+      color: 'white',
+      fontSize: '11px',
+      fontWeight: '600',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+      flexShrink: 0
+    }}
+    title="Follow-up due"
+  >
+    1
+  </div>
+);
 
 // Conversion functions between frontend camelCase and database snake_case
 const claimToRecord = (claim: Claim): ClaimRecord => ({
@@ -493,31 +541,57 @@ const claimToRecord = (claim: Claim): ClaimRecord => ({
   notes: claim.notes || '',
   agingDays: calculateClaimAging(claim),
   archivedAt: claim.archived_at || undefined,
-  archivedBy: claim.archived_by || undefined
+  archivedBy: claim.archived_by || undefined,
+  collected: claim.collected || 0,
+  outstanding: claim.outstanding || 0,
+  priSec: claim.pri_sec || null,
+  procedureTypes: claim.procedure_types || null,
+  assignedTo: claim.assigned_to || null,
+  repName: claim.rep_name || null,
+  referenceNumber: claim.reference_number || null,
+  agingStatus: claim.aging_status || null,
+  carrierPhone: claim.carrier_phone || null,
 });
 
-const recordToClaim = (record: ClaimRecord): Omit<Claim, 'created_at' | 'updated_at'> => ({
-  id: record.id,
-  patient_id: record.patientId,
-  patient_name: record.patientName,
-  insurance_company: record.insuranceCompany,
-  claim_number: record.claimNumber || null, // Send null if empty string
-  procedure_code: record.procedureCode,
-  claim_detail: record.claimDetail,
-  claim_amount: record.claimAmount,
-  status: record.status,
-  date_submitted: record.dateSubmitted,
-  date_of_service: record.dateOfService,
-  date_created: record.dateSubmitted,
-  follow_up_date: record.followUpDate,
-  created_by: record.handler,
-  completed_by: record.handler,
-  notes: record.notes,
-  aging_days: record.agingDays,
-  archived: false,
-  archived_at: null,
-  archived_by: null
-});
+const recordToClaim = (record: ClaimRecord): any => {
+  // Build base fields without id (for inserts)
+  const baseFields = {
+    patient_id: record.patientId,
+    patient_name: sanitizePatientName(record.patientName),
+    insurance_company: record.insuranceCompany,
+    claim_number: record.claimNumber || null, // Send null if empty string
+    procedure_code: record.procedureCode,
+    claim_detail: record.claimDetail,
+    claim_amount: record.claimAmount,
+    status: record.status,
+    date_submitted: record.dateSubmitted,
+    date_of_service: record.dateOfService,
+    date_created: record.dateSubmitted,
+    follow_up_date: record.followUpDate || null,
+    created_by: record.handler,
+    completed_by: record.handler,
+    notes: record.notes || null,
+    aging_days: record.agingDays,
+    archived: false,
+    archived_at: null,
+    archived_by: null,
+    collected: record.collected || 0,
+    outstanding: record.outstanding || 0,
+    pri_sec: record.priSec || null,
+    procedure_types: record.procedureTypes || null,
+    assigned_to: record.assignedTo || null,
+    rep_name: record.repName || null,
+    reference_number: record.referenceNumber || null,
+    carrier_phone: record.carrierPhone || null,
+  };
+
+  // Only add id if it exists and is not empty (for updates)
+  if (record.id && record.id.trim() !== '') {
+    return { ...baseFields, id: record.id };
+  }
+
+  return baseFields;
+};
 
 const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   id: preAuth.id,
@@ -538,29 +612,38 @@ const preAuthToRecord = (preAuth: PreAuth): PreAuthRecord => ({
   agingDays: calculatePreAuthAging(preAuth)
 });
 
-const recordToPreAuth = (record: PreAuthRecord): Omit<PreAuth, 'created_at' | 'updated_at'> => ({
-  id: record.id,
-  patient_id: record.patientId,
-  patient_name: record.patientName,
-  insurance_company: record.insuranceCompany,
-  pre_auth_number: record.preAuthNumber,
-  procedure_code: record.procedureCode,
-  treatment_detail: record.treatmentDetail,
-  requested_amount: record.requestedAmount,
-  status: record.status,
-  date_requested: record.dateRequested,
-  date_created: record.dateRequested,
-  follow_up_date: record.followUpDate,
-  expiration_date: record.expirationDate,
-  approved_amount: record.approvedAmount,
-  created_by: record.handler,
-  completed_by: record.handler,
-  notes: record.notes,
-  aging_days: record.agingDays,
-  archived: false,
-  archived_at: null,
-  archived_by: null
-});
+const recordToPreAuth = (record: PreAuthRecord): any => {
+  // Build base fields without id (for inserts)
+  const baseFields = {
+    patient_id: record.patientId,
+    patient_name: sanitizePatientName(record.patientName),
+    insurance_company: record.insuranceCompany,
+    pre_auth_number: record.preAuthNumber,
+    procedure_code: record.procedureCode,
+    treatment_detail: record.treatmentDetail,
+    requested_amount: record.requestedAmount,
+    status: record.status,
+    date_requested: record.dateRequested,
+    date_created: record.dateRequested,
+    follow_up_date: record.followUpDate || null,
+    expiration_date: record.expirationDate || null,
+    approved_amount: record.approvedAmount,
+    created_by: record.handler,
+    completed_by: record.handler,
+    notes: record.notes || null,
+    aging_days: record.agingDays,
+    archived: false,
+    archived_at: null,
+    archived_by: null
+  };
+
+  // Only add id if it exists and is not empty (for updates)
+  if (record.id && record.id.trim() !== '') {
+    return { ...baseFields, id: record.id };
+  }
+
+  return baseFields;
+};
 
 const schedulingItemToRecord = (item: SchedulingListItem): SchedulingListRecord => ({
   id: item.id,
@@ -568,6 +651,7 @@ const schedulingItemToRecord = (item: SchedulingListItem): SchedulingListRecord 
   patientId: item.patient_id,
   patientInitials: item.patient_initials,
   treatmentNeeded: item.treatment_needed,
+  lastVisitDate: item.last_visit_date,
   firstContactDate: item.first_contact_date,
   secondContactDate: item.second_contact_date,
   thirdContactDate: item.third_contact_date,
@@ -584,6 +668,7 @@ const recordToSchedulingItem = (record: SchedulingListRecord): Omit<SchedulingLi
   patient_id: record.patientId,
   patient_initials: record.patientInitials,
   treatment_needed: record.treatmentNeeded,
+  last_visit_date: record.lastVisitDate,
   first_contact_date: record.firstContactDate,
   second_contact_date: record.secondContactDate,
   third_contact_date: record.thirdContactDate,
@@ -591,7 +676,9 @@ const recordToSchedulingItem = (record: SchedulingListRecord): Omit<SchedulingLi
   follow_up_date: record.followUpDate,
   employee_initials: record.employeeInitials,
   status: record.status,
-  notes: record.notes
+  notes: record.notes,
+  structured_notes: [],
+  audit_trail: [],
 });
 
 interface InsuranceCheckRecord {
@@ -630,54 +717,44 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
     insuranceCompany: check.insurance_company,
     distributionType: check.distribution_type,
     totalAmount: check.total_amount,
-    aging: calculateAging(check.date_created || check.payment_date),
-    enteredBy: check.created_by,
-    handler: check.completed_by,
+    aging: calculateAging(check.date_entered),
+    enteredBy: check.entered_by,
+    handler: check.handler,
     status: check.status,
     dateOfService: check.date_of_service,
-    dateEntered: check.date_created || check.payment_date,
+    dateEntered: check.date_entered,
     isArchived: check.is_archived,
     archivedAt: check.archived_at,
     archivedBy: check.archived_by
   };
 };
 
-const recordToInsuranceCheck = (record: InsuranceCheckRecord): Omit<InsuranceCheck, 'id' | 'created_at' | 'updated_at'> => ({
-  check_eft_number: record.checkEftNumber,
-  payment_type: record.paymentType,
-  insurance_company: record.insuranceCompany,
-  distribution_type: record.distributionType,
-  total_amount: record.totalAmount,
-  aging: record.aging,
-  created_by: record.enteredBy,
-  completed_by: record.handler,
-  status: record.status,
-  date_of_service: record.dateOfService,
-  date_created: record.dateEntered,
-  payment_date: record.dateEntered,
-  is_archived: record.isArchived,
-  archived_at: record.archivedAt,
-  archived_by: record.archivedBy
-});
 
 
 const CourtStreetRCM = () => {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const { signOut, isAdmin } = useAuth();
+  const [currentView, setCurrentViewState] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.CURRENT_VIEW) || 'dashboard';
+    } catch { return 'dashboard'; }
+  });
+  const setCurrentView = (view: string) => {
+    setCurrentViewState(view);
+    try { localStorage.setItem(STORAGE_KEYS.CURRENT_VIEW, view); } catch {}
+  };
   const [searchQuery, setSearchQuery] = useState('');
   // Unified date state for all dashboard sections (uses local timezone)
   const [dashboardDate, setDashboardDate] = useState(getLocalDateString());
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailRecipients, setEmailRecipients] = useState('');
-  const [emailSubject, setEmailSubject] = useState('EOD Report - Court Street Dental');
-  const [emailMessage, setEmailMessage] = useState('');
-  const [scheduleEmail, setScheduleEmail] = useState(false);
-  const [scheduleTime, setScheduleTime] = useState('17:00');
-  const [scheduleFrequency, setScheduleFrequency] = useState('daily');
-  const [selectedTemplate, setSelectedTemplate] = useState('full');
+  // Separate input date state for debounced updates (prevents refresh while typing)
+  const [inputDate, setInputDate] = useState(getLocalDateString());
+  // Email modal state moved to EODReport component
   const [showBAMModal, setShowBAMModal] = useState(false);
   const [showLifecycleModal, setShowLifecycleModal] = useState(false);
   const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
+  const [showCSDMetricsModal, setShowCSDMetricsModal] = useState(false);
+  const [showRCMMetricsModal, setShowRCMMetricsModal] = useState(false);
   const [isDayMode, setIsDayMode] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // AI Insights state
   const [isInsightsPanelOpen, setIsInsightsPanelOpen] = useState(false);
@@ -699,6 +776,7 @@ const CourtStreetRCM = () => {
   const [newClaimStatus, setNewClaimStatus] = useState<ClaimRecord['status']>('Pending');
   const [_claimsLoading, setClaimsLoading] = useState(true);
   const [_preAuthsLoading, setPreAuthsLoading] = useState(true);
+  const [_claimsOver60Days, setClaimsOver60Days] = useState<number | null>(null);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -715,11 +793,11 @@ const CourtStreetRCM = () => {
   const [historyData, setHistoryData] = useState<(ClaimAuditHistory | PreAuthAuditHistory | InsuranceCheckAuditHistory)[]>([]);
 
   // Archive view toggle state
-  const [showArchivedClaims, setShowArchivedClaims] = useState(false);
+  const [showArchivedClaims, _setShowArchivedClaims] = useState(false);
   const [showArchivedPreAuths, setShowArchivedPreAuths] = useState(false);
 
   // Archive date filter state
-  const [archiveClaimsDateFilter, setArchiveClaimsDateFilter] = useState<string>('');
+  const [_archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
   const [archiveInsuranceChecksDateFilter, setArchiveInsuranceChecksDateFilter] = useState<string>('');
 
   // Add Update modal state
@@ -730,17 +808,53 @@ const CourtStreetRCM = () => {
 
   // Insurance Checks state
   const [insuranceChecks, setInsuranceChecks] = useState<InsuranceCheckRecord[]>([]);
-  const [showAddInsuranceCheckModal, setShowAddInsuranceCheckModal] = useState(false);
   const [insuranceCheckUpdates, setInsuranceCheckUpdates] = useState<InsuranceCheckUpdate[]>([]);
   const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
   const [showArchivedInsuranceChecks, setShowArchivedInsuranceChecks] = useState(false);
 
+  // Weekly details modal
+  const [showWeeklyDetailsModal, setShowWeeklyDetailsModal] = useState(false);
+
+  // Patient A/R Metrics state (for dashboard)
+  const [patientARMetrics, setPatientARMetrics] = useState<{
+    totalActive: number;
+    totalActiveBalance: number;
+    totalCollections: number;
+    totalCollectionsBalance: number;
+    pendingSuggestionsCount: number;
+    totalWriteOffSuggested: number;
+    totalWriteOffSuggestedBalance: number;
+    agingBuckets: { '0-30': number; '31-60': number; '61-90': number; '90+': number };
+  } | null>(null);
+
+  // Calculate BAM cycle dates (needed for metrics hook)
+  const bamCycleReferenceStart = useMemo(() => new Date(2025, 8, 23), []); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
+  const bamCycle = useMemo(() => calculateBAMCycle(bamCycleReferenceStart), [bamCycleReferenceStart]);
+
+  // Memoize BAM cycle dates object to prevent unnecessary re-renders
+  const bamCycleDates = useMemo(() => ({
+    currentCycleStart: bamCycle.currentCycleStart,
+    currentCycleEnd: bamCycle.currentCycleEnd,
+    previousCycleStart: bamCycle.previousCycleStart,
+    previousCycleEnd: bamCycle.previousCycleEnd
+  }), [bamCycle.currentCycleStart, bamCycle.currentCycleEnd, bamCycle.previousCycleStart, bamCycle.previousCycleEnd]);
+
   // Fetch all metrics from Supabase using unified date
-  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate);
-  const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD } = useEODMetrics(dashboardDate);
+  const { data: metricsData, loading: metricsLoading, error: metricsError, refresh: refreshMetrics } = useMetrics(dashboardDate, bamCycleDates);
+  const { data: eodData, loading: eodLoading, error: eodError, refresh: refreshEOD, refreshActionItems } = useEODMetrics(dashboardDate);
   const { data: dailyProductionByProvider, loading: providerLoading, error: providerError, refresh: refreshProvider } = useProviderMetrics(dashboardDate);
-  const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: _refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
+  const { data: newPatientTrackerData, loading: _newPatientLoading, error: _newPatientError, refresh: refreshNewPatients } = useNewPatientTracker(eodData?.newPatients || 0);
   const { data: weeklyScorecardData } = useWeeklyScorecardData(12);
+
+  // Debounce date input changes to prevent refresh while user is typing
+  // Waits 3 seconds after user stops typing before triggering data refresh
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDashboardDate(inputDate);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [inputDate]);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
@@ -852,6 +966,20 @@ const CourtStreetRCM = () => {
     fetchClaims();
   }, [showArchivedClaims]);
 
+  // Fetch latest RCM metrics from Supabase
+  useEffect(() => {
+    const fetchRCMMetrics = async () => {
+      try {
+        const claimsOver60 = await getLatestMetricValue('rcm_claims_over_60_days');
+        setClaimsOver60Days(claimsOver60);
+      } catch (error) {
+        console.error('Error fetching RCM metrics:', error);
+      }
+    };
+
+    fetchRCMMetrics();
+  }, []);
+
   // Fetch pre-auths from Supabase (refetch when toggle changes)
   useEffect(() => {
     const fetchPreAuths = async () => {
@@ -889,6 +1017,24 @@ const CourtStreetRCM = () => {
 
     fetchInsuranceChecks();
   }, [showArchivedInsuranceChecks]);
+
+  // Fetch Patient A/R Metrics for dashboard
+  useEffect(() => {
+    const fetchPatientARMetrics = async () => {
+      try {
+        const metrics = await getPatientARMetrics();
+        setPatientARMetrics(metrics);
+      } catch (error) {
+        console.error('Error fetching Patient A/R metrics:', error);
+      }
+    };
+
+    fetchPatientARMetrics();
+    // Refresh metrics every 5 minutes
+    const intervalId = setInterval(fetchPatientARMetrics, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
 
   // Set up real-time subscriptions for claims, pre-auths, and insurance checks
   useEffect(() => {
@@ -1004,7 +1150,7 @@ const CourtStreetRCM = () => {
 
           // Group by section
           const bySection: Record<string, any[]> = {};
-          metrics.forEach(m => {
+          metrics.forEach((m: any) => {
             const section = m.csd_metric_catalog?.section || 'UNKNOWN';
             if (!bySection[section]) bySection[section] = [];
             bySection[section].push({
@@ -1033,17 +1179,17 @@ const CourtStreetRCM = () => {
 
         // Fields the app expects
         const expectedFields = {
-          DASHBOARD: ['bam_current_revenue', 'bam_target_goal', 'practice_goal', 'collection_rate', 'active_patients', 'active_claims', 'pending_payments', 'outstanding_ar'],
+          DASHBOARD: ['bam_current_revenue', 'bam_target_goal', 'practice_goal', 'collection_rate', 'active_patients', 'active_claims'],
           PAYMENTS: ['todays_payments', 'weekly_payments', 'monthly_payments', 'pending_deposits', 'insurance_payments', 'patient_payments', 'unapplied_credits', 'refunds_pending'],
           PATIENTS: ['total_patients', 'active_patients', 'patients_with_balance', 'total_patient_ar', 'patient_ar_0_30', 'patient_ar_31_60', 'patient_ar_61_90', 'patient_ar_90_plus', 'payment_plans', 'past_due_accounts'],
-          PRE_AUTHS: ['total_pre_auths', 'pre_auths_pending', 'pre_auths_approved', 'pre_auths_denied', 'pre_auths_expiring_soon', 'pre_auths_expiring_this_month'],
+          PRE_AUTHS: ['total_pre_auths', 'pre_auths_pending', 'pre_auths_approved', 'pre_auths_denied', 'eod_preauths_expiring'],
           EOD_REPORT: ['eod_payment_cherry', 'eod_payment_carecredit']
         };
 
         try {
           const { getMetricsForDate } = await import('./services/metrics');
           const metrics = await getMetricsForDate(date);
-          const foundFields = new Set(metrics.map(m => m.field_key));
+          const foundFields = new Set(metrics.map((m: any) => m.field_key));
 
           console.log('\n📊 Field Comparison Results:\n');
 
@@ -1204,44 +1350,29 @@ const CourtStreetRCM = () => {
     return 'Good Evening';
   };
 
-  // Report templates
-  const reportTemplates = {
-    full: {
-      name: 'Full Report',
-      description: 'Complete EOD report with all sections',
-      includes: ['Daily Summary', 'Payments Detail', 'Action Items', 'Top Procedures', 'MTD Summary', 'Important Notes']
-    },
-    executive: {
-      name: 'Executive Summary',
-      description: 'High-level overview for management',
-      includes: ['Daily Summary', 'Action Items', 'MTD Summary']
-    },
-    financial: {
-      name: 'Financial Focus',
-      description: 'Payment and collection details',
-      includes: ['Daily Summary', 'Payments Detail', 'Payment Methods', 'MTD Summary']
-    },
-    actionItems: {
-      name: 'Action Items Only',
-      description: 'Focus on tasks requiring attention',
-      includes: ['Action Items', 'Important Notes']
-    }
-  };
-
-  // BAM Cycle Configuration & Calculation
-  const bamCycleReferenceStart = new Date(2025, 8, 23); // BAM cycle reference start date (Sept 23, 2025) - Month is 0-indexed
-  const bamCycle = calculateBAMCycle(bamCycleReferenceStart);
-
   // Historical BAM Cycle Data (for trend graph)
+  // Now dynamically pulls from Supabase filtered by cycle dates
   const historicalBAMData = [
-    { cycle: 'Previous', startDate: 'Sep 23', endDate: 'Oct 17', revenue: 202259.69, goal: 224548 }, // Previous cycle (Sept 23 - Oct 17, 2025)
-    { cycle: 'Current', startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), revenue: 223235.05, goal: 224548 }, // Current cycle (Oct 18 - Nov 13, 2025)
+    {
+      cycle: 'Previous',
+      startDate: bamCycle.previousCycleStart?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) || 'N/A',
+      endDate: bamCycle.previousCycleEnd?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) || 'N/A',
+      revenue: metricsData?.dashboard.bamPreviousRevenue ?? 0,
+      goal: metricsData?.dashboard.bamTargetGoal ?? 224548
+    },
+    {
+      cycle: 'Current',
+      startDate: bamCycle.currentCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      endDate: bamCycle.currentCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      revenue: metricsData?.dashboard.bamCurrentRevenue ?? 0,
+      goal: metricsData?.dashboard.bamTargetGoal ?? 224548
+    },
   ];
 
   // Dashboard data - using Supabase data when available, fallback to defaults
   const dashboardData = {
-    bamCurrentRevenue: metricsData?.dashboard.bamCurrentRevenue ?? 223235.05,
-    bamTargetGoal: metricsData?.dashboard.bamTargetGoal ?? 224548,
+    bamCurrentRevenue: metricsData?.dashboard.bamCurrentRevenue ?? 0, // Now filtered by current cycle dates, defaults to $0 for new cycles
+    bamTargetGoal: metricsData?.dashboard.bamTargetGoal ?? 224548, // BAM goal stays static across cycles
     practiceGoal: metricsData?.dashboard.practiceGoal ?? 300000,
     bamCycleStart: bamCycle.currentCycleStart,
     bamCycleEnd: bamCycle.currentCycleEnd,
@@ -1251,7 +1382,6 @@ const CourtStreetRCM = () => {
     collectionRate: metricsData?.dashboard.collectionRate ?? 73,
     activePatients: metricsData?.dashboard.activePatients ?? 1935,
     activeClaims: metricsData?.dashboard.activeClaims ?? 284,
-    pendingPayments: metricsData?.dashboard.pendingPayments ?? 0,
     outstandingAR: metricsData?.dashboard.outstandingAR ?? 186357.25
   };
 
@@ -1349,7 +1479,7 @@ const CourtStreetRCM = () => {
 
     // New patients from tracker
     newPatientsGoal: newPatientTrackerData?.perMonthGoal ?? 30,
-    newPatientsActual: newPatientTrackerData?.perMonth ?? 0,
+    newPatientsActual: (newPatientTrackerData?.perMonth ?? 0) as number,
 
     // Claim metrics - calculated from claims data
     claimApprovalRate: (() => {
@@ -1367,7 +1497,7 @@ const CourtStreetRCM = () => {
     avgShowRateHygTarget: metricsData?.scorecard?.showRateHygTarget ?? 85,
 
     // New patients per week from tracker
-    avgNewPatientsPerWeek: newPatientTrackerData?.perWeek ?? 0,
+    avgNewPatientsPerWeek: (newPatientTrackerData?.perWeek ?? 0) as number,
 
     // Treatment totals (from Supabase)
     totalTxPresented: metricsData?.scorecard?.totalTxPresented ?? 0,
@@ -1391,7 +1521,7 @@ const CourtStreetRCM = () => {
     avgCollectionRateTarget: 100,
 
     // Monthly totals
-    totalNewPatients: newPatientTrackerData?.perMonth ?? 0,
+    totalNewPatients: (newPatientTrackerData?.perMonth ?? 0) as number,
     fiveStarReviews: metricsData?.scorecard?.fiveStarReviews ?? 0,
 
     // Weekly data - fetched from Supabase
@@ -1422,22 +1552,22 @@ const CourtStreetRCM = () => {
 
     // Customer Metrics
     churnedPatientsPerMonth: metricsData?.advanced.churnedPatientsMonth ?? 0,
-    churnRate: 13.2, // Calculated or hardcoded
-    patientLifeCycleMonths: 0, // Calculated
-    patientLifeCycleYears: 0, // Calculated
-    activePtsFirstOfPriorMonth: 0, // TODO: Add to Supabase
+    churnRate: metricsData?.advanced.churnRate ?? 0,
+    patientLifeCycleMonths: metricsData?.advanced.lifecycleMonths ?? 0,
+    patientLifeCycleYears: metricsData?.advanced.lifecycleYears ?? 0,
+    activePtsFirstOfPriorMonth: metricsData?.advanced.activePtsFirstOfPriorMonth ?? 0,
 
     // Revenue Metrics
-    averageRevenuePerClient: 0, // TODO: Calculate or add to Supabase
-    ltv: 0, // TODO: Calculate (ARPC x Avg Retention Period)
-    avgRetentionPeriod: 0, // TODO: Calculate
+    averageRevenuePerClient: metricsData?.advanced.averageRevenuePerClient ?? 0,
+    ltv: metricsData?.advanced.ltv ?? 0,
+    avgRetentionPeriod: metricsData?.advanced.avgRetentionPeriod ?? 0,
 
     // Satisfaction Metrics
-    nps: 99, // TODO: Add to Supabase or calculate
-    enps: 0, // TODO: Add to Supabase
+    nps: metricsData?.advanced.nps ?? 0,
+    enps: metricsData?.advanced.enps ?? 0,
 
     // Employee Metrics
-    employeeUtilizationRate: 0 // TODO: Calculate or add to Supabase
+    employeeUtilizationRate: metricsData?.advanced.employeeUtilizationRate ?? 0
   };
 
   // Checklist data
@@ -1497,11 +1627,19 @@ const CourtStreetRCM = () => {
     { id: 'patient-management', name: 'RCM Management', icon: Users },
     { id: 'scorecard', name: 'Scorecard', icon: Award },
     { id: 'eod-report', name: 'EOD Report', icon: Calendar },
-    { id: 'administration', name: 'Administration', icon: Settings }
+    { id: 'administration', name: 'Administration', icon: UserCog }
   ];
 
   // Sub-navigation for RCM Management tab
-  const [patientManagementView, setPatientManagementView] = useState('claims');
+  const [patientManagementView, setPatientManagementViewState] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.PATIENT_MGMT_VIEW) || 'patients';
+    } catch { return 'patients'; }
+  });
+  const setPatientManagementView = (view: string) => {
+    setPatientManagementViewState(view);
+    try { localStorage.setItem(STORAGE_KEYS.PATIENT_MGMT_VIEW, view); } catch {}
+  };
 
   // Sub-navigation for Administration tab
   const [administrationView, setAdministrationView] = useState('scheduling');
@@ -1578,7 +1716,7 @@ const CourtStreetRCM = () => {
     fetchRecareList();
   }, []);
 
-  // Fetch Treatment List items from Supabase
+  // Fetch Unscheduled Treatment List items from Supabase
   useEffect(() => {
     const fetchTreatmentList = async () => {
       try {
@@ -1590,7 +1728,7 @@ const CourtStreetRCM = () => {
         const metrics = await calculateSchedulingMetrics('treatment');
         setTreatmentMetrics(metrics);
       } catch (error) {
-        console.error('Error fetching Treatment list:', error);
+        console.error('Error fetching Unscheduled Treatment list:', error);
       }
     };
 
@@ -1600,7 +1738,7 @@ const CourtStreetRCM = () => {
   // Calculate follow-up counts based on current date
   useEffect(() => {
     const calculateFollowUpCounts = async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
 
       // Count claims due for follow-up
       const claimsDue = claims.filter((claim: ClaimRecord) => claim.followUpDate <= today).length;
@@ -1662,78 +1800,23 @@ const CourtStreetRCM = () => {
     });
   }, [claims]);
 
-  // Filter functions for search
-  const filteredClaims = claims.filter((claim: ClaimRecord) => {
-    // Apply search query filter
-    const matchesSearch = searchQuery === '' ||
-      claim.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.dateOfService.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply archive date filter if viewing archived items and date filter is set
-    if (showArchivedClaims && archiveClaimsDateFilter && claim.archivedAt) {
-      const archivedDate = claim.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
-      return matchesSearch && archivedDate === archiveClaimsDateFilter;
-    }
 
-    return matchesSearch;
-  });
 
-  // Calculate real-time claims statistics from actual claims data
-  const realTimeClaimsStats = {
-    totalActive: showArchivedClaims ? filteredClaims.length : claims.filter((c: ClaimRecord) => !c.archivedAt).length,
-    pending: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Pending').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.status === 'Pending').length,
-    denied: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && (c.status === 'Denied' || c.status === 'Denied/2nd Appeal')).length,
-    overSixtyDays: showArchivedClaims
-      ? filteredClaims.filter((c: ClaimRecord) => c.agingDays > 60).length
-      : claims.filter((c: ClaimRecord) => !c.archivedAt && c.agingDays > 60).length
-  };
 
   const filteredPreAuths = preAuths.filter((preAuth: PreAuthRecord) =>
     searchQuery === '' ||
     preAuth.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    preAuth.preAuthNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    preAuth.preAuthNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.procedureCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredInsuranceChecks = insuranceChecks.filter((check: InsuranceCheckRecord) => {
-    // Apply search query filter
-    const matchesSearch = searchQuery === '' ||
-      check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.status.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply archive date filter if viewing archived items and date filter is set
-    if (showArchivedInsuranceChecks && archiveInsuranceChecksDateFilter && check.archivedAt) {
-      const archivedDate = check.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
-      return matchesSearch && archivedDate === archiveInsuranceChecksDateFilter;
-    }
-
-    return matchesSearch;
-  });
 
   // Handler functions for claims and pre-auths management
-  const handleEditClaim = (claim: ClaimRecord) => {
-    setEditingItem(claim);
-    setEditingType('claim');
-    setShowEditModal(true);
-  };
-
   const handleEditPreAuth = (preAuth: PreAuthRecord) => {
     setEditingItem(preAuth);
     setEditingType('preauth');
@@ -1764,28 +1847,6 @@ const CourtStreetRCM = () => {
     } catch (error) {
       console.error('Error deleting:', error);
       alert('Failed to delete. Please try again.');
-    }
-  };
-
-  const handleArchiveClaim = async (id: string) => {
-    try {
-      await archiveClaim(id, 'user');
-      // Remove from current view (we're viewing active records)
-      setClaims(claims.filter((c: ClaimRecord) => c.id !== id));
-    } catch (error) {
-      console.error('Error archiving claim:', error);
-      alert('Failed to archive claim. Please try again.');
-    }
-  };
-
-  const handleUnarchiveClaim = async (id: string) => {
-    try {
-      await unarchiveClaim(id);
-      // Remove from current view (we're viewing archived records)
-      setClaims(claims.filter((c: ClaimRecord) => c.id !== id));
-    } catch (error) {
-      console.error('Error unarchiving claim:', error);
-      alert('Failed to unarchive claim. Please try again.');
     }
   };
 
@@ -1847,11 +1908,6 @@ const CourtStreetRCM = () => {
     setShowEditModal(true);
   };
 
-  const handleDeleteInsuranceCheck = (id: string, checkNumber: string) => {
-    setDeleteItem({ type: 'insurance-check' as any, id, name: checkNumber });
-    setShowDeleteModal(true);
-  };
-
   const handleViewInsuranceCheckHistory = async (id: string, checkNumber: string) => {
     setHistoryItem({ type: 'insurance-check' as any, id, name: checkNumber });
     setShowHistoryModal(true);
@@ -1866,224 +1922,6 @@ const CourtStreetRCM = () => {
       setHistoryData([]);
       setInsuranceCheckUpdates([]);
     }
-  };
-
-  const handleArchiveInsuranceCheck = async (id: string, archivedBy: string) => {
-    try {
-      await archiveInsuranceCheck(id, archivedBy);
-      // Refetch based on current toggle state
-      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
-      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
-    } catch (error) {
-      console.error('Error archiving insurance check:', error);
-      alert('Failed to archive insurance check. Please try again.');
-    }
-  };
-
-  const handleUnarchiveInsuranceCheck = async (id: string) => {
-    try {
-      await unarchiveInsuranceCheck(id);
-      // Refetch based on current toggle state
-      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
-      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
-    } catch (error) {
-      console.error('Error unarchiving insurance check:', error);
-      alert('Failed to unarchive insurance check. Please try again.');
-    }
-  };
-
-  // Helper function to export PDF
-  const exportToPDF = () => {
-    // In a real implementation, this would use a library like jsPDF or html2pdf
-    // For now, we'll use the browser's print-to-PDF functionality
-    const printContent = document.getElementById('eod-report-content');
-    if (printContent) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>EOD Report - ${dashboardDate}</title>
-              <style>
-                @media print {
-                  @page { margin: 0.5in; }
-                  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-                }
-
-                body {
-                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                  padding: 20px;
-                  color: #1f2937;
-                  background: white;
-                }
-
-                /* Report Header Styling */
-                .report-header {
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  padding-bottom: 20px;
-                  margin-bottom: 30px;
-                  border-bottom: 3px solid #B8985F;
-                }
-
-                .report-header > div:first-child {
-                  display: flex;
-                  align-items: center;
-                  gap: 15px;
-                }
-
-                .report-header h1 {
-                  color: #B8985F;
-                  font-size: 28px;
-                  font-weight: bold;
-                  margin: 0;
-                }
-
-                .report-header h2 {
-                  font-size: 20px;
-                  font-weight: 600;
-                  margin: 0;
-                  color: #1f2937;
-                }
-
-                .report-header p {
-                  margin: 5px 0 0 0;
-                  font-size: 14px;
-                  color: #6b7280;
-                }
-
-                /* Logo styling */
-                .report-header > div:first-child > div:first-child {
-                  width: 64px;
-                  height: 64px;
-                  background-color: #B8985F;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  flex-shrink: 0;
-                }
-
-                .report-header > div:first-child > div:first-child span {
-                  color: white;
-                  font-size: 24px;
-                  font-weight: bold;
-                }
-
-                table {
-                  width: 100%;
-                  border-collapse: collapse;
-                  margin: 20px 0;
-                  font-size: 14px;
-                }
-
-                th, td {
-                  border: 1px solid #e5e7eb;
-                  padding: 10px;
-                  text-align: left;
-                }
-
-                th {
-                  background-color: #f9fafb;
-                  font-weight: 600;
-                  color: #374151;
-                }
-
-                .header {
-                  color: #B8985F;
-                  font-size: 20px;
-                  font-weight: 600;
-                  margin: 25px 0 15px 0;
-                }
-
-                .section {
-                  margin: 20px 0;
-                  page-break-inside: avoid;
-                }
-
-                .metric {
-                  display: inline-block;
-                  margin: 10px;
-                  padding: 15px;
-                  border: 2px solid #e5e7eb;
-                  border-radius: 8px;
-                  min-width: 200px;
-                }
-
-                /* Grid layouts for cards */
-                .grid {
-                  display: grid;
-                  gap: 15px;
-                  margin: 20px 0;
-                }
-
-                /* Improve card visibility in print */
-                [class*="bg-gradient"] {
-                  border: 2px solid #e5e7eb;
-                  padding: 15px;
-                  border-radius: 8px;
-                  margin-bottom: 10px;
-                  page-break-inside: avoid;
-                }
-
-                /* Hide certain UI elements in print */
-                button, .no-print {
-                  display: none !important;
-                }
-              </style>
-            </head>
-            <body>
-              ${printContent.innerHTML}
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 250);
-      }
-    }
-  };
-
-  // Helper function to send email
-  const handleSendEmail = () => {
-    // In a real implementation, this would call an API endpoint to send the email
-    // For now, we'll show a success message
-    if (!emailRecipients) {
-      alert('Please enter at least one email recipient');
-      return;
-    }
-
-    const emailData = {
-      to: emailRecipients.split(',').map((email: string) => email.trim()),
-      subject: emailSubject,
-      message: emailMessage,
-      reportDate: dashboardDate,
-      reportData: eodData,
-      template: selectedTemplate,
-      schedule: scheduleEmail ? {
-        enabled: true,
-        time: scheduleTime,
-        frequency: scheduleFrequency
-      } : null
-    };
-
-    // Simulate API call
-    console.log('Sending email with data:', emailData);
-
-    if (scheduleEmail) {
-      const template = reportTemplates[selectedTemplate as keyof typeof reportTemplates];
-      alert(`EOD Report scheduled successfully!\nRecipients: ${emailRecipients}\nFrequency: ${scheduleFrequency} at ${scheduleTime}\nTemplate: ${template.name}`);
-    } else {
-      alert(`EOD Report sent successfully to: ${emailRecipients}`);
-    }
-
-    setShowEmailModal(false);
-    setEmailRecipients('');
-    setEmailMessage('');
-    setScheduleEmail(false);
   };
 
   // Loading state - wait for all data to load from Supabase
@@ -2140,21 +1978,34 @@ const CourtStreetRCM = () => {
     <div className={`min-h-screen font-sans ${isDayMode ? 'bg-gradient-to-br from-purple-50 via-white to-coral-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-purple-950/50 to-gray-800 gradient-mesh-dark'}`}>
       {/* Header */}
       <div className={`sticky top-0 z-50 ${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} animate-slide-down`}>
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Logo Section - Stellar × CSD */}
-              <div className="flex items-center gap-3">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`sm:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all hover-lift ${
+                isDayMode
+                  ? 'bg-white/60 text-gray-700 hover:bg-white/80'
+                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              {/* Logo Section - Responsive */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                {/* Show only CSD logo on mobile, both on larger screens */}
                 <img
                   src="/Stellar2 copy.jpg"
                   alt="Stellar Consults Logo"
-                  className="h-12 w-auto object-contain"
+                  className="hidden sm:block h-8 sm:h-12 w-auto object-contain"
                 />
-                <span className={`text-2xl font-bold ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>×</span>
+                <span className={`hidden sm:block text-xl sm:text-2xl font-bold ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>×</span>
                 <img
                   src="/Cris Dental Image.jpg"
                   alt="Court Street Dental Logo"
-                  className="h-12 w-auto object-contain"
+                  className="h-8 sm:h-12 w-auto object-contain"
                 />
               </div>
               <div>
@@ -2166,10 +2017,12 @@ const CourtStreetRCM = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Day/Night Mode Button - Icon only on mobile */}
               <button
                 onClick={() => setIsDayMode(!isDayMode)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all hover-lift ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
                   isDayMode
                     ? 'bg-purple-600 text-white hover:bg-purple-700'
                     : 'bg-coral-400 text-white hover:bg-coral-500'
@@ -2178,7 +2031,7 @@ const CourtStreetRCM = () => {
                 {isDayMode ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    <span className="text-sm font-medium">Night Mode</span>
+                    <span className="hidden md:inline text-sm font-medium">Night Mode</span>
                   </>
                 ) : (
                   <>
@@ -2187,11 +2040,27 @@ const CourtStreetRCM = () => {
 </>
                 )}
               </button>
+
+              {/* Sign Out */}
+              <button
+                onClick={() => signOut()}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
+                  isDayMode
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                    : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                }`}
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden md:inline text-sm font-medium">Sign Out</span>
+              </button>
+
+              {/* Task Board - Hidden on mobile */}
               <a
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium"
+                className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium min-h-[44px]"
               >
                 <ExternalLink className="w-4 h-4" />
                 <span className="text-sm">Task Board</span>
@@ -2206,9 +2075,10 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className={`${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} mb-8`}>
-        <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex flex-wrap gap-3 py-4">
+      <div className={`${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} mb-4 sm:mb-8`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Desktop Navigation */}
+          <nav className="hidden sm:flex flex-wrap gap-3 py-4">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -2216,7 +2086,7 @@ const CourtStreetRCM = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift ${
+                  className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift min-h-[44px] ${
                     isActive
                       ? 'bg-gradient-primary text-white shadow-glow-purple'
                       : isDayMode
@@ -2230,11 +2100,59 @@ const CourtStreetRCM = () => {
               );
             })}
           </nav>
+
+          {/* Mobile Navigation - Collapsible */}
+          <div className={`sm:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+            isMobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <nav className="flex flex-col gap-2 py-3">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCurrentView(item.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`group flex items-center space-x-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all hover-lift min-h-[52px] ${
+                      isActive
+                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                        : isDayMode
+                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <Icon className={`w-6 h-6 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                    <span>{item.name}</span>
+                  </button>
+                );
+              })}
+
+              {/* Mobile-only Quick Actions */}
+              <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-white/20' : 'border-white/10'}`}>
+                <a
+                  href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all hover-lift min-h-[52px] ${
+                    isDayMode
+                      ? 'bg-primary-500 text-white hover:bg-primary-600'
+                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                  } shadow-lg font-semibold`}
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  <span>Task Board</span>
+                </a>
+              </div>
+            </nav>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
         {currentView === 'dashboard' ? (
           <div className="space-y-10">
             {/* Dashboard Header */}
@@ -2248,7 +2166,7 @@ const CourtStreetRCM = () => {
                     <h3 className="text-xl font-display font-semibold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent">
                       Practice Overview Dashboard
                     </h3>
-                    <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                    <p className={`text-xs sm:text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
                       Real-time insights into your revenue cycle performance
                     </p>
                   </div>
@@ -2256,18 +2174,19 @@ const CourtStreetRCM = () => {
                   <div className="flex items-center gap-2">
                     <input
                       type="date"
-                      value={dashboardDate}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDashboardDate(e.target.value)}
-                      className={`px-3 py-2 rounded border ${
+                      value={inputDate}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputDate(e.target.value)}
+                      className={`px-3 sm:px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all hover-lift min-h-[44px] ${
                         isDayMode
-                          ? 'bg-white border-gray-300 text-gray-900'
-                          : 'bg-gray-700 border-gray-600 text-white'
-                      }`}
+                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                      } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
+                      title="Date input updates after 3 seconds"
                     />
                     <button
                       onClick={refreshMetrics}
                       disabled={metricsLoading}
-                      className={`p-2 rounded hover:bg-opacity-80 transition-all ${
+                      className={`p-3 rounded-xl hover:bg-opacity-80 transition-all min-h-[44px] min-w-[44px] ${
                         isDayMode
                           ? 'bg-purple-500 text-white hover:bg-purple-600'
                           : 'bg-purple-600 text-white hover:bg-purple-700'
@@ -2310,9 +2229,9 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Key Performance Indicators */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
@@ -2360,7 +2279,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Collection Rate */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2377,7 +2296,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Active Patients */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2420,27 +2339,16 @@ const CourtStreetRCM = () => {
                     {/* Insurance A/R 31+ */}
                     <div className="mb-3">
                       <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Insurance A/R 31+</p>
-                      <p className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${(
-                          claimsData.arAging.thirtyOneToSixty.amount +
-                          claimsData.arAging.sixtyOneToNinety.amount +
-                          claimsData.arAging.ninetyPlus.amount
-                        ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <p className={`text-sm font-semibold italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
+                        Calculated on the 1st &amp; 15th
                       </p>
                     </div>
 
                     {/* Total Outstanding */}
                     <div className={`pt-3 border-t ${isDayMode ? 'border-white/30' : 'border-white/10'}`}>
                       <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Outstanding</p>
-                      <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${(
-                          patientsData.patientARAging.thirtyOneToSixty +
-                          patientsData.patientARAging.sixtyOneToNinety +
-                          patientsData.patientARAging.ninetyPlus +
-                          claimsData.arAging.thirtyOneToSixty.amount +
-                          claimsData.arAging.sixtyOneToNinety.amount +
-                          claimsData.arAging.ninetyPlus.amount
-                        ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <p className={`text-sm font-semibold italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
+                        Calculated on the 1st &amp; 15th
                       </p>
                     </div>
                   </div>
@@ -2449,10 +2357,10 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Claims & Payments Overview */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Claims Status
                 </h3>
                 <div className="space-y-3">
@@ -2504,14 +2412,14 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => setCurrentView('claims')}
-                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
+                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all hover-lift min-h-[52px] ${
                       isDayMode
                         ? 'bg-gradient-to-r from-purple-100/60 to-purple-200/60 hover:from-purple-200/80 hover:to-purple-300/80 border border-purple-300/50'
                         : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/50 hover:to-purple-700/50 border border-purple-700/30'
@@ -2527,7 +2435,7 @@ const CourtStreetRCM = () => {
                   </button>
                   <button
                     onClick={() => setCurrentView('payments')}
-                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
+                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all hover-lift min-h-[52px] ${
                       isDayMode
                         ? 'bg-gradient-to-r from-emerald-100/60 to-emerald-200/60 hover:from-emerald-200/80 hover:to-emerald-300/80 border border-emerald-300/50'
                         : 'bg-gradient-to-r from-emerald-900/30 to-emerald-800/30 hover:from-emerald-800/50 hover:to-emerald-700/50 border border-emerald-700/30'
@@ -2593,7 +2501,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-primary-500/20 mb-3 group-hover:bg-primary-500/30 transition-colors">
                       <FileText className="w-6 h-6 text-primary-600" />
@@ -2614,7 +2522,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-purple-500/20 mb-3 group-hover:bg-purple-500/30 transition-colors">
                       <Shield className="w-6 h-6 text-purple-600" />
@@ -2636,7 +2544,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-emerald-500/20 mb-3 group-hover:bg-emerald-500/30 transition-colors">
                       <Users className="w-6 h-6 text-emerald-600" />
@@ -2658,7 +2566,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-coral-500/20 mb-3 group-hover:bg-coral-500/30 transition-colors">
                       <Clock className="w-6 h-6 text-coral-600" />
@@ -2680,7 +2588,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-red-500/20 mb-3 group-hover:bg-red-500/30 transition-colors">
                       <Activity className="w-6 h-6 text-red-600" />
@@ -2697,13 +2605,13 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Automated Metrics Analysis */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
+            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Automated Metrics Analysis
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Avg Claims Aging</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2714,7 +2622,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Collection Rate</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2724,8 +2632,8 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-coral-700' : 'text-coral-400'}`}>Active Claims</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2736,7 +2644,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied Claims</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2779,45 +2687,36 @@ const CourtStreetRCM = () => {
               <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Summary
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/30 border-green-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>0-30 Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                    ${claimsData.arAging.zeroToThirty.amount.toLocaleString()}
-                  </p>
-                </div>
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-900/30 border-yellow-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>31-60 Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
-                    ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()}
-                  </p>
-                </div>
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-orange-50 border-orange-200' : 'bg-orange-900/30 border-orange-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>61-90 Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-orange-900' : 'text-orange-300'}`}>
-                    ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()}
-                  </p>
-                </div>
-                <div className={`text-center p-4 rounded-lg border ${isDayMode ? 'bg-red-50 border-red-200' : 'bg-red-900/30 border-red-700'}`}>
-                  <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>90+ Days</p>
-                  <p className={`text-2xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>
-                    ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
-                  </p>
-                </div>
+              <div className={`text-center p-6 rounded-lg border ${isDayMode ? 'bg-gray-50 border-gray-200' : 'bg-gray-700/30 border-gray-600'}`}>
+                <p className={`text-sm font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                  Insurance A/R is calculated on the 1st &amp; 15th of each month
+                </p>
+                <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Next update will reflect the latest reconciled balances
+                </p>
               </div>
             </div>
 
             {/* New Patient Tracker */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-display font-bold mb-6 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
-                New Patient Tracker
-              </h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                  New Patient Tracker
+                </h3>
+                <button
+                  onClick={refreshNewPatients}
+                  className={`p-2 rounded-lg transition-colors ${isDayMode ? 'hover:bg-gray-100 text-gray-600 hover:text-gray-900' : 'hover:bg-gray-700 text-gray-400 hover:text-white'}`}
+                  title="Refresh tracker data"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </button>
+              </div>
 
               {/* Current Period Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Per Day */}
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -2848,94 +2747,143 @@ const CourtStreetRCM = () => {
 
                 {/* Per Week */}
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-emerald-700' : 'text-emerald-300'}`}>Per Week</p>
-                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>Last 7 days</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>Business week (Mon-Fri)</p>
                       </div>
                       <div className="p-2 rounded-lg bg-emerald-500/20">
                         <Users className="w-5 h-5 text-emerald-600" />
                       </div>
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        {newPatientTrackerData.perWeek}
-                      </p>
-                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perWeekGoal}</p>
-                    </div>
-                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'}`}>
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perWeek >= newPatientTrackerData.perWeekGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
-                        style={{
-                          width: `${Math.min((newPatientTrackerData.perWeek / newPatientTrackerData.perWeekGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perWeekGoal} per week</p>
+                    {newPatientTrackerData.perWeek != null ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            {newPatientTrackerData.perWeek}
+                          </p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perWeekGoal}</p>
+                        </div>
+                        <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'}`}>
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perWeek >= newPatientTrackerData.perWeekGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
+                            style={{
+                              width: `${Math.min((newPatientTrackerData.perWeek / newPatientTrackerData.perWeekGoal) * 100, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perWeekGoal} per week</p>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-start justify-center min-h-[68px]">
+                        <p className={`text-sm font-medium italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.perWeekStatus}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>Goal: {newPatientTrackerData.perWeekGoal} per week</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Per Month */}
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>Per Month</p>
-                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>This month</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>MTD (eod_mtd_new_patients)</p>
                       </div>
                       <div className="p-2 rounded-lg bg-purple-500/20">
                         <Users className="w-5 h-5 text-purple-600" />
                       </div>
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        {newPatientTrackerData.perMonth}
-                      </p>
-                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perMonthGoal}</p>
-                    </div>
-                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-purple-100/60' : 'bg-purple-950/40'}`}>
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perMonth >= newPatientTrackerData.perMonthGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`}
-                        style={{
-                          width: `${Math.min((newPatientTrackerData.perMonth / newPatientTrackerData.perMonthGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perMonthGoal} per month</p>
+                    {newPatientTrackerData.perMonth != null ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            {newPatientTrackerData.perMonth}
+                          </p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.perMonthGoal}</p>
+                        </div>
+                        <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-purple-100/60' : 'bg-purple-950/40'}`}>
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.perMonth >= newPatientTrackerData.perMonthGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`}
+                            style={{
+                              width: `${Math.min((newPatientTrackerData.perMonth / newPatientTrackerData.perMonthGoal) * 100, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.perMonthGoal} per month</p>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-start justify-center min-h-[68px]">
+                        <p className={`text-sm font-medium italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.perMonthStatus}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>Goal: {newPatientTrackerData.perMonthGoal} per month</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Quarterly */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-coral-700' : 'text-coral-300'}`}>Quarterly</p>
-                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>This quarter</p>
+                        <p className={`text-xs font-bold uppercase tracking-wide ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Quarterly</p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mt-0.5`}>
+                          {newPatientTrackerData.quarterlyLabel} ({newPatientTrackerData.quarterlyDateRange})
+                        </p>
                       </div>
                       <div className="p-2 rounded-lg bg-coral-500/20">
                         <Users className="w-5 h-5 text-coral-600" />
                       </div>
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        {newPatientTrackerData.quarterly}
-                      </p>
-                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.quarterlyGoal}</p>
-                    </div>
-                    <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-coral-100/60' : 'bg-coral-950/40'}`}>
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-coral-500 to-coral-600'}`}
-                        style={{
-                          width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                    <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
+                    {newPatientTrackerData.quarterly != null ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                            {newPatientTrackerData.quarterly}
+                          </p>
+                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>/ {newPatientTrackerData.quarterlyGoal}</p>
+                        </div>
+                        <div className={`w-full rounded-full h-2 mb-2 ${isDayMode ? 'bg-amber-100/60' : 'bg-amber-950/40'}`}>
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${newPatientTrackerData.quarterly >= newPatientTrackerData.quarterlyGoal ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}
+                            style={{
+                              width: `${Math.min((newPatientTrackerData.quarterly / newPatientTrackerData.quarterlyGoal) * 100, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <p className={`text-xs font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-start justify-center min-h-[68px]">
+                        <p className={`text-sm font-medium italic ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.quarterlyStatus}
+                        </p>
+                        <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>Goal: {newPatientTrackerData.quarterlyGoal} per quarter</p>
+                      </div>
+                    )}
+                    {/* Prior Quarter Reference */}
+                    {newPatientTrackerData.priorQuarterlyLabel && (
+                      <div className={`mt-3 pt-3 border-t ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'}`}>
+                        <p className={`text-xs font-semibold ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>
+                          Prior: {newPatientTrackerData.priorQuarterlyLabel}
+                        </p>
+                        <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {newPatientTrackerData.priorQuarterlyDateRange}
+                        </p>
+                        <p className={`text-lg font-bold mt-0.5 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                          {newPatientTrackerData.priorQuarterly != null ? newPatientTrackerData.priorQuarterly : 'N/A'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2998,30 +2946,6 @@ const CourtStreetRCM = () => {
             <div className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setPatientManagementView('claims')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'claims'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Claims
-                </button>
-                <button
-                  onClick={() => setPatientManagementView('preauths')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'preauths'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Pre-Auths
-                </button>
-                <button
                   onClick={() => setPatientManagementView('patients')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'patients'
@@ -3032,6 +2956,42 @@ const CourtStreetRCM = () => {
                   }`}
                 >
                   Patient A/R
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('credits')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'credits'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Credits
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('insurance-issues')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'insurance-issues'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Insurance Issues
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('vcc-payments')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'vcc-payments'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  VCC Payments
                 </button>
                 <button
                   onClick={() => setPatientManagementView('insurance-checks')}
@@ -3046,6 +3006,69 @@ const CourtStreetRCM = () => {
                   Insurance Checks/EFT's
                 </button>
                 <button
+                  onClick={() => setPatientManagementView('eft-reconciliation')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'eft-reconciliation'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  EFT Reconciliation
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('ar-trends')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'ar-trends'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  A/R Trends
+                </button>
+                <button
+                  onClick={() => setPatientManagementView('preauths')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'preauths'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Pre-Auths
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setPatientManagementView('claims')}
+                    className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                      patientManagementView === 'claims'
+                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                        : isDayMode
+                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    Claims
+                  </button>
+                )}
+                <button
+                  onClick={() => setPatientManagementView('od-import')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'od-import'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  Open Dental Import
+                </button>
+                {/* Temporarily hidden - Payments tab
+                <button
                   onClick={() => setPatientManagementView('payments')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'payments'
@@ -3057,6 +3080,8 @@ const CourtStreetRCM = () => {
                 >
                   Payments
                 </button>
+                */}
+                {/* Temporarily hidden - Insurance Networks tab
                 <button
                   onClick={() => setPatientManagementView('insurance-networks')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
@@ -3069,537 +3094,22 @@ const CourtStreetRCM = () => {
                 >
                   Insurance Networks
                 </button>
-                <button
-                  onClick={() => setPatientManagementView('checklist')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                    patientManagementView === 'checklist'
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                      : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  Checklist
-                </button>
+                */}
               </div>
             </div>
 
-            {patientManagementView === 'claims' && (
-              <>
-            {/* Claims Header */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                  Claims Management
-                </h2>
-
-                {/* Archive Toggle */}
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                    {showArchivedClaims ? 'Showing Archived' : 'Showing Active'}
-                  </span>
-                  <button
-                    onClick={() => setShowArchivedClaims(!showArchivedClaims)}
-                    className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift flex items-center gap-2 ${
-                      showArchivedClaims
-                        ? isDayMode
-                          ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                        : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                    }`}
-                  >
-                    <Archive className="w-4 h-4" />
-                    {showArchivedClaims ? 'View Active' : 'View Archived'}
-                  </button>
-                  {showArchivedClaims && (
-                    <div className="flex items-center gap-2">
-                      <label className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                        Filter by Date:
-                      </label>
-                      <input
-                        type="date"
-                        value={archiveClaimsDateFilter}
-                        onChange={(e) => setArchiveClaimsDateFilter(e.target.value)}
-                        className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
-                      />
-                      {archiveClaimsDateFilter && (
-                        <button
-                          onClick={() => setArchiveClaimsDateFilter('')}
-                          className="px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search by Patient, ID, or Insurance Plan..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Claims Statistics Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {/* Total Active Claims */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-start justify-between relative z-10">
-                    <div>
-                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Total Active Claims</p>
-                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.totalActive}</p>
-                      <p className={`text-xs mt-2 ${isDayMode ? 'text-primary-600' : 'text-primary-300'}`}>In process</p>
-                    </div>
-                    <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-primary-500' : 'text-primary-400'}`} />
-                  </div>
-                </div>
-
-                {/* Pending Claims */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-start justify-between relative z-10">
-                    <div>
-                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Pending Claims</p>
-                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.pending}</p>
-                      <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-300'}`}>Awaiting response</p>
-                    </div>
-                    <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
-                  </div>
-                </div>
-
-                {/* Fully Denied Claims */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-start justify-between relative z-10">
-                    <div>
-                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Fully Denied Claims</p>
-                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.denied}</p>
-                      <p className={`text-xs mt-2 ${isDayMode ? 'text-red-600' : 'text-red-300'}`}>Need attention</p>
-                    </div>
-                    <XCircle className={`w-8 h-8 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
-                  </div>
-                </div>
-
-                {/* Claims >60 Days */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-start justify-between relative z-10">
-                    <div>
-                      <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Claims &gt;60 Days</p>
-                      <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{realTimeClaimsStats.overSixtyDays}</p>
-                      <p className={`text-xs mt-2 ${isDayMode ? 'text-orange-600' : 'text-orange-300'}`}>Priority follow-up</p>
-                    </div>
-                    <AlertCircle className={`w-8 h-8 ${isDayMode ? 'text-orange-500' : 'text-orange-400'}`} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* AR Aging Analysis */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                Insurance A/R Aging Analysis
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 0-30 Days */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="text-center relative z-10">
-                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-emerald-800' : 'text-emerald-400'}`}>0-30 Days</p>
-                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${claimsData.arAging.zeroToThirty.amount.toLocaleString()}
-                    </p>
-                    <p className={`text-lg font-medium ${isDayMode ? 'text-emerald-700' : 'text-emerald-300'}`}>
-                      {claimsData.arAging.zeroToThirty.count}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>Claims</p>
-                  </div>
-                </div>
-
-                {/* 31-60 Days */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="text-center relative z-10">
-                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-yellow-800' : 'text-yellow-400'}`}>31-60 Days</p>
-                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()}
-                    </p>
-                    <p className={`text-lg font-medium ${isDayMode ? 'text-yellow-700' : 'text-yellow-300'}`}>
-                      {claimsData.arAging.thirtyOneToSixty.count}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-yellow-600' : 'text-yellow-400'}`}>Claims</p>
-                  </div>
-                </div>
-
-                {/* 61-90 Days */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="text-center relative z-10">
-                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-orange-800' : 'text-orange-400'}`}>61-90 Days</p>
-                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()}
-                    </p>
-                    <p className={`text-lg font-medium ${isDayMode ? 'text-orange-700' : 'text-orange-300'}`}>
-                      {claimsData.arAging.sixtyOneToNinety.count}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`}>Claims</p>
-                  </div>
-                </div>
-
-                {/* 90+ Days */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="text-center relative z-10">
-                    <p className={`text-sm font-semibold mb-2 ${isDayMode ? 'text-red-800' : 'text-red-400'}`}>90+ Days</p>
-                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
-                    </p>
-                    <p className={`text-lg font-medium ${isDayMode ? 'text-red-700' : 'text-red-300'}`}>
-                      {claimsData.arAging.ninetyPlus.count}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>Claims</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Summary Bar */}
-              <div className="mt-6 space-y-3">
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">Total Outstanding Insurance A/R:</span>
-                    <span className="text-xl font-bold" style={{ color: csdGold }}>
-                      ${(
-                        claimsData.arAging.zeroToThirty.amount +
-                        claimsData.arAging.thirtyOneToSixty.amount +
-                        claimsData.arAging.sixtyOneToNinety.amount +
-                        claimsData.arAging.ninetyPlus.amount
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-amber-800">Insurance A/R 31+ Days (Total Receivables):</span>
-                    <span className="text-xl font-bold text-amber-900">
-                      ${(
-                        claimsData.arAging.thirtyOneToSixty.amount +
-                        claimsData.arAging.sixtyOneToNinety.amount +
-                        claimsData.arAging.ninetyPlus.amount
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs text-amber-700">
-                    31-60: ${claimsData.arAging.thirtyOneToSixty.amount.toLocaleString()} |
-                    61-90: ${claimsData.arAging.sixtyOneToNinety.amount.toLocaleString()} |
-                    91+: ${claimsData.arAging.ninetyPlus.amount.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Detailed Claims Table */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold" style={{ color: csdGold }}>
-                  Claims Details ({filteredClaims.length} {filteredClaims.length === 1 ? 'claim' : 'claims'})
-                </h3>
-                <div className="flex items-center space-x-3">
-                  <button
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
-                    onClick={() => exportToCSV(filteredClaims, `claims-export-${getLocalDateString()}.csv`)}
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Export to CSV</span>
-                  </button>
-                  <button
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                    onClick={() => setShowAddClaimModal(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add New Claim</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-100 border-b-2 border-gray-300">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Patient</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Claim #</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date of Service</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Procedure</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completed By</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredClaims.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
-                          No claims found matching your search.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredClaims.map((claim) => (
-                        <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-4">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{claim.patientName}</div>
-                              <div className="text-xs text-gray-500">{claim.patientId}</div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="text-sm text-gray-900">{claim.claimNumber}</div>
-                            <div className="text-xs text-gray-500">Submitted: {claim.dateSubmitted}</div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="text-sm text-gray-900">{claim.dateOfService}</div>
-                            <div className="text-xs text-gray-500">Service Date</div>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-900">{claim.insuranceCompany}</td>
-                          <td className="px-4 py-4">
-                            <div className="text-sm font-medium text-gray-900">{claim.procedureCode}</div>
-                            <div className="text-xs text-gray-500">{claim.claimDetail.length > 40 ? claim.claimDetail.substring(0, 40) + '...' : claim.claimDetail}</div>
-                          </td>
-                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">${claim.claimAmount.toLocaleString()}</td>
-                          <td className="px-4 py-4">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              claim.status === 'Approved/Awaiting Payment' ? 'bg-green-100 text-green-800' :
-                              claim.status === 'Entered' ? 'bg-teal-100 text-teal-800' :
-                              claim.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                              claim.status === 'Denied' ? 'bg-red-100 text-red-800' :
-                              claim.status === 'Denied/2nd Appeal' ? 'bg-red-100 text-red-800' :
-                              claim.status === 'In Review/2nd Appeal' ? 'bg-blue-100 text-blue-800' :
-                              claim.status === 'Resubmitted with Attachments' ? 'bg-orange-100 text-orange-800' :
-                              claim.status === 'Resubmitted/1st Appeal' ? 'bg-purple-100 text-purple-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {claim.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className={`text-sm font-medium ${
-                              claim.agingDays > 60 ? 'text-red-600' :
-                              claim.agingDays > 30 ? 'text-orange-600' :
-                              'text-green-600'
-                            }`}>
-                              {claim.agingDays} days
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-900">{claim.handler}</td>
-                          <td className="px-4 py-4">
-                            <div className="flex justify-between items-center">
-                              {/* Edit button - left side */}
-                              <button
-                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                onClick={() => handleEditClaim(claim)}
-                                title="Edit Claim"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-
-                              {/* Update/History/Archive/Delete buttons - right side */}
-                              <div className="flex space-x-1">
-                                <button
-                                  className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
-                                  onClick={() => handleAddUpdate('claim', claim.id, claim.patientName, claim.status)}
-                                  title="Add Update"
-                                >
-                                  <MessageSquarePlus className="w-4 h-4" />
-                                </button>
-                                <button
-                                  className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                                  onClick={() => handleViewHistory('claim', claim.id, claim.patientName)}
-                                  title="View History"
-                                >
-                                  <History className="w-4 h-4" />
-                                </button>
-                                {showArchivedClaims ? (
-                                  <button
-                                    className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                    onClick={() => handleUnarchiveClaim(claim.id)}
-                                    title="Unarchive Claim"
-                                  >
-                                    <ArchiveRestore className="w-4 h-4" />
-                                  </button>
-                                ) : (
-                                  <button
-                                    className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                    onClick={() => handleArchiveClaim(claim.id)}
-                                    title="Archive Claim"
-                                  >
-                                    <Archive className="w-4 h-4" />
-                                  </button>
-                                )}
-                                <button
-                                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                  onClick={() => handleDeleteClick('claim', claim.id, claim.patientName)}
-                                  title="Delete Claim"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Claims Metrics Section */}
-              <div className={`mt-6 rounded-lg shadow p-6 ${isDayMode ? 'bg-gradient-to-r from-blue-50 to-indigo-50' : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Claims Analytics
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Average Aging Days */}
-                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
-                        <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                          {filteredClaims.length > 0
-                            ? Math.round(filteredClaims.reduce((sum, c) => sum + c.agingDays, 0) / filteredClaims.length)
-                            : 0} days
-                        </p>
-                      </div>
-                      <Clock className="w-8 h-8 text-blue-500 opacity-50" />
-                    </div>
-                  </div>
-
-                  {/* Approval Rate */}
-                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
-                        <p className="text-2xl font-bold text-green-600">
-                          {filteredClaims.length > 0
-                            ? Math.round((filteredClaims.filter(c => c.status === 'Approved/Awaiting Payment').length / filteredClaims.length) * 100)
-                            : 0}%
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {filteredClaims.filter(c => c.status === 'Approved/Awaiting Payment').length} of {filteredClaims.length}
-                        </p>
-                      </div>
-                      <CheckCircle className="w-8 h-8 text-green-500 opacity-50" />
-                    </div>
-                  </div>
-
-                  {/* Total Claim Amount */}
-                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Amount</p>
-                        <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                          ${filteredClaims.reduce((sum, c) => sum + c.claimAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <DollarSign className="w-8 h-8 text-yellow-500 opacity-50" />
-                    </div>
-                  </div>
-
-                  {/* Fully Denied Claims */}
-                  <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fully Denied Claims</p>
-                        <p className="text-2xl font-bold text-red-600">
-                          {filteredClaims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {filteredClaims.length > 0
-                            ? Math.round((filteredClaims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal').length / filteredClaims.length) * 100)
-                            : 0}% of total
-                        </p>
-                      </div>
-                      <XCircle className="w-8 h-8 text-red-500 opacity-50" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Most Commonly Denied Procedure Codes */}
-                <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
-                    Most Commonly Denied Procedure Codes (ADA Codes)
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {(() => {
-                      // Filter for denied claims (all denied statuses)
-                      const deniedClaims = filteredClaims
-                        .filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal');
-
-                      // Count occurrences of each code (split multiple codes by space)
-                      const codeCounts = deniedClaims.reduce((acc, claim) => {
-                        // Split procedure codes by space and filter for D codes (ADA codes)
-                        const codes = claim.procedureCode
-                          .trim()
-                          .split(/\s+/)
-                          .filter(code => code.toUpperCase().startsWith('D'));
-
-                        // Count each code separately
-                        codes.forEach(code => {
-                          const normalizedCode = code.trim().toUpperCase();
-                          acc[normalizedCode] = (acc[normalizedCode] || 0) + 1;
-                        });
-
-                        return acc;
-                      }, {} as Record<string, number>);
-
-                      // Sort by count and get top 3
-                      const topCodes = Object.entries(codeCounts)
-                        .sort(([, a], [, b]) => b - a)
-                        .slice(0, 3);
-
-                      if (topCodes.length === 0) {
-                        return (
-                          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'} col-span-3 text-center`}>
-                            No denied ADA procedure codes
-                          </p>
-                        );
-                      }
-
-                      return topCodes.map(([code, count]) => (
-                        <div key={code} className={`flex items-center justify-between p-2 rounded ${isDayMode ? 'bg-red-50' : 'bg-red-900/20'}`}>
-                          <span className="font-semibold text-red-600">{code}</span>
-                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                            {count} {count === 1 ? 'denial' : 'denials'}
-                          </span>
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-            </>
+            {isAdmin && patientManagementView === 'claims' && (
+              <InsuranceARReport isDayMode={isDayMode} />
             )}
+
 
             {/* Pre-Auths Section */}
             {patientManagementView === 'preauths' && (
               <>
                 {/* Pre-Auths Header */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Pre-Authorization Management
                     </h2>
 
@@ -3610,10 +3120,12 @@ const CourtStreetRCM = () => {
                       </span>
                       <button
                         onClick={() => setShowArchivedPreAuths(!showArchivedPreAuths)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                           showArchivedPreAuths
-                            ? 'bg-gray-600 text-white hover:bg-gray-700'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                            ? isDayMode
+                              ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                              : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                            : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                         }`}
                       >
                         {showArchivedPreAuths ? (
@@ -3648,83 +3160,98 @@ const CourtStreetRCM = () => {
                   {/* Pre-Auth Statistics Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Total Pre-Auths */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">Total Pre-Auths</p>
-                          <p className="text-3xl font-bold text-blue-900">{preAuths.length}</p>
-                          <p className="text-xs text-blue-600 mt-2">All requests</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Total Pre-Auths</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>{preAuths.length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>All requests</p>
+                          </div>
+                          <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                         </div>
-                        <CheckCircle className="w-8 h-8 text-blue-500" />
                       </div>
                     </div>
 
                     {/* Pending */}
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-yellow-700 mb-1">Pending</p>
-                          <p className="text-3xl font-bold text-yellow-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Pending').length}</p>
-                          <p className="text-xs text-yellow-600 mt-2">Awaiting response</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Pending</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Pending').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Awaiting response</p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
                         </div>
-                        <Clock className="w-8 h-8 text-yellow-500" />
                       </div>
                     </div>
 
                     {/* Approved */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-700 mb-1">Approved</p>
-                          <p className="text-3xl font-bold text-green-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Approved').length}</p>
-                          <p className="text-xs text-green-600 mt-2">Ready to schedule</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Approved</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Approved').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Ready to schedule</p>
+                          </div>
+                          <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                         </div>
-                        <CheckCircle className="w-8 h-8 text-green-500" />
                       </div>
                     </div>
 
                     {/* Scheduled */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 mb-1">Scheduled</p>
-                          <p className="text-3xl font-bold text-purple-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Scheduled').length}</p>
-                          <p className="text-xs text-purple-600 mt-2">Appointment set</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Scheduled</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Scheduled').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>Appointment set</p>
+                          </div>
+                          <Calendar className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                         </div>
-                        <Calendar className="w-8 h-8 text-purple-500" />
                       </div>
                     </div>
 
                     {/* Denied */}
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-red-700 mb-1">Denied</p>
-                          <p className="text-3xl font-bold text-red-900">{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Denied').length}</p>
-                          <p className="text-xs text-red-600 mt-2">Need attention</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-red-900' : 'text-red-300'}`}>{preAuths.filter((pa: PreAuthRecord) => pa.status === 'Denied').length}</p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-red-600' : 'text-red-500'}`}>Need attention</p>
+                          </div>
+                          <XCircle className={`w-8 h-8 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
                         </div>
-                        <XCircle className="w-8 h-8 text-red-500" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Detailed Pre-Auths Table */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Pre-Authorization Details ({filteredPreAuths.length} {filteredPreAuths.length === 1 ? 'request' : 'requests'})
                     </h3>
                     <div className="flex items-center space-x-3">
                       <button
-                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
                         onClick={() => exportToCSV(filteredPreAuths, `pre-auths-export-${getLocalDateString()}.csv`)}
                       >
                         <Download className="w-4 h-4" />
                         <span>Export to CSV</span>
                       </button>
                       <button
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
                         onClick={() => setShowAddPreAuthModal(true)}
                       >
                         <Plus className="w-4 h-4" />
@@ -3761,13 +3288,16 @@ const CourtStreetRCM = () => {
                           filteredPreAuths.map((preAuth) => (
                             <tr key={preAuth.id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-4 py-4">
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">{preAuth.patientName}</div>
-                                  <div className="text-xs text-gray-500">{preAuth.patientId}</div>
+                                <div className="flex items-center gap-3">
+                                  {isFollowUpDue(preAuth.followUpDate) && <NotificationBadge />}
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">{preAuth.patientName}</div>
+                                    <div className="text-xs text-gray-500">{preAuth.patientId}</div>
+                                  </div>
                                 </div>
                               </td>
                               <td className="px-4 py-4">
-                                <div className="text-sm text-gray-900">{preAuth.preAuthNumber}</div>
+                                <div className="text-sm text-gray-900">{preAuth.preAuthNumber || 'Pending'}</div>
                                 <div className="text-xs text-gray-500">{preAuth.dateRequested}</div>
                               </td>
                               <td className="px-4 py-4 text-sm text-gray-900">{preAuth.insuranceCompany}</td>
@@ -3865,90 +3395,108 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Pre-Authorization Analytics */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h3 className="text-xl font-bold mb-6" style={{ color: csdGold }}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Pre-Authorization Analytics
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Average Aging Days */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            {filteredPreAuths.length > 0
-                              ? Math.round(filteredPreAuths.reduce((sum, pa) => sum + pa.agingDays, 0) / filteredPreAuths.length)
-                              : 0} days
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              {filteredPreAuths.length > 0
+                                ? Math.round(filteredPreAuths.reduce((sum, pa) => sum + pa.agingDays, 0) / filteredPreAuths.length)
+                                : 0} days
+                            </p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'} opacity-50`} />
                         </div>
-                        <Clock className="w-8 h-8 text-blue-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Total Requested Amount */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Requested</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Requested</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'} opacity-50`} />
                         </div>
-                        <DollarSign className="w-8 h-8 text-green-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Total Approved Amount */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Approved</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.reduce((sum, pa) => sum + pa.approvedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Approved</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.reduce((sum, pa) => sum + pa.approvedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'} opacity-50`} />
                         </div>
-                        <CheckCircle className="w-8 h-8 text-green-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Approval Rate */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            {filteredPreAuths.length > 0
-                              ? Math.round((filteredPreAuths.filter(pa => pa.status === 'Approved').length / filteredPreAuths.length) * 100)
-                              : 0}%
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Approval Rate</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              {filteredPreAuths.length > 0
+                                ? Math.round((filteredPreAuths.filter(pa => pa.status === 'Approved').length / filteredPreAuths.length) * 100)
+                                : 0}%
+                            </p>
+                          </div>
+                          <TrendingUp className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'} opacity-50`} />
                         </div>
-                        <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Treatment Scheduled */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment Scheduled</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.filter(pa => pa.status === 'Scheduled').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment Scheduled</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.filter(pa => pa.status === 'Scheduled').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <Calendar className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'} opacity-50`} />
                         </div>
-                        <Calendar className="w-8 h-8 text-purple-500 opacity-50" />
                       </div>
                     </div>
 
                     {/* Potential Production Waiting to be Scheduled */}
-                    <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Potential Production Waiting to be Scheduled</p>
-                          <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                            ${filteredPreAuths.filter(pa => pa.status === 'Approved').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
-                          </p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Potential Production Waiting to be Scheduled</p>
+                            <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                              ${filteredPreAuths.filter(pa => pa.status === 'Approved').reduce((sum, pa) => sum + pa.requestedAmount, 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'} opacity-50`} />
                         </div>
-                        <Clock className="w-8 h-8 text-yellow-500 opacity-50" />
                       </div>
                     </div>
                   </div>
@@ -3957,704 +3505,105 @@ const CourtStreetRCM = () => {
             )}
 
             {patientManagementView === 'patients' && (
-              <>
-          <div className="space-y-6">
-            {/* Patients Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
-                Patient Accounts Receivable Management
-              </h2>
-
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search patients by name, ID, or phone number..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Patient Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Total Patients */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Total Patients</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {patientsData.totalPatients}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">In practice</p>
-                    </div>
-                    <Users className="w-8 h-8 text-blue-500" />
-                  </div>
-                </div>
-
-                {/* Active Patients */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-700 mb-1">Active Patients</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        {patientsData.activePatients}
-                      </p>
-                      <p className="text-xs text-green-600 mt-2">Last 12 months</p>
-                    </div>
-                    <UserCheck className="w-8 h-8 text-green-500" />
-                  </div>
-                </div>
-
-                {/* Patients with Balance */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-orange-700 mb-1">Patients w/ Balance</p>
-                      <p className="text-3xl font-bold text-orange-900">
-                        {patientsData.patientsWithBalance}
-                      </p>
-                      <p className="text-xs text-orange-600 mt-2">Require follow-up</p>
-                    </div>
-                    <AlertCircle className="w-8 h-8 text-orange-500" />
-                  </div>
-                </div>
-
-                {/* Total Patient A/R */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-700 mb-1">Total Patient A/R</p>
-                      <p className="text-3xl font-bold text-purple-900">
-                        ${patientsData.totalPatientAR.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-2">Outstanding balance</p>
-                    </div>
-                    <DollarSign className="w-8 h-8 text-purple-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Patient A/R Aging */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Patient A/R Aging Analysis
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-green-800 mb-2">0-30 Days</p>
-                    <p className="text-2xl font-bold text-green-900">
-                      ${patientsData.patientARAging.zeroToThirty.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">Current</p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2">31-60 Days</p>
-                    <p className="text-2xl font-bold text-yellow-900">
-                      ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-yellow-600 mt-1">Follow-up needed</p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-orange-800 mb-2">61-90 Days</p>
-                    <p className="text-2xl font-bold text-orange-900">
-                      ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-orange-600 mt-1">Action required</p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-red-800 mb-2">90+ Days</p>
-                    <p className="text-2xl font-bold text-red-900">
-                      ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-red-600 mt-1">Collections</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Summary Bar */}
-              <div className="mt-6 space-y-3">
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">Total Outstanding Patient A/R:</span>
-                    <span className="text-xl font-bold" style={{ color: csdGold }}>
-                      ${(
-                        patientsData.patientARAging.zeroToThirty +
-                        patientsData.patientARAging.thirtyOneToSixty +
-                        patientsData.patientARAging.sixtyOneToNinety +
-                        patientsData.patientARAging.ninetyPlus
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-amber-800">Patient A/R 31+ Days (Total Receivables):</span>
-                    <span className="text-xl font-bold text-amber-900">
-                      ${(
-                        patientsData.patientARAging.thirtyOneToSixty +
-                        patientsData.patientARAging.sixtyOneToNinety +
-                        patientsData.patientARAging.ninetyPlus
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs text-amber-700">
-                    31-60: ${patientsData.patientARAging.thirtyOneToSixty.toLocaleString()} |
-                    61-90: ${patientsData.patientARAging.sixtyOneToNinety.toLocaleString()} |
-                    91+: ${patientsData.patientARAging.ninetyPlus.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Plans & Collections */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Payment Plans */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Payment Plans
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="w-6 h-6 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Active Payment Plans</p>
-                        <p className="text-xs text-gray-500">Patients on scheduled payments</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {patientsData.paymentPlans}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Past Due Accounts */}
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                  Collections Status
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center space-x-3">
-                      <XCircle className="w-6 h-6 text-red-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Past Due Accounts</p>
-                        <p className="text-xs text-gray-500">Require immediate attention</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-red-900">
-                      {patientsData.pastDueAccounts}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Patient Activity */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Recent Patient Activity
-              </h3>
-              <div className="p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">
-                  Patient activity and recent transactions will appear here
-                </p>
-              </div>
-            </div>
-          </div>
-              </>
+              <PatientARTracker isDayMode={isDayMode} isAdmin={isAdmin} dashboardDate={dashboardDate} />
             )}
-
-            {/* Insurance Checks/EFT's View */}
+            {patientManagementView === 'credits' && (
+              <CreditsTracker isDayMode={isDayMode} />
+            )}
+            {/* Insurance Checks/EFT's View - Scan Station */}
             {patientManagementView === 'insurance-checks' && (
-              <>
-                {/* Insurance Checks Header */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold" style={{ color: csdGold }}>
-                      Insurance Checks/EFT's
-                    </h2>
-
-                    <button
-                      onClick={() => setShowAddInsuranceCheckModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                      Add New Check/EFT
-                    </button>
-                  </div>
-
-                  {/* Search Bar and Archive Toggle */}
-                  <div className="mb-6 space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="Search by Check/EFT#, Insurance Company, or Handler..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* Archive Toggle */}
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setShowArchivedInsuranceChecks(!showArchivedInsuranceChecks)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                          showArchivedInsuranceChecks
-                            ? 'bg-orange-500 text-white hover:bg-orange-600'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        <Archive className="w-4 h-4" />
-                        {showArchivedInsuranceChecks ? 'Show Active' : 'Show Archived'}
-                      </button>
-                      {showArchivedInsuranceChecks && (
-                        <div className="flex items-center gap-2">
-                          <label className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                            Filter by Date:
-                          </label>
-                          <input
-                            type="date"
-                            value={archiveInsuranceChecksDateFilter}
-                            onChange={(e) => setArchiveInsuranceChecksDateFilter(e.target.value)}
-                            className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDayMode ? 'bg-white border-gray-300' : 'bg-gray-700 border-gray-600 text-white'}`}
-                          />
-                          {archiveInsuranceChecksDateFilter && (
-                            <button
-                              onClick={() => setArchiveInsuranceChecksDateFilter('')}
-                              className="px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Totals Section */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    {/* Total Checks */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-700 mb-1">Check Payments</p>
-                          <p className="text-3xl font-bold text-green-900">
-                            ${filteredInsuranceChecks
-                              .filter(c => c.paymentType === 'Check')
-                              .reduce((sum, c) => sum + c.totalAmount, 0)
-                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-green-600 mt-2">
-                            {filteredInsuranceChecks.filter(c => c.paymentType === 'Check').length} checks
-                          </p>
-                        </div>
-                        <CreditCard className="w-8 h-8 text-green-500" />
-                      </div>
-                    </div>
-
-                    {/* Total EFTs */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">EFT Payments</p>
-                          <p className="text-3xl font-bold text-blue-900">
-                            ${filteredInsuranceChecks
-                              .filter(c => c.paymentType === 'EFT')
-                              .reduce((sum, c) => sum + c.totalAmount, 0)
-                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-blue-600 mt-2">
-                            {filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').length} EFTs
-                          </p>
-                        </div>
-                        <Download className="w-8 h-8 text-blue-500" />
-                      </div>
-                    </div>
-
-                    {/* Grand Total */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 mb-1">Total Payments</p>
-                          <p className="text-3xl font-bold text-purple-900">
-                            ${filteredInsuranceChecks
-                              .reduce((sum, c) => sum + c.totalAmount, 0)
-                              .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-purple-600 mt-2">
-                            {filteredInsuranceChecks.length} total payments
-                          </p>
-                        </div>
-                        <DollarSign className="w-8 h-8 text-purple-500" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Insurance Checks Table */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Check/EFT#</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Type</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance Company</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Distribution</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">DOS</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Created</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Created By</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completed By</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {filteredInsuranceChecks.length === 0 ? (
-                          <tr>
-                            <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
-                              No insurance checks found matching your search.
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredInsuranceChecks.map((check) => (
-                            <tr
-                              key={check.id}
-                              className={`transition-colors ${
-                                check.status === 'Created'
-                                  ? 'bg-gray-50 hover:bg-gray-100'
-                                  : check.status === 'Entered'
-                                  ? 'bg-green-50 hover:bg-green-100'
-                                  : 'bg-yellow-50 hover:bg-yellow-100'
-                              }`}
-                            >
-                              <td className="px-4 py-4 text-sm font-medium text-gray-900">{check.checkEftNumber}</td>
-                              <td className="px-4 py-4">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  check.paymentType === 'Check'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {check.paymentType}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.insuranceCompany}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.distributionType}</td>
-                              <td className="px-4 py-4 text-sm font-semibold text-gray-900">${check.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.dateOfService || '-'}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.dateEntered || '-'}</td>
-                              <td className="px-4 py-4">
-                                <span className={`text-sm font-medium ${
-                                  check.aging > 60 ? 'text-red-600' :
-                                  check.aging > 30 ? 'text-orange-600' :
-                                  'text-green-600'
-                                }`}>
-                                  {check.aging} days
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.enteredBy}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.handler}</td>
-                              <td className="px-4 py-4">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  check.status === 'Created'
-                                    ? 'bg-gray-100 text-gray-800'
-                                    : check.status === 'Entered'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {check.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4">
-                                <div className="flex justify-between items-center">
-                                  {/* Edit button - left side */}
-                                  <button
-                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                    onClick={() => handleEditInsuranceCheck(check)}
-                                    title="Edit Check/EFT"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-
-                                  {/* Update/History/Archive/Delete buttons - right side */}
-                                  <div className="flex space-x-1">
-                                    <button
-                                      className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
-                                      onClick={() => handleAddUpdate('insurance-check', check.id, check.checkEftNumber, check.status)}
-                                      title="Add Update"
-                                    >
-                                      <MessageSquarePlus className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                                      onClick={() => handleViewInsuranceCheckHistory(check.id, check.checkEftNumber)}
-                                      title="View History"
-                                    >
-                                      <History className="w-4 h-4" />
-                                    </button>
-                                    {check.isArchived ? (
-                                      <button
-                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                        onClick={() => handleUnarchiveInsuranceCheck(check.id)}
-                                        title="Unarchive Check/EFT"
-                                      >
-                                        <ArchiveRestore className="w-4 h-4" />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                        onClick={() => handleArchiveInsuranceCheck(check.id, 'Current User')}
-                                        title="Archive Check/EFT"
-                                      >
-                                        <Archive className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                    <button
-                                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                      onClick={() => handleDeleteInsuranceCheck(check.id, check.checkEftNumber)}
-                                      title="Delete Check/EFT"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Insurance Checks/EFTs Metrics Section */}
-                  <div className={`mt-6 rounded-lg shadow p-6 ${isDayMode ? 'bg-gradient-to-r from-green-50 to-teal-50' : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}>
-                    <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                      Insurance Checks/EFTs Analytics
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* Average Aging Days */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
-                            <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                              {filteredInsuranceChecks.length > 0
-                                ? Math.round(filteredInsuranceChecks.reduce((sum, c) => sum + c.aging, 0) / filteredInsuranceChecks.length)
-                                : 0} days
-                            </p>
-                          </div>
-                          <Clock className="w-8 h-8 text-blue-500 opacity-50" />
-                        </div>
-                      </div>
-
-                      {/* Total Amount Waiting to be Entered */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Amount Waiting to be Entered</p>
-                            <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                              ${filteredInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                          <DollarSign className="w-8 h-8 text-yellow-500 opacity-50" />
-                        </div>
-                      </div>
-
-                      {/* Check vs EFT Breakdown */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-2`}>Payment Type</p>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">Checks:</span>
-                              <span className="text-sm" style={{ color: csdGold }}>
-                                ${filteredInsuranceChecks.filter(c => c.paymentType === 'Check').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">EFTs:</span>
-                              <span className="text-sm" style={{ color: csdGold }}>
-                                ${filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Status Breakdown */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-2`}>Status</p>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                <span className="text-xs">Created:</span>
-                              </div>
-                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Created').length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                <span className="text-xs">Entered:</span>
-                              </div>
-                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Entered').length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                <span className="text-xs">Pending:</span>
-                              </div>
-                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Pending Review').length}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Average Amount by Type */}
-                    <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
-                        Average Payment Amount by Type
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Check Amount:</span>
-                          <span className="font-bold text-lg" style={{ color: csdGold }}>
-                            ${(() => {
-                              const checks = filteredInsuranceChecks.filter(c => c.paymentType === 'Check');
-                              return checks.length > 0
-                                ? (checks.reduce((sum, c) => sum + c.totalAmount, 0) / checks.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                : '0.00';
-                            })()}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg EFT Amount:</span>
-                          <span className="font-bold text-lg" style={{ color: csdGold }}>
-                            ${(() => {
-                              const efts = filteredInsuranceChecks.filter(c => c.paymentType === 'EFT');
-                              return efts.length > 0
-                                ? (efts.reduce((sum, c) => sum + c.totalAmount, 0) / efts.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                : '0.00';
-                            })()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Daily Entered Totals - Last 5 Business Days */}
-                    <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
-                        Daily Entered Totals (Last 5 Business Days)
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                        {getLast5BusinessDays().map((date, index) => {
-                          const dateStr = date.toISOString().split('T')[0];
-                          const dayTotal = filteredInsuranceChecks
-                            .filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr))
-                            .reduce((sum, c) => sum + c.totalAmount, 0);
-
-                          return (
-                            <div key={index} className={`p-3 rounded-lg border ${isDayMode ? 'bg-gray-50 border-gray-200' : 'bg-gray-700 border-gray-600'}`}>
-                              <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-1`}>
-                                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </p>
-                              <p className="text-lg font-bold" style={{ color: csdGold }}>
-                                ${dayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </p>
-                              <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                                {filteredInsuranceChecks.filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr)).length} entered
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
+              <InsuranceCheckStation
+                isDayMode={isDayMode}
+                insuranceChecks={insuranceChecks}
+                setInsuranceChecks={setInsuranceChecks}
+                showArchivedInsuranceChecks={showArchivedInsuranceChecks}
+                setShowArchivedInsuranceChecks={setShowArchivedInsuranceChecks}
+                archiveInsuranceChecksDateFilter={archiveInsuranceChecksDateFilter}
+                setArchiveInsuranceChecksDateFilter={setArchiveInsuranceChecksDateFilter}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                onEditCheck={handleEditInsuranceCheck}
+                onAddUpdate={handleAddUpdate}
+                onViewHistory={handleViewInsuranceCheckHistory}
+              />
             )}
 
-            {patientManagementView === 'payments' && (
+            {/* Temporarily hidden - Payments content */}
+            {false && patientManagementView === 'payments' && (
               <>
                 {/* Payments Header */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Payment Processing & Reconciliation
                   </h2>
 
                   {/* Payment Summary Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Today's Payments */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-700 mb-1">Today's Payments</p>
-                          <p className="text-3xl font-bold text-green-900">
-                            ${paymentsData.todaysPayments.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-green-600 mt-2">Posted today</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Today's Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                              ${paymentsData.todaysPayments.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Posted today</p>
+                          </div>
+                          <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                         </div>
-                        <DollarSign className="w-8 h-8 text-green-500" />
                       </div>
                     </div>
 
                     {/* Weekly Payments */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-700 mb-1">Weekly Payments</p>
-                          <p className="text-3xl font-bold text-blue-900">
-                            ${paymentsData.weeklyPayments.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-blue-600 mt-2">Last 7 days</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Weekly Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                              ${paymentsData.weeklyPayments.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>Last 7 days</p>
+                          </div>
+                          <TrendingUp className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                         </div>
-                        <TrendingUp className="w-8 h-8 text-blue-500" />
                       </div>
                     </div>
 
                     {/* Monthly Payments */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-700 mb-1">Monthly Payments</p>
-                          <p className="text-3xl font-bold text-purple-900">
-                            ${paymentsData.monthlyPayments.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-purple-600 mt-2">This month</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Monthly Payments</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                              ${paymentsData.monthlyPayments.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>This month</p>
+                          </div>
+                          <Activity className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                         </div>
-                        <Activity className="w-8 h-8 text-purple-500" />
                       </div>
                     </div>
 
                     {/* Pending Deposits */}
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-yellow-700 mb-1">Pending Deposits</p>
-                          <p className="text-3xl font-bold text-yellow-900">
-                            ${paymentsData.pendingDeposits.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-yellow-600 mt-2">Awaiting deposit</p>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Pending Deposits</p>
+                            <p className={`text-3xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
+                              ${paymentsData.pendingDeposits.toLocaleString()}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Awaiting deposit</p>
+                          </div>
+                          <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
                         </div>
-                        <Clock className="w-8 h-8 text-yellow-500" />
                       </div>
                     </div>
                   </div>
@@ -4663,8 +3612,8 @@ const CourtStreetRCM = () => {
                 {/* Payment Breakdown */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Payment Sources */}
-                  <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                    <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Payment Sources
                     </h3>
                     <div className="space-y-4">
@@ -4696,8 +3645,8 @@ const CourtStreetRCM = () => {
                   </div>
 
                   {/* Payment Actions */}
-                  <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                    <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                    <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Action Items
                     </h3>
                     <div className="space-y-3">
@@ -4724,8 +3673,8 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Recent Payment Activity */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Recent Payment Activity
                   </h3>
                   <div className="space-y-3">
@@ -4830,7 +3779,7 @@ const CourtStreetRCM = () => {
 
             {/* Add New Claim Modal */}
             {showAddClaimModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Claim</h3>
@@ -4843,8 +3792,10 @@ const CourtStreetRCM = () => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const claimNumber = formData.get('claimNumber') as string;
+                    const dateSubmitted = formData.get('dateSubmitted') as string;
+                    const dateOfService = formData.get('dateOfService') as string;
                     const newClaim: ClaimRecord = {
-                      id: `CLM-${String(claims.length + 1).padStart(3, '0')}`,
+                      id: '', // Let database auto-generate the UUID
                       patientId: formData.get('patientId') as string,
                       patientName: formData.get('patientName') as string,
                       insuranceCompany: formData.get('insuranceCompany') as string,
@@ -4853,16 +3804,25 @@ const CourtStreetRCM = () => {
                       claimDetail: formData.get('claimDetail') as string,
                       claimAmount: parseFloat(formData.get('claimAmount') as string),
                       status: formData.get('status') as ClaimRecord['status'],
-                      dateSubmitted: formData.get('dateSubmitted') as string,
-                      dateOfService: formData.get('dateOfService') as string,
+                      dateSubmitted: dateSubmitted,
+                      dateOfService: dateOfService,
                       followUpDate: formData.get('followUpDate') as string,
                       handler: formData.get('handler') as string,
                       notes: formData.get('notes') as string,
-                      agingDays: Math.floor((new Date().getTime() - new Date(formData.get('dateSubmitted') as string).getTime()) / (1000 * 60 * 60 * 24))
+                      agingDays: Math.floor((new Date().getTime() - new Date(dateOfService).getTime()) / (1000 * 60 * 60 * 24)),
+                      collected: 0,
+                      outstanding: parseFloat(formData.get('claimAmount') as string) || 0,
+                      priSec: null,
+                      procedureTypes: null,
+                      assignedTo: null,
+                      repName: null,
+                      referenceNumber: null,
+                      agingStatus: null,
+                      carrierPhone: null,
                     };
 
                     try {
-                      // Save to Supabase
+                      // Save to Supabase (database will auto-generate UUID for id)
                       const savedClaim = await insertClaim(recordToClaim(newClaim));
                       // Update local state with the saved claim
                       setClaims([...claims, claimToRecord(savedClaim)]);
@@ -4935,15 +3895,15 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Date of Service</label>
-                        <input name="dateOfService" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="dateOfService" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Date Submitted</label>
-                        <input name="dateSubmitted" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <label className="block text-sm font-medium mb-1">Date Resubmitted</label>
+                        <input name="dateSubmitted" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                     </div>
                     <div>
@@ -4969,7 +3929,7 @@ const CourtStreetRCM = () => {
 
             {/* Add New Pre-Auth Modal */}
             {showAddPreAuthModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Pre-Authorization Request</h3>
@@ -4985,11 +3945,11 @@ const CourtStreetRCM = () => {
                     const followUpDate = formData.get('followUpDate') as string;
                     const agingDays = Math.floor((new Date(followUpDate).getTime() - new Date(dateRequested).getTime()) / (1000 * 60 * 60 * 24));
                     const newPreAuth: PreAuthRecord = {
-                      id: `PA-${String(preAuths.length + 1).padStart(3, '0')}`,
+                      id: '', // Let database auto-generate the UUID
                       patientId: formData.get('patientId') as string,
                       patientName: formData.get('patientName') as string,
                       insuranceCompany: formData.get('insuranceCompany') as string,
-                      preAuthNumber: formData.get('preAuthNumber') as string,
+                      preAuthNumber: (formData.get('preAuthNumber') as string) || null,
                       procedureCode: formData.get('procedureCode') as string,
                       treatmentDetail: formData.get('treatmentDetail') as string,
                       requestedAmount: parseFloat(formData.get('requestedAmount') as string),
@@ -5004,7 +3964,7 @@ const CourtStreetRCM = () => {
                     };
 
                     try {
-                      // Save to Supabase
+                      // Save to Supabase (database will auto-generate UUID for id)
                       const savedPreAuth = await insertPreAuth(recordToPreAuth(newPreAuth));
                       // Update local state with the saved pre-auth
                       setPreAuths([...preAuths, preAuthToRecord(savedPreAuth)]);
@@ -5056,11 +4016,11 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Date Added</label>
-                        <input name="dateRequested" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="dateRequested" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-Up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Approved Amount (if applicable)</label>
@@ -5088,239 +4048,90 @@ const CourtStreetRCM = () => {
               </div>
             )}
 
-            {/* Add New Insurance Check/EFT Modal */}
-            {showAddInsuranceCheckModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
-                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Insurance Check/EFT</h3>
-                    <button onClick={() => setShowAddInsuranceCheckModal(false)} className="text-gray-500 hover:text-gray-700">
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    const newCheck: InsuranceCheckRecord = {
-                      id: '',
-                      checkEftNumber: formData.get('checkEftNumber') as string,
-                      paymentType: formData.get('paymentType') as 'Check' | 'EFT',
-                      insuranceCompany: formData.get('insuranceCompany') as string,
-                      distributionType: formData.get('distributionType') as 'Bulk' | 'Individual',
-                      totalAmount: parseFloat(formData.get('totalAmount') as string),
-                      aging: parseInt(formData.get('aging') as string) || 0,
-                      enteredBy: formData.get('enteredBy') as string,
-                      handler: formData.get('handler') as string,
-                      status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
-                      dateOfService: formData.get('dateOfService') as string || undefined,
-                      dateEntered: formData.get('dateEntered') as string || undefined
-                    };
-
-                    try {
-                      // Save to Supabase
-                      const savedCheck = await insertInsuranceCheck(recordToInsuranceCheck(newCheck));
-                      // Update local state with the saved check
-                      setInsuranceChecks([...insuranceChecks, insuranceCheckToRecord(savedCheck)]);
-                      setShowAddInsuranceCheckModal(false);
-                    } catch (error) {
-                      console.error('Error saving insurance check:', error);
-                      alert('Failed to save insurance check. Please try again.');
-                    }
-                  }} className="p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Check/EFT Number</label>
-                        <input name="checkEftNumber" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="12345" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Payment Type</label>
-                        <div className="flex space-x-4">
-                          <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="paymentType" value="Check" defaultChecked className="mr-2" />
-                            <span className="text-sm">Check</span>
-                          </label>
-                          <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="paymentType" value="EFT" className="mr-2" />
-                            <span className="text-sm">EFT</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Insurance Company</label>
-                        <input name="insuranceCompany" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Delta Dental" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Distribution Type</label>
-                        <div className="flex space-x-4">
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="radio"
-                              name="distributionType"
-                              value="Bulk"
-                              defaultChecked
-                              className="mr-2"
-                              onChange={(e) => {
-                                const dosField = document.getElementById('insurance-dos-field') as HTMLInputElement;
-                                if (dosField) {
-                                  dosField.disabled = e.target.checked;
-                                  dosField.value = '';
-                                }
-                              }}
-                            />
-                            <span className="text-sm">Bulk</span>
-                          </label>
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="radio"
-                              name="distributionType"
-                              value="Individual"
-                              className="mr-2"
-                              onChange={(e) => {
-                                const dosField = document.getElementById('insurance-dos-field') as HTMLInputElement;
-                                if (dosField) {
-                                  dosField.disabled = !e.target.checked;
-                                }
-                              }}
-                            />
-                            <span className="text-sm">Individual</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Total Amount</label>
-                        <input name="totalAmount" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="1500.00" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Aging (Days)</label>
-                        <input name="aging" type="number" defaultValue="0" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Entered By</label>
-                        <input name="enteredBy" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John D." />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Handler</label>
-                        <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">DOS (Date of Service)</label>
-                        <input
-                          id="insurance-dos-field"
-                          name="dateOfService"
-                          type="date"
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Date Entered</label>
-                        <input name="dateEntered" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Status</label>
-                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                          <option value="Created">Created</option>
-                          <option value="Entered">Entered</option>
-                          <option value="Pending Review">Pending Review</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-3 pt-4">
-                      <button type="button" onClick={() => setShowAddInsuranceCheckModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
-                        Cancel
-                      </button>
-                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
-                        Add Check/EFT
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {patientManagementView === 'insurance-networks' && (
+            {/* Temporarily hidden - Insurance Networks content */}
+            {false && patientManagementView === 'insurance-networks' && (
               <>
             {/* Insurance Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-6" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Insurance Portal Integration
               </h2>
 
               {/* Insurance Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Insurance Providers */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-700 mb-1">Total Providers</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {insuranceData.totalProviders}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">In network</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Total Providers</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                          {insuranceData.totalProviders}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>In network</p>
+                      </div>
+                      <Shield className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                     </div>
-                    <Shield className="w-8 h-8 text-blue-500" />
                   </div>
                 </div>
 
                 {/* Active Plans */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-700 mb-1">Active Plans</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        {insuranceData.activePlans}
-                      </p>
-                      <p className="text-xs text-green-600 mt-2">Contracted plans</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Active Plans</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
+                          {insuranceData.activePlans}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>Contracted plans</p>
+                      </div>
+                      <CheckCircle className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                     </div>
-                    <CheckCircle className="w-8 h-8 text-green-500" />
                   </div>
                 </div>
 
                 {/* Credentialing Pending */}
-                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-yellow-700 mb-1">Credentialing</p>
-                      <p className="text-3xl font-bold text-yellow-900">
-                        {insuranceData.credentialingPending}
-                      </p>
-                      <p className="text-xs text-yellow-600 mt-2">Pending approval</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Credentialing</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-yellow-900' : 'text-yellow-300'}`}>
+                          {insuranceData.credentialingPending}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-yellow-600' : 'text-yellow-500'}`}>Pending approval</p>
+                      </div>
+                      <Clock className={`w-8 h-8 ${isDayMode ? 'text-yellow-500' : 'text-yellow-400'}`} />
                     </div>
-                    <Clock className="w-8 h-8 text-yellow-500" />
                   </div>
                 </div>
 
                 {/* Verifications Pending */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-5 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-700 mb-1">Verifications</p>
-                      <p className="text-3xl font-bold text-purple-900">
-                        {insuranceData.verificationsPending}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-2">Need verification</p>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Verifications</p>
+                        <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
+                          {insuranceData.verificationsPending}
+                        </p>
+                        <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>Need verification</p>
+                      </div>
+                      <AlertCircle className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                     </div>
-                    <AlertCircle className="w-8 h-8 text-purple-500" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* EFT Enrollment & Network Status Table */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 EFT Enrollment & Network Status
               </h3>
               <div className="overflow-x-auto">
@@ -5516,11 +4327,11 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'checklist' && (
               <>
             {/* Checklist Header */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Daily, Weekly & Monthly Checklists
               </h2>
-              <p className="text-gray-600 text-sm">
+              <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 Stay on track with systematic RCM task management
               </p>
             </div>
@@ -5528,81 +4339,90 @@ const CourtStreetRCM = () => {
             {/* Checklist Progress Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Daily Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-blue-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Daily Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.dailyCompleted}/{checklistData.dailyTotal}
-                    </p>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Daily Tasks</p>
+                      <p className={`text-3xl font-bold mt-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {checklistData.dailyCompleted}/{checklistData.dailyTotal}
+                      </p>
+                    </div>
+                    <List className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
                   </div>
-                  <List className="w-8 h-8 text-blue-500" />
+                  <div className={`w-full rounded-full h-2 ${isDayMode ? 'bg-gray-200' : 'bg-gray-700'}`}>
+                    <div
+                      className="bg-blue-500 h-2 rounded-full"
+                      style={{
+                        width: `${(checklistData.dailyCompleted / checklistData.dailyTotal) * 100}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {checklistData.dailyTotal - checklistData.dailyCompleted} remaining
+                  </p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.dailyCompleted / checklistData.dailyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.dailyTotal - checklistData.dailyCompleted} remaining
-                </p>
               </div>
 
               {/* Weekly Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-green-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Weekly Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.weeklyCompleted}/{checklistData.weeklyTotal}
-                    </p>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Weekly Tasks</p>
+                      <p className={`text-3xl font-bold mt-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {checklistData.weeklyCompleted}/{checklistData.weeklyTotal}
+                      </p>
+                    </div>
+                    <ClipboardCheck className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
                   </div>
-                  <ClipboardCheck className="w-8 h-8 text-green-500" />
+                  <div className={`w-full rounded-full h-2 ${isDayMode ? 'bg-gray-200' : 'bg-gray-700'}`}>
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{
+                        width: `${(checklistData.weeklyCompleted / checklistData.weeklyTotal) * 100}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {checklistData.weeklyTotal - checklistData.weeklyCompleted} remaining
+                  </p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.weeklyCompleted / checklistData.weeklyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.weeklyTotal - checklistData.weeklyCompleted} remaining
-                </p>
               </div>
 
               {/* Monthly Tasks */}
-              <div className={`rounded-lg shadow p-5 border-t-4 border-purple-500 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Monthly Tasks</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {checklistData.monthlyCompleted}/{checklistData.monthlyTotal}
-                    </p>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Monthly Tasks</p>
+                      <p className={`text-3xl font-bold mt-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                        {checklistData.monthlyCompleted}/{checklistData.monthlyTotal}
+                      </p>
+                    </div>
+                    <Award className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
                   </div>
-                  <Award className="w-8 h-8 text-purple-500" />
+                  <div className={`w-full rounded-full h-2 ${isDayMode ? 'bg-gray-200' : 'bg-gray-700'}`}>
+                    <div
+                      className="bg-purple-500 h-2 rounded-full"
+                      style={{
+                        width: `${(checklistData.monthlyCompleted / checklistData.monthlyTotal) * 100}%`
+                      }}
+                    ></div>
+                  </div>
+                  <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {checklistData.monthlyTotal - checklistData.monthlyCompleted} remaining
+                  </p>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-purple-500 h-2 rounded-full"
-                    style={{
-                      width: `${(checklistData.monthlyCompleted / checklistData.monthlyTotal) * 100}%`
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {checklistData.monthlyTotal - checklistData.monthlyCompleted} remaining
-                </p>
               </div>
             </div>
 
             {/* Daily Checklist */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Daily RCM Tasks
               </h3>
               <div className="space-y-2">
@@ -5678,17 +4498,48 @@ const CourtStreetRCM = () => {
             </div>
               </>
             )}
+
+            {patientManagementView === 'insurance-issues' && (
+              <InsuranceIssuesTracker isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'ar-trends' && (
+              <ARAgingChart isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'vcc-payments' && (
+              <VCCPaymentsTracker isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'eft-reconciliation' && (
+              <EFTReconciliation isDayMode={isDayMode} />
+            )}
+
+            {patientManagementView === 'od-import' && (
+              <OpenDentalImport isDayMode={isDayMode} />
+            )}
           </div>
         ) : currentView === 'scorecard' ? (
           <div className="space-y-6">
             {/* Scorecard Header */}
             <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
-              <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                Practice Scorecard Metrics
-              </h2>
-              <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                Track your practice performance against goals
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                    Practice Scorecard Metrics
+                  </h2>
+                  <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Track your practice performance against goals
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCSDMetricsModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm min-h-[44px] whitespace-nowrap"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload Metrics</span>
+                </button>
+              </div>
             </div>
 
             {/* Advanced Business Metrics */}
@@ -5715,7 +4566,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Financial Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>CAC</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5725,7 +4576,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Gross Profit Margin</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5735,7 +4586,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Operating Profit Margin</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5745,7 +4596,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Cash Flow</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5755,7 +4606,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>Revenue Growth Rate</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5772,7 +4623,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Cost of Goods Sold (COGS)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Dental Supplies</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5781,7 +4632,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Lab Fees</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5790,7 +4641,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Associate Doctor Expense</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5799,7 +4650,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-lime-200/50' : 'border-lime-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-lime-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-lime-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-lime-700' : 'text-lime-400'}`}>Hygiene Payroll</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5808,7 +4659,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Assistant Payroll</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5817,7 +4668,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Total COGS</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5856,7 +4707,7 @@ const CourtStreetRCM = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Churned Patients</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5866,7 +4717,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-fuchsia-200/50' : 'border-fuchsia-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-fuchsia-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-fuchsia-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-fuchsia-700' : 'text-fuchsia-400'}`}>Churn Rate</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5876,7 +4727,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-pink-200/50' : 'border-pink-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-pink-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-pink-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-pink-700' : 'text-pink-400'}`}>Patient Lifecycle</p>
                       <p className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5886,7 +4737,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-violet-200/50' : 'border-violet-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-violet-700' : 'text-violet-400'}`}>Active Pts (Prior Month)</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5896,7 +4747,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Avg Retention Period</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5913,7 +4764,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Revenue & Customer Value</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-sky-200/50' : 'border-sky-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-sky-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-sky-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-sky-700' : 'text-sky-400'}`}>Average Revenue Per Client</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5923,7 +4774,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Lifetime Value (LTV)</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5933,7 +4784,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>LTV:CAC Ratio</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5950,7 +4801,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Satisfaction & Employee Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Net Promoter Score</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5960,7 +4811,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Employee NPS (eNPS)</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5970,7 +4821,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Employee Utilization Rate</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -6143,15 +4994,27 @@ const CourtStreetRCM = () => {
 
             {/* Weekly Data Table */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Weekly Performance Data
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Weekly Performance Data
+                </h3>
+                <button
+                  onClick={() => setShowWeeklyDetailsModal(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    isDayMode
+                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
+                  }`}
+                >
+                  View All Weeks →
+                </button>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-100 border-b-2 border-gray-200">
                       <th className="text-left p-3 font-semibold text-gray-700">Week</th>
-                      <th className="text-left p-3 font-semibold text-gray-700">Date</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Week Of</th>
                       <th className="text-left p-3 font-semibold text-gray-700">Show Rate Dr</th>
                       <th className="text-left p-3 font-semibold text-gray-700">Show Rate Hyg</th>
                       <th className="text-left p-3 font-semibold text-gray-700">New Pts</th>
@@ -6163,7 +5026,7 @@ const CourtStreetRCM = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {scorecardData.weeklyData.map((week: any) => (
+                    {scorecardData.weeklyData.slice(-4).map((week: any) => (
                       <tr key={week.week} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="p-3 font-medium text-gray-900">{week.week}</td>
                         <td className="p-3 text-gray-700">{week.date}</td>
@@ -6200,15 +5063,27 @@ const CourtStreetRCM = () => {
 
             {/* Weekly Trends Visualization */}
             <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                Weekly Trends
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: csdGold }}>
+                  Weekly Trends
+                </h3>
+                <button
+                  onClick={() => setShowWeeklyDetailsModal(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    isDayMode
+                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50'
+                  }`}
+                >
+                  View All Weeks →
+                </button>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Show Rates Trends */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Show Rates</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week: any) => (
+                    {scorecardData.weeklyData.slice(-4).map((week: any) => (
                       <div key={`show-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
@@ -6243,7 +5118,7 @@ const CourtStreetRCM = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-gray-700">Treatment Acceptance</h4>
                   <div className="space-y-3">
-                    {scorecardData.weeklyData.map((week: any) => (
+                    {scorecardData.weeklyData.slice(-4).map((week: any) => (
                       <div key={`tx-${week.week}`}>
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600">Week {week.week}</span>
@@ -6276,9 +5151,14 @@ const CourtStreetRCM = () => {
                   <Calendar className="w-5 h-5 text-gray-500" />
                   <input
                     type="date"
-                    value={dashboardDate}
-                    onChange={(e) => setDashboardDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={inputDate}
+                    onChange={(e) => setInputDate(e.target.value)}
+                    className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                      isDayMode
+                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                    } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
+                    title="Date input updates after 3 seconds"
                   />
                 </div>
               </div>
@@ -6507,990 +5387,23 @@ const CourtStreetRCM = () => {
             </div>
           </div>
         ) : currentView === 'eod-report' ? (
-          <div className="space-y-6">
-            {/* EOD Report Header with Date Picker and Action Buttons */}
-            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                    End of Day Report
-                  </h2>
-                  <div className="flex items-center gap-3">
-                    <Calendar className={`w-4 h-4 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                    <input
-                      type="date"
-                      value={dashboardDate}
-                      onChange={(e) => setDashboardDate(e.target.value)}
-                      className={`px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/10 border-white/20 text-white'}`}
-                    />
-                    <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
-                      {(() => {
-                        const [year, month, day] = dashboardDate.split('-').map(Number);
-                        return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                      })()}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-3 flex-wrap">
-                  <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-gold-400 rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print
-                  </button>
-                  <button
-                    onClick={exportToPDF}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all shadow-md hover-lift font-semibold text-sm"
-                  >
-                    <Download className="w-4 h-4" />
-                    Export PDF
-                  </button>
-                  <button
-                    onClick={() => setShowEmailModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all shadow-md hover-lift font-semibold text-sm"
-                  >
-                    <Send className="w-4 h-4" />
-                    Email Report
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Wrap the entire report in a div with id for PDF export */}
-            <div id="eod-report-content">
-              {/* Report Header with Logo - prints on export */}
-              <div className="report-header mb-6 pb-4 border-b-2" style={{ borderColor: csdGold }}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Logo placeholder - replace src with actual logo path when available */}
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full" style={{ backgroundColor: csdGold }}>
-                      <span className="text-2xl font-bold text-white">SC</span>
-                    </div>
-                    <div>
-                      <h1 className="text-3xl font-bold" style={{ color: csdGold }}>
-                        Stellar Consults
-                      </h1>
-                      <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                        Dental Revenue Cycle Management
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <h2 className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                      End of Day Report
-                    </h2>
-                    <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {eodData.reportDate}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-            {/* Daily Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Daily Production */}
-              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-6 hover-lift relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                <div className="relative z-10 flex items-start justify-between">
-                  <div>
-                    <p className={`text-sm font-bold mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Daily Production</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${eodData.dailyProduction.toLocaleString()}
-                    </p>
-                    <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      Goal: ${eodData.dailyProductionGoal.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-xl bg-emerald-500/20">
-                    <TrendingUp className="w-6 h-6 text-emerald-600" />
-                  </div>
-                </div>
-                <div className={`w-full rounded-full h-2 mt-3 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'}`}>
-                  <div
-                    className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min((eodData.dailyProduction / eodData.dailyProductionGoal) * 100, 100)}%`
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Payments Collected */}
-              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-6 hover-lift relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                <div className="relative z-10 flex items-start justify-between">
-                  <div>
-                    <p className={`text-sm font-bold mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Payments Collected</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${eodData.paymentsCollected.toLocaleString()}
-                    </p>
-                    <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      Collection Rate: {eodData.collectionRate}%
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-xl bg-primary-500/20">
-                    <DollarSign className="w-6 h-6 text-primary-600" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Patients Seen */}
-              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-6 hover-lift relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                <div className="relative z-10 flex items-start justify-between">
-                  <div>
-                    <p className={`text-sm font-bold mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Patients Seen</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.patientsSeenToday}
-                    </p>
-                    <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      New Patients: {eodData.newPatients}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-xl bg-purple-500/20">
-                    <Users className="w-6 h-6 text-purple-600" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Procedures Completed */}
-              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-6 hover-lift relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                <div className="relative z-10 flex items-start justify-between">
-                  <div>
-                    <p className={`text-sm font-bold mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Procedures</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.proceduresCompleted}
-                    </p>
-                    <p className={`text-xs mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Completed today</p>
-                  </div>
-                  <div className="p-2 rounded-xl bg-amber-500/20">
-                    <Activity className="w-6 h-6 text-amber-600" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* BAM Cycle Summary */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                BAM Cycle Overview
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Current Cycle */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Current Cycle</p>
-                    <p className={`text-sm mb-2 ${isDayMode ? 'text-emerald-600' : 'text-emerald-300'}`}>
-                      {dashboardData.bamCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
-                    <p className={`text-2xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${dashboardData.bamCurrentRevenue.toLocaleString()}
-                    </p>
-                    <p className={`text-xs mb-2 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>
-                      Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
-                    </p>
-                    <div className={`w-full rounded-full h-2 ${isDayMode ? 'bg-emerald-100/60' : 'bg-emerald-950/40'}`}>
-                      <div
-                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-emerald-600' : 'text-emerald-300'}`}>
-                      {((dashboardData.bamCurrentRevenue / dashboardData.bamTargetGoal) * 100).toFixed(1)}% of goal
-                    </p>
-                  </div>
-                </div>
-
-                {/* Days Remaining */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Days Remaining</p>
-                    <p className={`text-4xl font-bold mt-6 mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {dashboardData.bamDaysRemaining}
-                    </p>
-                    <p className={`text-xs ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Business days left in current cycle</p>
-                  </div>
-                </div>
-
-                {/* Next Cycle */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Next Cycle</p>
-                    <p className={`text-sm mt-4 mb-2 ${isDayMode ? 'text-purple-600' : 'text-purple-300'}`}>
-                      {dashboardData.bamNextCycleStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dashboardData.bamNextCycleEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
-                    <p className={`text-xs ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>
-                      19 business days | Goal: ${dashboardData.bamTargetGoal.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              {/* Payment Sources */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                  Payment Sources
-                </h3>
-                <div className="space-y-3">
-                  <div className={`flex justify-between items-center p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                    <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Insurance Payments</span>
-                    <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${eodData.insurancePayments.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={`flex justify-between items-center p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                    <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Patient Payments</span>
-                    <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${eodData.patientPayments.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Methods */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                  Payment Methods
-                </h3>
-
-                {/* Credit Card Types */}
-                <div className="mb-6">
-                  <h4 className={`text-sm font-bold mb-3 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Credit Cards</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Visa</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.visa.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>MasterCard</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.mastercard.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>American Express</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.americanExpress.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Discover</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.discover.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Patient Financing */}
-                <div className="mb-6">
-                  <h4 className={`text-sm font-bold mb-3 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Patient Financing</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-pink-200/50' : 'border-pink-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-pink-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-pink-700' : 'text-pink-400'}`}>Cherry</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${(eodData.paymentMethods.cherry || 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-rose-200/50' : 'border-rose-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-rose-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-rose-700' : 'text-rose-400'}`}>CareCredit</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${(eodData.paymentMethods.careCredit || 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-violet-200/50' : 'border-violet-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-violet-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-violet-700' : 'text-violet-400'}`}>Weave</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${(eodData.paymentMethods.weave || 0).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Check Payments */}
-                <div className="mb-6">
-                  <h4 className={`text-sm font-bold mb-3 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Check Payments</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Insurance Checks</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.insuranceCheck.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Other Checks</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.otherCheck.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Other Payment Methods */}
-                <div>
-                  <h4 className={`text-sm font-bold mb-3 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Other Methods</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Cash</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.cash.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className={`flex justify-between items-center p-3 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-slate-200/50' : 'border-slate-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-slate-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                      <span className={`text-sm font-medium relative z-10 ${isDayMode ? 'text-slate-700' : 'text-slate-400'}`}>EFT</span>
-                      <span className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                        ${eodData.paymentMethods.eft.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Performance Insights */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <div className="flex items-center justify-between mb-5">
-                <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                  Payment Performance Insights
-                </h3>
-                <span className="text-xs text-gray-500">
-                  {paymentInsights.length} actionable insight{paymentInsights.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              {paymentInsights.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {paymentInsights.map((insight) => {
-                    // Map icon names to icon components
-                    const IconComponent = {
-                      'TrendingUp': TrendingUp,
-                      'TrendingDown': TrendingUp,
-                      'AlertCircle': AlertCircle,
-                      'CheckCircle': CheckCircle,
-                      'XCircle': XCircle,
-                      'Activity': Activity,
-                      'Shield': Shield,
-                      'Users': Users,
-                      'Clock': Clock,
-                      'DollarSign': DollarSign,
-                      'ArrowDownCircle': ArrowDownCircle,
-                    }[insight.icon] || Activity;
-
-                    // Map insight types to color schemes
-                    const colorScheme = {
-                      'positive': {
-                        bg: isDayMode ? 'glass-card' : 'glass-card-dark',
-                        border: isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20',
-                        glow: 'from-emerald-400/10',
-                        icon: isDayMode ? 'text-emerald-600' : 'text-emerald-400',
-                        title: isDayMode ? 'text-emerald-900' : 'text-emerald-300',
-                        text: isDayMode ? 'text-gray-700' : 'text-gray-300',
-                        badge: isDayMode ? 'bg-emerald-500/20 text-emerald-700 border border-emerald-300/50' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      },
-                      'warning': {
-                        bg: isDayMode ? 'glass-card' : 'glass-card-dark',
-                        border: isDayMode ? 'border-amber-200/50' : 'border-amber-400/20',
-                        glow: 'from-amber-400/10',
-                        icon: isDayMode ? 'text-amber-600' : 'text-amber-400',
-                        title: isDayMode ? 'text-amber-900' : 'text-amber-300',
-                        text: isDayMode ? 'text-gray-700' : 'text-gray-300',
-                        badge: isDayMode ? 'bg-amber-500/20 text-amber-700 border border-amber-300/50' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      },
-                      'info': {
-                        bg: isDayMode ? 'glass-card' : 'glass-card-dark',
-                        border: isDayMode ? 'border-primary-200/50' : 'border-primary-400/20',
-                        glow: 'from-primary-400/10',
-                        icon: isDayMode ? 'text-primary-600' : 'text-primary-400',
-                        title: isDayMode ? 'text-primary-900' : 'text-primary-300',
-                        text: isDayMode ? 'text-gray-700' : 'text-gray-300',
-                        badge: isDayMode ? 'bg-primary-500/20 text-primary-700 border border-primary-300/50' : 'bg-primary-500/20 text-primary-300 border border-primary-500/30'
-                      },
-                      'critical': {
-                        bg: isDayMode ? 'glass-card' : 'glass-card-dark',
-                        border: isDayMode ? 'border-red-200/50' : 'border-red-400/20',
-                        glow: 'from-red-400/10',
-                        icon: isDayMode ? 'text-red-600' : 'text-red-400',
-                        title: isDayMode ? 'text-red-900' : 'text-red-300',
-                        text: isDayMode ? 'text-gray-700' : 'text-gray-300',
-                        badge: isDayMode ? 'bg-red-500/20 text-red-700 border border-red-300/50' : 'bg-red-500/20 text-red-300 border border-red-500/30'
-                      }
-                    }[insight.type];
-
-                    return (
-                      <div
-                        key={insight.id}
-                        className={`${colorScheme.bg} border ${colorScheme.border} rounded-xl p-4 hover-lift relative overflow-hidden group`}
-                      >
-                        <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${colorScheme.glow} to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500`}></div>
-                        <div className="flex items-start gap-3 relative z-10">
-                          <IconComponent className={`w-6 h-6 ${colorScheme.icon} flex-shrink-0 mt-0.5`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <h4 className={`font-semibold text-sm ${colorScheme.title}`}>
-                                {insight.title}
-                              </h4>
-                              <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${colorScheme.badge} flex-shrink-0`}>
-                                {insight.priority}
-                              </span>
-                            </div>
-                            <p className={`text-sm ${colorScheme.text} mb-2`}>
-                              {insight.message}
-                            </p>
-                            {insight.action && (
-                              <div className={`text-xs font-medium ${colorScheme.text} flex items-start gap-1.5 mt-2 pt-2 border-t ${colorScheme.border}`}>
-                                <ArrowUpCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                                <span>{insight.action}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No payment insights available for this date</p>
-                  <p className="text-sm mt-1">Insights will appear as payment data is collected</p>
-                </div>
-              )}
-            </div>
-
-            {/* Actionable Insights */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                Action Items for Tomorrow
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className={`flex items-center justify-between p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-center space-x-3 relative z-10">
-                    <AlertCircle className={`w-6 h-6 ${isDayMode ? 'text-red-600' : 'text-red-400'}`} />
-                    <div>
-                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Claims to Submit</p>
-                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Due tomorrow</p>
-                    </div>
-                  </div>
-                  <p className={`text-2xl font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                    {eodData.actionItems.claimsToSubmit}
-                  </p>
-                </div>
-
-                <div className={`flex items-center justify-between p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-center space-x-3 relative z-10">
-                    <XCircle className={`w-6 h-6 ${isDayMode ? 'text-orange-600' : 'text-orange-400'}`} />
-                    <div>
-                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Fully Denied Claims</p>
-                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need resubmission</p>
-                    </div>
-                  </div>
-                  <p className={`text-2xl font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                    {eodData.actionItems.deniedClaimsToResubmit}
-                  </p>
-                </div>
-
-                <div className={`flex items-center justify-between p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-center space-x-3 relative z-10">
-                    <CheckCircle className={`w-6 h-6 ${isDayMode ? 'text-yellow-600' : 'text-yellow-400'}`} />
-                    <div>
-                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Pre-Auths Approved #</p>
-                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Currently approved</p>
-                    </div>
-                  </div>
-                  <p className={`text-2xl font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                    {eodData.actionItems.preAuthsApproved}
-                  </p>
-                </div>
-
-                <div className={`flex items-center justify-between p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="flex items-center space-x-3 relative z-10">
-                    <AlertCircle className={`w-6 h-6 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`} />
-                    <div>
-                      <p className={`text-sm font-medium ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Missed Appointments</p>
-                      <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Reschedule needed</p>
-                    </div>
-                  </div>
-                  <p className={`text-2xl font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                    {eodData.actionItems.missedAppointments}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Top Procedures */}
-            <div className={`rounded-2xl p-6 mt-6 mb-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <div className="flex items-center justify-between mb-5">
-                <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                  Top Procedures Monthly
-                </h3>
-                <button
-                  onClick={() => setShowTopProceduresModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-gold-400 rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
-                >
-                  <Upload className="w-4 h-4" />
-                  Upload CSV
-                </button>
-              </div>
-              {topProcedures.length > 0 ? (
-                <>
-                  {/* Bar Chart Visualization */}
-                  <div className={`mb-6 p-5 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/30' : 'border-white/10'}`}>
-                    <p className={`text-sm font-medium mb-4 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
-                      Revenue by Procedure
-                    </p>
-                    <div className="space-y-3">
-                      {topProcedures.slice(0, 5).map((procedure: any, index: number) => {
-                        const maxRevenue = Math.max(...topProcedures.map((p: any) => p.revenue));
-                        const widthPercent = (procedure.revenue / maxRevenue) * 100;
-                        const colors = [
-                          'bg-purple-500',
-                          'bg-blue-500',
-                          'bg-green-500',
-                          'bg-yellow-500',
-                          'bg-orange-500'
-                        ];
-                        return (
-                          <div key={index}>
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className={`font-medium truncate max-w-[60%] ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
-                                {procedure.procedure_name}
-                              </span>
-                              <span className={`font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                                ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                              </span>
-                            </div>
-                            <div className={`w-full rounded-full h-6 ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} overflow-hidden`}>
-                              <div
-                                className={`${colors[index]} h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
-                                style={{ width: `${widthPercent}%` }}
-                              >
-                                <span className="text-xs font-semibold text-white">{procedure.count}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Procedures List */}
-                  <div className="space-y-3">
-                    {topProcedures.map((procedure: any, index: number) => (
-                      <div key={index} className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} hover-lift relative overflow-hidden group`}>
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                        <div className="flex items-center space-x-4 relative z-10">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDayMode ? 'bg-purple-500/20 border border-purple-300/50' : 'bg-purple-500/20 border border-purple-500/30'}`}>
-                            <span className={`text-sm font-bold ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>{index + 1}</span>
-                          </div>
-                          <div>
-                            <p className={`font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                              {procedure.procedure_name}
-                              {procedure.procedure_code && <span className={`text-xs ml-2 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>({procedure.procedure_code})</span>}
-                            </p>
-                            <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>{procedure.count} procedure{procedure.count !== 1 ? 's' : ''}</p>
-                          </div>
-                        </div>
-                        <p className={`text-lg font-bold relative z-10 ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>
-                          ${procedure.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className={`text-center py-8 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                  <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No procedures recorded for this month</p>
-                  <button
-                    onClick={() => setShowTopProceduresModal(true)}
-                    className="mt-3 text-purple-600 hover:text-purple-700 text-sm font-medium"
-                  >
-                    Upload CSV file
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Month-to-Date Summary */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                Month-to-Date Summary
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>MTD Production</p>
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${eodData.monthToDateSummary.production.toLocaleString()}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Goal: ${eodData.monthToDateSummary.productionGoal.toLocaleString()}
-                    </p>
-                    <div className={`w-full rounded-full h-2 mt-2 ${isDayMode ? 'bg-primary-100/60' : 'bg-primary-950/40'}`}>
-                      <div
-                        className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min((eodData.monthToDateSummary.production / eodData.monthToDateSummary.productionGoal) * 100, 100)}%`
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>MTD Collected</p>
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${eodData.monthToDateSummary.collected.toLocaleString()}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {eodData.monthToDateSummary.collectionRate}% collection rate
-                    </p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>New Patients MTD</p>
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.monthToDateSummary.newPatients}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>This month</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Daily Production</p>
-                    <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      ${Math.round(eodData.monthToDateSummary.production / 10).toLocaleString()}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Based on 10 days</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Claims Summary Section */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
-                Claims Management Summary
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Pending Submission</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.claimsToSubmit}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Ready to submit</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Denied Claims</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.deniedClaimsToResubmit}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Need resubmission</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Pre-Auths Approved</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.preAuthsApproved}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Ready for treatment</p>
-                  </div>
-                </div>
-
-                <div className={`text-center p-5 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl hover-lift relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-                  <div className="relative z-10">
-                    <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Active Claims</p>
-                    <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {eodData.actionItems.claimsToSubmit + eodData.actionItems.deniedClaimsToResubmit}
-                    </p>
-                    <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Requiring action</p>
-                  </div>
-                </div>
-              </div>
-              <p className={`text-xs mt-4 text-center ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Real-time data from Claims Management - updated automatically
-              </p>
-            </div>
-
-            {/* Important Notes Section */}
-            <div className={`rounded-2xl p-6 mt-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} hover-lift relative overflow-hidden group`}>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="relative z-10">
-                <h3 className={`text-lg font-bold mb-4 flex items-center ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>
-                  <AlertCircle className="w-5 h-5 mr-2" />
-                  Important Notes
-                </h3>
-                <ul className={`space-y-3 text-sm ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
-                  <li className="flex items-start">
-                    <span className={`mr-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>•</span>
-                    <span><strong className={isDayMode ? 'text-amber-900' : 'text-amber-300'}>Daily Goal:</strong> {((eodData.dailyProduction / eodData.dailyProductionGoal) * 100).toFixed(1)}% of daily production goal achieved</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className={`mr-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>•</span>
-                    <span><strong className={isDayMode ? 'text-amber-900' : 'text-amber-300'}>Collection Rate:</strong> {eodData.collectionRate}% of production collected today</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className={`mr-2 ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>•</span>
-                    <span><strong className={isDayMode ? 'text-amber-900' : 'text-amber-300'}>Outstanding Claims:</strong> {eodData.actionItems.claimsToSubmit + eodData.actionItems.deniedClaimsToResubmit} claims require immediate attention</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            </div>
-            {/* End of eod-report-content div */}
-
-            {/* Email Modal */}
-            {showEmailModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className={`rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <div className="p-6">
-                    {/* Modal Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDayMode ? 'bg-green-100' : 'bg-green-900/30'}`}>
-                          <Mail className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div>
-                          <h3 className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Email EOD Report</h3>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Send report for {(() => {
-                            const [year, month, day] = dashboardDate.split('-').map(Number);
-                            return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                          })()}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setShowEmailModal(false)}
-                        className={`transition-colors ${isDayMode ? 'text-gray-400 hover:text-gray-600' : 'text-gray-500 hover:text-gray-300'}`}
-                      >
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    {/* Email Form */}
-                    <div className="space-y-4">
-                      {/* Recipients */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Recipients <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={emailRecipients}
-                          onChange={(e) => setEmailRecipients(e.target.value)}
-                          placeholder="email@example.com, another@example.com"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
-                      </div>
-
-                      {/* Subject */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Subject
-                        </label>
-                        <input
-                          type="text"
-                          value={emailSubject}
-                          onChange={(e) => setEmailSubject(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      {/* Message */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Additional Message (Optional)
-                        </label>
-                        <textarea
-                          value={emailMessage}
-                          onChange={(e) => setEmailMessage(e.target.value)}
-                          rows={4}
-                          placeholder="Add any notes or comments to include with the report..."
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                        />
-                      </div>
-
-                      {/* Report Template Selection */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Report Template
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {Object.entries(reportTemplates).map(([key, template]) => (
-                            <div
-                              key={key}
-                              onClick={() => setSelectedTemplate(key)}
-                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                selectedTemplate === key
-                                  ? 'border-green-500 bg-green-50'
-                                  : 'border-gray-200 hover:border-green-300'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between mb-1">
-                                <h4 className="font-semibold text-sm text-gray-900">{template.name}</h4>
-                                {selectedTemplate === key && (
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-600">{template.description}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Schedule Email Option */}
-                      <div className="border-t pt-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={scheduleEmail}
-                              onChange={(e) => setScheduleEmail(e.target.checked)}
-                              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                            />
-                            <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                              <Repeat className="w-4 h-4" />
-                              Schedule Automatic Delivery
-                            </span>
-                          </label>
-                        </div>
-
-                        {scheduleEmail && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Frequency
-                              </label>
-                              <select
-                                value={scheduleFrequency}
-                                onChange={(e) => setScheduleFrequency(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                              >
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly (Monday)</option>
-                                <option value="monthly">Monthly (1st of month)</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Send Time
-                              </label>
-                              <input
-                                type="time"
-                                value={scheduleTime}
-                                onChange={(e) => setScheduleTime(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-2">
-                              <div className={`p-3 rounded border ${isDayMode ? 'bg-white border-blue-300' : 'bg-gray-700 border-blue-700'}`}>
-                                <p className="text-xs text-gray-600">
-                                  <strong>Note:</strong> Scheduled reports will be sent automatically {scheduleFrequency} at {scheduleTime} to the specified recipients using the {reportTemplates[selectedTemplate as keyof typeof reportTemplates].name} template.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Report Preview Summary */}
-                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Report Summary</h4>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-gray-500">Daily Production</p>
-                            <p className="font-bold text-gray-900">${eodData.dailyProduction.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Payments Collected</p>
-                            <p className="font-bold text-gray-900">${eodData.paymentsCollected.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Patients Seen</p>
-                            <p className="font-bold text-gray-900">{eodData.patientsSeenToday}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Action Items</p>
-                            <p className="font-bold text-gray-900">
-                              {eodData.actionItems.claimsToSubmit +
-                               eodData.actionItems.deniedClaimsToResubmit +
-                               eodData.actionItems.preAuthsApproved +
-                               eodData.actionItems.accountsNeedingFollowUp +
-                               eodData.actionItems.missedAppointments}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Modal Actions */}
-                    <div className="flex gap-3 mt-6">
-                      <button
-                        onClick={() => setShowEmailModal(false)}
-                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSendEmail}
-                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-medium shadow-md flex items-center justify-center gap-2"
-                      >
-                        <Send className="w-4 h-4" />
-                        Send Report
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <EODReport
+            isDayMode={isDayMode}
+            dashboardDate={dashboardDate}
+            setDashboardDate={setDashboardDate}
+            eodData={eodData}
+            dashboardData={dashboardData}
+            patientARMetrics={patientARMetrics}
+            paymentInsights={paymentInsights}
+            topProcedures={topProcedures}
+            isAdmin={isAdmin}
+            onNavigateToPatientAR={() => {
+              setCurrentView('patient-management');
+              setPatientManagementView('patient-ar');
+            }}
+            onOpenTopProceduresModal={() => setShowTopProceduresModal(true)}
+            onRefreshActionItems={refreshActionItems}
+          />
         ) : currentView === 'administration' ? (
           <div className="space-y-6">
             {/* Administration Header */}
@@ -7565,35 +5478,35 @@ const CourtStreetRCM = () => {
                       {/* VIP Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${vipMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${vipMetrics.productionScheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{vipMetrics.totalPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{vipMetrics.unscheduledPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{vipMetrics.scheduledPatients}</p>
@@ -7627,7 +5540,12 @@ const CourtStreetRCM = () => {
                             ) : (
                               vipListItems.map((item) => (
                                 <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
-                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex items-center gap-3">
+                                      {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
+                                      <span>{item.patientId}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-xs">
@@ -7684,14 +5602,14 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Recare List Section */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>Recare List</h3>
+                    <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Recare List</h3>
                     <div className="flex gap-2">
                       {showRecareList && (
                         <button
                           onClick={() => setShowAddRecareModal(true)}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Recare
@@ -7699,10 +5617,12 @@ const CourtStreetRCM = () => {
                       )}
                       <button
                         onClick={() => setShowRecareList(!showRecareList)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                           showRecareList
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                            : isDayMode
+                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                         }`}
                       >
                         {showRecareList ? 'Hide' : 'Show'} Recare List
@@ -7714,25 +5634,40 @@ const CourtStreetRCM = () => {
                     <div className="mt-4 space-y-4">
                       {/* Recare Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled Production</p>
-                          <p className="text-xl font-bold text-red-600">${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-green-50 border border-green-200' : 'bg-green-900/20 border border-green-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled Production</p>
-                          <p className="text-xl font-bold text-green-600">${recareMetrics.productionScheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${recareMetrics.productionScheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Total Patients</p>
-                          <p className="text-xl font-bold text-blue-600">{recareMetrics.totalPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{recareMetrics.totalPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled</p>
-                          <p className="text-xl font-bold text-amber-600">{recareMetrics.unscheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{recareMetrics.unscheduledPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled</p>
-                          <p className="text-xl font-bold text-purple-600">{recareMetrics.scheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{recareMetrics.scheduledPatients}</p>
+                          </div>
                         </div>
                       </div>
 
@@ -7744,6 +5679,7 @@ const CourtStreetRCM = () => {
                               <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
+                              <th className="px-4 py-2 text-left text-xs font-semibold">Last Visit</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
                               <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
@@ -7755,16 +5691,24 @@ const CourtStreetRCM = () => {
                           <tbody>
                             {recareListItems.length === 0 ? (
                               <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                                   No Recare list items yet. Click "Add Recare" to get started.
                                 </td>
                               </tr>
                             ) : (
                               recareListItems.map((item) => (
                                 <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
-                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex items-center gap-3">
+                                      {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
+                                      <span>{item.patientId}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    {item.lastVisitDate ? new Date(item.lastVisitDate).toLocaleDateString() : <span className="text-gray-400">—</span>}
+                                  </td>
                                   <td className="px-4 py-3 text-xs">
                                     <div className="flex gap-1">
                                       {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
@@ -7818,15 +5762,15 @@ const CourtStreetRCM = () => {
                   )}
                 </div>
 
-                {/* Treatment List Section */}
-                <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+                {/* Unscheduled Treatment List Section */}
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold" style={{ color: csdGold }}>Treatment List</h3>
+                    <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Unscheduled Treatment List</h3>
                     <div className="flex gap-2">
                       {showTreatmentList && (
                         <button
                           onClick={() => setShowAddTreatmentModal(true)}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center gap-2"
+                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Treatment
@@ -7834,13 +5778,15 @@ const CourtStreetRCM = () => {
                       )}
                       <button
                         onClick={() => setShowTreatmentList(!showTreatmentList)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                           showTreatmentList
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                            : isDayMode
+                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                         }`}
                       >
-                        {showTreatmentList ? 'Hide' : 'Show'} Treatment List
+                        {showTreatmentList ? 'Hide' : 'Show'} Unscheduled Treatment List
                       </button>
                     </div>
                   </div>
@@ -7849,29 +5795,44 @@ const CourtStreetRCM = () => {
                     <div className="mt-4 space-y-4">
                       {/* Treatment Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-red-50 border border-red-200' : 'bg-red-900/20 border border-red-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled Production</p>
-                          <p className="text-xl font-bold text-red-600">${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-green-50 border border-green-200' : 'bg-green-900/20 border border-green-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled Production</p>
-                          <p className="text-xl font-bold text-green-600">${treatmentMetrics.productionScheduled.toLocaleString()}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${treatmentMetrics.productionScheduled.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Total Patients</p>
-                          <p className="text-xl font-bold text-blue-600">{treatmentMetrics.totalPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{treatmentMetrics.totalPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Unscheduled</p>
-                          <p className="text-xl font-bold text-amber-600">{treatmentMetrics.unscheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{treatmentMetrics.unscheduledPatients}</p>
+                          </div>
                         </div>
-                        <div className={`rounded-lg p-4 ${isDayMode ? 'bg-purple-50 border border-purple-200' : 'bg-purple-900/20 border border-purple-800'}`}>
-                          <p className="text-xs text-gray-600 mb-1">Scheduled</p>
-                          <p className="text-xl font-bold text-purple-600">{treatmentMetrics.scheduledPatients}</p>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="relative z-10">
+                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
+                            <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{treatmentMetrics.scheduledPatients}</p>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Treatment List Table */}
+                      {/* Unscheduled Treatment List Table */}
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
@@ -7891,13 +5852,18 @@ const CourtStreetRCM = () => {
                             {treatmentListItems.length === 0 ? (
                               <tr>
                                 <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                                  No Treatment list items yet. Click "Add Treatment" to get started.
+                                  No Unscheduled Treatment list items yet. Click "Add Treatment" to get started.
                                 </td>
                               </tr>
                             ) : (
                               treatmentListItems.map((item) => (
                                 <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
-                                  <td className="px-4 py-3 text-sm">{item.patientId}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div className="flex items-center gap-3">
+                                      {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
+                                      <span>{item.patientId}</span>
+                                    </div>
+                                  </td>
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-xs">
@@ -7957,9 +5923,9 @@ const CourtStreetRCM = () => {
 
             {/* Training View */}
             {administrationView === 'training' && (
-              <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                 <div className="text-center py-12">
-                  <h3 className="text-2xl font-bold mb-4" style={{ color: csdGold }}>Training Module</h3>
+                  <h3 className={`text-2xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Training Module</h3>
                   <p className={`text-lg ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Coming Soon
                   </p>
@@ -7972,7 +5938,7 @@ const CourtStreetRCM = () => {
 
             {/* Add VIP Modal */}
             {showAddVipModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add VIP Patient</h3>
@@ -7989,6 +5955,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,
@@ -8024,15 +5991,15 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
-                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="firstContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
-                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="secondContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
-                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="thirdContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Total Tx Value</label>
@@ -8040,7 +6007,7 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Employee Initials</label>
@@ -8069,7 +6036,7 @@ const CourtStreetRCM = () => {
 
             {/* Add Recare Modal */}
             {showAddRecareModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add Recare Patient</h3>
@@ -8086,6 +6053,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,
@@ -8120,16 +6088,20 @@ const CourtStreetRCM = () => {
                         <input name="treatmentNeeded" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="6-Month Cleaning" />
                       </div>
                       <div>
+                        <label className="block text-sm font-medium mb-1">Last Visit Date</label>
+                        <input name="lastVisitDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
-                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="firstContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
-                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="secondContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
-                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="thirdContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Total Tx Value</label>
@@ -8137,7 +6109,7 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Employee Initials</label>
@@ -8166,7 +6138,7 @@ const CourtStreetRCM = () => {
 
             {/* Add Treatment Modal */}
             {showAddTreatmentModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add Treatment Patient</h3>
@@ -8183,6 +6155,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,
@@ -8218,15 +6191,15 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
-                        <input name="firstContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="firstContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">2nd Contact Date</label>
-                        <input name="secondContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="secondContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">3rd Contact Date</label>
-                        <input name="thirdContactDate" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="thirdContactDate" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Total Tx Value</label>
@@ -8234,7 +6207,7 @@ const CourtStreetRCM = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Follow-up Date</label>
-                        <input name="followUpDate" type="date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <input name="followUpDate" type="date" required className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Employee Initials</label>
@@ -8263,7 +6236,7 @@ const CourtStreetRCM = () => {
 
             {/* Edit Scheduling Item Modal */}
             {showEditSchedulingModal && selectedSchedulingItem && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <div className={`rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
                   <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
                     <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Edit {selectedSchedulingItem.listType.toUpperCase()} Patient</h3>
@@ -8282,6 +6255,7 @@ const CourtStreetRCM = () => {
                       patientId: formData.get('patientId') as string,
                       patientInitials: formData.get('patientInitials') as string,
                       treatmentNeeded: formData.get('treatmentNeeded') as string,
+                      lastVisitDate: formData.get('lastVisitDate') as string || null,
                       firstContactDate: formData.get('firstContactDate') as string || null,
                       secondContactDate: formData.get('secondContactDate') as string || null,
                       thirdContactDate: formData.get('thirdContactDate') as string || null,
@@ -8326,6 +6300,10 @@ const CourtStreetRCM = () => {
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium mb-1">Treatment Needed</label>
                         <input name="treatmentNeeded" type="text" required defaultValue={selectedSchedulingItem.treatmentNeeded} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Last Visit Date</label>
+                        <input name="lastVisitDate" type="date" defaultValue={selectedSchedulingItem.lastVisitDate || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">1st Contact Date</label>
@@ -8449,7 +6427,7 @@ const CourtStreetRCM = () => {
 
         {/* BAM Cycle Modal */}
         {showBAMModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className={`rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="p-6">
                 {/* Modal Header */}
@@ -8662,7 +6640,7 @@ const CourtStreetRCM = () => {
 
         {/* Lifecycle Metrics Modal */}
         {showLifecycleModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className={`rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
               <div className="p-6">
                 {/* Modal Header */}
@@ -8724,9 +6702,31 @@ const CourtStreetRCM = () => {
           currentDate={dashboardDate}
         />
 
+        {/* CSD Metrics CSV Upload */}
+        <CSDMetricsCSVUpload
+          isOpen={showCSDMetricsModal}
+          onClose={() => setShowCSDMetricsModal(false)}
+          onSuccess={() => {
+            // Refresh all metrics after upload
+            refreshEOD();
+            refreshMetrics();
+          }}
+        />
+
+        {/* RCM Metrics CSV Upload */}
+        <RCMMetricsCSVUpload
+          isOpen={showRCMMetricsModal}
+          onClose={() => setShowRCMMetricsModal(false)}
+          onSuccess={async () => {
+            // Refresh RCM metrics after upload
+            const claimsOver60 = await getLatestMetricValue('rcm_claims_over_60_days');
+            setClaimsOver60Days(claimsOver60);
+          }}
+        />
+
         {/* Edit Modal */}
         {showEditModal && editingItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-900">
@@ -8754,7 +6754,7 @@ const CourtStreetRCM = () => {
                     const claimNumber = formData.get('claimNumber') as string;
                     const updatedClaim = {
                       patient_id: claim.patientId, // Preserve existing patient_id
-                      patient_name: formData.get('patientName') as string,
+                      patient_name: sanitizePatientName(formData.get('patientName') as string),
                       insurance_company: formData.get('insuranceCompany') as string,
                       claim_number: claimNumber || null, // Convert empty string to null
                       procedure_code: formData.get('procedureCode') as string,
@@ -8877,7 +6877,7 @@ const CourtStreetRCM = () => {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Submitted</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date Resubmitted</label>
                             <input
                               type="date"
                               name="dateSubmitted"
@@ -8959,9 +6959,9 @@ const CourtStreetRCM = () => {
                     const handler = formData.get('handler') as string;
                     const updatedPreAuth = {
                       patient_id: preAuth.patientId, // Preserve existing patient_id
-                      patient_name: formData.get('patientName') as string,
+                      patient_name: sanitizePatientName(formData.get('patientName') as string),
                       insurance_company: formData.get('insuranceCompany') as string,
-                      pre_auth_number: formData.get('preAuthNumber') as string,
+                      pre_auth_number: (formData.get('preAuthNumber') as string) || null,
                       procedure_code: formData.get('procedureCode') as string,
                       treatment_detail: formData.get('treatmentDetail') as string,
                       requested_amount: parseFloat(formData.get('requestedAmount') as string),
@@ -9017,7 +7017,7 @@ const CourtStreetRCM = () => {
                             <input
                               type="text"
                               name="preAuthNumber"
-                              defaultValue={preAuth.preAuthNumber}
+                              defaultValue={preAuth.preAuthNumber || ''}
                               required
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
@@ -9147,6 +7147,7 @@ const CourtStreetRCM = () => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const check = editingItem as InsuranceCheckRecord;
+                    const dateEntered = formData.get('dateEntered') as string || undefined;
                     const updatedCheck = {
                       check_eft_number: formData.get('checkEftNumber') as string,
                       payment_type: formData.get('paymentType') as 'Check' | 'EFT',
@@ -9154,11 +7155,10 @@ const CourtStreetRCM = () => {
                       distribution_type: formData.get('distributionType') as 'Bulk' | 'Individual',
                       total_amount: parseFloat(formData.get('totalAmount') as string),
                       aging: parseInt(formData.get('aging') as string),
-                      created_by: formData.get('enteredBy') as string,
-                      completed_by: formData.get('handler') as string,
+                      handler: formData.get('handler') as string,
                       status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
                       date_of_service: formData.get('dateOfService') as string || undefined,
-                      date_created: formData.get('dateEntered') as string || undefined,
+                      date_entered: dateEntered,
                     };
 
                     try {
@@ -9327,7 +7327,7 @@ const CourtStreetRCM = () => {
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="p-6">
                 <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
@@ -9367,7 +7367,7 @@ const CourtStreetRCM = () => {
 
         {/* Add Update Modal */}
         {showAddUpdateModal && updateTarget && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <div>
@@ -9645,7 +7645,7 @@ const CourtStreetRCM = () => {
 
         {/* History/Audit Timeline Modal */}
         {showHistoryModal && historyItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
                 <div>
@@ -9839,6 +7839,171 @@ const CourtStreetRCM = () => {
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Weekly Details Modal */}
+        {showWeeklyDetailsModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto`}>
+              <div className={`sticky top-0 ${isDayMode ? 'bg-white' : 'bg-gray-800'} border-b ${isDayMode ? 'border-gray-200' : 'border-gray-700'} p-6 z-10`}>
+                <div className="flex items-center justify-between">
+                  <h3 className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    Complete Weekly Performance Data
+                  </h3>
+                  <button
+                    onClick={() => setShowWeeklyDetailsModal(false)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Weekly Data Table */}
+                <div>
+                  <h4 className={`text-lg font-bold mb-4 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    All Weeks Performance Data
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className={`border-b-2 ${isDayMode ? 'bg-gray-100 border-gray-200' : 'bg-gray-700 border-gray-600'}`}>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Week</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Week Of</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Dr</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rate Hyg</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>New Pts</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>TX Presented</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>TX Accept %</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>TX Accepted</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Collection %</th>
+                          <th className={`text-left p-3 font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>5★</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scorecardData.weeklyData.map((week: any) => (
+                          <tr key={week.week} className={`border-b ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{week.week}</td>
+                            <td className={`p-3 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>{week.date}</td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.showRateDr >= 90 ? 'text-green-600' : week.showRateDr >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {week.showRateDr}%
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.showRateHyg >= 85 ? 'text-green-600' : week.showRateHyg >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {week.showRateHyg}%
+                              </span>
+                            </td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{week.newPts}</td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>${week.txPresented.toLocaleString()}</td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.txAcceptPct >= 50 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                {week.txAcceptPct}%
+                              </span>
+                            </td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>${week.txAccepted.toLocaleString()}</td>
+                            <td className="p-3">
+                              <span className={`font-semibold ${week.collectionPct >= 95 ? 'text-green-600' : week.collectionPct >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {week.collectionPct}%
+                              </span>
+                            </td>
+                            <td className={`p-3 font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{week.fiveStars}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Weekly Trends Visualization */}
+                <div>
+                  <h4 className={`text-lg font-bold mb-4 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    All Weeks Trends
+                  </h4>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Show Rates Trends */}
+                    <div className={`${isDayMode ? 'bg-gray-50' : 'bg-gray-700/50'} rounded-lg p-4`}>
+                      <h5 className={`text-md font-semibold mb-3 ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Show Rates</h5>
+                      <div className="space-y-3">
+                        {scorecardData.weeklyData.map((week: any) => (
+                          <div key={`show-${week.week}`}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Week {week.week}</span>
+                              <span className={`${isDayMode ? 'text-gray-700' : 'text-gray-300'} font-medium`}>Dr: {week.showRateDr}% | Hyg: {week.showRateHyg}%</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <div className={`w-full ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} rounded-full h-2`}>
+                                  <div
+                                    className={`h-2 rounded-full ${week.showRateDr >= 90 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                    style={{ width: `${week.showRateDr}%` }}
+                                  ></div>
+                                </div>
+                                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>Dr</p>
+                              </div>
+                              <div>
+                                <div className={`w-full ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} rounded-full h-2`}>
+                                  <div
+                                    className={`h-2 rounded-full ${week.showRateHyg >= 85 ? 'bg-green-500' : 'bg-purple-500'}`}
+                                    style={{ width: `${week.showRateHyg}%` }}
+                                  ></div>
+                                </div>
+                                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>Hyg</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Treatment Acceptance Trends */}
+                    <div className={`${isDayMode ? 'bg-gray-50' : 'bg-gray-700/50'} rounded-lg p-4`}>
+                      <h5 className={`text-md font-semibold mb-3 ${isDayMode ? 'text-gray-700' : 'text-gray-200'}`}>Treatment Acceptance</h5>
+                      <div className="space-y-3">
+                        {scorecardData.weeklyData.map((week: any) => (
+                          <div key={`tx-${week.week}`}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className={isDayMode ? 'text-gray-600' : 'text-gray-400'}>Week {week.week}</span>
+                              <span className={`${isDayMode ? 'text-gray-700' : 'text-gray-300'} font-medium`}>{week.txAcceptPct}%</span>
+                            </div>
+                            <div className={`w-full ${isDayMode ? 'bg-gray-200' : 'bg-gray-600'} rounded-full h-4`}>
+                              <div
+                                className={`h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                                  week.txAcceptPct >= 70 ? 'bg-green-500' : week.txAcceptPct >= 50 ? 'bg-blue-500' : 'bg-yellow-500'
+                                }`}
+                                style={{ width: `${week.txAcceptPct}%` }}
+                              >
+                                {week.txAcceptPct}%
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`flex justify-end pt-4 border-t ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
+                  <button
+                    onClick={() => setShowWeeklyDetailsModal(false)}
+                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all ${
+                      isDayMode
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
