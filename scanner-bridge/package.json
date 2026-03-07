@@ -6,7 +6,13 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop scanner-bridge",
+    "pm2:restart": "pm2 restart scanner-bridge",
+    "pm2:status": "pm2 status",
+    "pm2:logs": "pm2 logs scanner-bridge",
+    "pm2:startup": "pm2 startup && pm2 save"
   },
   "dependencies": {
     "cors": "^2.8.5",
