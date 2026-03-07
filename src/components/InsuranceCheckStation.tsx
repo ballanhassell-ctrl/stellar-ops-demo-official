@@ -1,10 +1,16 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   Search, Archive, ArchiveRestore, Plus, Edit, Trash2, History,
   MessageSquarePlus, CreditCard, Download, DollarSign, Clock,
   Image, CheckCircle, X, FileText, Layers, BarChart3,
-  ScanLine, Package, Eye
+  ScanLine, Package, Eye, Wifi, WifiOff, Monitor, AlertCircle, Loader2, Info
 } from 'lucide-react';
+import { extractCheckData } from '../utils/ocrEngine';
+import {
+  checkScannerService, discoverScanners, acquireScan,
+  SCANNER_SETUP_INSTRUCTIONS,
+  type ScannerDevice, type ScannerServiceStatus
+} from '../utils/scannerDriver';
 import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
 import {
   insertInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
@@ -42,6 +48,9 @@ interface ScanSessionItem {
     payer: string;
   };
   status: 'scanning' | 'extracted' | 'confirmed' | 'error';
+  ocrConfidence?: number;
+  ocrRawText?: string;
+  errorMessage?: string;
   timestamp: Date;
 }
 
@@ -158,6 +167,35 @@ export default function InsuranceCheckStation({
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedScanItem, setExpandedScanItem] = useState<string | null>(null);
 
+  // Scanner integration state
+  const [scannerServiceStatus, setScannerServiceStatus] = useState<ScannerServiceStatus>('checking');
+  const [availableScanners, setAvailableScanners] = useState<ScannerDevice[]>([]);
+  const [selectedScanner, setSelectedScanner] = useState<string>('');
+  const [isScanningFromDevice, setIsScanningFromDevice] = useState(false);
+  const [showScannerSetup, setShowScannerSetup] = useState(false);
+
+  // Check for scanner service on mount and periodically
+  useEffect(() => {
+    let mounted = true;
+    const check = async () => {
+      const status = await checkScannerService();
+      if (!mounted) return;
+      setScannerServiceStatus(status);
+      if (status === 'connected') {
+        const scanners = await discoverScanners();
+        if (!mounted) return;
+        setAvailableScanners(scanners);
+        if (scanners.length > 0 && !selectedScanner) {
+          const defaultScanner = scanners.find(s => s.isDefault) ?? scanners[0];
+          setSelectedScanner(defaultScanner.id);
+        }
+      }
+    };
+    check();
+    const interval = setInterval(check, 30000); // re-check every 30s
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
   // Filtered checks
   const filteredInsuranceChecks = useMemo(() => {
     return insuranceChecks.filter((check: InsuranceCheckRecord) => {
@@ -231,16 +269,84 @@ export default function InsuranceCheckStation({
 
     setScanSessionItems(prev => [...prev, ...newItems]);
 
-    // Simulate OCR extraction (placeholder — real OCR would use Tesseract.js or AWS Textract)
-    newItems.forEach(item => {
-      setTimeout(() => {
+    // Run OCR extraction via Tesseract.js for each image file
+    newItems.forEach(async (item) => {
+      if (!item.file.type.startsWith('image/')) {
+        // PDFs need conversion first — mark as extracted so user can enter data manually
         setScanSessionItems(prev => prev.map(si =>
           si.id === item.id
-            ? { ...si, status: 'extracted' as const }
+            ? { ...si, status: 'extracted' as const, errorMessage: 'PDF OCR requires image conversion — enter data manually' }
             : si
         ));
-      }, 1500);
+        return;
+      }
+
+      try {
+        const ocrResult = await extractCheckData(item.file);
+        setScanSessionItems(prev => prev.map(si =>
+          si.id === item.id
+            ? {
+                ...si,
+                status: 'extracted' as const,
+                extractedData: {
+                  checkNumber: ocrResult.checkNumber,
+                  amount: ocrResult.amount,
+                  payer: ocrResult.payer,
+                },
+                ocrConfidence: ocrResult.confidence,
+                ocrRawText: ocrResult.rawText,
+              }
+            : si
+        ));
+      } catch (err) {
+        setScanSessionItems(prev => prev.map(si =>
+          si.id === item.id
+            ? {
+                ...si,
+                status: 'extracted' as const,
+                errorMessage: `OCR failed: ${err instanceof Error ? err.message : 'Unknown error'}. Enter data manually.`,
+              }
+            : si
+        ));
+      }
     });
+  };
+
+  // Acquire scan from connected scanner device
+  const handleScanFromDevice = async () => {
+    if (!selectedScanner || isScanningFromDevice) return;
+    setIsScanningFromDevice(true);
+    try {
+      const results = await acquireScan(selectedScanner, {
+        resolution: 300,
+        colorMode: 'grayscale',
+        format: 'png',
+      });
+      const files = results.map(r => r.file);
+      if (files.length > 0) {
+        addFilesToSession(files);
+      }
+    } catch (err) {
+      console.error('Scanner acquisition failed:', err);
+    } finally {
+      setIsScanningFromDevice(false);
+    }
+  };
+
+  const refreshScanners = async () => {
+    setScannerServiceStatus('checking');
+    const status = await checkScannerService();
+    setScannerServiceStatus(status);
+    if (status === 'connected') {
+      const scanners = await discoverScanners();
+      setAvailableScanners(scanners);
+      if (scanners.length > 0 && !selectedScanner) {
+        const defaultScanner = scanners.find(s => s.isDefault) ?? scanners[0];
+        setSelectedScanner(defaultScanner.id);
+      }
+    } else {
+      setAvailableScanners([]);
+    }
   };
 
   const updateScanItemData = (id: string, field: keyof ScanSessionItem['extractedData'], value: string) => {
@@ -540,6 +646,119 @@ export default function InsuranceCheckStation({
               </div>
             )}
 
+            {/* Scanner Device Panel */}
+            <div className={`rounded-xl border p-4 ${
+              isDayMode ? 'bg-white border-gray-200' : 'bg-white/5 border-white/10'
+            }`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Monitor className={`w-4 h-4 ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`} />
+                  <h4 className={`text-sm font-semibold ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
+                    Scanner Device
+                  </h4>
+                  {scannerServiceStatus === 'connected' ? (
+                    <span className="flex items-center gap-1 text-xs text-emerald-500">
+                      <Wifi className="w-3 h-3" /> Connected
+                    </span>
+                  ) : scannerServiceStatus === 'checking' ? (
+                    <span className="flex items-center gap-1 text-xs text-amber-500">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                      <WifiOff className="w-3 h-3" /> No service
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowScannerSetup(!showScannerSetup)}
+                    className={`p-1.5 rounded-lg text-xs transition-colors ${
+                      isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-white/10 text-gray-400'
+                    }`}
+                    title="Setup instructions"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={refreshScanners}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      isDayMode ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    Detect Scanners
+                  </button>
+                </div>
+              </div>
+
+              {showScannerSetup && (
+                <div className={`mb-3 rounded-lg p-3 text-xs ${
+                  isDayMode ? 'bg-blue-50 border border-blue-100' : 'bg-blue-900/20 border border-blue-800/30'
+                }`}>
+                  <p className={`font-semibold mb-2 ${isDayMode ? 'text-blue-800' : 'text-blue-300'}`}>
+                    {SCANNER_SETUP_INSTRUCTIONS.title}
+                  </p>
+                  <ol className={`list-decimal list-inside space-y-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>
+                    {SCANNER_SETUP_INSTRUCTIONS.steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ol>
+                  <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-blue-200' : 'border-blue-700/30'}`}>
+                    <p className={`font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>Requirements:</p>
+                    <ul className={`list-disc list-inside space-y-0.5 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>
+                      {SCANNER_SETUP_INSTRUCTIONS.requirements.map((req, i) => (
+                        <li key={i}>{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {scannerServiceStatus === 'connected' && availableScanners.length > 0 ? (
+                <div className="flex items-center gap-3">
+                  <select
+                    value={selectedScanner}
+                    onChange={(e) => setSelectedScanner(e.target.value)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm border ${
+                      isDayMode
+                        ? 'bg-white border-gray-200 text-gray-700'
+                        : 'bg-white/5 border-white/10 text-white'
+                    }`}
+                  >
+                    {availableScanners.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.type.toUpperCase()}){s.isDefault ? ' — Default' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleScanFromDevice}
+                    disabled={isScanningFromDevice || !selectedScanner}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      isScanningFromDevice
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:shadow-lg'
+                    }`}
+                  >
+                    {isScanningFromDevice ? (
+                      <><Loader2 className="w-4 h-4 inline mr-1 animate-spin" /> Scanning...</>
+                    ) : (
+                      <><ScanLine className="w-4 h-4 inline mr-1" /> Scan Now</>
+                    )}
+                  </button>
+                </div>
+              ) : scannerServiceStatus === 'connected' ? (
+                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <AlertCircle className="w-3.5 h-3.5 inline mr-1" />
+                  Service running but no scanners detected. Check that your scanner is connected and drivers are installed.
+                </p>
+              ) : scannerServiceStatus === 'disconnected' ? (
+                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Scanner Bridge service not detected. Click the <Info className="w-3 h-3 inline" /> icon for setup instructions, or drag/drop files below.
+                </p>
+              ) : null}
+            </div>
+
             {/* Drop Zone */}
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -694,20 +913,41 @@ export default function InsuranceCheckStation({
                       {/* Status & Actions */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {item.status === 'scanning' && (
-                          <div className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                          <div className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${
                             isDayMode ? 'bg-blue-100 text-blue-700' : 'bg-blue-900/30 text-blue-400'
                           }`}>
-                            Scanning...
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Running OCR...
                           </div>
                         )}
                         {item.status === 'extracted' && (
-                          <button
-                            onClick={() => confirmScanItem(item.id)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
-                            Confirm
-                          </button>
+                          <>
+                            {item.ocrConfidence !== undefined && (
+                              <div className={`text-xs px-2 py-0.5 rounded-full ${
+                                item.ocrConfidence >= 80
+                                  ? isDayMode ? 'bg-emerald-50 text-emerald-600' : 'bg-emerald-900/20 text-emerald-400'
+                                  : item.ocrConfidence >= 50
+                                    ? isDayMode ? 'bg-amber-50 text-amber-600' : 'bg-amber-900/20 text-amber-400'
+                                    : isDayMode ? 'bg-red-50 text-red-600' : 'bg-red-900/20 text-red-400'
+                              }`} title={`OCR confidence: ${Math.round(item.ocrConfidence)}%`}>
+                                {Math.round(item.ocrConfidence)}%
+                              </div>
+                            )}
+                            {item.errorMessage && (
+                              <div className={`text-xs px-2 py-0.5 rounded-full ${
+                                isDayMode ? 'bg-amber-50 text-amber-600' : 'bg-amber-900/20 text-amber-400'
+                              }`} title={item.errorMessage}>
+                                <AlertCircle className="w-3 h-3 inline" />
+                              </div>
+                            )}
+                            <button
+                              onClick={() => confirmScanItem(item.id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
+                              Confirm
+                            </button>
+                          </>
                         )}
                         {item.status === 'confirmed' && (
                           <div className={`text-xs font-medium px-2.5 py-1 rounded-full ${
