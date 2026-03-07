@@ -47,7 +47,7 @@ import {
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges,
   getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate,
-  updateInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
+  updateInsuranceCheck, deleteInsuranceCheck,
   getActiveInsuranceChecks, getArchivedInsuranceChecks, getInsuranceCheckAuditHistory,
   subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
