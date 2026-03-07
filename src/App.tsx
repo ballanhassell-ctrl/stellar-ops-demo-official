@@ -33,6 +33,7 @@ import { EODReport } from './components/eod-report';
 import { sanitizePatientName } from './utils/sanitizePatientName';
 import { getLocalDateString } from './utils/dateUtils';
 import { useAuth } from './contexts/AuthContext';
+import { useTheme } from './contexts/ThemeContext';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
@@ -751,7 +752,8 @@ const CourtStreetRCM = () => {
   const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
   const [showCSDMetricsModal, setShowCSDMetricsModal] = useState(false);
   const [showRCMMetricsModal, setShowRCMMetricsModal] = useState(false);
-  const [isDayMode, setIsDayMode] = useState(true);
+  const { isDark, toggleTheme } = useTheme();
+  const isDayMode = !isDark; // Keep compatibility with existing code
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // AI Insights state
@@ -2019,23 +2021,24 @@ const CourtStreetRCM = () => {
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Day/Night Mode Button - Icon only on mobile */}
               <button
-                onClick={() => setIsDayMode(!isDayMode)}
+                onClick={toggleTheme}
                 className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
                   isDayMode
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-coral-400 text-white hover:bg-coral-500'
+                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-[#00D4FF] text-black hover:bg-[#00b8e6]'
                 }`}
+                title={isDayMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
               >
                 {isDayMode ? (
                   <>
                     <Moon className="w-5 h-5" />
-                    <span className="hidden md:inline text-sm font-medium">Night Mode</span>
+                    <span className="hidden md:inline text-sm font-medium">Dark</span>
                   </>
                 ) : (
                   <>
                     <Sun className="w-5 h-5" />
-                    <span className="text-sm font-medium">Day Mode</span>
-</>
+                    <span className="hidden md:inline text-sm font-medium">Light</span>
+                  </>
                 )}
               </button>
 
