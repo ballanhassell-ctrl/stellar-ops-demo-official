@@ -2015,7 +2015,7 @@ const CourtStreetRCM = () => {
                   Court Street Dental RCM
                 </h1>
                 <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'} truncate`}>
-                  Powered by Stellar Consults
+                  Powered by Stellar OPS
                 </p>
               </div>
             </div>
