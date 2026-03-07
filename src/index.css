@@ -374,6 +374,38 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Gradient text effects for dimensional feel */
+.gradient-text-primary {
+  background: linear-gradient(135deg, #7C5CBF 0%, #E07A5F 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+}
+
+.gradient-text-primary.dark {
+  background: linear-gradient(135deg, #A78BFA 0%, #F49486 50%, #00D4FF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+}
+
+.gradient-text-accent {
+  background: linear-gradient(90deg, #7C5CBF 0%, #00D4FF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-accent.dark {
+  background: linear-gradient(90deg, #00D4FF 0%, #A855F7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+}
+
 /* Accent colors for elements */
 .accent-primary.light {
   color: var(--light-accent);

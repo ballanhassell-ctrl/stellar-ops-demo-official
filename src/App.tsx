@@ -2009,12 +2009,12 @@ const CourtStreetRCM = () => {
                 />
               </div>
 
-              {/* Title */}
+              {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
-                <h1 className="text-lg lg:text-xl font-display font-bold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent truncate">
+                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.02em'}}>
                   Court Street Dental RCM
                 </h1>
-                <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'} truncate`}>
+                <p className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'} truncate`}>
                   Powered by Stellar OPS
                 </p>
               </div>
@@ -2172,13 +2172,13 @@ const CourtStreetRCM = () => {
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <h2 className={`text-4xl font-display font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                       {getGreeting()}, Team! 👋
                     </h2>
-                    <h3 className="text-xl font-display font-semibold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent">
+                    <h3 className={`text-xl font-display font-bold ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                       Practice Overview Dashboard
                     </h3>
-                    <p className={`text-xs sm:text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                    <p className={`text-xs sm:text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                       Real-time insights into your revenue cycle performance
                     </p>
                   </div>
@@ -2372,7 +2372,7 @@ const CourtStreetRCM = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
               <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                <h3 className={`text-xl font-display font-bold mb-5 ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                   Claims Status
                 </h3>
                 <div className="space-y-3">
@@ -2499,7 +2499,7 @@ const CourtStreetRCM = () => {
 
             {/* Follow-Up Tracking */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-display font-bold mb-2 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
+              <h3 className={`text-xl font-display font-extrabold mb-2 ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                 Follow-Up Tracking
               </h3>
               <p className={`text-sm mb-5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
