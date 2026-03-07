@@ -406,6 +406,23 @@ body {
   filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
 }
 
+.gradient-text-gold {
+  background: linear-gradient(90deg, #D4AF37 0%, #F4E5A0 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+}
+
+.gradient-text-gold.dark {
+  background: linear-gradient(90deg, #FFD700 0%, #FFF4C4 50%, #FFD700 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.25));
+}
+
 /* Accent colors for elements */
 .accent-primary.light {
   color: var(--light-accent);
