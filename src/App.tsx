@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Toaster } from 'sonner';
-import VersionBanner from './components/VersionBanner';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
