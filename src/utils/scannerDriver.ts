@@ -1,27 +1,11 @@
 /**
  * Scanner driver integration for browser-based TWAIN/WIA scanning.
  *
- * TWAIN is a native protocol — browsers cannot directly talk to TWAIN drivers.
- * There are two practical approaches to integrate scanners in a web app:
+ * Communicates with the Scanner Bridge sidecar app (scanner-bridge/) that runs
+ * locally and exposes TWAIN/WIA/SANE scanners over HTTP + WebSocket.
  *
- * 1. **Local scanning service** (recommended for production):
- *    Install a lightweight companion app / service on the user's workstation
- *    that exposes TWAIN scanner access over a local HTTP/WebSocket endpoint.
- *    The web app communicates with this local service to discover scanners,
- *    trigger scans, and receive scanned images.
- *
- *    Popular solutions:
- *    - Dynamic Web TWAIN (Dynamsoft) — commercial, mature, cross-platform
- *    - asprise.com Web Scan SDK
- *    - Scanner.js
- *
- * 2. **WebUSB API** (experimental, limited):
- *    Some modern scanners can be accessed via WebUSB in Chrome/Edge, but
- *    driver support is very limited and not production-ready.
- *
- * This module provides an abstraction layer that works with a local scanning
- * service. It defaults to a configurable localhost endpoint and falls back
- * gracefully when no service is detected.
+ * Architecture:
+ *   [Browser/Dashboard] <--HTTP/WS--> [Scanner Bridge on localhost:18181] <--TWAIN/WIA/SANE--> [Scanner Hardware]
  */
 
 export interface ScannerDevice {
@@ -49,17 +33,25 @@ export interface ScanResult {
 
 export type ScannerServiceStatus = 'connected' | 'disconnected' | 'checking';
 
+export type ScannerEventType = 'scan:start' | 'scan:complete' | 'scan:error' | 'scanners:refresh';
+
+export interface ScannerEventListener {
+  (event: ScannerEventType, data: unknown): void;
+}
+
 // Configurable endpoint for the local scanning service
 const DEFAULT_SERVICE_URL = 'http://localhost:18181';
 
 let serviceUrl = DEFAULT_SERVICE_URL;
+let wsConnection: WebSocket | null = null;
+const eventListeners = new Set<ScannerEventListener>();
 
 export function configureScannerService(url: string) {
   serviceUrl = url;
 }
 
 /**
- * Check if the local scanning service is running.
+ * Check if the local Scanner Bridge sidecar is running.
  */
 export async function checkScannerService(): Promise<ScannerServiceStatus> {
   try {
@@ -75,7 +67,7 @@ export async function checkScannerService(): Promise<ScannerServiceStatus> {
 }
 
 /**
- * Discover available scanners via the local scanning service.
+ * Discover available scanners via the Scanner Bridge sidecar.
  */
 export async function discoverScanners(): Promise<ScannerDevice[]> {
   try {
@@ -93,7 +85,7 @@ export async function discoverScanners(): Promise<ScannerDevice[]> {
 
 /**
  * Acquire a scan from the specified scanner.
- * Returns one or more scanned page images.
+ * Returns one or more scanned page images as File objects.
  */
 export async function acquireScan(
   scannerId: string,
@@ -124,7 +116,7 @@ export async function acquireScan(
 
   for (let i = 0; i < data.pages.length; i++) {
     const page = data.pages[i];
-    // The service returns base64-encoded image data
+    // The sidecar returns base64-encoded image data
     const byteString = atob(page.data);
     const bytes = new Uint8Array(byteString.length);
     for (let j = 0; j < byteString.length; j++) {
@@ -149,20 +141,71 @@ export async function acquireScan(
 }
 
 /**
- * Instructions for setting up the local scanning service companion app.
+ * Connect to the Scanner Bridge WebSocket for real-time scan events.
+ * The sidecar broadcasts events like scan:start, scan:complete, scan:error.
+ */
+export function connectScannerWebSocket(): void {
+  if (wsConnection && wsConnection.readyState === WebSocket.OPEN) return;
+
+  const wsUrl = serviceUrl.replace(/^http/, 'ws') + '/ws';
+
+  try {
+    wsConnection = new WebSocket(wsUrl);
+
+    wsConnection.onmessage = (event) => {
+      try {
+        const { event: eventType, data } = JSON.parse(event.data);
+        eventListeners.forEach(listener => listener(eventType, data));
+      } catch {
+        // Ignore malformed messages
+      }
+    };
+
+    wsConnection.onclose = () => {
+      wsConnection = null;
+      // Auto-reconnect after 5s
+      setTimeout(() => {
+        if (eventListeners.size > 0) connectScannerWebSocket();
+      }, 5000);
+    };
+
+    wsConnection.onerror = () => {
+      wsConnection?.close();
+    };
+  } catch {
+    // WebSocket connection failed — service may not be running
+  }
+}
+
+export function addScannerEventListener(listener: ScannerEventListener): () => void {
+  eventListeners.add(listener);
+  connectScannerWebSocket();
+  return () => {
+    eventListeners.delete(listener);
+    if (eventListeners.size === 0) {
+      wsConnection?.close();
+      wsConnection = null;
+    }
+  };
+}
+
+/**
+ * Instructions for setting up the Scanner Bridge sidecar app.
  */
 export const SCANNER_SETUP_INSTRUCTIONS = {
-  title: 'Scanner Service Setup',
+  title: 'Scanner Bridge Setup',
   steps: [
-    'Download the Scanner Bridge companion app for your operating system.',
-    'Install and run the Scanner Bridge service — it runs in the system tray.',
-    'The service listens on localhost:18181 and exposes your TWAIN/WIA scanners to the web app.',
-    'Once running, click "Detect Scanners" in the app to discover available devices.',
-    'Select your scanner and click "Scan" to acquire check images directly.',
+    'Navigate to the scanner-bridge/ folder in this project.',
+    'Run "npm install" then "npm start" to launch the Scanner Bridge service.',
+    'The service runs in the system tray and listens on localhost:18181.',
+    'Once running, click "Detect Scanners" in the dashboard to discover available devices.',
+    'Select your scanner and click "Scan" to acquire check images directly into the app.',
   ],
   requirements: [
-    'Windows 7+ or macOS 10.13+ (TWAIN/WIA drivers must be installed for your scanner)',
-    'Scanner must be connected via USB or network and have drivers installed',
-    'The Scanner Bridge companion app must be running while scanning',
+    'Node.js 18+ installed on the workstation where the scanner is connected',
+    'Windows: Scanner must have WIA drivers installed (most scanners do by default)',
+    'Linux/macOS: SANE must be installed (sudo apt install sane-utils / brew install sane-backends)',
+    'Scanner must be connected via USB or network',
+    'The Scanner Bridge service must be running while scanning',
   ],
 };
