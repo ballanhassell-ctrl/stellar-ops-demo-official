@@ -407,20 +407,21 @@ body {
 }
 
 .gradient-text-gold {
-  background: linear-gradient(90deg, #D4AF37 0%, #F4E5A0 50%, #D4AF37 100%);
+  background: linear-gradient(135deg, #B8860B 0%, #DAA520 25%, #F0E68C 50%, #CD853F 75%, #B8860B 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   background-size: 200% 200%;
+  filter: brightness(1.1) contrast(1.05);
 }
 
 .gradient-text-gold.dark {
-  background: linear-gradient(90deg, #FFD700 0%, #FFF4C4 50%, #FFD700 100%);
+  background: linear-gradient(135deg, #E6C79C 0%, #D4AF37 20%, #F5DEB3 40%, #DAA520 60%, #CD853F 80%, #B8860B 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   background-size: 200% 200%;
-  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.25));
+  filter: drop-shadow(0 0 4px rgba(218, 165, 32, 0.2)) brightness(1.15);
 }
 
 /* Accent colors for elements */
