@@ -1927,11 +1927,11 @@ const CourtStreetRCM = () => {
   // Loading state - wait for all data to load from Supabase
   if (metricsLoading || eodLoading || providerLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
         <div className={`text-center p-12 rounded-2xl backdrop-blur-xl animate-fade-in border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
           <RefreshCw className={`w-16 h-16 animate-spin mx-auto mb-6 ${isDayMode ? 'text-purple-500' : 'text-cyan-500'}`} style={{filter: !isDayMode ? 'drop-shadow(0 0 10px rgba(0,212,255,0.5))' : 'none'}} />
           <p className={`text-2xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Loading dashboard data...</p>
-          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Fetching from Supabase</p>
+          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fetching from Supabase</p>
         </div>
       </div>
     );
@@ -1940,11 +1940,11 @@ const CourtStreetRCM = () => {
   // Error state
   if (metricsError || eodError || providerError) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
         <div className={`text-center max-w-md p-12 rounded-2xl backdrop-blur-xl animate-scale-in border-2 ${isDayMode ? 'bg-white border-red-200 shadow-xl' : 'bg-neutral-900 border-red-900 shadow-[0_0_60px_rgba(239,68,68,0.2)]'}`}>
-          <AlertCircle className={`w-16 h-16 mx-auto mb-6 ${isDayMode ? 'text-red-500' : 'text-red-400'}`} />
+          <AlertCircle className={`w-16 h-16 mx-auto mb-6 ${isDayMode ? 'text-red-600' : 'text-red-400'}`} />
           <h2 className={`text-2xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Error Loading Data</h2>
-          <p className={`mb-6 ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+          <p className={`mb-6 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
             {metricsError || eodError || providerError}
           </p>
           <button
@@ -1953,7 +1953,7 @@ const CourtStreetRCM = () => {
               refreshEOD();
               refreshProvider();
             }}
-            className={`px-6 py-3 rounded-xl font-semibold transform hover:scale-105 transition-all border-2 ${isDayMode ? 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600 shadow-lg hover:shadow-xl' : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'}`}
+            className={`px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all border-2 ${isDayMode ? 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600 shadow-lg hover:shadow-xl' : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'}`}
           >
             Retry
           </button>
@@ -1965,19 +1965,19 @@ const CourtStreetRCM = () => {
   // Null safety guard - ensure data is loaded
   if (!eodData || !dailyProductionByProvider) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
         <div className={`text-center p-12 rounded-2xl backdrop-blur-xl border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
           <p className={`text-xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
-          <p className={`text-sm ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
+          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-white' : 'bg-black'}`}>
-      {/* Header - Dramatic glass morphism effect */}
-      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/70 border-gray-200 shadow-sm' : 'bg-black/60 border-gray-800 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
+    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
+      {/* Header - Sleek modern design */}
+      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/80 border-gray-200 shadow-sm' : 'bg-black/70 border-gray-800 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
             {/* Mobile Menu Button */}
@@ -2044,30 +2044,35 @@ const CourtStreetRCM = () => {
                 )}
               </button>
 
-              {/* Sign Out */}
-              <button
-                onClick={() => signOut()}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
-                  isDayMode
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                    : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
-                }`}
-                title="Sign Out"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="hidden md:inline text-sm font-medium">Sign Out</span>
-              </button>
-
-              {/* Task Board - Hidden on mobile */}
+              {/* Task Board - Moved before theme toggle */}
               <a
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium min-h-[44px]"
+                className={`hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
+                  isDayMode
+                    ? 'bg-white text-gray-700 border-gray-300 hover:border-purple-500 hover:bg-purple-50 shadow-sm'
+                    : 'bg-neutral-800 text-gray-300 border-gray-700 hover:border-purple-500 hover:bg-neutral-700'
+                }`}
+                title="Open Task Board"
               >
                 <ExternalLink className="w-4 h-4" />
-                <span className="text-sm">Task Board</span>
+                <span className="text-sm">Tasks</span>
               </a>
+
+              {/* Sign Out */}
+              <button
+                onClick={() => signOut()}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
+                  isDayMode
+                    ? 'bg-white text-red-600 border-red-200 hover:bg-red-50 hover:border-red-400'
+                    : 'bg-neutral-800 text-red-400 border-red-900 hover:bg-red-950 hover:border-red-700'
+                }`}
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden md:inline text-sm">Sign Out</span>
+              </button>
               <div className="text-right">
                 <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>A Collaborative Solution</p>
                 <p className={`text-xs font-semibold bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>Court Street Dental × Stellar Consults</p>
@@ -2078,10 +2083,10 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className={`${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} mb-4 sm:mb-8`}>
+      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 ${isDayMode ? 'bg-white/50 border-gray-200' : 'bg-black/30 border-gray-800'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          {/* Desktop Navigation */}
-          <nav className="hidden sm:flex flex-wrap gap-3 py-4">
+          {/* Desktop Navigation - Modern sleek design */}
+          <nav className="hidden sm:flex flex-wrap gap-2 py-4">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -2089,16 +2094,21 @@ const CourtStreetRCM = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift min-h-[44px] ${
+                  className={`group relative flex items-center gap-2.5 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] border ${
                     isActive
-                      ? 'bg-gradient-primary text-white shadow-glow-purple'
+                      ? isDayMode
+                        ? 'bg-gray-900 text-white border-gray-800 shadow-lg'
+                        : 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_20px_rgba(0,212,255,0.3)]'
                       : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                      ? 'bg-white text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-gray-50 shadow-sm'
+                      : 'bg-neutral-800 text-gray-300 border-gray-700 hover:bg-neutral-700 hover:border-gray-600'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
                   <span>{item.name}</span>
+                  {isActive && (
+                    <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${isDayMode ? 'bg-gray-900' : 'bg-cyan-400'}`} style={{filter: !isDayMode ? 'drop-shadow(0 0 4px rgba(0,212,255,0.8))' : 'none'}} />
+                  )}
                 </button>
               );
             })}
@@ -2119,31 +2129,33 @@ const CourtStreetRCM = () => {
                       setCurrentView(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`group flex items-center space-x-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all hover-lift min-h-[52px] ${
+                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-lg font-semibold text-base transition-all min-h-[52px] border ${
                       isActive
-                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                        ? isDayMode
+                          ? 'bg-gray-900 text-white border-gray-800 shadow-lg'
+                          : 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_20px_rgba(0,212,255,0.3)]'
                         : isDayMode
-                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
-                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        ? 'bg-white text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                        : 'bg-neutral-800 text-gray-300 border-gray-700 hover:bg-neutral-700'
                     }`}
                   >
-                    <Icon className={`w-6 h-6 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                    <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
                     <span>{item.name}</span>
                   </button>
                 );
               })}
 
               {/* Mobile-only Quick Actions */}
-              <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-white/20' : 'border-white/10'}`}>
+              <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
                 <a
                   href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all hover-lift min-h-[52px] ${
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-lg transition-all min-h-[52px] border font-semibold ${
                     isDayMode
-                      ? 'bg-primary-500 text-white hover:bg-primary-600'
-                      : 'bg-primary-600 text-white hover:bg-primary-700'
-                  } shadow-lg font-semibold`}
+                      ? 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600 shadow-lg'
+                      : 'bg-purple-600 text-white border-purple-700 hover:bg-purple-700 shadow-lg'
+                  }`}
                 >
                   <ExternalLink className="w-5 h-5" />
                   <span>Task Board</span>
