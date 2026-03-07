@@ -44,9 +44,9 @@ interface DashboardMetrics {
 
 interface NewPatientData {
   perDay: number;
-  perWeek: number;
-  perMonth: number;
-  quarterly: number;
+  perWeek: number | null;
+  perMonth: number | null;
+  quarterly: number | null;
   perWeekGoal: number;
   perMonthGoal: number;
   quarterlyGoal: number;
@@ -291,28 +291,30 @@ export function generateInsights(
   // NEW PATIENT ANALYSIS
   // ============================================
   if (newPatientData) {
-    const weeklyProgress = (newPatientData.perWeek / newPatientData.perWeekGoal) * 100;
-    const monthlyProgress = (newPatientData.perMonth / newPatientData.perMonthGoal) * 100;
+    const perWeek = newPatientData.perWeek ?? 0;
+    const perMonth = newPatientData.perMonth ?? 0;
+    const weeklyProgress = newPatientData.perWeekGoal > 0 ? (perWeek / newPatientData.perWeekGoal) * 100 : 0;
+    const monthlyProgress = newPatientData.perMonthGoal > 0 ? (perMonth / newPatientData.perMonthGoal) * 100 : 0;
 
-    if (weeklyProgress >= 100) {
+    if (newPatientData.perWeek != null && weeklyProgress >= 100) {
       insights.push(
         createInsight(
           'positive',
           '🎉',
           'Weekly New Patient Goal Met',
-          `${newPatientData.perWeek} new patients this week - goal achieved!`,
+          `${perWeek} new patients this week - goal achieved!`,
           'medium',
           undefined,
           'new_pts_per_week'
         )
       );
-    } else if (weeklyProgress < (100 - THRESHOLDS.newPatients.belowGoalPercent)) {
+    } else if (newPatientData.perWeek != null && weeklyProgress < (100 - THRESHOLDS.newPatients.belowGoalPercent)) {
       insights.push(
         createInsight(
           'info',
           '📈',
           'New Patient Acquisition',
-          `${newPatientData.perWeek} of ${newPatientData.perWeekGoal} weekly goal (${weeklyProgress.toFixed(0)}%)`,
+          `${perWeek} of ${newPatientData.perWeekGoal} weekly goal (${weeklyProgress.toFixed(0)}%)`,
           'low',
           'Review marketing and referral strategies',
           'new_pts_per_week'
@@ -320,13 +322,13 @@ export function generateInsights(
       );
     }
 
-    if (monthlyProgress >= 100) {
+    if (newPatientData.perMonth != null && monthlyProgress >= 100) {
       insights.push(
         createInsight(
           'positive',
           '🌟',
           'Monthly New Patient Goal Exceeded',
-          `${newPatientData.perMonth} new patients this month - outstanding!`,
+          `${perMonth} new patients this month - outstanding!`,
           'high',
           undefined,
           'new_pts_per_month'

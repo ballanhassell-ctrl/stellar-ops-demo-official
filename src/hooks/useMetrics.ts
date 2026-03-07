@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues, getPaymentAggregates, getClaimsTotals, getBAMCycleRevenue, type MetricWithValue } from '../services/metrics';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleMetricsData } from '../data/sampleData';
 
 interface DashboardMetrics {
   bamCurrentRevenue: number;
+  bamPreviousRevenue: number;
   bamTargetGoal: number;
   practiceGoal: number;
   collectionRate: number;
   activePatients: number;
   activeClaims: number;
-  pendingPayments: number;
   outstandingAR: number;
 }
 
@@ -44,7 +46,6 @@ interface PreAuthsMetrics {
   approved: number;
   denied: number;
   expiringSoon: number;
-  expiringThisMonth: number;
 }
 
 interface ClaimsMetrics {
@@ -75,8 +76,15 @@ interface AdvancedMetrics {
   churnedPatientsMonth: number;
   churnRate: number; // AUTO-CALCULATED (Phase 3)
   lifecycleYears: number; // AUTO-CALCULATED (Phase 3)
+  lifecycleMonths: number;
   ltv: number; // AUTO-CALCULATED (Phase 3)
   averagePatientValue: number; // Used in LTV calculation
+  activePtsFirstOfPriorMonth: number;
+  avgRetentionPeriod: number;
+  averageRevenuePerClient: number;
+  nps: number; // Net Promoter Score
+  enps: number; // Employee NPS
+  employeeUtilizationRate: number;
   cogs: {
     assistantPayroll: number;
     associateDoctorExpense: number;
@@ -114,7 +122,15 @@ export interface MetricsData {
   scorecard: ScorecardMetrics;
 }
 
-export const useMetrics = (date: string) => {
+export const useMetrics = (
+  date: string,
+  bamCycleDates?: {
+    currentCycleStart: Date;
+    currentCycleEnd: Date;
+    previousCycleStart: Date | null;
+    previousCycleEnd: Date | null;
+  }
+) => {
   const [data, setData] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,16 +140,22 @@ export const useMetrics = (date: string) => {
       setLoading(true);
       setError(null);
 
+      // Return static sample data if in static mode
+      if (isStaticDataMode()) {
+        setData(sampleMetricsData);
+        setLoading(false);
+        return;
+      }
+
       const metrics = await getMetricsForDate(date);
 
       // Define persistent metrics that should use latest values if not found for current date
+      // NOTE: bam_current_revenue is now calculated dynamically based on cycle dates
       const persistentMetrics = [
-        'bam_current_revenue',
         'bam_target_goal',
         'practice_goal',
         'active_patients',
         'collection_rate',
-        'outstanding_ar',
         // Claims metrics
         'active_claims',
         'claims_pending',
@@ -162,6 +184,11 @@ export const useMetrics = (date: string) => {
         'patient_payments',
         'unapplied_credits',
         'refunds_pending',
+        // Patient metrics (persistent - should show last available data)
+        'total_patients',
+        'patients_with_balance',
+        'past_due_accounts',
+        'total_patient_ar',
         // Third party financing metrics
         'financing_cherry_patients',
         'financing_cherry_amount',
@@ -204,7 +231,7 @@ export const useMetrics = (date: string) => {
       // Helper function to find metric value by field_key
       // For persistent metrics, use latest value if current date doesn't have data
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
-        const metric = metrics.find(m => m.field_key === fieldKey);
+        const metric = metrics.find((m: MetricWithValue) => m.field_key === fieldKey);
         const currentValue = metric ? metric.value : 0;
 
         // If this is a persistent metric and we don't have data for the current date, use latest
@@ -215,16 +242,39 @@ export const useMetrics = (date: string) => {
         return currentValue || defaultValue;
       };
 
+      // Fetch BAM cycle revenue data (filtered by cycle dates)
+      let bamCurrentRevenue = 0;
+      let bamPreviousRevenue = 0;
+
+      if (bamCycleDates) {
+        // Fetch revenue for current cycle
+        bamCurrentRevenue = await getBAMCycleRevenue(
+          bamCycleDates.currentCycleStart,
+          bamCycleDates.currentCycleEnd
+        );
+
+        // Fetch revenue for previous cycle (if available)
+        bamPreviousRevenue = await getBAMCycleRevenue(
+          bamCycleDates.previousCycleStart,
+          bamCycleDates.previousCycleEnd
+        );
+      } else {
+        // Fallback to old behavior if no cycle dates provided
+        console.warn('[useMetrics] No BAM cycle dates provided, using legacy persistent metric');
+        bamCurrentRevenue = getMetricValue('bam_current_revenue', 0, true);
+      }
+
       // Map the flat metrics array to structured dashboard data
       const mappedData: MetricsData = {
         dashboard: {
-          bamCurrentRevenue: getMetricValue('bam_current_revenue', 0, true),
+          bamCurrentRevenue: bamCurrentRevenue,
+          bamPreviousRevenue: bamPreviousRevenue,
           bamTargetGoal: getMetricValue('bam_target_goal', 224548, true),
           practiceGoal: getMetricValue('practice_goal', 300000, true),
           collectionRate: getMetricValue('collection_rate', 0, true),
           activePatients: getMetricValue('active_patients', 0, true),
-          activeClaims: getMetricValue('active_claims'),
-          pendingPayments: getMetricValue('pending_payments'),
+          // AUTO-CALCULATED from claims table - uses same value as claims.totalActive
+          activeClaims: claimsTotals.activeClaims,
           // Outstanding A/R is auto-calculated from Insurance + Patient A/R aging totals
           outstandingAR: 0, // Will be calculated below after aging data is loaded
         },
@@ -258,8 +308,7 @@ export const useMetrics = (date: string) => {
           pending: getMetricValue('pre_auths_pending'),
           approved: getMetricValue('pre_auths_approved'),
           denied: getMetricValue('pre_auths_denied'),
-          expiringSoon: getMetricValue('pre_auths_expiring_soon'),
-          expiringThisMonth: getMetricValue('pre_auths_expiring_this_month'),
+          expiringSoon: getMetricValue('eod_preauths_expiring'),
         },
         claims: {
           // AUTO-CALCULATED from claims table (Phase 2)
@@ -301,8 +350,15 @@ export const useMetrics = (date: string) => {
           // PHASE 3: AUTO-CALCULATED ADVANCED METRICS
           churnRate: 0, // Will be calculated below
           lifecycleYears: 0, // Will be calculated below
+          lifecycleMonths: getMetricValue('adv_lifecycle_months', 0, true),
           ltv: 0, // Will be calculated below
           averagePatientValue: getMetricValue('adv_average_patient_value', 0, true),
+          activePtsFirstOfPriorMonth: getMetricValue('adv_active_pts_prior_month', 0, true),
+          avgRetentionPeriod: getMetricValue('adv_avg_retention_period', 0, true),
+          averageRevenuePerClient: getMetricValue('adv_average_revenue_per_client', 0, true),
+          nps: getMetricValue('adv_nps', 0, true),
+          enps: getMetricValue('adv_enps', 0, true),
+          employeeUtilizationRate: getMetricValue('adv_employee_utilization_rate', 0, true),
           cogs: {
             assistantPayroll: getMetricValue('adv_cogs_assistant_payroll', 0, true),
             associateDoctorExpense: getMetricValue('adv_cogs_associate_doctor', 0, true),

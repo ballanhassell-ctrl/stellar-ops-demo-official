@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { getMetricsForDate, getLatestMetricValues, type MetricWithValue } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
 import { getRealTimeActionItems } from '../services/actionItems';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleEODData } from '../data/sampleData';
+
+// Auto-refresh interval for action items (60 seconds)
+const ACTION_ITEMS_REFRESH_INTERVAL = 60_000;
 
 export interface EODData {
   reportDate: string;
@@ -28,15 +33,14 @@ export interface EODData {
   patientsSeenToday: number;
   newPatients: number;
   proceduresCompleted: number;
-  unbilledProcedures: number;
   unappliedPayments: number;
-  failedTransactions: number;
   actionItems: {
     claimsToSubmit: number;
     deniedClaimsToResubmit: number;
     preAuthsApproved: number;
     accountsNeedingFollowUp: number;
     missedAppointments: number;
+    patientsDueForRecall: number;
   };
   payments: any[]; // Keep as array for now (not stored in Supabase)
   topProcedures: any[]; // Keep as array for now (not stored in Supabase)
@@ -53,11 +57,64 @@ export const useEODMetrics = (date: string) => {
   const [data, setData] = useState<EODData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /**
+   * Refresh ONLY the action items portion of the EOD data.
+   * This is lightweight and can be called frequently to keep
+   * resolved/completed items from appearing in the report.
+   */
+  const refreshActionItems = useCallback(async (): Promise<EODData | null> => {
+    if (isStaticDataMode()) return data;
+    try {
+      const realTimeActionItems = await getRealTimeActionItems();
+      setData((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          actionItems: {
+            claimsToSubmit: realTimeActionItems.claimsToSubmit,
+            deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+            preAuthsApproved: realTimeActionItems.preAuthsApproved,
+            accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+            missedAppointments: realTimeActionItems.missedAppointments,
+            patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
+          },
+        };
+        return updated;
+      });
+      // Return the updated data for callers that need it immediately
+      if (data) {
+        return {
+          ...data,
+          actionItems: {
+            claimsToSubmit: realTimeActionItems.claimsToSubmit,
+            deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+            preAuthsApproved: realTimeActionItems.preAuthsApproved,
+            accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+            missedAppointments: realTimeActionItems.missedAppointments,
+            patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
+          },
+        };
+      }
+      return data;
+    } catch (err) {
+      console.error('[EOD] Error refreshing action items:', err);
+      return data;
+    }
+  }, [data]);
 
   const fetchEODMetrics = async (targetDate: string) => {
     try {
       setLoading(true);
       setError(null);
+
+      // Return static sample data if in static mode
+      if (isStaticDataMode()) {
+        setData({ ...sampleEODData, reportDate: targetDate });
+        setLoading(false);
+        return;
+      }
 
       const metrics = await getMetricsForDate(targetDate);
 
@@ -75,7 +132,7 @@ export const useEODMetrics = (date: string) => {
 
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
-        const metric = metrics.find(m => m.field_key === fieldKey);
+        const metric = metrics.find((m: MetricWithValue) => m.field_key === fieldKey);
         const currentValue = metric ? metric.value : 0;
 
         // If this is a persistent metric and we don't have data for the current date, use latest
@@ -157,9 +214,7 @@ export const useEODMetrics = (date: string) => {
         patientsSeenToday: getMetricValue('eod_patients_seen'),
         newPatients: getMetricValue('eod_new_patients', 0, true), // Use persistent data
         proceduresCompleted: getMetricValue('eod_procedures_completed'),
-        unbilledProcedures: getMetricValue('eod_unbilled_procedures'),
-        unappliedPayments: getMetricValue('eod_unapplied_payments'),
-        failedTransactions: getMetricValue('eod_failed_transactions'),
+        unappliedPayments: getMetricValue('unapplied_credits'),
 
         // Action Items - Real-time data from RCM Management
         actionItems: {
@@ -168,6 +223,7 @@ export const useEODMetrics = (date: string) => {
           preAuthsApproved: realTimeActionItems.preAuthsApproved,
           accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
           missedAppointments: realTimeActionItems.missedAppointments,
+          patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
         },
 
         // Arrays (not stored in Supabase for now)
@@ -195,6 +251,35 @@ export const useEODMetrics = (date: string) => {
 
   useEffect(() => {
     fetchEODMetrics(date);
+
+    // Auto-refresh action items every 60 seconds so resolved items
+    // are excluded from the report without requiring manual refresh
+    refreshIntervalRef.current = setInterval(() => {
+      if (!isStaticDataMode()) {
+        getRealTimeActionItems().then((realTimeActionItems) => {
+          setData((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              actionItems: {
+                claimsToSubmit: realTimeActionItems.claimsToSubmit,
+                deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+                preAuthsApproved: realTimeActionItems.preAuthsApproved,
+                accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+                missedAppointments: realTimeActionItems.missedAppointments,
+                patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
+              },
+            };
+          });
+        }).catch((err) => console.error('[EOD] Auto-refresh action items failed:', err));
+      }
+    }, ACTION_ITEMS_REFRESH_INTERVAL);
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
@@ -202,5 +287,5 @@ export const useEODMetrics = (date: string) => {
     fetchEODMetrics(date);
   };
 
-  return { data, loading, error, refresh };
+  return { data, loading, error, refresh, refreshActionItems };
 };

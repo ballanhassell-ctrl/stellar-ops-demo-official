@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate } from '../services/metrics';
+import { getMetricsForDate, type MetricWithValue } from '../services/metrics';
 
 export interface ProviderProductionData {
   drGajjar: number;
@@ -28,7 +28,7 @@ export const useProviderMetrics = (date: string) => {
 
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0): number => {
-        const metric = metrics.find(m => m.field_key === fieldKey);
+        const metric = metrics.find((m: MetricWithValue) => m.field_key === fieldKey);
         return metric ? metric.value : defaultValue;
       };
 
