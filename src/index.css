@@ -222,9 +222,9 @@ body {
 
 /* Design 3: Modern Minimalist - Two Distinct Visual Experiences */
 :root {
-  /* Minimalist Light - Clean, crisp, high contrast */
-  --light-bg: #FFFFFF;
-  --light-bg-secondary: #FAFAFA;
+  /* Minimalist Light - Clean, crisp, high contrast (softened) */
+  --light-bg: #FAFAFA;
+  --light-bg-secondary: #F5F5F5;
   --light-surface: #FFFFFF;
   --light-border: #E5E7EB;
   --light-border-strong: #D1D5DB;
