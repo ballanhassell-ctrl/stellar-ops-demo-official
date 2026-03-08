@@ -15,32 +15,44 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glass utility classes - uses solid semi-transparent backgrounds
-   instead of backdrop-filter blur to prevent rendering artifacts
-   on virtual machines and remote desktop environments */
+/* Apple-inspired Glass UI - Frosted glass effect with depth */
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.75) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.12),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
   }
 
   .glass-dark {
-    background: rgba(17, 24, 39, 0.78);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(17, 24, 39, 0.9) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15),
+                0 2px 8px 0 rgba(31, 38, 135, 0.08),
+                inset 0 1px 0 0 rgba(255, 255, 255, 1);
   }
 
   .glass-card-dark {
-    background: rgba(30, 41, 59, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(17, 24, 39, 0.95) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
+                0 2px 12px 0 rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
   }
 
   .gradient-primary {
