@@ -7,6 +7,7 @@ import {
   Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog,
   Menu, LogOut
 } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
@@ -8037,6 +8038,7 @@ const CourtStreetRCM = () => {
           onRefresh={handleRefreshInsights}
           isRefreshing={isRefreshingInsights}
         />
+        <Analytics />
       </div>
     </div>
   );
