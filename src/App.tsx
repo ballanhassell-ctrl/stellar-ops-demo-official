@@ -2026,7 +2026,7 @@ const CourtStreetRCM = () => {
               {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
                 <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.02em'}}>
-                  Court Street Dental RCM
+                  Court Street Dental | Practice Dashboard
                 </h1>
                 <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
                   Powered by Stellar OPS
@@ -6399,10 +6399,10 @@ const CourtStreetRCM = () => {
             </h2>
             <div className="space-y-4">
               <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                Welcome to the Court Street Dental RCM Dashboard.
+                Welcome to the Court Street Dental Practice Dashboard.
               </p>
               <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                This comprehensive Revenue Cycle Management application includes:
+                This comprehensive practice management platform includes:
               </p>
               <ul className={`list-disc list-inside space-y-2 ml-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 <li>Claims Management & Tracking</li>
