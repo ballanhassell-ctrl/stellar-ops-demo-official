@@ -1965,7 +1965,7 @@ const CourtStreetRCM = () => {
   // Null safety guard - ensure data is loaded
   if (!eodData || !dailyProductionByProvider) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-gray-50 via-purple-50/30 to-coral-50/30' : 'bg-black'}`}>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-purple-100/60 via-coral-100/40 to-blue-100/50' : 'bg-gradient-to-br from-black via-purple-950/30 to-black'}`}>
         <div className={`text-center p-12 rounded-2xl backdrop-blur-xl border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
           <p className={`text-xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
           <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
@@ -1975,9 +1975,9 @@ const CourtStreetRCM = () => {
   }
 
   return (
-    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-gray-50 via-purple-50/30 to-coral-50/30' : 'bg-black'}`}>
+    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-purple-100/60 via-coral-100/40 to-blue-100/50' : 'bg-gradient-to-br from-black via-purple-950/30 to-black'}`}>
       {/* Header - Sleek modern design */}
-      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/80 border-gray-200 shadow-sm' : 'bg-black/70 border-gray-800 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
+      <div className={`sticky top-0 z-50 backdrop-blur-2xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/40 border-white/60 shadow-lg shadow-purple-500/5' : 'bg-black/30 border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-4">
             {/* LEFT SIDE: Mobile Menu + Branding */}
