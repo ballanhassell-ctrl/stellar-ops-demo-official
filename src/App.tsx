@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
@@ -14,23 +14,32 @@ import { useEODMetrics } from './hooks/useEODMetrics';
 import { useProviderMetrics } from './hooks/useProviderMetrics';
 import { useNewPatientTracker } from './hooks/useNewPatientTracker';
 import { useWeeklyScorecardData } from './hooks/useWeeklyScorecardData';
-import LifecycleMetrics from './components/LifecycleMetrics';
-import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
-import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
-import { CSDMetricsCSVUpload } from './components/CSDMetricsCSVUpload';
-import { RCMMetricsCSVUpload } from './components/RCMMetricsCSVUpload';
-import InsuranceARReport from './components/InsuranceARReport';
-import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
-import ARAgingChart from './components/ARAgingChart';
-import OpenDentalImport from './components/OpenDentalImport';
-import PatientARTracker from './components/PatientARTracker';
-import CreditsTracker from './components/CreditsTracker';
-import VCCPaymentsTracker from './components/VCCPaymentsTracker';
-import EFTReconciliation from './components/EFTReconciliation';
-import InsuranceCheckStation from './components/InsuranceCheckStation';
-import { EODReport } from './components/eod-report';
+
+// Simple loading fallback for lazy-loaded components
+const LazyFallback = () => (
+  <div className="flex items-center justify-center p-12">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  </div>
+);
+
+// Lazy-loaded components — only downloaded when the user navigates to them
+const LifecycleMetrics = lazy(() => import('./components/LifecycleMetrics'));
+const PatientDataUpload = lazy(() => import('./components/PatientDataUpload'));
+const TopProceduresCSVUpload = lazy(() => import('./components/TopProceduresCSVUpload').then(m => ({ default: m.TopProceduresCSVUpload })));
+const CSDMetricsCSVUpload = lazy(() => import('./components/CSDMetricsCSVUpload').then(m => ({ default: m.CSDMetricsCSVUpload })));
+const RCMMetricsCSVUpload = lazy(() => import('./components/RCMMetricsCSVUpload').then(m => ({ default: m.RCMMetricsCSVUpload })));
+const InsuranceARReport = lazy(() => import('./components/InsuranceARReport'));
+const InsuranceIssuesTracker = lazy(() => import('./components/InsuranceIssuesTracker'));
+const ARAgingChart = lazy(() => import('./components/ARAgingChart'));
+const OpenDentalImport = lazy(() => import('./components/OpenDentalImport'));
+const PatientARTracker = lazy(() => import('./components/PatientARTracker'));
+const CreditsTracker = lazy(() => import('./components/CreditsTracker'));
+const VCCPaymentsTracker = lazy(() => import('./components/VCCPaymentsTracker'));
+const EFTReconciliation = lazy(() => import('./components/EFTReconciliation'));
+const InsuranceCheckStation = lazy(() => import('./components/InsuranceCheckStation'));
+const EODReport = lazy(() => import('./components/eod-report').then(m => ({ default: m.EODReport })));
 import { LiquidGlassBackground } from './components/LiquidGlassBackground';
 import { sanitizePatientName } from './utils/sanitizePatientName';
 import { getLocalDateString } from './utils/dateUtils';
@@ -3109,7 +3118,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {isAdmin && patientManagementView === 'claims' && (
-              <InsuranceARReport isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><InsuranceARReport isDayMode={isDayMode} /></Suspense>
             )}
 
 
@@ -3515,13 +3524,14 @@ const CourtStreetRCM = () => {
             )}
 
             {patientManagementView === 'patients' && (
-              <PatientARTracker isDayMode={isDayMode} isAdmin={isAdmin} dashboardDate={dashboardDate} />
+              <Suspense fallback={<LazyFallback />}><PatientARTracker isDayMode={isDayMode} isAdmin={isAdmin} dashboardDate={dashboardDate} /></Suspense>
             )}
             {patientManagementView === 'credits' && (
-              <CreditsTracker isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><CreditsTracker isDayMode={isDayMode} /></Suspense>
             )}
             {/* Insurance Checks/EFT's View - Scan Station */}
             {patientManagementView === 'insurance-checks' && (
+              <Suspense fallback={<LazyFallback />}>
               <InsuranceCheckStation
                 isDayMode={isDayMode}
                 insuranceChecks={insuranceChecks}
@@ -3536,6 +3546,7 @@ const CourtStreetRCM = () => {
                 onAddUpdate={handleAddUpdate}
                 onViewHistory={handleViewInsuranceCheckHistory}
               />
+              </Suspense>
             )}
 
             {/* Temporarily hidden - Payments content */}
@@ -4510,23 +4521,23 @@ const CourtStreetRCM = () => {
             )}
 
             {patientManagementView === 'insurance-issues' && (
-              <InsuranceIssuesTracker isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><InsuranceIssuesTracker isDayMode={isDayMode} /></Suspense>
             )}
 
             {patientManagementView === 'ar-trends' && (
-              <ARAgingChart isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><ARAgingChart isDayMode={isDayMode} /></Suspense>
             )}
 
             {patientManagementView === 'vcc-payments' && (
-              <VCCPaymentsTracker isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><VCCPaymentsTracker isDayMode={isDayMode} /></Suspense>
             )}
 
             {patientManagementView === 'eft-reconciliation' && (
-              <EFTReconciliation isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><EFTReconciliation isDayMode={isDayMode} /></Suspense>
             )}
 
             {patientManagementView === 'od-import' && (
-              <OpenDentalImport isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><OpenDentalImport isDayMode={isDayMode} /></Suspense>
             )}
           </div>
         ) : currentView === 'scorecard' ? (
@@ -5405,6 +5416,7 @@ const CourtStreetRCM = () => {
             </div>
           </div>
         ) : currentView === 'eod-report' ? (
+          <Suspense fallback={<LazyFallback />}>
           <EODReport
             isDayMode={isDayMode}
             dashboardDate={dashboardDate}
@@ -5422,6 +5434,7 @@ const CourtStreetRCM = () => {
             onOpenTopProceduresModal={() => setShowTopProceduresModal(true)}
             onRefreshActionItems={refreshActionItems}
           />
+          </Suspense>
         ) : currentView === 'administration' ? (
           <div className="space-y-6">
             {/* Administration Header */}
@@ -6690,12 +6703,12 @@ const CourtStreetRCM = () => {
 
                 {/* Lifecycle Metrics Display */}
                 <div className="mb-8">
-                  <LifecycleMetrics />
+                  <Suspense fallback={<LazyFallback />}><LifecycleMetrics /></Suspense>
                 </div>
 
                 {/* Data Upload Section */}
                 <div className="mb-6">
-                  <PatientDataUpload />
+                  <Suspense fallback={<LazyFallback />}><PatientDataUpload /></Suspense>
                 </div>
 
                 {/* Close Button */}
@@ -6713,6 +6726,7 @@ const CourtStreetRCM = () => {
         )}
 
         {/* Top Procedures CSV Upload */}
+        <Suspense fallback={null}>
         <TopProceduresCSVUpload
           isOpen={showTopProceduresModal}
           onClose={() => setShowTopProceduresModal(false)}
@@ -6727,8 +6741,10 @@ const CourtStreetRCM = () => {
           }}
           currentDate={dashboardDate}
         />
+        </Suspense>
 
         {/* CSD Metrics CSV Upload */}
+        <Suspense fallback={null}>
         <CSDMetricsCSVUpload
           isOpen={showCSDMetricsModal}
           onClose={() => setShowCSDMetricsModal(false)}
@@ -6738,8 +6754,10 @@ const CourtStreetRCM = () => {
             refreshMetrics();
           }}
         />
+        </Suspense>
 
         {/* RCM Metrics CSV Upload */}
+        <Suspense fallback={null}>
         <RCMMetricsCSVUpload
           isOpen={showRCMMetricsModal}
           onClose={() => setShowRCMMetricsModal(false)}
@@ -6749,6 +6767,7 @@ const CourtStreetRCM = () => {
             setClaimsOver60Days(claimsOver60);
           }}
         />
+        </Suspense>
 
         {/* Edit Modal */}
         {showEditModal && editingItem && (
