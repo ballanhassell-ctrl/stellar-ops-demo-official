@@ -1965,7 +1965,7 @@ const CourtStreetRCM = () => {
   // Null safety guard - ensure data is loaded
   if (!eodData || !dailyProductionByProvider) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-gray-50 via-purple-50/30 to-coral-50/30' : 'bg-black'}`}>
         <div className={`text-center p-12 rounded-2xl backdrop-blur-xl border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
           <p className={`text-xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
           <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
@@ -1975,7 +1975,7 @@ const CourtStreetRCM = () => {
   }
 
   return (
-    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
+    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-gray-50 via-purple-50/30 to-coral-50/30' : 'bg-black'}`}>
       {/* Header - Sleek modern design */}
       <div className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/80 border-gray-200 shadow-sm' : 'bg-black/70 border-gray-800 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
@@ -2080,7 +2080,7 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 ${isDayMode ? 'bg-white/50 border-gray-200' : 'bg-black/30 border-gray-800'}`}>
+      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 backdrop-blur-xl ${isDayMode ? 'bg-white/60 border-white/60' : 'bg-black/40 border-white/10'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Desktop Navigation - Modern sleek design */}
           <nav className="hidden sm:flex flex-wrap gap-2 py-4">
@@ -2091,21 +2091,16 @@ const CourtStreetRCM = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`group relative flex items-center gap-2.5 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] border ${
+                  className={`group relative flex items-center gap-2.5 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] hover-lift ${
                     isActive
-                      ? isDayMode
-                        ? 'bg-gray-900 text-white border-gray-800 shadow-lg'
-                        : 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_20px_rgba(0,212,255,0.3)]'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary border border-purple-400/30'
                       : isDayMode
-                      ? 'bg-white text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-gray-50 shadow-sm'
-                      : 'bg-neutral-800 text-gray-300 border-gray-700 hover:bg-neutral-700 hover:border-gray-600'
+                      ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50 shadow-sm'
+                      : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'drop-shadow-[0_0_8px_rgba(218,165,50,0.6)]' : 'group-hover:scale-110 transition-transform'}`} />
                   <span>{item.name}</span>
-                  {isActive && (
-                    <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${isDayMode ? 'bg-gray-900' : 'bg-cyan-400'}`} style={{filter: !isDayMode ? 'drop-shadow(0 0 4px rgba(0,212,255,0.8))' : 'none'}} />
-                  )}
                 </button>
               );
             })}
@@ -2126,17 +2121,15 @@ const CourtStreetRCM = () => {
                       setCurrentView(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-lg font-semibold text-base transition-all min-h-[52px] border ${
+                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all min-h-[52px] hover-lift ${
                       isActive
-                        ? isDayMode
-                          ? 'bg-gray-900 text-white border-gray-800 shadow-lg'
-                          : 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_20px_rgba(0,212,255,0.3)]'
+                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary border border-purple-400/30'
                         : isDayMode
-                        ? 'bg-white text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
-                        : 'bg-neutral-800 text-gray-300 border-gray-700 hover:bg-neutral-700'
+                        ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50'
+                        : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                    <Icon className={`w-5 h-5 ${isActive ? 'drop-shadow-[0_0_8px_rgba(218,165,50,0.6)]' : 'group-hover:scale-110 transition-transform'}`} />
                     <span>{item.name}</span>
                   </button>
                 );
