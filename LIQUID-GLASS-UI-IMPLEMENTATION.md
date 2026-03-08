@@ -127,3 +127,28 @@ From Liquid Glass OS UI Kit:
 - Background is fixed and doesn't scroll with content
 - Floating orbs use performance-optimized CSS animations
 - Text shadows ensure readability against any background color
+
+## Update: Enhanced Header Visibility (Latest Commit)
+
+Fixed an issue where headers with transparent gradient text were not visible against the animated background.
+
+### Problem
+Headers used `bg-clip-text` with `text-transparent`, making the text itself transparent. Regular `text-shadow` doesn't work on transparent text.
+
+### Solution
+1. **Section Headers (EOD Report, Scorecard, Administration)**:
+   - Changed from transparent gradient to solid gold color (`text-gold-600` / `text-gold-400`)
+   - Applied triple `drop-shadow` filters:
+     - Dark shadow for depth
+     - White glow for contrast
+     - Gold glow for brand consistency
+   - Added `filter: drop-shadow()` for additional enhancement
+
+2. **Dashboard Headers**:
+   - Enhanced CSS classes `.gradient-text-primary`, `.gradient-text-accent`, `.gradient-text-gold`
+   - Added multiple `drop-shadow` filters to work with transparent gradient text
+   - Light mode: White glow + dark shadow for high contrast
+   - Dark mode: Strong black shadow + colored glows
+
+### Result
+All headers are now **fully visible** against any background color or animation state, with beautiful glowing effects that enhance the glass UI aesthetic.
