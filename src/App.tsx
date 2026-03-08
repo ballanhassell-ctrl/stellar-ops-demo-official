@@ -2016,7 +2016,7 @@ const CourtStreetRCM = () => {
               {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
                 <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.02em'}}>
-                  Court Street Dental | Practice Dashboard
+                  Court Street Dental <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
                 </h1>
                 <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
                   Powered by Stellar OPS
