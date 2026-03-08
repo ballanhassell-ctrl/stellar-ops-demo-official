@@ -4534,7 +4534,15 @@ const CourtStreetRCM = () => {
             <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h2 className={`text-3xl font-bold mb-3 ${isDayMode ? 'text-glass-strong bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-glass-strong-dark bg-gradient-to-r from-gold-400 to-gold-500 bg-clip-text text-transparent'}`}>
+                  <h2
+                    className={`text-3xl font-bold mb-3 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`}
+                    style={{
+                      textShadow: isDayMode
+                        ? '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(184, 152, 95, 0.4)'
+                        : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 30px rgba(184, 152, 95, 0.6), 0 0 50px rgba(218, 165, 50, 0.3)',
+                      filter: isDayMode ? 'drop-shadow(0 0 8px rgba(184, 152, 95, 0.3))' : 'drop-shadow(0 0 12px rgba(218, 165, 50, 0.4))'
+                    }}
+                  >
                     Practice Scorecard Metrics
                   </h2>
                   <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -5417,7 +5425,15 @@ const CourtStreetRCM = () => {
           <div className="space-y-6">
             {/* Administration Header */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h2 className={`text-3xl font-bold mb-6 ${isDayMode ? 'text-glass-strong bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-glass-strong-dark bg-gradient-to-r from-gold-400 to-gold-500 bg-clip-text text-transparent'}`}>
+              <h2
+                className={`text-3xl font-bold mb-6 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`}
+                style={{
+                  textShadow: isDayMode
+                    ? '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(184, 152, 95, 0.4)'
+                    : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 30px rgba(184, 152, 95, 0.6), 0 0 50px rgba(218, 165, 50, 0.3)',
+                  filter: isDayMode ? 'drop-shadow(0 0 8px rgba(184, 152, 95, 0.3))' : 'drop-shadow(0 0 12px rgba(218, 165, 50, 0.4))'
+                }}
+              >
                 Administration
               </h2>
 
