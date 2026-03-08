@@ -24,14 +24,14 @@ export const LiquidGlassBackground = () => {
           className={`absolute top-[60%] right-[20%] w-[400px] h-[400px] rounded-full ${
             isDark
               ? 'bg-gradient-to-br from-blue-600/20 to-cyan-600/20'
-              : 'bg-gradient-to-br from-orange-300/30 to-amber-300/30'
+              : 'bg-gradient-to-br from-orange-500/25 to-amber-600/25'
           } blur-3xl animate-float-slower`}
         />
         <div
           className={`absolute bottom-[15%] left-[30%] w-[250px] h-[250px] rounded-full ${
             isDark
               ? 'bg-gradient-to-br from-pink-600/20 to-purple-600/20'
-              : 'bg-gradient-to-br from-yellow-200/30 to-orange-200/30'
+              : 'bg-gradient-to-br from-amber-400/25 to-orange-500/25'
           } blur-3xl animate-float-medium`}
         />
       </div>
