@@ -103,7 +103,7 @@ body {
     height: 100%;
     z-index: -2;
     overflow: hidden;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+    background: linear-gradient(135deg, #4A90E2 0%, #87CEEB 20%, #F5F5F5 40%, #F0E68C 60%, #FFB347 80%, #FF8C42 100%);
     background-size: 400% 400%;
     animation: liquidGradient 15s ease infinite;
   }
