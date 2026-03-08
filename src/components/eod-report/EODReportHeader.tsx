@@ -50,7 +50,7 @@ export default function EODReportHeader({
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <div className="flex-1">
-          <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+          <h2 className={`text-3xl font-bold mb-3 ${isDayMode ? 'text-glass-strong bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-glass-strong-dark bg-gradient-to-r from-gold-400 to-gold-500 bg-clip-text text-transparent'}`}>
             End of Day Report
           </h2>
           <div className="flex items-center gap-2 flex-wrap">
@@ -105,7 +105,7 @@ export default function EODReportHeader({
         <div className="flex gap-3 flex-wrap">
           <button
             onClick={onPrint}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-gold-400 rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 btn-purple-glow rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
           >
             <Printer className="w-4 h-4" />
             Print
