@@ -31,6 +31,7 @@ import VCCPaymentsTracker from './components/VCCPaymentsTracker';
 import EFTReconciliation from './components/EFTReconciliation';
 import InsuranceCheckStation from './components/InsuranceCheckStation';
 import { EODReport } from './components/eod-report';
+import { LiquidGlassBackground } from './components/LiquidGlassBackground';
 import { sanitizePatientName } from './utils/sanitizePatientName';
 import { getLocalDateString } from './utils/dateUtils';
 import { useAuth } from './contexts/AuthContext';
@@ -1976,9 +1977,12 @@ const CourtStreetRCM = () => {
   }
 
   return (
-    <div className={`min-h-screen font-sans transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-purple-100/60 via-coral-100/40 to-blue-100/50' : 'bg-gradient-to-br from-black via-purple-950/30 to-black'}`}>
+    <div className="min-h-screen font-sans transition-all duration-500 relative overflow-x-hidden">
+      {/* Liquid Glass Background */}
+      <LiquidGlassBackground />
+
       {/* Header - Sleek modern design */}
-      <div className={`sticky top-0 z-50 backdrop-blur-2xl border-b transition-all duration-300 ${isDayMode ? 'bg-white/40 border-white/60 shadow-lg shadow-purple-500/5' : 'bg-black/30 border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} animate-slide-down`}>
+      <div className={`sticky top-0 z-50 transition-all duration-300 animate-slide-down ${isDayMode ? 'header-frosted' : 'header-frosted-dark'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-4">
             {/* LEFT SIDE: Mobile Menu + Branding */}
@@ -2094,7 +2098,7 @@ const CourtStreetRCM = () => {
                   onClick={() => setCurrentView(item.id)}
                   className={`group relative flex items-center gap-2.5 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] hover-lift ${
                     isActive
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary border border-purple-400/30'
+                      ? 'btn-purple-glow shadow-glow-primary'
                       : isDayMode
                       ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50 shadow-sm'
                       : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
@@ -2124,7 +2128,7 @@ const CourtStreetRCM = () => {
                     }}
                     className={`group flex items-center gap-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all min-h-[52px] hover-lift ${
                       isActive
-                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary border border-purple-400/30'
+                        ? 'btn-purple-glow shadow-glow-primary'
                         : isDayMode
                         ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50'
                         : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
@@ -4531,7 +4535,7 @@ const CourtStreetRCM = () => {
             <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                  <h2 className={`text-3xl font-bold mb-3 ${isDayMode ? 'text-glass-strong bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-glass-strong-dark bg-gradient-to-r from-gold-400 to-gold-500 bg-clip-text text-transparent'}`}>
                     Practice Scorecard Metrics
                   </h2>
                   <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -5414,7 +5418,7 @@ const CourtStreetRCM = () => {
           <div className="space-y-6">
             {/* Administration Header */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h2 className={`text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+              <h2 className={`text-3xl font-bold mb-6 ${isDayMode ? 'text-glass-strong bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-glass-strong-dark bg-gradient-to-r from-gold-400 to-gold-500 bg-clip-text text-transparent'}`}>
                 Administration
               </h2>
 
