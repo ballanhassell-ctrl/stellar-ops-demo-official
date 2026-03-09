@@ -73,7 +73,7 @@ serve(async (req: Request) => {
         Tag: 'eod-report',
         Metadata: {
           reportDate,
-          source: 'stellar-dashboard',
+          source: 'stellar-ops-dashboard',
         },
       }),
     });

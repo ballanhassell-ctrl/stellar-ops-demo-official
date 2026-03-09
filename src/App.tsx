@@ -1,6 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Toaster } from 'sonner';
-import VersionBanner from './components/VersionBanner';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
@@ -9,30 +7,44 @@ import {
   Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog,
   Menu, LogOut
 } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
 import { useProviderMetrics } from './hooks/useProviderMetrics';
 import { useNewPatientTracker } from './hooks/useNewPatientTracker';
 import { useWeeklyScorecardData } from './hooks/useWeeklyScorecardData';
-import LifecycleMetrics from './components/LifecycleMetrics';
-import PatientDataUpload from './components/PatientDataUpload';
 import { AIInsightsButton } from './components/AIInsightsButton';
 import { AIInsightsPanel } from './components/AIInsightsPanel';
-import { TopProceduresCSVUpload } from './components/TopProceduresCSVUpload';
-import { CSDMetricsCSVUpload } from './components/CSDMetricsCSVUpload';
-import { RCMMetricsCSVUpload } from './components/RCMMetricsCSVUpload';
-import InsuranceARReport from './components/InsuranceARReport';
-import InsuranceIssuesTracker from './components/InsuranceIssuesTracker';
-import ARAgingChart from './components/ARAgingChart';
-import OpenDentalImport from './components/OpenDentalImport';
-import PatientARTracker from './components/PatientARTracker';
-import CreditsTracker from './components/CreditsTracker';
-import VCCPaymentsTracker from './components/VCCPaymentsTracker';
-import { EODReport } from './components/eod-report';
+
+// Simple loading fallback for lazy-loaded components
+const LazyFallback = () => (
+  <div className="flex items-center justify-center p-12">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  </div>
+);
+
+// Lazy-loaded components — only downloaded when the user navigates to them
+const LifecycleMetrics = lazy(() => import('./components/LifecycleMetrics'));
+const PatientDataUpload = lazy(() => import('./components/PatientDataUpload'));
+const TopProceduresCSVUpload = lazy(() => import('./components/TopProceduresCSVUpload').then(m => ({ default: m.TopProceduresCSVUpload })));
+const CSDMetricsCSVUpload = lazy(() => import('./components/CSDMetricsCSVUpload').then(m => ({ default: m.CSDMetricsCSVUpload })));
+const RCMMetricsCSVUpload = lazy(() => import('./components/RCMMetricsCSVUpload').then(m => ({ default: m.RCMMetricsCSVUpload })));
+const InsuranceARReport = lazy(() => import('./components/InsuranceARReport'));
+const InsuranceIssuesTracker = lazy(() => import('./components/InsuranceIssuesTracker'));
+const ARAgingChart = lazy(() => import('./components/ARAgingChart'));
+const OpenDentalImport = lazy(() => import('./components/OpenDentalImport'));
+const PatientARTracker = lazy(() => import('./components/PatientARTracker'));
+const CreditsTracker = lazy(() => import('./components/CreditsTracker'));
+const VCCPaymentsTracker = lazy(() => import('./components/VCCPaymentsTracker'));
+const EFTReconciliation = lazy(() => import('./components/EFTReconciliation'));
+const InsuranceCheckStation = lazy(() => import('./components/InsuranceCheckStation'));
+const EODReport = lazy(() => import('./components/eod-report').then(m => ({ default: m.EODReport })));
+import { LiquidGlassBackground } from './components/LiquidGlassBackground';
 import { sanitizePatientName } from './utils/sanitizePatientName';
-import { getLocalDateString, toLocalDateString } from './utils/dateUtils';
+import { getLocalDateString } from './utils/dateUtils';
 import { useAuth } from './contexts/AuthContext';
+import { useTheme } from './contexts/ThemeContext';
 import { generateInsights, Insight } from './services/aiInsights';
 import { generatePaymentInsights, PaymentInsight } from './services/paymentInsights';
 import { getTopProceduresForDateRange } from './services/topProcedures';
@@ -45,7 +57,7 @@ import {
   getActiveClaims, getArchivedClaims, getActivePreAuths, getArchivedPreAuths,
   subscribeToClaimsChanges, subscribeToPreAuthsChanges,
   getClaimUpdates, addClaimUpdate, getPreAuthUpdates, addPreAuthUpdate,
-  insertInsuranceCheck, updateInsuranceCheck, deleteInsuranceCheck, archiveInsuranceCheck, unarchiveInsuranceCheck,
+  updateInsuranceCheck, deleteInsuranceCheck,
   getActiveInsuranceChecks, getArchivedInsuranceChecks, getInsuranceCheckAuditHistory,
   subscribeToInsuranceChecksChanges, getInsuranceCheckUpdates, addInsuranceCheckUpdate
 } from './services/claimsService';
@@ -493,23 +505,6 @@ const calculatePreAuthAging = (preAuth: PreAuth): number => {
   return Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-// Helper function to get last 5 business days
-const getLast5BusinessDays = (): Date[] => {
-  const days: Date[] = [];
-  const today = new Date();
-  let currentDate = new Date(today);
-
-  while (days.length < 5) {
-    const dayOfWeek = currentDate.getDay();
-    // Skip weekends (0 = Sunday, 6 = Saturday)
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      days.push(new Date(currentDate));
-    }
-    currentDate.setDate(currentDate.getDate() - 1);
-  }
-
-  return days.reverse();
-};
 
 // Helper function to check if a follow-up is due (today or earlier)
 const isFollowUpDue = (followUpDate: string): boolean => {
@@ -744,35 +739,6 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
   };
 };
 
-const recordToInsuranceCheck = (record: InsuranceCheckRecord): any => {
-  // For insurance checks, payment_date should default to dateEntered if not provided
-  const paymentDate = record.dateEntered || getLocalDateString();
-
-  // Build base fields without id (for inserts)
-  const baseFields = {
-    check_eft_number: record.checkEftNumber,
-    payment_type: record.paymentType,
-    insurance_company: record.insuranceCompany,
-    distribution_type: record.distributionType,
-    total_amount: record.totalAmount,
-    aging: record.aging,
-    entered_by: record.enteredBy,
-    handler: record.handler,
-    status: record.status,
-    date_of_service: record.dateOfService || undefined,
-    date_entered: record.dateEntered || paymentDate,
-    is_archived: record.isArchived || false,
-    archived_at: record.archivedAt || undefined,
-    archived_by: record.archivedBy || undefined
-  };
-
-  // Only add id if it exists and is not empty (for updates)
-  if (record.id && record.id.trim() !== '') {
-    return { ...baseFields, id: record.id };
-  }
-
-  return baseFields;
-};
 
 
 const CourtStreetRCM = () => {
@@ -797,7 +763,8 @@ const CourtStreetRCM = () => {
   const [showTopProceduresModal, setShowTopProceduresModal] = useState(false);
   const [showCSDMetricsModal, setShowCSDMetricsModal] = useState(false);
   const [showRCMMetricsModal, setShowRCMMetricsModal] = useState(false);
-  const [isDayMode, setIsDayMode] = useState(true);
+  const { isDark, toggleTheme } = useTheme();
+  const isDayMode = !isDark; // Keep compatibility with existing code
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // AI Insights state
@@ -852,7 +819,6 @@ const CourtStreetRCM = () => {
 
   // Insurance Checks state
   const [insuranceChecks, setInsuranceChecks] = useState<InsuranceCheckRecord[]>([]);
-  const [showAddInsuranceCheckModal, setShowAddInsuranceCheckModal] = useState(false);
   const [insuranceCheckUpdates, setInsuranceCheckUpdates] = useState<InsuranceCheckUpdate[]>([]);
   const [_insuranceChecksLoading, setInsuranceChecksLoading] = useState(true);
   const [showArchivedInsuranceChecks, setShowArchivedInsuranceChecks] = useState(false);
@@ -1859,25 +1825,7 @@ const CourtStreetRCM = () => {
     preAuth.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredInsuranceChecks = insuranceChecks.filter((check: InsuranceCheckRecord) => {
-    // Apply search query filter
-    const matchesSearch = searchQuery === '' ||
-      check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.paymentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.distributionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.handler.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.enteredBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      check.status.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply archive date filter if viewing archived items and date filter is set
-    if (showArchivedInsuranceChecks && archiveInsuranceChecksDateFilter && check.archivedAt) {
-      const archivedDate = check.archivedAt.split('T')[0]; // Extract date part (YYYY-MM-DD)
-      return matchesSearch && archivedDate === archiveInsuranceChecksDateFilter;
-    }
-
-    return matchesSearch;
-  });
 
   // Handler functions for claims and pre-auths management
   const handleEditPreAuth = (preAuth: PreAuthRecord) => {
@@ -1971,11 +1919,6 @@ const CourtStreetRCM = () => {
     setShowEditModal(true);
   };
 
-  const handleDeleteInsuranceCheck = (id: string, checkNumber: string) => {
-    setDeleteItem({ type: 'insurance-check' as any, id, name: checkNumber });
-    setShowDeleteModal(true);
-  };
-
   const handleViewInsuranceCheckHistory = async (id: string, checkNumber: string) => {
     setHistoryItem({ type: 'insurance-check' as any, id, name: checkNumber });
     setShowHistoryModal(true);
@@ -1992,39 +1935,14 @@ const CourtStreetRCM = () => {
     }
   };
 
-  const handleArchiveInsuranceCheck = async (id: string, archivedBy: string) => {
-    try {
-      await archiveInsuranceCheck(id, archivedBy);
-      // Refetch based on current toggle state
-      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
-      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
-    } catch (error) {
-      console.error('Error archiving insurance check:', error);
-      alert('Failed to archive insurance check. Please try again.');
-    }
-  };
-
-  const handleUnarchiveInsuranceCheck = async (id: string) => {
-    try {
-      await unarchiveInsuranceCheck(id);
-      // Refetch based on current toggle state
-      const updatedChecks = showArchivedInsuranceChecks ? await getArchivedInsuranceChecks() : await getActiveInsuranceChecks();
-      setInsuranceChecks(updatedChecks.map(insuranceCheckToRecord));
-    } catch (error) {
-      console.error('Error unarchiving insurance check:', error);
-      alert('Failed to unarchive insurance check. Please try again.');
-    }
-  };
-
-
   // Loading state - wait for all data to load from Supabase
   if (metricsLoading || eodLoading || providerLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
-        <div className={`text-center p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} animate-fade-in`}>
-          <RefreshCw className="w-16 h-16 text-primary-500 animate-spin mx-auto mb-6" />
-          <p className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Loading dashboard data...</p>
-          <p className={`text-sm mt-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fetching from Supabase</p>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
+        <div className={`text-center p-12 rounded-2xl backdrop-blur-xl animate-fade-in border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
+          <RefreshCw className={`w-16 h-16 animate-spin mx-auto mb-6 ${isDayMode ? 'text-purple-500' : 'text-cyan-500'}`} style={{filter: !isDayMode ? 'drop-shadow(0 0 10px rgba(0,212,255,0.5))' : 'none'}} />
+          <p className={`text-2xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Loading dashboard data...</p>
+          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Fetching from Supabase</p>
         </div>
       </div>
     );
@@ -2033,11 +1951,11 @@ const CourtStreetRCM = () => {
   // Error state
   if (metricsError || eodError || providerError) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
-        <div className={`text-center max-w-md p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} animate-scale-in`}>
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gray-50' : 'bg-black'}`}>
+        <div className={`text-center max-w-md p-12 rounded-2xl backdrop-blur-xl animate-scale-in border-2 ${isDayMode ? 'bg-white border-red-200 shadow-xl' : 'bg-neutral-900 border-red-900 shadow-[0_0_60px_rgba(239,68,68,0.2)]'}`}>
+          <AlertCircle className={`w-16 h-16 mx-auto mb-6 ${isDayMode ? 'text-red-600' : 'text-red-400'}`} />
           <h2 className={`text-2xl font-bold mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Error Loading Data</h2>
-          <p className={`mb-6 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+          <p className={`mb-6 ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>
             {metricsError || eodError || providerError}
           </p>
           <button
@@ -2046,7 +1964,7 @@ const CourtStreetRCM = () => {
               refreshEOD();
               refreshProvider();
             }}
-            className="px-6 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transform hover:scale-105 transition-all shadow-lg hover:shadow-glow-primary"
+            className={`px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all border-2 ${isDayMode ? 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600 shadow-lg hover:shadow-xl' : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'}`}
           >
             Retry
           </button>
@@ -2058,128 +1976,128 @@ const CourtStreetRCM = () => {
   // Null safety guard - ensure data is loaded
   if (!eodData || !dailyProductionByProvider) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900'}`}>
-        <div className={`text-center p-12 rounded-3xl ${isDayMode ? 'glass-card' : 'glass-card-dark'}`}>
-          <p className={`text-xl font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
-          <p className={`text-sm mt-3 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${isDayMode ? 'bg-gradient-to-br from-purple-100/60 via-coral-100/40 to-blue-100/50' : 'bg-gradient-to-br from-black via-purple-950/30 to-black'}`}>
+        <div className={`text-center p-12 rounded-2xl backdrop-blur-xl border-2 ${isDayMode ? 'bg-white border-gray-200 shadow-xl' : 'bg-neutral-900 border-gray-800 shadow-[0_0_60px_rgba(0,212,255,0.15)]'}`}>
+          <p className={`text-xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>No data available for selected date</p>
+          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Try selecting a different date or adding data to Supabase</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${isDayMode ? 'bg-gradient-to-br from-blue-50 via-white to-purple-50 gradient-mesh' : 'bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 gradient-mesh-dark'}`}>
-      <Toaster position="top-right" theme={isDayMode ? 'light' : 'dark'} richColors closeButton />
-      <VersionBanner />
-      {/* Header */}
-      <div className={`sticky top-0 z-50 ${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} animate-slide-down`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
-          <div className="flex items-center justify-between">
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`sm:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all hover-lift ${
-                isDayMode
-                  ? 'bg-white/60 text-gray-700 hover:bg-white/80'
-                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
-              }`}
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+    <div className="min-h-screen font-sans transition-all duration-500 relative overflow-x-hidden">
+      {/* Liquid Glass Background */}
+      <LiquidGlassBackground />
 
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              {/* Logo Section - Responsive */}
+      {/* Header - Sleek modern design */}
+      <div className={`sticky top-0 z-50 transition-all duration-300 animate-slide-down ${isDayMode ? 'header-frosted' : 'header-frosted-dark'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* LEFT SIDE: Mobile Menu + Branding */}
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`sm:hidden flex items-center justify-center w-10 h-10 rounded-lg transition-all ${
+                  isDayMode
+                    ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    : 'bg-neutral-800 text-gray-300 hover:bg-neutral-700 border border-gray-700'
+                }`}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                {/* Show only CSD logo on mobile, both on larger screens */}
                 <img
                   src="/Stellar2 copy.jpg"
                   alt="Stellar Consults Logo"
-                  className="hidden sm:block h-8 sm:h-12 w-auto object-contain"
+                  className="hidden sm:block h-8 sm:h-10 w-auto object-contain"
                 />
-                <span className={`hidden sm:block text-xl sm:text-2xl font-bold ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>×</span>
+                <span className={`hidden sm:block text-xl font-bold ${isDayMode ? 'text-gray-300' : 'text-gray-600'}`}>×</span>
                 <img
                   src="/Cris Dental Image.jpg"
                   alt="Court Street Dental Logo"
-                  className="h-8 sm:h-12 w-auto object-contain"
+                  className="h-8 sm:h-10 w-auto object-contain"
                 />
               </div>
-              <div className="hidden sm:block min-w-0">
-                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent truncate">
-                  Court Street Dental RCM Dashboard
+
+              {/* Title with gradient */}
+              <div className="hidden md:block min-w-0">
+                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.02em'}}>
+                  Court Street Dental <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
                 </h1>
-                <p className={`text-xs mt-0.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Powered by Stellar Consults
+                <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
+                  Powered by Stellar OPS
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              {/* Day/Night Mode Button - Icon only on mobile */}
+            {/* RIGHT SIDE: Action Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Theme Toggle */}
               <button
-                onClick={() => setIsDayMode(!isDayMode)}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
+                onClick={toggleTheme}
+                className={`group flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all duration-300 min-h-[44px] border-2 ${
                   isDayMode
-                    ? 'bg-gray-800 text-white hover:bg-gray-700'
-                    : 'bg-amber-400 text-gray-900 hover:bg-amber-300'
+                    ? 'bg-gray-900 text-white border-gray-800 hover:bg-black hover:shadow-lg'
+                    : 'bg-cyan-500 text-black border-cyan-400 hover:bg-cyan-400 hover:shadow-[0_0_24px_rgba(0,212,255,0.4)]'
                 }`}
+                title={isDayMode ? 'Switch to Future Dark Mode' : 'Switch to Minimal Light Mode'}
               >
                 {isDayMode ? (
                   <>
-                    <Moon className="w-5 h-5" />
-                    <span className="hidden md:inline text-sm font-medium">Night Mode</span>
+                    <Moon className="w-4 h-4" />
+                    <span className="hidden xl:inline text-sm">Dark</span>
                   </>
                 ) : (
                   <>
-                    <Sun className="w-5 h-5" />
-                    <span className="hidden md:inline text-sm font-medium">Day Mode</span>
+                    <Sun className="w-4 h-4" />
+                    <span className="hidden xl:inline text-sm">Light</span>
                   </>
                 )}
               </button>
 
-              {/* Sign Out */}
-              <button
-                onClick={() => signOut()}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-medium transition-all hover-lift min-h-[44px] ${
-                  isDayMode
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                    : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
-                }`}
-                title="Sign Out"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="hidden md:inline text-sm font-medium">Sign Out</span>
-              </button>
-
-              {/* Task Board - Hidden on mobile */}
+              {/* Task Board */}
               <a
                 href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all shadow-lg hover-lift font-medium min-h-[44px]"
+                className={`hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
+                  isDayMode
+                    ? 'bg-white text-purple-600 border-purple-300 hover:bg-purple-50 hover:border-purple-500'
+                    : 'bg-purple-900/30 text-purple-300 border-purple-700 hover:bg-purple-900/50 hover:border-purple-500'
+                }`}
+                title="Open Task Board"
               >
                 <ExternalLink className="w-4 h-4" />
-                <span className="text-sm">Task Board</span>
+                <span className="hidden lg:inline text-sm">Tasks</span>
               </a>
 
-              {/* Collaboration text - Hidden on smaller screens */}
-              <div className="hidden xl:block text-right">
-                <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
-                  Designed for <span className="font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">Court Street Dental</span>
-                </p>
-                <p className={`text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
-                  by the <span className="font-semibold bg-gradient-to-r from-primary-600 to-gold-500 bg-clip-text text-transparent">Stellar Consults</span> team
-                </p>
-              </div>
+              {/* Sign Out */}
+              <button
+                onClick={() => signOut()}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
+                  isDayMode
+                    ? 'bg-white text-red-600 border-red-300 hover:bg-red-50 hover:border-red-500'
+                    : 'bg-red-900/30 text-red-400 border-red-800 hover:bg-red-900/50 hover:border-red-600'
+                }`}
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden lg:inline text-sm">Exit</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className={`${isDayMode ? 'glass' : 'glass-dark'} border-b ${isDayMode ? 'border-white/20' : 'border-white/10'} mb-4 sm:mb-8`}>
+      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 backdrop-blur-xl ${isDayMode ? 'bg-white/60 border-white/60' : 'bg-black/40 border-white/10'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          {/* Desktop Navigation */}
-          <nav className="hidden sm:flex flex-wrap gap-3 py-4">
+          {/* Desktop Navigation - Modern sleek design */}
+          <nav className="hidden sm:flex flex-wrap gap-2 py-4">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -2187,15 +2105,15 @@ const CourtStreetRCM = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`group flex items-center space-x-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap hover-lift min-h-[44px] ${
+                  className={`group relative flex items-center gap-2.5 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] hover-lift ${
                     isActive
-                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      ? 'btn-purple-glow shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                      ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50 shadow-sm'
+                      : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'drop-shadow-[0_0_8px_rgba(218,165,50,0.6)]' : 'group-hover:scale-110 transition-transform'}`} />
                   <span>{item.name}</span>
                 </button>
               );
@@ -2217,31 +2135,31 @@ const CourtStreetRCM = () => {
                       setCurrentView(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`group flex items-center space-x-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all hover-lift min-h-[52px] ${
+                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all min-h-[52px] hover-lift ${
                       isActive
-                        ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                        ? 'btn-purple-glow shadow-glow-primary'
                         : isDayMode
-                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-sm'
-                        : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50'
+                        : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
                     }`}
                   >
-                    <Icon className={`w-6 h-6 ${isActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                    <Icon className={`w-5 h-5 ${isActive ? 'drop-shadow-[0_0_8px_rgba(218,165,50,0.6)]' : 'group-hover:scale-110 transition-transform'}`} />
                     <span>{item.name}</span>
                   </button>
                 );
               })}
 
               {/* Mobile-only Quick Actions */}
-              <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-white/20' : 'border-white/10'}`}>
+              <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
                 <a
                   href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all hover-lift min-h-[52px] ${
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-lg transition-all min-h-[52px] border font-semibold ${
                     isDayMode
-                      ? 'bg-primary-500 text-white hover:bg-primary-600'
-                      : 'bg-primary-600 text-white hover:bg-primary-700'
-                  } shadow-lg font-semibold`}
+                      ? 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600 shadow-lg'
+                      : 'bg-purple-600 text-white border-purple-700 hover:bg-purple-700 shadow-lg'
+                  }`}
                 >
                   <ExternalLink className="w-5 h-5" />
                   <span>Task Board</span>
@@ -2255,19 +2173,19 @@ const CourtStreetRCM = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
         {currentView === 'dashboard' ? (
-          <div className="space-y-4 sm:space-y-8">
+          <div className="space-y-10">
             {/* Dashboard Header */}
-            <div className={`rounded-2xl sm:rounded-3xl p-4 sm:p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
-              <div className="mb-4 sm:mb-6">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                  <div>
-                    <h2 className={`text-2xl sm:text-4xl font-bold mb-2 sm:mb-3 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
+              <div className="mb-8">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-3">
+                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                       {getGreeting()}, Team! 👋
                     </h2>
-                    <h3 className="text-base sm:text-xl font-semibold mb-1" style={{ color: csdGold }}>
+                    <h3 className={`text-xl font-display font-bold ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                       Practice Overview Dashboard
                     </h3>
-                    <p className={`text-xs sm:text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-300'}`}>
+                    <p className={`text-xs sm:text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                       Real-time insights into your revenue cycle performance
                     </p>
                   </div>
@@ -2289,8 +2207,8 @@ const CourtStreetRCM = () => {
                       disabled={metricsLoading}
                       className={`p-3 rounded-xl hover:bg-opacity-80 transition-all min-h-[44px] min-w-[44px] ${
                         isDayMode
-                          ? 'bg-blue-500 text-white hover:bg-blue-600'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                          ? 'bg-purple-500 text-white hover:bg-purple-600'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
                       } ${metricsLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       title="Refresh metrics"
                     >
@@ -2300,7 +2218,7 @@ const CourtStreetRCM = () => {
                 </div>
                 {/* Loading and Error States */}
                 {metricsLoading && (
-                  <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-blue-50 text-blue-700' : 'bg-blue-900 text-blue-200'}`}>
+                  <div className={`mt-4 p-3 rounded ${isDayMode ? 'bg-purple-50 text-purple-700' : 'bg-purple-900 text-purple-200'}`}>
                     <div className="flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin" />
                       <span>Loading metrics data...</span>
@@ -2414,14 +2332,14 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
                     <div className="flex items-center justify-between mb-3">
-                      <p className={`text-sm font-bold ${isDayMode ? 'text-amber-700' : 'text-amber-300'}`}>Outstanding A/R 31+</p>
-                      <div className="p-1.5 rounded-lg bg-amber-500/20">
-                        <DollarSign className="w-5 h-5 text-amber-600" />
+                      <p className={`text-sm font-bold ${isDayMode ? 'text-coral-700' : 'text-coral-300'}`}>Outstanding A/R 31+</p>
+                      <div className="p-1.5 rounded-lg bg-coral-500/20">
+                        <DollarSign className="w-5 h-5 text-coral-600" />
                       </div>
                     </div>
 
@@ -2461,18 +2379,18 @@ const CourtStreetRCM = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
               <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                <h3 className={`text-xl font-bold mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                <h3 className={`text-xl font-display font-bold mb-5 ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                   Claims Status
                 </h3>
                 <div className="space-y-3">
-                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-blue-50/80' : 'bg-blue-900/20'} border ${isDayMode ? 'border-blue-200/50' : 'border-blue-700/30'} transition-all hover:scale-[1.02]`}>
+                  <div className={`flex items-center justify-between p-4 rounded-xl ${isDayMode ? 'bg-purple-50/80' : 'bg-purple-900/20'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-700/30'} transition-all hover:scale-[1.02]`}>
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-blue-500/20">
-                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 rounded-lg bg-purple-500/20">
+                        <CheckCircle className="w-5 h-5 text-purple-600" />
                       </div>
                       <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Active Claims</span>
                     </div>
-                    <span className={`text-xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
+                    <span className={`text-xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
                       {dashboardData.activeClaims}
                     </span>
                   </div>
@@ -2522,17 +2440,17 @@ const CourtStreetRCM = () => {
                     onClick={() => setCurrentView('claims')}
                     className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all hover-lift min-h-[52px] ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-blue-100/60 to-blue-200/60 hover:from-blue-200/80 hover:to-blue-300/80 border border-blue-300/50'
-                        : 'bg-gradient-to-r from-blue-900/30 to-blue-800/30 hover:from-blue-800/50 hover:to-blue-700/50 border border-blue-700/30'
+                        ? 'bg-gradient-to-r from-purple-100/60 to-purple-200/60 hover:from-purple-200/80 hover:to-purple-300/80 border border-purple-300/50'
+                        : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/50 hover:to-purple-700/50 border border-purple-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors">
-                        <FileText className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-colors">
+                        <FileText className="w-5 h-5 text-purple-600" />
                       </div>
                       <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>Review Claims</span>
                     </div>
-                    <span className="text-lg text-blue-600 group-hover:translate-x-1 transition-transform">→</span>
+                    <span className="text-lg text-purple-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                   <button
                     onClick={() => setCurrentView('payments')}
@@ -2570,17 +2488,17 @@ const CourtStreetRCM = () => {
                     onClick={() => setCurrentView('scorecard')}
                     className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
                       isDayMode
-                        ? 'bg-gradient-to-r from-amber-100/60 to-amber-200/60 hover:from-amber-200/80 hover:to-amber-300/80 border border-amber-300/50'
-                        : 'bg-gradient-to-r from-amber-900/30 to-amber-800/30 hover:from-amber-800/50 hover:to-amber-700/50 border border-amber-700/30'
+                        ? 'bg-gradient-to-r from-coral-100/60 to-coral-200/60 hover:from-coral-200/80 hover:to-coral-300/80 border border-coral-300/50'
+                        : 'bg-gradient-to-r from-coral-900/30 to-coral-800/30 hover:from-coral-800/50 hover:to-coral-700/50 border border-coral-700/30'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 rounded-lg bg-amber-500/20 group-hover:bg-amber-500/30 transition-colors">
-                        <Award className="w-5 h-5 text-amber-600" />
+                      <div className="p-2 rounded-lg bg-coral-500/20 group-hover:bg-coral-500/30 transition-colors">
+                        <Award className="w-5 h-5 text-coral-600" />
                       </div>
                       <span className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-100'}`}>View Scorecard</span>
                     </div>
-                    <span className="text-lg text-amber-600 group-hover:translate-x-1 transition-transform">→</span>
+                    <span className="text-lg text-coral-600 group-hover:translate-x-1 transition-transform">→</span>
                   </button>
                 </div>
               </div>
@@ -2588,7 +2506,7 @@ const CourtStreetRCM = () => {
 
             {/* Follow-Up Tracking */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h3 className={`text-xl font-bold mb-2 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+              <h3 className={`text-xl font-display font-extrabold mb-2 ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                 Follow-Up Tracking
               </h3>
               <p className={`text-sm mb-5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -2665,12 +2583,12 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowRecareList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
-                    <div className="p-2.5 rounded-xl bg-amber-500/20 mb-3 group-hover:bg-amber-500/30 transition-colors">
-                      <Clock className="w-6 h-6 text-amber-600" />
+                    <div className="p-2.5 rounded-xl bg-coral-500/20 mb-3 group-hover:bg-coral-500/30 transition-colors">
+                      <Clock className="w-6 h-6 text-coral-600" />
                     </div>
                     <p className={`text-3xl font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {followUpCounts.recare}
@@ -2736,7 +2654,7 @@ const CourtStreetRCM = () => {
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
-                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Active Claims</p>
+                    <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-coral-700' : 'text-coral-400'}`}>Active Claims</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
                       {automatedMetrics.totalActiveClaims}
                     </p>
@@ -2784,8 +2702,8 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Insurance A/R Aging Summary */}
-            <div className={`rounded-lg shadow p-6 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Summary
               </h3>
               <div className={`text-center p-6 rounded-lg border ${isDayMode ? 'bg-gray-50 border-gray-200' : 'bg-gray-700/30 border-gray-600'}`}>
@@ -2941,8 +2859,8 @@ const CourtStreetRCM = () => {
                           {newPatientTrackerData.quarterlyLabel} ({newPatientTrackerData.quarterlyDateRange})
                         </p>
                       </div>
-                      <div className="p-2 rounded-lg bg-amber-500/20">
-                        <Users className="w-5 h-5 text-amber-600" />
+                      <div className="p-2 rounded-lg bg-coral-500/20">
+                        <Users className="w-5 h-5 text-coral-600" />
                       </div>
                     </div>
                     {newPatientTrackerData.quarterly != null ? (
@@ -3107,6 +3025,18 @@ const CourtStreetRCM = () => {
                   Insurance Checks/EFT's
                 </button>
                 <button
+                  onClick={() => setPatientManagementView('eft-reconciliation')}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    patientManagementView === 'eft-reconciliation'
+                      ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                      : isDayMode
+                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  EFT Reconciliation
+                </button>
+                <button
                   onClick={() => setPatientManagementView('ar-trends')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
                     patientManagementView === 'ar-trends'
@@ -3188,7 +3118,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {isAdmin && patientManagementView === 'claims' && (
-              <InsuranceARReport isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><InsuranceARReport isDayMode={isDayMode} /></Suspense>
             )}
 
 
@@ -3594,438 +3524,29 @@ const CourtStreetRCM = () => {
             )}
 
             {patientManagementView === 'patients' && (
-              <PatientARTracker isDayMode={isDayMode} isAdmin={isAdmin} dashboardDate={dashboardDate} />
+              <Suspense fallback={<LazyFallback />}><PatientARTracker isDayMode={isDayMode} isAdmin={isAdmin} dashboardDate={dashboardDate} /></Suspense>
             )}
             {patientManagementView === 'credits' && (
-              <CreditsTracker isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><CreditsTracker isDayMode={isDayMode} /></Suspense>
             )}
-            {/* Insurance Checks/EFT's View */}
+            {/* Insurance Checks/EFT's View - Scan Station */}
             {patientManagementView === 'insurance-checks' && (
-              <>
-                {/* Insurance Checks Header */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                      Insurance Checks/EFT's
-                    </h2>
-
-                    <button
-                      onClick={() => setShowAddInsuranceCheckModal(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
-                    >
-                      <Plus className="w-5 h-5" />
-                      Add New Check/EFT
-                    </button>
-                  </div>
-
-                  {/* Search Bar and Archive Toggle */}
-                  <div className="mb-6 space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="Search by Check/EFT#, Insurance Company, or Handler..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* Archive Toggle */}
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setShowArchivedInsuranceChecks(!showArchivedInsuranceChecks)}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
-                          showArchivedInsuranceChecks
-                            ? isDayMode
-                              ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                              : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                            : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                        }`}
-                      >
-                        <Archive className="w-4 h-4" />
-                        {showArchivedInsuranceChecks ? 'Show Active' : 'Show Archived'}
-                      </button>
-                      {showArchivedInsuranceChecks && (
-                        <div className="flex items-center gap-2">
-                          <label className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                            Filter by Date:
-                          </label>
-                          <input
-                            type="date"
-                            value={archiveInsuranceChecksDateFilter}
-                            onChange={(e) => setArchiveInsuranceChecksDateFilter(e.target.value)}
-                            className={`px-4 py-2 rounded-xl text-sm transition-all ${
-                              isDayMode
-                                ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                                : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                            } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
-                          />
-                          {archiveInsuranceChecksDateFilter && (
-                            <button
-                              onClick={() => setArchiveInsuranceChecksDateFilter('')}
-                              className="px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Totals Section */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    {/* Total Checks */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Check Payments</p>
-                            <p className={`text-3xl font-bold ${isDayMode ? 'text-green-900' : 'text-green-300'}`}>
-                              ${filteredInsuranceChecks
-                                .filter(c => c.paymentType === 'Check')
-                                .reduce((sum, c) => sum + c.totalAmount, 0)
-                                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                            <p className={`text-xs mt-2 ${isDayMode ? 'text-green-600' : 'text-green-500'}`}>
-                              {filteredInsuranceChecks.filter(c => c.paymentType === 'Check').length} checks
-                            </p>
-                          </div>
-                          <CreditCard className={`w-8 h-8 ${isDayMode ? 'text-green-500' : 'text-green-400'}`} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Total EFTs */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>EFT Payments</p>
-                            <p className={`text-3xl font-bold ${isDayMode ? 'text-blue-900' : 'text-blue-300'}`}>
-                              ${filteredInsuranceChecks
-                                .filter(c => c.paymentType === 'EFT')
-                                .reduce((sum, c) => sum + c.totalAmount, 0)
-                                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                            <p className={`text-xs mt-2 ${isDayMode ? 'text-blue-600' : 'text-blue-500'}`}>
-                              {filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').length} EFTs
-                            </p>
-                          </div>
-                          <Download className={`w-8 h-8 ${isDayMode ? 'text-blue-500' : 'text-blue-400'}`} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Grand Total */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className={`text-sm font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Total Payments</p>
-                            <p className={`text-3xl font-bold ${isDayMode ? 'text-purple-900' : 'text-purple-300'}`}>
-                              ${filteredInsuranceChecks
-                                .reduce((sum, c) => sum + c.totalAmount, 0)
-                                .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                            <p className={`text-xs mt-2 ${isDayMode ? 'text-purple-600' : 'text-purple-500'}`}>
-                              {filteredInsuranceChecks.length} total payments
-                            </p>
-                          </div>
-                          <DollarSign className={`w-8 h-8 ${isDayMode ? 'text-purple-500' : 'text-purple-400'}`} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Insurance Checks Table */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Check/EFT#</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Type</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Insurance Company</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Distribution</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">DOS</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date Created</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aging</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Created By</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completed By</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {filteredInsuranceChecks.length === 0 ? (
-                          <tr>
-                            <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
-                              No insurance checks found matching your search.
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredInsuranceChecks.map((check) => (
-                            <tr
-                              key={check.id}
-                              className={`transition-colors ${
-                                check.status === 'Created'
-                                  ? 'bg-gray-50 hover:bg-gray-100'
-                                  : check.status === 'Entered'
-                                  ? 'bg-green-50 hover:bg-green-100'
-                                  : 'bg-yellow-50 hover:bg-yellow-100'
-                              }`}
-                            >
-                              <td className="px-4 py-4 text-sm font-medium text-gray-900">{check.checkEftNumber}</td>
-                              <td className="px-4 py-4">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  check.paymentType === 'Check'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {check.paymentType}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.insuranceCompany}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.distributionType}</td>
-                              <td className="px-4 py-4 text-sm font-semibold text-gray-900">${check.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.dateOfService || '-'}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.dateEntered || '-'}</td>
-                              <td className="px-4 py-4">
-                                <span className={`text-sm font-medium ${
-                                  check.aging > 60 ? 'text-red-600' :
-                                  check.aging > 30 ? 'text-orange-600' :
-                                  'text-green-600'
-                                }`}>
-                                  {check.aging} days
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.enteredBy}</td>
-                              <td className="px-4 py-4 text-sm text-gray-900">{check.handler}</td>
-                              <td className="px-4 py-4">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  check.status === 'Created'
-                                    ? 'bg-gray-100 text-gray-800'
-                                    : check.status === 'Entered'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {check.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4">
-                                <div className="flex justify-between items-center">
-                                  {/* Edit button - left side */}
-                                  <button
-                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                    onClick={() => handleEditInsuranceCheck(check)}
-                                    title="Edit Check/EFT"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-
-                                  {/* Update/History/Archive/Delete buttons - right side */}
-                                  <div className="flex space-x-1">
-                                    <button
-                                      className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
-                                      onClick={() => handleAddUpdate('insurance-check', check.id, check.checkEftNumber, check.status)}
-                                      title="Add Update"
-                                    >
-                                      <MessageSquarePlus className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                                      onClick={() => handleViewInsuranceCheckHistory(check.id, check.checkEftNumber)}
-                                      title="View History"
-                                    >
-                                      <History className="w-4 h-4" />
-                                    </button>
-                                    {check.isArchived ? (
-                                      <button
-                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                        onClick={() => handleUnarchiveInsuranceCheck(check.id)}
-                                        title="Unarchive Check/EFT"
-                                      >
-                                        <ArchiveRestore className="w-4 h-4" />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                        onClick={() => handleArchiveInsuranceCheck(check.id, 'Current User')}
-                                        title="Archive Check/EFT"
-                                      >
-                                        <Archive className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                    <button
-                                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                      onClick={() => handleDeleteInsuranceCheck(check.id, check.checkEftNumber)}
-                                      title="Delete Check/EFT"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Insurance Checks/EFTs Metrics Section */}
-                  <div className={`mt-6 rounded-lg shadow p-6 ${isDayMode ? 'bg-gradient-to-r from-green-50 to-teal-50' : 'bg-gradient-to-r from-gray-700 to-gray-600'}`}>
-                    <h3 className="text-lg font-bold mb-4" style={{ color: csdGold }}>
-                      Insurance Checks/EFTs Analytics
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* Average Aging Days */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
-                            <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                              {filteredInsuranceChecks.length > 0
-                                ? Math.round(filteredInsuranceChecks.reduce((sum, c) => sum + c.aging, 0) / filteredInsuranceChecks.length)
-                                : 0} days
-                            </p>
-                          </div>
-                          <Clock className="w-8 h-8 text-blue-500 opacity-50" />
-                        </div>
-                      </div>
-
-                      {/* Total Amount Waiting to be Entered */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Amount Waiting to be Entered</p>
-                            <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                              ${filteredInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                          <DollarSign className="w-8 h-8 text-yellow-500 opacity-50" />
-                        </div>
-                      </div>
-
-                      {/* Check vs EFT Breakdown */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-2`}>Payment Type</p>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">Checks:</span>
-                              <span className="text-sm" style={{ color: csdGold }}>
-                                ${filteredInsuranceChecks.filter(c => c.paymentType === 'Check').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">EFTs:</span>
-                              <span className="text-sm" style={{ color: csdGold }}>
-                                ${filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Status Breakdown */}
-                      <div className={`rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                        <div>
-                          <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-2`}>Status</p>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                <span className="text-xs">Created:</span>
-                              </div>
-                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Created').length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                <span className="text-xs">Entered:</span>
-                              </div>
-                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Entered').length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                <span className="text-xs">Pending:</span>
-                              </div>
-                              <span className="text-sm font-semibold">{filteredInsuranceChecks.filter(c => c.status === 'Pending Review').length}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Average Amount by Type */}
-                    <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
-                        Average Payment Amount by Type
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Check Amount:</span>
-                          <span className="font-bold text-lg" style={{ color: csdGold }}>
-                            ${(() => {
-                              const checks = filteredInsuranceChecks.filter(c => c.paymentType === 'Check');
-                              return checks.length > 0
-                                ? (checks.reduce((sum, c) => sum + c.totalAmount, 0) / checks.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                : '0.00';
-                            })()}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg EFT Amount:</span>
-                          <span className="font-bold text-lg" style={{ color: csdGold }}>
-                            ${(() => {
-                              const efts = filteredInsuranceChecks.filter(c => c.paymentType === 'EFT');
-                              return efts.length > 0
-                                ? (efts.reduce((sum, c) => sum + c.totalAmount, 0) / efts.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                : '0.00';
-                            })()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Daily Entered Totals - Last 5 Business Days */}
-                    <div className={`mt-4 rounded-lg p-4 ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                      <h4 className="text-sm font-semibold mb-3" style={{ color: csdGold }}>
-                        Daily Entered Totals (Last 5 Business Days)
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                        {getLast5BusinessDays().map((date, index) => {
-                          const dateStr = toLocalDateString(date);
-                          const dayTotal = filteredInsuranceChecks
-                            .filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr))
-                            .reduce((sum, c) => sum + c.totalAmount, 0);
-
-                          return (
-                            <div key={index} className={`p-3 rounded-lg border ${isDayMode ? 'bg-gray-50 border-gray-200' : 'bg-gray-700 border-gray-600'}`}>
-                              <p className={`text-xs font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-1`}>
-                                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </p>
-                              <p className="text-lg font-bold" style={{ color: csdGold }}>
-                                ${dayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </p>
-                              <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                                {filteredInsuranceChecks.filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr)).length} entered
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
+              <Suspense fallback={<LazyFallback />}>
+              <InsuranceCheckStation
+                isDayMode={isDayMode}
+                insuranceChecks={insuranceChecks}
+                setInsuranceChecks={setInsuranceChecks}
+                showArchivedInsuranceChecks={showArchivedInsuranceChecks}
+                setShowArchivedInsuranceChecks={setShowArchivedInsuranceChecks}
+                archiveInsuranceChecksDateFilter={archiveInsuranceChecksDateFilter}
+                setArchiveInsuranceChecksDateFilter={setArchiveInsuranceChecksDateFilter}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                onEditCheck={handleEditInsuranceCheck}
+                onAddUpdate={handleAddUpdate}
+                onViewHistory={handleViewInsuranceCheckHistory}
+              />
+              </Suspense>
             )}
 
             {/* Temporarily hidden - Payments content */}
@@ -4548,170 +4069,6 @@ const CourtStreetRCM = () => {
               </div>
             )}
 
-            {/* Add New Insurance Check/EFT Modal */}
-            {showAddInsuranceCheckModal && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDayMode ? 'bg-white' : 'bg-gray-800'}`}>
-                  <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
-                    <h3 className="text-2xl font-bold" style={{ color: csdGold }}>Add New Insurance Check/EFT</h3>
-                    <button onClick={() => setShowAddInsuranceCheckModal(false)} className="text-gray-500 hover:text-gray-700">
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    // Use dateEntered if provided, otherwise use today's date
-                    const dateEntered = formData.get('dateEntered') as string || getLocalDateString();
-                    const newCheck: InsuranceCheckRecord = {
-                      id: '', // Let database auto-generate the UUID
-                      checkEftNumber: formData.get('checkEftNumber') as string,
-                      paymentType: formData.get('paymentType') as 'Check' | 'EFT',
-                      insuranceCompany: formData.get('insuranceCompany') as string,
-                      distributionType: formData.get('distributionType') as 'Bulk' | 'Individual',
-                      totalAmount: parseFloat(formData.get('totalAmount') as string),
-                      aging: parseInt(formData.get('aging') as string) || 0,
-                      enteredBy: formData.get('enteredBy') as string,
-                      handler: formData.get('handler') as string,
-                      status: formData.get('status') as 'Created' | 'Entered' | 'Pending Review',
-                      dateOfService: formData.get('dateOfService') as string || undefined,
-                      dateEntered: dateEntered
-                    };
-
-                    try {
-                      // Save to Supabase (database will auto-generate UUID for id)
-                      const savedCheck = await insertInsuranceCheck(recordToInsuranceCheck(newCheck));
-                      // Update local state with the saved check
-                      setInsuranceChecks([...insuranceChecks, insuranceCheckToRecord(savedCheck)]);
-                      setShowAddInsuranceCheckModal(false);
-                    } catch (error) {
-                      console.error('Error saving insurance check:', error);
-                      alert('Failed to save insurance check. Please try again.');
-                    }
-                  }} className="p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Check/EFT Number</label>
-                        <input name="checkEftNumber" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="12345" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Payment Type</label>
-                        <div className="flex space-x-4">
-                          <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="paymentType" value="Check" defaultChecked className="mr-2" />
-                            <span className="text-sm">Check</span>
-                          </label>
-                          <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="paymentType" value="EFT" className="mr-2" />
-                            <span className="text-sm">EFT</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Insurance Company</label>
-                        <input name="insuranceCompany" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Delta Dental" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Distribution Type</label>
-                        <div className="flex space-x-4">
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="radio"
-                              name="distributionType"
-                              value="Bulk"
-                              defaultChecked
-                              className="mr-2"
-                              onChange={(e) => {
-                                const dosField = document.getElementById('insurance-dos-field') as HTMLInputElement;
-                                if (dosField) {
-                                  dosField.disabled = e.target.checked;
-                                  dosField.value = '';
-                                }
-                              }}
-                            />
-                            <span className="text-sm">Bulk</span>
-                          </label>
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="radio"
-                              name="distributionType"
-                              value="Individual"
-                              className="mr-2"
-                              onChange={(e) => {
-                                const dosField = document.getElementById('insurance-dos-field') as HTMLInputElement;
-                                if (dosField) {
-                                  dosField.disabled = !e.target.checked;
-                                }
-                              }}
-                            />
-                            <span className="text-sm">Individual</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Total Amount</label>
-                        <input name="totalAmount" type="number" step="0.01" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="1500.00" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Aging (Days)</label>
-                        <input name="aging" type="number" defaultValue="0" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Entered By</label>
-                        <input name="enteredBy" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="John D." />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Handler</label>
-                        <input name="handler" type="text" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sarah J." />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">DOS (Date of Service)</label>
-                        <input
-                          id="insurance-dos-field"
-                          name="dateOfService"
-                          type="date"
-                          disabled
-                          className={`w-full px-4 py-2 rounded-xl text-sm transition-all border ${isDayMode ? 'bg-gray-100 border-gray-300 text-gray-400' : 'bg-gray-800/50 border-gray-700 text-gray-500'} disabled:cursor-not-allowed focus:ring-2 focus:ring-gold-400 focus:outline-none`}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Date Entered</label>
-                        <input name="dateEntered" type="date" className={`w-full px-4 py-2 rounded-xl text-sm transition-all ${isDayMode ? 'bg-white/80 border-gray-300' : 'bg-gray-700/50 border-gray-600 text-white'} border focus:ring-2 focus:ring-gold-400 focus:outline-none`} />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Status</label>
-                        <select name="status" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                          <option value="Created">Created</option>
-                          <option value="Entered">Entered</option>
-                          <option value="Pending Review">Pending Review</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-3 pt-4">
-                      <button type="button" onClick={() => setShowAddInsuranceCheckModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
-                        Cancel
-                      </button>
-                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
-                        Add Check/EFT
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
             {/* Temporarily hidden - Insurance Networks content */}
             {false && patientManagementView === 'insurance-networks' && (
               <>
@@ -5164,19 +4521,23 @@ const CourtStreetRCM = () => {
             )}
 
             {patientManagementView === 'insurance-issues' && (
-              <InsuranceIssuesTracker isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><InsuranceIssuesTracker isDayMode={isDayMode} /></Suspense>
             )}
 
             {patientManagementView === 'ar-trends' && (
-              <ARAgingChart isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><ARAgingChart isDayMode={isDayMode} /></Suspense>
             )}
 
             {patientManagementView === 'vcc-payments' && (
-              <VCCPaymentsTracker isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><VCCPaymentsTracker isDayMode={isDayMode} /></Suspense>
+            )}
+
+            {patientManagementView === 'eft-reconciliation' && (
+              <Suspense fallback={<LazyFallback />}><EFTReconciliation isDayMode={isDayMode} /></Suspense>
             )}
 
             {patientManagementView === 'od-import' && (
-              <OpenDentalImport isDayMode={isDayMode} />
+              <Suspense fallback={<LazyFallback />}><OpenDentalImport isDayMode={isDayMode} /></Suspense>
             )}
           </div>
         ) : currentView === 'scorecard' ? (
@@ -5185,7 +4546,15 @@ const CourtStreetRCM = () => {
             <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h2 className={`text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+                  <h2
+                    className={`text-3xl font-bold mb-3 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`}
+                    style={{
+                      textShadow: isDayMode
+                        ? '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(184, 152, 95, 0.4)'
+                        : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 30px rgba(184, 152, 95, 0.6), 0 0 50px rgba(218, 165, 50, 0.3)',
+                      filter: isDayMode ? 'drop-shadow(0 0 8px rgba(184, 152, 95, 0.3))' : 'drop-shadow(0 0 12px rgba(218, 165, 50, 0.4))'
+                    }}
+                  >
                     Practice Scorecard Metrics
                   </h2>
                   <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -6047,6 +5416,7 @@ const CourtStreetRCM = () => {
             </div>
           </div>
         ) : currentView === 'eod-report' ? (
+          <Suspense fallback={<LazyFallback />}>
           <EODReport
             isDayMode={isDayMode}
             dashboardDate={dashboardDate}
@@ -6064,11 +5434,20 @@ const CourtStreetRCM = () => {
             onOpenTopProceduresModal={() => setShowTopProceduresModal(true)}
             onRefreshActionItems={refreshActionItems}
           />
+          </Suspense>
         ) : currentView === 'administration' ? (
           <div className="space-y-6">
             {/* Administration Header */}
             <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
-              <h2 className={`text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
+              <h2
+                className={`text-3xl font-bold mb-6 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`}
+                style={{
+                  textShadow: isDayMode
+                    ? '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(184, 152, 95, 0.4)'
+                    : '0 2px 8px rgba(0, 0, 0, 0.9), 0 0 30px rgba(184, 152, 95, 0.6), 0 0 50px rgba(218, 165, 50, 0.3)',
+                  filter: isDayMode ? 'drop-shadow(0 0 8px rgba(184, 152, 95, 0.3))' : 'drop-shadow(0 0 12px rgba(218, 165, 50, 0.4))'
+                }}
+              >
                 Administration
               </h2>
 
@@ -7020,10 +6399,10 @@ const CourtStreetRCM = () => {
             </h2>
             <div className="space-y-4">
               <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                Welcome to the Court Street Dental RCM Dashboard.
+                Welcome to the Court Street Dental Practice Dashboard.
               </p>
               <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                This comprehensive Revenue Cycle Management application includes:
+                This comprehensive practice management platform includes:
               </p>
               <ul className={`list-disc list-inside space-y-2 ml-4 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 <li>Claims Management & Tracking</li>
@@ -7324,12 +6703,12 @@ const CourtStreetRCM = () => {
 
                 {/* Lifecycle Metrics Display */}
                 <div className="mb-8">
-                  <LifecycleMetrics />
+                  <Suspense fallback={<LazyFallback />}><LifecycleMetrics /></Suspense>
                 </div>
 
                 {/* Data Upload Section */}
                 <div className="mb-6">
-                  <PatientDataUpload />
+                  <Suspense fallback={<LazyFallback />}><PatientDataUpload /></Suspense>
                 </div>
 
                 {/* Close Button */}
@@ -7347,6 +6726,7 @@ const CourtStreetRCM = () => {
         )}
 
         {/* Top Procedures CSV Upload */}
+        <Suspense fallback={null}>
         <TopProceduresCSVUpload
           isOpen={showTopProceduresModal}
           onClose={() => setShowTopProceduresModal(false)}
@@ -7361,8 +6741,10 @@ const CourtStreetRCM = () => {
           }}
           currentDate={dashboardDate}
         />
+        </Suspense>
 
         {/* CSD Metrics CSV Upload */}
+        <Suspense fallback={null}>
         <CSDMetricsCSVUpload
           isOpen={showCSDMetricsModal}
           onClose={() => setShowCSDMetricsModal(false)}
@@ -7372,8 +6754,10 @@ const CourtStreetRCM = () => {
             refreshMetrics();
           }}
         />
+        </Suspense>
 
         {/* RCM Metrics CSV Upload */}
+        <Suspense fallback={null}>
         <RCMMetricsCSVUpload
           isOpen={showRCMMetricsModal}
           onClose={() => setShowRCMMetricsModal(false)}
@@ -7383,6 +6767,7 @@ const CourtStreetRCM = () => {
             setClaimsOver60Days(claimsOver60);
           }}
         />
+        </Suspense>
 
         {/* Edit Modal */}
         {showEditModal && editingItem && (
@@ -8685,6 +8070,7 @@ const CourtStreetRCM = () => {
           onRefresh={handleRefreshInsights}
           isRefreshing={isRefreshingInsights}
         />
+        <Analytics />
       </div>
     </div>
   );

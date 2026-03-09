@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { getLocalDateString, toLocalDateString, getUTCBoundariesForLocalDate } from '../utils/dateUtils';
+import { getEmailLogoBaseUrl } from './emailService';
 
 // Brand colors matching the EOD report template
 const COLORS = {
@@ -195,8 +196,9 @@ function formatDate(dateStr: string): string {
 /**
  * Generates the HTML email for the daily A/R report
  */
-export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string): string {
+export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string, message?: string): string {
   const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
+  const csdLogoUrl = `${logoBaseUrl}/Cris%20Dental%20Image.jpg`;
   const totalNewItems =
     data.newPatientAR.length +
     data.newNonCollectible.length +
@@ -278,12 +280,22 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 20px;">
-                    <img src="${stellarLogoUrl}" alt="Stellar Consults" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding-right: 12px;">
+                          <img src="${stellarLogoUrl}" alt="Stellar Consults" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
+                        </td>
+                        <td style="color: rgba(255,255,255,0.5); font-size: 24px; font-weight: 300; padding: 0 8px; vertical-align: middle;">&times;</td>
+                        <td style="padding-left: 12px;">
+                          <img src="${csdLogoUrl}" alt="Court Street Dental" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-                    <h1 style="margin: 0; color: ${COLORS.white}; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">Daily A/R Activity Report</h1>
+                    <h1 style="margin: 0; color: ${COLORS.white}; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">Court Street Dental | Daily RCM Activity Report</h1>
                     <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.85); font-size: 15px; font-weight: 400;">${formatDate(data.reportDate)}</p>
                   </td>
                 </tr>
@@ -305,6 +317,21 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
               </table>
             </td>
           </tr>
+
+${message ? `
+          <!-- Custom Message -->
+          <tr>
+            <td style="padding: 24px 40px 0 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${COLORS.gray50}; border-radius: 10px; border: 1px solid ${COLORS.gray200};">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0; color: ${COLORS.gray700}; font-size: 14px; line-height: 1.6;">${message}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+` : ''}
 
           <!-- Summary Cards -->
           <tr>
@@ -406,7 +433,7 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
           <tr>
             <td style="padding: 24px 40px 32px 40px; text-align: center; border-top: 1px solid ${COLORS.gray200}; margin-top: 24px;">
               <p style="margin: 0; color: ${COLORS.gray500}; font-size: 12px;">
-                This is an automated daily report from the Stellar Dashboard.
+                This is an automated daily report from the Stellar OPS Dashboard.
               </p>
               <p style="margin: 4px 0 0 0; color: ${COLORS.gray500}; font-size: 11px;">
                 Patient information has been sanitized for security.
@@ -428,10 +455,12 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
 export async function sendDailyARReport(
   recipients: string[],
   data: DailyARReportData,
-  logoBaseUrl: string,
+  message?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const htmlBody = generateDailyARReportHTML(data, logoBaseUrl);
+    // Resolve logo URLs from Supabase Storage for email compatibility
+    const logoBase = await getEmailLogoBaseUrl();
+    const htmlBody = generateDailyARReportHTML(data, logoBase, message);
     const totalNew =
       data.newPatientAR.length +
       data.newNonCollectible.length +

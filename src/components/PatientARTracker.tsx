@@ -170,6 +170,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
   const [reportPreviewHtml, setReportPreviewHtml] = useState('');
   const [reportDate, setReportDate] = useState(dashboardDate || '');
   const [reportRecipients, setReportRecipients] = useState('');
+  const [reportMessage, setReportMessage] = useState('');
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -630,17 +631,16 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     setSendingReport(true);
     try {
       const data = await fetchDailyARReportData(reportDate || undefined);
-      const logoBaseUrl = window.location.origin;
       const result = await sendDailyARReport(
         recipientList,
         data,
-        logoBaseUrl,
+        reportMessage || undefined,
       );
       if (result.success) {
         setToastMessage('Daily A/R report sent successfully!');
       } else {
         // Fallback: open in new tab for manual sending
-        const html = generateDailyARReportHTML(data, logoBaseUrl);
+        const html = generateDailyARReportHTML(data, window.location.origin, reportMessage || undefined);
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
@@ -653,7 +653,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
     } finally {
       setSendingReport(false);
     }
-  }, [reportDate, reportRecipients]);
+  }, [reportDate, reportRecipients, reportMessage]);
 
   // ---------------------------------------------------
   // NOTES & AUDIT DRAWER HANDLERS
@@ -1765,6 +1765,20 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
                     <><Mail className="w-4 h-4" />Email Report</>
                   )}
                 </button>
+              </div>
+              <div className="mt-3">
+                <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  Additional Message (Optional)
+                </label>
+                <textarea
+                  value={reportMessage}
+                  onChange={(e) => setReportMessage(e.target.value)}
+                  rows={2}
+                  placeholder="Add a note for the team..."
+                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                    isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-white/20 bg-white/10 text-white'
+                  }`}
+                />
               </div>
             </div>
             <div className="flex-1 overflow-y-auto">
