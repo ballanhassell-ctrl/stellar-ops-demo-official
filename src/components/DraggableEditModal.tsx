@@ -230,6 +230,7 @@ const FIELD_MAP: Record<TabKey, FieldDef[]> = {
 // ── Popout Portal ────────────────────────────────────────────────
 // Uses the Document Picture-in-Picture API (Chrome/Edge 116+) to create a true
 // always-on-top floating window. Falls back to window.open for other browsers.
+const CLOSE_WARN_KEY = 'stellar_popout_skip_close_warn';
 
 // Copies stylesheets from the parent document into a popup/pip window
 function copyStylesToWindow(targetDoc: Document) {
