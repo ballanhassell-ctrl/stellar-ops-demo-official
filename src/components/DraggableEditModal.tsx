@@ -16,8 +16,6 @@ import {
 // Types used for RecordData field mapping
 
 // ── Lightweight drag hook ──
-// `isVisible` is needed so the effect re-runs once the ref is actually attached
-// to the DOM (when isOpen goes from false → true the ref target becomes non-null).
 function useDrag(handleRef: React.RefObject<HTMLDivElement | null>, isVisible: boolean) {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
@@ -232,18 +230,20 @@ const FIELD_MAP: Record<TabKey, FieldDef[]> = {
 // ── Inline SVG icons for pop-out (Lucide isn't available there) ──
 const SVG_PLUS = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>';
 const SVG_SAVE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>';
-const SVG_GRIP = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>';
+const SVG_GRIP = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg>';
 const SVG_USERS = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 const SVG_CREDIT = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>';
 const SVG_FILE = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>';
 const SVG_ALERT = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
 const SVG_DOLLAR = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+const SVG_MINUS = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>';
+const SVG_X = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+const SVG_ALERT_TRI = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
 const TAB_ICONS: Record<string, string> = { patient_ar: SVG_USERS, credits: SVG_CREDIT, insurance_ar: SVG_FILE, insurance_issues: SVG_ALERT, eft_reconciliation: SVG_DOLLAR };
 
 // ── Standalone pop-out HTML builder ──────────────────────────────
 function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>, isDayMode: boolean): string {
   const fields = FIELD_MAP[activeTab];
-  const tabLabel = TABS.find((t) => t.key === activeTab)?.label || activeTab;
 
   const renderField = (field: FieldDef, val: string): string => {
     const escapedVal = val.replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -277,10 +277,11 @@ function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>, i
     ),
   );
 
-  // Color tokens that exactly match the Tailwind theme in tailwind.config.js
+  // Color tokens matching the Tailwind theme in tailwind.config.js
   const c = isDayMode
     ? {
-        bodyBg: '#ffffff',
+        pageBg: '#f3f4f6',
+        modalBg: '#ffffff', modalBorder: '#e5e7eb', modalShadow: '0 25px 60px -12px rgba(0,0,0,0.15)',
         headerFrom: '#0066FF', headerTo: '#0052CC',
         tabBarBg: '#f9fafb', tabBarBorder: '#e5e7eb',
         tabText: '#6b7280', tabHoverText: '#374151', tabHoverBg: '#f3f4f6',
@@ -288,61 +289,113 @@ function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>, i
         formBg: '#ffffff',
         labelText: '#4b5563',
         inputBg: '#ffffff', inputBorder: '#d1d5db', inputText: '#111827',
-        inputFocus: '#0066FF', inputFocusRing: 'rgba(0,102,255,0.2)',
+        inputFocus: '#0066FF', inputFocusRing: 'rgba(0,102,255,0.15)',
         divider: '#e5e7eb',
         newBtnText: '#0066FF', newBtnHover: '#E6F0FF',
         cancelText: '#4b5563', cancelHover: '#f3f4f6',
         saveBg: '#0066FF', saveHover: '#0052CC',
+        // Close confirm dialog
+        dialogBg: '#ffffff', dialogBorder: '#e5e7eb', dialogText: '#111827', dialogSub: '#6b7280',
+        dialogOverlay: 'rgba(0,0,0,0.3)',
+        checkBorder: '#d1d5db', checkBg: '#ffffff', checkText: '#374151',
+        dangerBg: '#dc2626', dangerHover: '#b91c1c',
+        secondaryBg: '#f3f4f6', secondaryText: '#374151', secondaryHover: '#e5e7eb',
+        alertIconBg: '#fef2f2', alertIconColor: '#dc2626',
       }
     : {
-        bodyBg: '#111827',
+        pageBg: '#0b0f1a',
+        modalBg: '#111827', modalBorder: 'rgba(255,255,255,0.1)', modalShadow: '0 25px 60px -12px rgba(0,0,0,0.5)',
         headerFrom: '#003D99', headerTo: '#002966',
         tabBarBg: 'rgba(31,41,55,0.6)', tabBarBorder: 'rgba(255,255,255,0.1)',
         tabText: '#9ca3af', tabHoverText: '#e5e7eb', tabHoverBg: 'rgba(55,65,81,0.4)',
         tabActiveText: '#3385FF', tabActiveBorder: '#3385FF', tabActiveBg: '#111827',
         formBg: '#111827',
         labelText: '#9ca3af',
-        inputBg: '#1f2937', inputBorder: '#4b5563', inputText: '#ffffff',
-        inputFocus: '#3385FF', inputFocusRing: 'rgba(51,133,255,0.2)',
+        inputBg: '#1f2937', inputBorder: '#374151', inputText: '#f9fafb',
+        inputFocus: '#3385FF', inputFocusRing: 'rgba(51,133,255,0.15)',
         divider: 'rgba(255,255,255,0.1)',
         newBtnText: '#3385FF', newBtnHover: 'rgba(0,20,51,0.3)',
-        cancelText: '#9ca3af', cancelHover: '#1f2937',
+        cancelText: '#9ca3af', cancelHover: 'rgba(31,41,55,0.8)',
         saveBg: '#0066FF', saveHover: '#0052CC',
+        dialogBg: '#1f2937', dialogBorder: 'rgba(255,255,255,0.1)', dialogText: '#f9fafb', dialogSub: '#9ca3af',
+        dialogOverlay: 'rgba(0,0,0,0.5)',
+        checkBorder: '#4b5563', checkBg: '#111827', checkText: '#d1d5db',
+        dangerBg: '#dc2626', dangerHover: '#b91c1c',
+        secondaryBg: 'rgba(55,65,81,0.5)', secondaryText: '#d1d5db', secondaryHover: 'rgba(55,65,81,0.8)',
+        alertIconBg: 'rgba(220,38,38,0.15)', alertIconColor: '#ef4444',
       };
 
-  // Build actions HTML (reused in initial render and tab-switch rebuilds)
-  const actionsHTML = `<div class="actions"><button type="button" class="btn btn-new" id="newEntryBtn">${SVG_PLUS} Create New Entry</button><div class="actions-right"><button type="button" class="btn btn-cancel" onclick="window.close()">Cancel</button><button type="submit" class="btn btn-save">${SVG_SAVE} Save</button></div></div>`;
-
   return `<!DOCTYPE html>
-<html><head><title>Stellar OPS - ${tabLabel}</title>
+<html><head><title>Stellar OPS Dashboard</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:${c.bodyBg};color:${c.inputText};min-height:100vh;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:${c.pageBg};color:${c.inputText};min-height:100vh;display:flex;justify-content:center;padding:16px}
 
-.header{background:linear-gradient(to right,${c.headerFrom},${c.headerTo});padding:12px 16px;display:flex;align-items:center;justify-content:space-between;user-select:none}
+/* ── Floating card container (mirrors the in-app modal) ── */
+.modal-card{
+  width:100%;max-width:640px;border-radius:12px;overflow:hidden;
+  background:${c.modalBg};border:1px solid ${c.modalBorder};
+  box-shadow:${c.modalShadow};
+  display:flex;flex-direction:column;max-height:calc(100vh - 32px);
+  transition:max-height .3s ease;
+}
+.modal-card.minimized{max-height:48px;overflow:hidden}
+
+/* ── Header ── */
+.header{
+  background:linear-gradient(to right,${c.headerFrom},${c.headerTo});
+  padding:0 16px;height:48px;min-height:48px;
+  display:flex;align-items:center;justify-content:space-between;user-select:none;
+}
 .header-left{display:flex;align-items:center;gap:12px}
-.header-logo{width:28px;height:28px;border-radius:6px;object-fit:cover}
 .header h1{font-size:14px;font-weight:600;color:#fff;letter-spacing:0.025em}
 .header .grip{color:rgba(255,255,255,0.4);display:flex;align-items:center}
+.header-controls{display:flex;align-items:center;gap:4px}
+.hdr-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:6px;border:none;
+  background:transparent;color:rgba(255,255,255,0.7);cursor:pointer;
+  transition:all .15s;
+}
+.hdr-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
 
-.tabs{display:flex;gap:0;background:${c.tabBarBg};border-bottom:1px solid ${c.tabBarBorder};overflow-x:auto}
-.tab-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;font-size:12px;font-weight:500;color:${c.tabText};background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s}
+/* ── Tabs ── */
+.tabs{display:flex;gap:0;background:${c.tabBarBg};border-bottom:1px solid ${c.tabBarBorder};overflow-x:auto;flex-shrink:0}
+.tab-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:10px 16px;
+  font-size:12px;font-weight:500;color:${c.tabText};
+  background:none;border:none;border-bottom:2px solid transparent;
+  cursor:pointer;white-space:nowrap;transition:all .15s;
+}
 .tab-btn:hover{color:${c.tabHoverText};background:${c.tabHoverBg}}
 .tab-btn.active{color:${c.tabActiveText};border-bottom-color:${c.tabActiveBorder};background:${c.tabActiveBg}}
 .tab-icon{display:inline-flex;align-items:center}
 
-.form-body{background:${c.formBg};padding:20px;overflow-y:auto}
+/* ── Form ── */
+.form-body{background:${c.formBg};padding:20px;overflow-y:auto;flex:1}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 .form-grid .full{grid-column:1/-1}
 label{display:block;font-size:12px;font-weight:500;color:${c.labelText};margin-bottom:4px}
 .req{color:#ef4444;margin-left:2px}
-input,select,textarea{width:100%;padding:8px 12px;border-radius:8px;border:1px solid ${c.inputBorder};background:${c.inputBg};color:${c.inputText};font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input,select,textarea{
+  width:100%;padding:8px 12px;border-radius:8px;
+  border:1px solid ${c.inputBorder};background:${c.inputBg};color:${c.inputText};
+  font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;
+}
 input:focus,select:focus,textarea:focus{border-color:${c.inputFocus};box-shadow:0 0 0 3px ${c.inputFocusRing}}
 textarea{resize:none}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M2 5l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 
-.actions{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding-top:16px;border-top:1px solid ${c.divider};margin-top:8px}
+/* ── Actions bar ── */
+.actions{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  padding-top:16px;border-top:1px solid ${c.divider};margin-top:8px;
+}
 .actions-right{display:flex;gap:8px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .15s}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .15s;
+}
 .btn-new{background:none;color:${c.newBtnText};font-weight:500}
 .btn-new:hover{background:${c.newBtnHover}}
 .btn-cancel{background:none;color:${c.cancelText}}
@@ -350,27 +403,111 @@ textarea{resize:none}
 .btn-save{background:${c.saveBg};color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
 .btn-save:hover{background:${c.saveHover};box-shadow:0 4px 12px rgba(0,0,0,0.25)}
 
-.toast{position:fixed;top:12px;right:12px;background:#059669;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
-.toast.show{opacity:1}
+/* ── Toast ── */
+.toast{
+  position:fixed;top:12px;right:12px;
+  background:#059669;color:#fff;padding:10px 16px;border-radius:8px;
+  font-size:13px;font-weight:500;
+  opacity:0;transform:translateY(-8px);
+  transition:opacity .3s,transform .3s;pointer-events:none;z-index:200;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Close confirmation dialog ── */
+.dialog-overlay{
+  position:fixed;inset:0;background:${c.dialogOverlay};
+  display:none;align-items:center;justify-content:center;z-index:300;
+  animation:fadeIn .15s ease;
+}
+.dialog-overlay.open{display:flex}
+.dialog-box{
+  background:${c.dialogBg};border:1px solid ${c.dialogBorder};
+  border-radius:12px;padding:24px;width:min(380px,90vw);
+  box-shadow:0 20px 50px rgba(0,0,0,0.3);animation:slideUp .2s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.dialog-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:${c.alertIconBg};color:${c.alertIconColor};
+  display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+}
+.dialog-title{font-size:16px;font-weight:600;color:${c.dialogText};margin-bottom:6px}
+.dialog-sub{font-size:13px;color:${c.dialogSub};line-height:1.5;margin-bottom:20px}
+.dialog-check{display:flex;align-items:center;gap:8px;margin-bottom:20px;cursor:pointer}
+.dialog-check input[type=checkbox]{
+  width:16px;height:16px;accent-color:${c.saveBg};cursor:pointer;
+  border:1px solid ${c.checkBorder};border-radius:4px;background:${c.checkBg};
+}
+.dialog-check span{font-size:12px;color:${c.checkText}}
+.dialog-actions{display:flex;gap:8px;justify-content:flex-end}
+.dialog-btn{
+  padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  border:none;cursor:pointer;transition:all .15s;
+}
+.dialog-btn-cancel{background:${c.secondaryBg};color:${c.secondaryText}}
+.dialog-btn-cancel:hover{background:${c.secondaryHover}}
+.dialog-btn-close{background:${c.dangerBg};color:#fff}
+.dialog-btn-close:hover{background:${c.dangerHover}}
 </style></head><body>
-<div class="header">
-  <div class="header-left">
-    <h1>Stellar OPS Dashboard</h1>
-    <span class="grip">${SVG_GRIP}</span>
+
+<div class="modal-card" id="modalCard">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Stellar OPS Dashboard</h1>
+      <span class="grip">${SVG_GRIP}</span>
+    </div>
+    <div class="header-controls">
+      <button class="hdr-btn" id="minimizeBtn" title="Minimize">${SVG_MINUS}</button>
+      <button class="hdr-btn" id="closeBtn" title="Close">${SVG_X}</button>
+    </div>
+  </div>
+  <!-- Tabs -->
+  <div class="tabs" id="tabsBar">${tabButtons}</div>
+  <!-- Form -->
+  <div class="form-body">
+    <form id="popoutForm">
+      <div class="form-grid" id="formGrid">
+        ${fieldRows}
+        <div class="actions">
+          <button type="button" class="btn btn-new" id="newEntryBtn">${SVG_PLUS} Create New Entry</button>
+          <div class="actions-right">
+            <button type="button" class="btn btn-cancel" id="cancelBtn">Cancel</button>
+            <button type="submit" class="btn btn-save">${SVG_SAVE} Save</button>
+          </div>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
-<div class="tabs">${tabButtons}</div>
-<div class="form-body">
-  <form id="popoutForm">
-    <div class="form-grid" id="formGrid">${fieldRows}${actionsHTML}</div>
-  </form>
-</div>
+
+<!-- Toast -->
 <div class="toast" id="toast">Saved!</div>
+
+<!-- Close confirmation dialog -->
+<div class="dialog-overlay" id="closeDialog">
+  <div class="dialog-box">
+    <div class="dialog-icon">${SVG_ALERT_TRI}</div>
+    <div class="dialog-title">Close this window?</div>
+    <div class="dialog-sub">Any unsaved changes will be lost. Are you sure you want to close?</div>
+    <label class="dialog-check">
+      <input type="checkbox" id="dontShowAgain" />
+      <span>Don&apos;t show this warning again</span>
+    </label>
+    <div class="dialog-actions">
+      <button class="dialog-btn dialog-btn-cancel" id="dialogCancel">Go Back</button>
+      <button class="dialog-btn dialog-btn-close" id="dialogConfirm">Close Window</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var FIELD_MAP=${fieldMapJSON};
 var TAB_ICONS=${JSON.stringify(TAB_ICONS)};
-var ACTIONS_HTML='${actionsHTML.replace(/'/g, "\\'")}';
+var STORAGE_KEY='stellar_popout_skip_close_warn';
 
+/* ── Build fields HTML ── */
 function buildFieldsHTML(fields){
   var h='';
   for(var i=0;i<fields.length;i++){
@@ -386,29 +523,69 @@ function buildFieldsHTML(fields){
       h+='<div'+cls+'><label>'+f.label+req+'</label><input type="'+f.type+'" name="'+f.key+'" value="" /></div>';
     }
   }
+  h+='<div class="actions"><button type="button" class="btn btn-new" id="newEntryBtn">${SVG_PLUS} Create New Entry</button><div class="actions-right"><button type="button" class="btn btn-cancel" id="cancelBtn">Cancel</button><button type="submit" class="btn btn-save">${SVG_SAVE} Save</button></div></div>';
   return h;
 }
 
+/* ── Clear form ── */
 function clearForm(){
-  var els=document.querySelectorAll('#popoutForm input,#popoutForm select,#popoutForm textarea');
-  els.forEach(function(el){el.value='';});
+  var els=document.querySelectorAll('#popoutForm input[type],#popoutForm select,#popoutForm textarea');
+  els.forEach(function(el){if(el.type!=='submit'&&el.type!=='button')el.value='';});
 }
 
-document.addEventListener('click',function(e){
-  var btn=e.target.closest('#newEntryBtn');
-  if(btn) clearForm();
+/* ── Attempt close (with optional confirmation) ── */
+function attemptClose(){
+  var skip=false;
+  try{skip=localStorage.getItem(STORAGE_KEY)==='true';}catch(e){}
+  if(skip){window.close();return;}
+  document.getElementById('closeDialog').classList.add('open');
+}
+
+/* ── Minimize / expand ── */
+document.getElementById('minimizeBtn').addEventListener('click',function(){
+  var card=document.getElementById('modalCard');
+  card.classList.toggle('minimized');
+  this.title=card.classList.contains('minimized')?'Expand':'Minimize';
 });
 
+/* ── Close button ── */
+document.getElementById('closeBtn').addEventListener('click',attemptClose);
+
+/* ── Cancel button in form ── */
+document.addEventListener('click',function(e){
+  if(e.target.closest('#cancelBtn')) attemptClose();
+  if(e.target.closest('#newEntryBtn')) clearForm();
+});
+
+/* ── Dialog: Go Back ── */
+document.getElementById('dialogCancel').addEventListener('click',function(){
+  document.getElementById('closeDialog').classList.remove('open');
+});
+
+/* ── Dialog: Confirm Close ── */
+document.getElementById('dialogConfirm').addEventListener('click',function(){
+  var cb=document.getElementById('dontShowAgain');
+  if(cb.checked){try{localStorage.setItem(STORAGE_KEY,'true');}catch(e){}}
+  window.close();
+});
+
+/* ── Close dialog on overlay click ── */
+document.getElementById('closeDialog').addEventListener('click',function(e){
+  if(e.target===this) this.classList.remove('open');
+});
+
+/* ── Tab switching ── */
 document.querySelectorAll('.tab-btn').forEach(function(btn){
   btn.addEventListener('click',function(){
     document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
     this.classList.add('active');
     var tab=this.dataset.tab;
     var fields=FIELD_MAP[tab]||[];
-    document.getElementById('formGrid').innerHTML=buildFieldsHTML(fields)+ACTIONS_HTML;
+    document.getElementById('formGrid').innerHTML=buildFieldsHTML(fields);
   });
 });
 
+/* ── Form submit ── */
 document.getElementById('popoutForm').addEventListener('submit',function(e){
   e.preventDefault();
   var fd=new FormData(this);
@@ -421,7 +598,14 @@ document.getElementById('popoutForm').addEventListener('submit',function(e){
   }catch(ex){}
   var t=document.getElementById('toast');
   t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2000);
+  setTimeout(function(){t.classList.remove('show');},2500);
+});
+
+/* ── Intercept browser close (Ctrl+W, X button) ── */
+window.addEventListener('beforeunload',function(e){
+  var skip=false;
+  try{skip=localStorage.getItem(STORAGE_KEY)==='true';}catch(ex){}
+  if(!skip){e.preventDefault();e.returnValue='';}
 });
 </script></body></html>`;
 }
@@ -513,7 +697,7 @@ export default function DraggableEditModal({
     const docPiP = (window as any).documentPictureInPicture;
     if (docPiP) {
       try {
-        const pipWindow = await docPiP.requestWindow({ width: 520, height: 640 });
+        const pipWindow = await docPiP.requestWindow({ width: 560, height: 680 });
         pipWindow.document.write(html);
         pipWindow.document.close();
         onClose();
@@ -524,7 +708,7 @@ export default function DraggableEditModal({
     }
 
     // Fallback: regular popup window
-    const popup = window.open('', '_blank', 'popup=true,width=520,height=640,resizable=yes,scrollbars=yes');
+    const popup = window.open('', '_blank', 'popup=true,width=560,height=680,resizable=yes,scrollbars=yes');
     if (popup) {
       popup.document.write(html);
       popup.document.close();
