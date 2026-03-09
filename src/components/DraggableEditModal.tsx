@@ -327,9 +327,12 @@ function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>, i
 
   return `<!DOCTYPE html>
 <html><head><title>Stellar OPS Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:${c.pageBg};color:${c.inputText};min-height:100vh;display:flex;justify-content:center;padding:16px}
+body{font-family:'Nunito Sans',sans-serif;background:${c.pageBg};color:${c.inputText};min-height:100vh;display:flex;justify-content:center;padding:16px;-webkit-font-smoothing:antialiased}
 
 /* ── Floating card container (mirrors the in-app modal) ── */
 .modal-card{
@@ -348,7 +351,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   display:flex;align-items:center;justify-content:space-between;user-select:none;
 }
 .header-left{display:flex;align-items:center;gap:12px}
-.header h1{font-size:14px;font-weight:600;color:#fff;letter-spacing:0.025em}
+.header h1{font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;color:#fff;letter-spacing:0.025em}
 .header .grip{color:rgba(255,255,255,0.4);display:flex;align-items:center}
 .header-controls{display:flex;align-items:center;gap:4px}
 .hdr-btn{
@@ -360,12 +363,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .hdr-btn:hover{background:rgba(255,255,255,0.2);color:#fff}
 
 /* ── Tabs ── */
-.tabs{display:flex;gap:0;background:${c.tabBarBg};border-bottom:1px solid ${c.tabBarBorder};overflow-x:auto;flex-shrink:0}
+.tabs{
+  display:flex;gap:0;background:${c.tabBarBg};border-bottom:1px solid ${c.tabBarBorder};
+  overflow-x:auto;flex-shrink:0;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  touch-action:pan-x;scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
 .tab-btn{
   display:inline-flex;align-items:center;gap:6px;padding:10px 16px;
-  font-size:12px;font-weight:500;color:${c.tabText};
+  font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:600;color:${c.tabText};
   background:none;border:none;border-bottom:2px solid transparent;
-  cursor:pointer;white-space:nowrap;transition:all .15s;
+  cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;
 }
 .tab-btn:hover{color:${c.tabHoverText};background:${c.tabHoverBg}}
 .tab-btn.active{color:${c.tabActiveText};border-bottom-color:${c.tabActiveBorder};background:${c.tabActiveBg}}
@@ -375,12 +384,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .form-body{background:${c.formBg};padding:20px;overflow-y:auto;flex:1}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 .form-grid .full{grid-column:1/-1}
-label{display:block;font-size:12px;font-weight:500;color:${c.labelText};margin-bottom:4px}
+label{display:block;font-size:12px;font-weight:600;color:${c.labelText};margin-bottom:4px}
 .req{color:#ef4444;margin-left:2px}
 input,select,textarea{
+  font-family:'Nunito Sans',sans-serif;
   width:100%;padding:8px 12px;border-radius:8px;
   border:1px solid ${c.inputBorder};background:${c.inputBg};color:${c.inputText};
-  font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;
+  font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;
 }
 input:focus,select:focus,textarea:focus{border-color:${c.inputFocus};box-shadow:0 0 0 3px ${c.inputFocusRing}}
 textarea{resize:none}
@@ -393,10 +403,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 }
 .actions-right{display:flex;gap:8px}
 .btn{
+  font-family:'Nunito Sans',sans-serif;
   display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
-  font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .15s;
+  font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .15s;
 }
-.btn-new{background:none;color:${c.newBtnText};font-weight:500}
+.btn-new{background:none;color:${c.newBtnText};font-weight:600}
 .btn-new:hover{background:${c.newBtnHover}}
 .btn-cancel{background:none;color:${c.cancelText}}
 .btn-cancel:hover{background:${c.cancelHover}}
@@ -407,7 +418,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .toast{
   position:fixed;top:12px;right:12px;
   background:#059669;color:#fff;padding:10px 16px;border-radius:8px;
-  font-size:13px;font-weight:500;
+  font-family:'Nunito Sans',sans-serif;font-size:13px;font-weight:600;
   opacity:0;transform:translateY(-8px);
   transition:opacity .3s,transform .3s;pointer-events:none;z-index:200;
 }
@@ -432,7 +443,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   background:${c.alertIconBg};color:${c.alertIconColor};
   display:flex;align-items:center;justify-content:center;margin-bottom:16px;
 }
-.dialog-title{font-size:16px;font-weight:600;color:${c.dialogText};margin-bottom:6px}
+.dialog-title{font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:${c.dialogText};margin-bottom:6px}
 .dialog-sub{font-size:13px;color:${c.dialogSub};line-height:1.5;margin-bottom:20px}
 .dialog-check{display:flex;align-items:center;gap:8px;margin-bottom:20px;cursor:pointer}
 .dialog-check input[type=checkbox]{
@@ -442,7 +453,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .dialog-check span{font-size:12px;color:${c.checkText}}
 .dialog-actions{display:flex;gap:8px;justify-content:flex-end}
 .dialog-btn{
-  padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  font-family:'Nunito Sans',sans-serif;
+  padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;
   border:none;cursor:pointer;transition:all .15s;
 }
 .dialog-btn-cancel{background:${c.secondaryBg};color:${c.secondaryText}}
@@ -794,7 +806,7 @@ export default function DraggableEditModal({
         {!minimized && (
           <>
             {/* ── Tab Navigation ── */}
-            <div className={`${bgTabBar} flex gap-0 overflow-x-auto`}>
+            <div className={`${bgTabBar} flex gap-0 overflow-x-auto overscroll-x-contain`} style={{ touchAction: 'pan-x', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.key === activeTab;
