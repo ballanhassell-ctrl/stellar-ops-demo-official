@@ -262,24 +262,38 @@ function copyStylesToWindow(targetDoc: Document) {
     targetHead.appendChild(clone);
   });
 
-  // Base styles — use overflow:clip instead of hidden to prevent Chromium scroll
-  // chaining issues in PiP/popup windows where the viewport is tightly sized.
+  // Base styles for popup/PiP windows.
+  // Key fixes for Chromium (Chrome/Arc/Edge):
+  //   1. position:fixed + inset:0 on #popout-root avoids height:100% chain fragility
+  //   2. min-height:0 on flex children — required by Chromium for overflow to work
+  //      inside flex column layouts (Safari does this implicitly, Chromium does not)
+  //   3. overflow:clip on html/body prevents document-level scroll entirely
+  //   4. overscroll-behavior:none prevents bounce/chaining at every level
   const baseStyle = targetDoc.createElement('style');
   baseStyle.textContent = `
     html, body {
-      margin: 0; padding: 0; height: 100%;
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
       overflow: clip;
       overscroll-behavior: none;
     }
-    body { font-family: 'Nunito Sans', sans-serif; -webkit-font-smoothing: antialiased; }
-    #popout-root {
-      height: 100%; display: flex; flex-direction: column;
-      overflow: hidden;
+    body {
+      font-family: 'Nunito Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
-    /* Ensure the scrollable form area creates its own scroll context */
-    #popout-root * { -webkit-overflow-scrolling: touch; }
-    /* Stable scrollbar gutter to prevent layout shift */
-    .overflow-y-auto { scrollbar-gutter: stable; overscroll-behavior-y: contain; }
+    #popout-root {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+    /* Chromium flexbox fix: flex column children need min-height:0 to allow
+       overflow:auto to actually constrain and scroll instead of expanding. */
+    #popout-root > * {
+      min-height: 0;
+    }
   `;
   targetHead.appendChild(baseStyle);
 }
@@ -328,6 +342,18 @@ function PopoutPortal({
     popup.document.body.appendChild(root);
     setContainer(root);
 
+    // Prevent document-level scrolling in Chromium PiP/popup windows.
+    // Without this, wheel events that escape the form body can scroll the
+    // document itself, causing the entire layout to jump.
+    const blockDocScroll = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      // Allow scrolling inside elements that have their own overflow scroll
+      if (target && target.closest('.overflow-y-auto, .overflow-x-auto')) return;
+      e.preventDefault();
+    };
+    popup.document.addEventListener('wheel', blockDocScroll, { passive: false });
+    popup.document.addEventListener('touchmove', blockDocScroll, { passive: false });
+
     // Handle the pip window closing (works for both PiP 'pagehide' and regular popup)
     const handleClose = () => onClose();
     popup.addEventListener('pagehide', handleClose);
@@ -342,6 +368,8 @@ function PopoutPortal({
 
     return () => {
       clearInterval(checkClosed);
+      popup.document.removeEventListener('wheel', blockDocScroll);
+      popup.document.removeEventListener('touchmove', blockDocScroll);
       popup.removeEventListener('pagehide', handleClose);
       if (!popup.closed) popup.close();
     };
@@ -422,7 +450,7 @@ function ModalContent({
   }, [dontShowAgain, onClose]);
 
   return (
-    <div className={`${isPopout ? 'h-full' : 'rounded-xl shadow-2xl overflow-hidden'} flex flex-col ${bgModal}`}>
+    <div className={`${isPopout ? 'flex-1 min-h-0 overflow-hidden' : 'rounded-xl shadow-2xl overflow-hidden'} flex flex-col ${bgModal}`}>
       {/* ── Header ── */}
       <div className={`px-4 py-3 ${bgHeader} flex items-center justify-between select-none flex-shrink-0`}>
         <div className="flex items-center gap-3">
@@ -498,7 +526,7 @@ function ModalContent({
 
           {/* ── Form Body ── */}
           <div
-            className={`${bgForm} px-5 py-4 overflow-y-auto flex-1`}
+            className={`${bgForm} px-5 py-4 overflow-y-auto flex-1 min-h-0`}
             style={{ overscrollBehavior: 'contain' }}
           >
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
