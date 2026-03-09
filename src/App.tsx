@@ -2084,7 +2084,7 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 backdrop-blur-xl ${isDayMode ? 'bg-white/25 border-white/40 shadow-lg' : 'bg-black/40 border-white/10'}`}>
+      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 backdrop-blur-xl ${isDayMode ? 'glass-eod-ultra-light border-white/40 shadow-lg' : 'bg-black/40 border-white/10'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Desktop Navigation - Modern sleek design */}
           <nav className="hidden sm:flex flex-wrap gap-2 py-4">
@@ -2165,7 +2165,7 @@ const CourtStreetRCM = () => {
         {currentView === 'dashboard' ? (
           <div className="space-y-10">
             {/* Dashboard Header */}
-            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift animate-slide-up`}>
+            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-slide-up animate-float-slow`}>
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
@@ -2240,7 +2240,7 @@ const CourtStreetRCM = () => {
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slow border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
@@ -2288,7 +2288,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Collection Rate */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-medium border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2305,7 +2305,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Active Patients */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slower border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2322,7 +2322,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} hover-lift border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slow border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
@@ -2368,7 +2368,7 @@ const CourtStreetRCM = () => {
             {/* Claims & Payments Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-medium`}>
                 <h3 className={`text-xl font-display font-bold mb-5 ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                   Claims Status
                 </h3>
@@ -2421,7 +2421,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slower`}>
                 <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
@@ -2495,7 +2495,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Follow-Up Tracking */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slow`}>
               <h3 className={`text-xl font-display font-extrabold mb-2 ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                 Follow-Up Tracking
               </h3>
@@ -2508,7 +2508,7 @@ const CourtStreetRCM = () => {
                     setCurrentView('patient-management');
                     setPatientManagementView('claims');
                   }}
-                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2529,7 +2529,7 @@ const CourtStreetRCM = () => {
                     setCurrentView('patient-management');
                     setPatientManagementView('preauths');
                   }}
-                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2551,7 +2551,7 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowVipList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2573,7 +2573,7 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowRecareList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2595,7 +2595,7 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowTreatmentList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2614,12 +2614,12 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Automated Metrics Analysis */}
-            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-medium`}>
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Automated Metrics Analysis
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Avg Claims Aging</p>
@@ -2630,7 +2630,7 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Collection Rate</p>
@@ -2641,7 +2641,7 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-coral-700' : 'text-coral-400'}`}>Active Claims</p>
@@ -2652,7 +2652,7 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied Claims</p>
@@ -2692,7 +2692,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Insurance A/R Aging Summary */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slow`}>
               <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Summary
               </h3>
@@ -2707,7 +2707,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* New Patient Tracker */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slower`}>
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   New Patient Tracker
@@ -2724,7 +2724,7 @@ const CourtStreetRCM = () => {
               {/* Current Period Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Per Day */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2755,7 +2755,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Per Week */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2797,7 +2797,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Per Month */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2839,7 +2839,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Quarterly */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2907,7 +2907,7 @@ const CourtStreetRCM = () => {
                     const isOnTrack = monthData.count >= goalPerMonth;
 
                     return (
-                      <div key={index} className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/30' : 'border-white/10'} rounded-xl p-4 hover-lift transition-all`}>
+                      <div key={index} className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/30' : 'border-white/10'} rounded-xl p-4 hover-lift transition-all`}>
                         <p className={`text-xs font-semibold mb-2 truncate ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>{monthData.month}</p>
                         <p className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{monthData.count}</p>
                         <div className={`w-full rounded-full h-1.5 mb-2 ${isDayMode ? 'bg-gray-200/60' : 'bg-gray-700/40'}`}>
