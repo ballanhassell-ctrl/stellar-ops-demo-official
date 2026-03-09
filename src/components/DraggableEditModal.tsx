@@ -569,7 +569,7 @@ function ModalContent({
             className={`${bgForm} px-5 py-4 overflow-y-auto flex-1 min-h-0`}
             style={{
               overscrollBehavior: 'contain',
-              WebkitAppRegion: 'no-drag' as unknown as string,
+              ...({ WebkitAppRegion: 'no-drag' } as React.CSSProperties),
             }}
           >
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
