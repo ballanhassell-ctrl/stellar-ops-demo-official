@@ -12,7 +12,7 @@ export const LiquidGlassBackground = () => {
         <div
           className="fixed top-0 left-0 w-full h-full z-[-2] overflow-hidden"
           style={{
-            backgroundImage: 'url(/glacier-background.jpg)',
+            backgroundImage: 'url(/Aerial Mountain River Photo.jpg)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'

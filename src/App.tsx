@@ -2094,7 +2094,7 @@ const CourtStreetRCM = () => {
       </div>
 
       {/* Navigation */}
-      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 backdrop-blur-xl ${isDayMode ? 'bg-white/60 border-white/60' : 'bg-black/40 border-white/10'}`}>
+      <div className={`border-b transition-all duration-300 mb-4 sm:mb-8 backdrop-blur-xl ${isDayMode ? 'bg-white/25 border-white/40 shadow-lg' : 'bg-black/40 border-white/10'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Desktop Navigation - Modern sleek design */}
           <nav className="hidden sm:flex flex-wrap gap-2 py-4">
