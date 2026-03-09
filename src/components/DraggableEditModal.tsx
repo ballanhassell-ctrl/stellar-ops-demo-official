@@ -292,52 +292,11 @@ function copyStylesToWindow(targetDoc: Document) {
     #popout-root > * {
       min-height: 0 !important;
     }
-    /* The PiP window is 600px wide, which triggers the @media (max-width:640px)
+    /* The iframe window is 600px wide, which triggers the @media (max-width:640px)
        rule in index.css that adds scroll-behavior:smooth to .overflow-x-auto.
        This causes accumulated/delayed scrolling. Force it back to auto. */
     .overflow-x-auto {
       scroll-behavior: auto !important;
-    }
-
-    /* ── FIX: Scrollbar-induced layout shift ──
-       overflow-y:auto toggles the scrollbar on/off as content changes,
-       causing ~15px width reflow each time → content "moves around".
-       Force the scrollbar to always be present so the width never changes.
-       scrollbar-gutter:stable reserves space even for overlay scrollbars.
-       will-change:scroll-position promotes to its own compositor layer
-       so any remaining reflows don't ripple through the whole PiP layout. */
-    .overflow-y-auto {
-      overflow-y: scroll !important;
-      scrollbar-gutter: stable !important;
-      overscroll-behavior: contain;
-      will-change: scroll-position;
-    }
-    /* Respect overflow-hidden when set explicitly (used by PiP manual scroll) */
-    .overflow-hidden {
-      overflow: hidden !important;
-    }
-
-    /* Thin, unobtrusive scrollbar styling for the always-visible scrollbar */
-    .overflow-y-auto {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
-    }
-    .overflow-y-auto::-webkit-scrollbar {
-      width: 6px;
-    }
-    .overflow-y-auto::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .overflow-y-auto::-webkit-scrollbar-thumb {
-      background: rgba(128, 128, 128, 0.3);
-      border-radius: 3px;
-    }
-
-    /* Disable CSS transitions on form elements in PiP to prevent
-       hover-state color transitions from causing micro-reflows during scroll.
-       Focus ring (focus:ring-2) still works — it's not a transition. */
-    input, select, textarea, label {
-      transition: none !important;
     }
   `;
   targetHead.appendChild(baseStyle);
@@ -380,12 +339,35 @@ function PopoutPortal({
     const popup = popupWindow;
     if (popup.closed) { onClose(); return; }
 
-    copyStylesToWindow(popup.document);
+    // ── Iframe isolation strategy ──
+    // Chromium's Document PiP compositor routes native scroll events on the
+    // PiP document to both window positioning and content scrolling.
+    // By rendering inside an iframe, we create a fully isolated browsing
+    // context — scroll events stay inside the iframe and never reach the
+    // PiP window's compositor layer.
 
-    // Create mount point
-    const root = popup.document.createElement('div');
+    // Style the PiP window itself: no margin, no scroll, full-bleed iframe
+    const pipStyle = popup.document.createElement('style');
+    pipStyle.textContent = `
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    `;
+    popup.document.head.appendChild(pipStyle);
+
+    // Create a full-bleed iframe
+    const iframe = popup.document.createElement('iframe');
+    iframe.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none;';
+    popup.document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument;
+    if (!iframeDoc) { onClose(); return; }
+
+    // Copy all styles into the iframe (not the PiP window)
+    copyStylesToWindow(iframeDoc);
+
+    // Create React mount point inside the iframe
+    const root = iframeDoc.createElement('div');
     root.id = 'popout-root';
-    popup.document.body.appendChild(root);
+    iframeDoc.body.appendChild(root);
     setContainer(root);
 
     // Guard: only fire onClose once regardless of event source
@@ -455,113 +437,6 @@ function ModalContent({
 }) {
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollThumbRef = useRef<HTMLDivElement>(null);
-  const scrollThumbTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [scrollThumbVisible, setScrollThumbVisible] = useState(false);
-  const touchStartY = useRef(0);
-  const touchStartScrollTop = useRef(0);
-
-  // ── PiP manual scroll manager ──
-  // Chromium's Document PiP compositor routes ALL native scroll events to both
-  // window positioning and content scrolling. Setting overflow:hidden on the
-  // container disables native scroll entirely. We intercept wheel, touch, and
-  // keyboard inputs and manually apply scrollTop so the browser never fires a
-  // native scroll event on the PiP surface.
-  useEffect(() => {
-    if (!isPopout) return;
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const clampScroll = () => {
-      const max = container.scrollHeight - container.clientHeight;
-      if (container.scrollTop < 0) container.scrollTop = 0;
-      if (container.scrollTop > max) container.scrollTop = max;
-    };
-
-    const updateThumb = () => {
-      const thumb = scrollThumbRef.current;
-      if (!thumb) return;
-      const ratio = container.scrollTop / container.scrollHeight;
-      const heightPct = container.clientHeight / container.scrollHeight;
-      thumb.style.top = `${ratio * 100}%`;
-      thumb.style.height = `${heightPct * 100}%`;
-    };
-
-    const flashScrollbar = () => {
-      setScrollThumbVisible(true);
-      clearTimeout(scrollThumbTimeout.current);
-      scrollThumbTimeout.current = setTimeout(() => setScrollThumbVisible(false), 800);
-    };
-
-    const applyScroll = (dy: number) => {
-      container.scrollTop += dy;
-      clampScroll();
-      updateThumb();
-      flashScrollbar();
-    };
-
-    // 1. Wheel events
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      applyScroll(e.deltaY);
-    };
-
-    // 2. Touch events
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchStartY.current = e.touches[0].clientY;
-        touchStartScrollTop.current = container.scrollTop;
-      }
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        e.preventDefault();
-        const deltaY = touchStartY.current - e.touches[0].clientY;
-        container.scrollTop = touchStartScrollTop.current + deltaY;
-        clampScroll();
-        updateThumb();
-        flashScrollbar();
-      }
-    };
-
-    // 3. Keyboard scrolling (only when no form element is focused)
-    const onKeyDown = (e: KeyboardEvent) => {
-      const active = container.ownerDocument.activeElement;
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
-
-      const pageStep = container.clientHeight * 0.85;
-      let delta = 0;
-      switch (e.key) {
-        case 'ArrowDown': delta = 40; break;
-        case 'ArrowUp': delta = -40; break;
-        case 'PageDown': delta = pageStep; break;
-        case 'PageUp': delta = -pageStep; break;
-        case ' ': delta = e.shiftKey ? -pageStep : pageStep; break;
-        case 'Home': container.scrollTop = 0; clampScroll(); updateThumb(); flashScrollbar(); e.preventDefault(); return;
-        case 'End': container.scrollTop = container.scrollHeight; clampScroll(); updateThumb(); flashScrollbar(); e.preventDefault(); return;
-        default: return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      applyScroll(delta);
-    };
-
-    container.addEventListener('wheel', onWheel, { passive: false });
-    container.addEventListener('touchstart', onTouchStart, { passive: true });
-    container.addEventListener('touchmove', onTouchMove, { passive: false });
-    const doc = container.ownerDocument;
-    doc.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      container.removeEventListener('wheel', onWheel);
-      container.removeEventListener('touchstart', onTouchStart);
-      container.removeEventListener('touchmove', onTouchMove);
-      doc.removeEventListener('keydown', onKeyDown);
-      clearTimeout(scrollThumbTimeout.current);
-    };
-  }, [isPopout, minimized]);
 
   const fields = FIELD_MAP[activeTab];
 
@@ -666,14 +541,8 @@ function ModalContent({
           </div>
 
           {/* ── Form Body ── */}
-          <div className="relative flex-1 min-h-0 flex flex-col">
           <div
-            ref={scrollRef}
-            className={`${bgForm} px-5 py-4 ${isPopout ? 'overflow-hidden' : 'overflow-y-auto'} flex-1 min-h-0`}
-            style={{
-              overscrollBehavior: 'contain',
-              WebkitAppRegion: 'no-drag',
-            } as React.CSSProperties & { WebkitAppRegion: string }}
+            className={`${bgForm} px-5 py-4 overflow-y-auto flex-1 min-h-0`}
           >
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               {fields.map((field) => {
@@ -761,21 +630,6 @@ function ModalContent({
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Custom scroll indicator for PiP mode */}
-          {isPopout && (
-            <div
-              className="absolute right-0 top-0 bottom-0 w-1.5 pointer-events-none z-10"
-              style={{ opacity: scrollThumbVisible ? 1 : 0, transition: 'opacity 0.3s' }}
-            >
-              <div
-                ref={scrollThumbRef}
-                className="absolute right-0 w-1.5 rounded-full bg-gray-400/50"
-                style={{ top: '0%', height: '30%', minHeight: 20 }}
-              />
-            </div>
-          )}
           </div>
         </>
       )}
