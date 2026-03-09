@@ -2105,7 +2105,7 @@ const CourtStreetRCM = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`group relative flex items-center gap-2.5 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] hover-lift backdrop-blur-md ${
+                  className={`group relative flex items-center gap-2.5 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] backdrop-blur-md ${
                     isActive
                       ? 'btn-purple-glow shadow-glow-primary'
                       : isDayMode
@@ -2135,7 +2135,7 @@ const CourtStreetRCM = () => {
                       setCurrentView(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all min-h-[52px] hover-lift backdrop-blur-md ${
+                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all min-h-[52px] backdrop-blur-md ${
                       isActive
                         ? 'btn-purple-glow shadow-glow-primary'
                         : isDayMode
@@ -2175,7 +2175,7 @@ const CourtStreetRCM = () => {
         {currentView === 'dashboard' ? (
           <div className="space-y-10">
             {/* Dashboard Header */}
-            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-slide-up animate-float-slow`}>
+            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} animate-slide-up`}>
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
@@ -2195,7 +2195,7 @@ const CourtStreetRCM = () => {
                       type="date"
                       value={inputDate}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputDate(e.target.value)}
-                      className={`px-3 sm:px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all hover-lift min-h-[44px] ${
+                      className={`px-3 sm:px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all min-h-[44px] ${
                         isDayMode
                           ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
                           : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
@@ -2250,7 +2250,7 @@ const CourtStreetRCM = () => {
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slow border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
@@ -2298,7 +2298,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Collection Rate */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-medium border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2315,7 +2315,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Active Patients */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slower border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'}er border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2332,7 +2332,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slow border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
@@ -2378,7 +2378,7 @@ const CourtStreetRCM = () => {
             {/* Claims & Payments Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-medium`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                 <h3 className={`text-xl font-display font-bold mb-5 ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                   Claims Status
                 </h3>
@@ -2431,14 +2431,14 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slower`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}er`}>
                 <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => setCurrentView('claims')}
-                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all hover-lift min-h-[52px] ${
+                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all min-h-[52px] ${
                       isDayMode
                         ? 'bg-gradient-to-r from-purple-100/60 to-purple-200/60 hover:from-purple-200/80 hover:to-purple-300/80 border border-purple-300/50'
                         : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/50 hover:to-purple-700/50 border border-purple-700/30'
@@ -2454,7 +2454,7 @@ const CourtStreetRCM = () => {
                   </button>
                   <button
                     onClick={() => setCurrentView('payments')}
-                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all hover-lift min-h-[52px] ${
+                    className={`group w-full flex items-center justify-between p-3 sm:p-4 rounded-xl transition-all min-h-[52px] ${
                       isDayMode
                         ? 'bg-gradient-to-r from-emerald-100/60 to-emerald-200/60 hover:from-emerald-200/80 hover:to-emerald-300/80 border border-emerald-300/50'
                         : 'bg-gradient-to-r from-emerald-900/30 to-emerald-800/30 hover:from-emerald-800/50 hover:to-emerald-700/50 border border-emerald-700/30'
@@ -2470,7 +2470,7 @@ const CourtStreetRCM = () => {
                   </button>
                   <button
                     onClick={() => setCurrentView('patients')}
-                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
+                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all ${
                       isDayMode
                         ? 'bg-gradient-to-r from-purple-100/60 to-purple-200/60 hover:from-purple-200/80 hover:to-purple-300/80 border border-purple-300/50'
                         : 'bg-gradient-to-r from-purple-900/30 to-purple-800/30 hover:from-purple-800/50 hover:to-purple-700/50 border border-purple-700/30'
@@ -2486,7 +2486,7 @@ const CourtStreetRCM = () => {
                   </button>
                   <button
                     onClick={() => setCurrentView('scorecard')}
-                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all hover-lift ${
+                    className={`group w-full flex items-center justify-between p-4 rounded-xl transition-all ${
                       isDayMode
                         ? 'bg-gradient-to-r from-coral-100/60 to-coral-200/60 hover:from-coral-200/80 hover:to-coral-300/80 border border-coral-300/50'
                         : 'bg-gradient-to-r from-coral-900/30 to-coral-800/30 hover:from-coral-800/50 hover:to-coral-700/50 border border-coral-700/30'
@@ -2505,7 +2505,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Follow-Up Tracking */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slow`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h3 className={`text-xl font-display font-extrabold mb-2 ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                 Follow-Up Tracking
               </h3>
@@ -2518,7 +2518,7 @@ const CourtStreetRCM = () => {
                     setCurrentView('patient-management');
                     setPatientManagementView('claims');
                   }}
-                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2539,7 +2539,7 @@ const CourtStreetRCM = () => {
                     setCurrentView('patient-management');
                     setPatientManagementView('preauths');
                   }}
-                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2561,7 +2561,7 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowVipList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2583,7 +2583,7 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowRecareList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2605,7 +2605,7 @@ const CourtStreetRCM = () => {
                     setAdministrationView('scheduling');
                     setShowTreatmentList(true);
                   }}
-                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden`}
+                  className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10 flex flex-col items-center">
@@ -2624,12 +2624,12 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Automated Metrics Analysis */}
-            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-medium`}>
+            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Automated Metrics Analysis
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Avg Claims Aging</p>
@@ -2640,7 +2640,7 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Collection Rate</p>
@@ -2651,7 +2651,7 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-coral-700' : 'text-coral-400'}`}>Active Claims</p>
@@ -2662,7 +2662,7 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
 
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied Claims</p>
@@ -2702,7 +2702,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Insurance A/R Aging Summary */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slow`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Summary
               </h3>
@@ -2717,7 +2717,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* New Patient Tracker */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slower`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}er`}>
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   New Patient Tracker
@@ -2734,7 +2734,7 @@ const CourtStreetRCM = () => {
               {/* Current Period Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Per Day */}
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2765,7 +2765,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Per Week */}
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2807,7 +2807,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Per Month */}
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2849,7 +2849,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Quarterly */}
-                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
@@ -2917,7 +2917,7 @@ const CourtStreetRCM = () => {
                     const isOnTrack = monthData.count >= goalPerMonth;
 
                     return (
-                      <div key={index} className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/30' : 'border-white/10'} rounded-xl p-4 hover-lift transition-all`}>
+                      <div key={index} className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/30' : 'border-white/10'} rounded-xl p-4 transition-all`}>
                         <p className={`text-xs font-semibold mb-2 truncate ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>{monthData.month}</p>
                         <p className={`text-3xl font-bold mb-2 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{monthData.count}</p>
                         <div className={`w-full rounded-full h-1.5 mb-2 ${isDayMode ? 'bg-gray-200/60' : 'bg-gray-700/40'}`}>
@@ -2966,7 +2966,7 @@ const CourtStreetRCM = () => {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setPatientManagementView('patients')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'patients'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -2978,7 +2978,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setPatientManagementView('credits')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'credits'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -2990,7 +2990,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setPatientManagementView('insurance-issues')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'insurance-issues'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3002,7 +3002,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setPatientManagementView('vcc-payments')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'vcc-payments'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3014,7 +3014,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setPatientManagementView('insurance-checks')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'insurance-checks'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3026,7 +3026,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setPatientManagementView('eft-reconciliation')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'eft-reconciliation'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3038,7 +3038,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setPatientManagementView('ar-trends')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'ar-trends'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3050,7 +3050,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setPatientManagementView('preauths')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'preauths'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3063,7 +3063,7 @@ const CourtStreetRCM = () => {
                 {isAdmin && (
                   <button
                     onClick={() => setPatientManagementView('claims')}
-                    className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                    className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                       patientManagementView === 'claims'
                         ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                         : isDayMode
@@ -3076,7 +3076,7 @@ const CourtStreetRCM = () => {
                 )}
                 <button
                   onClick={() => setPatientManagementView('od-import')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'od-import'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3089,7 +3089,7 @@ const CourtStreetRCM = () => {
                 {/* Temporarily hidden - Payments tab
                 <button
                   onClick={() => setPatientManagementView('payments')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'payments'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3103,7 +3103,7 @@ const CourtStreetRCM = () => {
                 {/* Temporarily hidden - Insurance Networks tab
                 <button
                   onClick={() => setPatientManagementView('insurance-networks')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     patientManagementView === 'insurance-networks'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -3126,7 +3126,7 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'preauths' && (
               <>
                 {/* Pre-Auths Header */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Pre-Authorization Management
@@ -3139,7 +3139,7 @@ const CourtStreetRCM = () => {
                       </span>
                       <button
                         onClick={() => setShowArchivedPreAuths(!showArchivedPreAuths)}
-                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                           showArchivedPreAuths
                             ? isDayMode
                               ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
@@ -3179,7 +3179,7 @@ const CourtStreetRCM = () => {
                   {/* Pre-Auth Statistics Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Total Pre-Auths */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3194,7 +3194,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Pending */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3209,7 +3209,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Approved */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3224,7 +3224,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Scheduled */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3239,7 +3239,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Denied */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3256,21 +3256,21 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Detailed Pre-Auths Table */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Pre-Authorization Details ({filteredPreAuths.length} {filteredPreAuths.length === 1 ? 'request' : 'requests'})
                     </h3>
                     <div className="flex items-center space-x-3">
                       <button
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-sm"
                         onClick={() => exportToCSV(filteredPreAuths, `pre-auths-export-${getLocalDateString()}.csv`)}
                       >
                         <Download className="w-4 h-4" />
                         <span>Export to CSV</span>
                       </button>
                       <button
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-sm"
                         onClick={() => setShowAddPreAuthModal(true)}
                       >
                         <Plus className="w-4 h-4" />
@@ -3414,13 +3414,13 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Pre-Authorization Analytics */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Pre-Authorization Analytics
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Average Aging Days */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -3438,7 +3438,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Total Requested Amount */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -3454,7 +3454,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Total Approved Amount */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -3470,7 +3470,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Approval Rate */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -3488,7 +3488,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Treatment Scheduled */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -3504,7 +3504,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Potential Production Waiting to be Scheduled */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
@@ -3553,7 +3553,7 @@ const CourtStreetRCM = () => {
             {false && patientManagementView === 'payments' && (
               <>
                 {/* Payments Header */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Payment Processing & Reconciliation
                   </h2>
@@ -3561,7 +3561,7 @@ const CourtStreetRCM = () => {
                   {/* Payment Summary Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Today's Payments */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3578,7 +3578,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Weekly Payments */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3595,7 +3595,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Monthly Payments */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3612,7 +3612,7 @@ const CourtStreetRCM = () => {
                     </div>
 
                     {/* Pending Deposits */}
-                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                    <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
@@ -3633,7 +3633,7 @@ const CourtStreetRCM = () => {
                 {/* Payment Breakdown */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Payment Sources */}
-                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                     <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Payment Sources
                     </h3>
@@ -3666,7 +3666,7 @@ const CourtStreetRCM = () => {
                   </div>
 
                   {/* Payment Actions */}
-                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                  <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                     <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                       Action Items
                     </h3>
@@ -3694,7 +3694,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Recent Payment Activity */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                     Recent Payment Activity
                   </h3>
@@ -4073,7 +4073,7 @@ const CourtStreetRCM = () => {
             {false && patientManagementView === 'insurance-networks' && (
               <>
             {/* Insurance Header */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Insurance Portal Integration
               </h2>
@@ -4081,7 +4081,7 @@ const CourtStreetRCM = () => {
               {/* Insurance Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Insurance Providers */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
@@ -4098,7 +4098,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Active Plans */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
@@ -4115,7 +4115,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Credentialing Pending */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
@@ -4132,7 +4132,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Verifications Pending */}
-                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
@@ -4151,7 +4151,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* EFT Enrollment & Network Status Table */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 EFT Enrollment & Network Status
               </h3>
@@ -4348,7 +4348,7 @@ const CourtStreetRCM = () => {
             {patientManagementView === 'checklist' && (
               <>
             {/* Checklist Header */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Daily, Weekly & Monthly Checklists
               </h2>
@@ -4360,7 +4360,7 @@ const CourtStreetRCM = () => {
             {/* Checklist Progress Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Daily Tasks */}
-              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-3">
@@ -4387,7 +4387,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Weekly Tasks */}
-              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-3">
@@ -4414,7 +4414,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Monthly Tasks */}
-              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+              <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-3">
@@ -4442,7 +4442,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Daily Checklist */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
                 Daily RCM Tasks
               </h3>
@@ -4543,7 +4543,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'scorecard' ? (
           <div className="space-y-6">
             {/* Scorecard Header */}
-            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-slide-up`}>
+            <div className={`rounded-3xl p-8 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} animate-slide-up`}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <h2
@@ -4563,7 +4563,7 @@ const CourtStreetRCM = () => {
                 </div>
                 <button
                   onClick={() => setShowCSDMetricsModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm min-h-[44px] whitespace-nowrap"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-gold-500 text-white rounded-xl hover:shadow-glow-primary transition-all shadow-lg font-semibold text-sm min-h-[44px] whitespace-nowrap"
                 >
                   <Upload className="w-4 h-4" />
                   <span>Upload Metrics</span>
@@ -4572,7 +4572,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Advanced Business Metrics */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h3 className={`text-xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Advanced Business Metrics
               </h3>
@@ -4594,7 +4594,7 @@ const CourtStreetRCM = () => {
               <div className="mb-8">
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Financial Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>CAC</p>
@@ -4604,7 +4604,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Customer Acquisition Cost</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Gross Profit Margin</p>
@@ -4614,7 +4614,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Profitability ratio</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Operating Profit Margin</p>
@@ -4624,7 +4624,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Operational efficiency</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Cash Flow</p>
@@ -4634,7 +4634,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Current period</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>Revenue Growth Rate</p>
@@ -4651,7 +4651,7 @@ const CourtStreetRCM = () => {
               <div className="mb-8">
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Cost of Goods Sold (COGS)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Dental Supplies</p>
@@ -4660,7 +4660,7 @@ const CourtStreetRCM = () => {
                       </p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Lab Fees</p>
@@ -4669,7 +4669,7 @@ const CourtStreetRCM = () => {
                       </p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Associate Doctor Expense</p>
@@ -4678,7 +4678,7 @@ const CourtStreetRCM = () => {
                       </p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-lime-200/50' : 'border-lime-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-lime-200/50' : 'border-lime-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-lime-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-lime-700' : 'text-lime-400'}`}>Hygiene Payroll</p>
@@ -4687,7 +4687,7 @@ const CourtStreetRCM = () => {
                       </p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Assistant Payroll</p>
@@ -4696,7 +4696,7 @@ const CourtStreetRCM = () => {
                       </p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Total COGS</p>
@@ -4707,7 +4707,7 @@ const CourtStreetRCM = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-rose-200/50' : 'border-rose-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-rose-200/50' : 'border-rose-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
@@ -4728,14 +4728,14 @@ const CourtStreetRCM = () => {
                   <h4 className={`text-sm font-bold uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Patient Lifecycle & Retention</h4>
                   <button
                     onClick={() => setShowLifecycleModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-gold-400 rounded-xl hover:shadow-glow-primary transition-all shadow-lg hover-lift font-semibold text-sm"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-gold-400 rounded-xl hover:shadow-glow-primary transition-all shadow-lg font-semibold text-sm"
                   >
                     <Upload className="w-4 h-4" />
                     <span>Manage Data & Details</span>
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Churned Patients</p>
@@ -4745,7 +4745,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Per month</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-fuchsia-200/50' : 'border-fuchsia-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-fuchsia-200/50' : 'border-fuchsia-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-fuchsia-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-fuchsia-700' : 'text-fuchsia-400'}`}>Churn Rate</p>
@@ -4755,7 +4755,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Monthly rate</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-pink-200/50' : 'border-pink-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-pink-200/50' : 'border-pink-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-pink-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-pink-700' : 'text-pink-400'}`}>Patient Lifecycle</p>
@@ -4765,7 +4765,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Average duration</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-violet-200/50' : 'border-violet-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-violet-200/50' : 'border-violet-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-violet-700' : 'text-violet-400'}`}>Active Pts (Prior Month)</p>
@@ -4775,7 +4775,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Beginning of last month</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Avg Retention Period</p>
@@ -4792,7 +4792,7 @@ const CourtStreetRCM = () => {
               <div className="mb-8">
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Revenue & Customer Value</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-sky-200/50' : 'border-sky-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-sky-200/50' : 'border-sky-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-sky-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-sky-700' : 'text-sky-400'}`}>Average Revenue Per Client</p>
@@ -4802,7 +4802,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>ARPC</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Lifetime Value (LTV)</p>
@@ -4812,7 +4812,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>ARPC × Avg Retention Period</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>LTV:CAC Ratio</p>
@@ -4829,7 +4829,7 @@ const CourtStreetRCM = () => {
               <div>
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Satisfaction & Employee Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Net Promoter Score</p>
@@ -4839,7 +4839,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient satisfaction</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Employee NPS (eNPS)</p>
@@ -4849,7 +4849,7 @@ const CourtStreetRCM = () => {
                       <p className={`text-xs mt-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Employee satisfaction</p>
                     </div>
                   </div>
-                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 hover-lift relative overflow-hidden group`}>
+                  <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Employee Utilization Rate</p>
@@ -5438,7 +5438,7 @@ const CourtStreetRCM = () => {
         ) : currentView === 'administration' ? (
           <div className="space-y-6">
             {/* Administration Header */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
               <h2
                 className={`text-3xl font-bold mb-6 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`}
                 style={{
@@ -5455,7 +5455,7 @@ const CourtStreetRCM = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setAdministrationView('scheduling')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     administrationView === 'scheduling'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -5467,7 +5467,7 @@ const CourtStreetRCM = () => {
                 </button>
                 <button
                   onClick={() => setAdministrationView('training')}
-                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                     administrationView === 'training'
                       ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                       : isDayMode
@@ -5484,14 +5484,14 @@ const CourtStreetRCM = () => {
             {administrationView === 'scheduling' && (
               <>
                 {/* VIP List Section */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>VIP List</h3>
                     <div className="flex gap-2">
                       {showVipList && (
                         <button
                           onClick={() => setShowAddVipModal(true)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift flex items-center gap-2 font-semibold text-sm"
+                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add VIP
@@ -5499,7 +5499,7 @@ const CourtStreetRCM = () => {
                       )}
                       <button
                         onClick={() => setShowVipList(!showVipList)}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                           showVipList
                             ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                             : isDayMode
@@ -5516,35 +5516,35 @@ const CourtStreetRCM = () => {
                     <div className="mt-4 space-y-4">
                       {/* VIP Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${vipMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${vipMetrics.productionScheduled.toLocaleString()}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{vipMetrics.totalPatients}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{vipMetrics.unscheduledPatients}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
@@ -5641,14 +5641,14 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Recare List Section */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Recare List</h3>
                     <div className="flex gap-2">
                       {showRecareList && (
                         <button
                           onClick={() => setShowAddRecareModal(true)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift flex items-center gap-2 font-semibold text-sm"
+                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Recare
@@ -5656,7 +5656,7 @@ const CourtStreetRCM = () => {
                       )}
                       <button
                         onClick={() => setShowRecareList(!showRecareList)}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                           showRecareList
                             ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                             : isDayMode
@@ -5673,35 +5673,35 @@ const CourtStreetRCM = () => {
                     <div className="mt-4 space-y-4">
                       {/* Recare Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${recareMetrics.productionScheduled.toLocaleString()}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{recareMetrics.totalPatients}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{recareMetrics.unscheduledPatients}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
@@ -5802,14 +5802,14 @@ const CourtStreetRCM = () => {
                 </div>
 
                 {/* Unscheduled Treatment List Section */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Unscheduled Treatment List</h3>
                     <div className="flex gap-2">
                       {showTreatmentList && (
                         <button
                           onClick={() => setShowAddTreatmentModal(true)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift flex items-center gap-2 font-semibold text-sm"
+                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Treatment
@@ -5817,7 +5817,7 @@ const CourtStreetRCM = () => {
                       )}
                       <button
                         onClick={() => setShowTreatmentList(!showTreatmentList)}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover-lift ${
+                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                           showTreatmentList
                             ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
                             : isDayMode
@@ -5834,35 +5834,35 @@ const CourtStreetRCM = () => {
                     <div className="mt-4 space-y-4">
                       {/* Treatment Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${treatmentMetrics.productionScheduled.toLocaleString()}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{treatmentMetrics.totalPatients}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{treatmentMetrics.unscheduledPatients}</p>
                           </div>
                         </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 hover-lift relative overflow-hidden group`}>
+                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
                           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
@@ -5962,7 +5962,7 @@ const CourtStreetRCM = () => {
 
             {/* Training View */}
             {administrationView === 'training' && (
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
                 <div className="text-center py-12">
                   <h3 className={`text-2xl font-bold mb-4 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Training Module</h3>
                   <p className={`text-lg ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
