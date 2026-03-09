@@ -576,13 +576,13 @@ body {
 
 /* Base body styles */
 body {
-  background: var(--light-bg);
+  background: transparent;
   color: var(--light-text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .dark body {
-  background: var(--dark-bg);
+  background: transparent;
   color: var(--dark-text-primary);
 }
 
