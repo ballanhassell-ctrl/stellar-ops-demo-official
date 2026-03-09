@@ -228,13 +228,64 @@ const FIELD_MAP: Record<TabKey, FieldDef[]> = {
 };
 
 // ── Popout Portal ────────────────────────────────────────────────
-// Opens a new browser window and renders React children into it via createPortal.
-// Copies all stylesheets from the parent window so Tailwind CSS works identically.
-const CLOSE_WARN_KEY = 'stellar_popout_skip_close_warn';
+// Uses the Document Picture-in-Picture API (Chrome/Edge 116+) to create a true
+// always-on-top floating window. Falls back to window.open for other browsers.
 
-// Opens a popup window synchronously (must be called from a click handler).
-// Returns the Window reference, or null if blocked.
-function openPopupWindow(): Window | null {
+// Copies stylesheets from the parent document into a popup/pip window
+function copyStylesToWindow(targetDoc: Document) {
+  const parentHead = document.head;
+  const targetHead = targetDoc.head;
+
+  // Copy <link> stylesheets
+  parentHead.querySelectorAll('link[rel="stylesheet"], link[href*="fonts"]').forEach((link) => {
+    const clone = targetDoc.createElement('link');
+    clone.rel = 'stylesheet';
+    clone.href = (link as HTMLLinkElement).href;
+    if ((link as HTMLLinkElement).crossOrigin) clone.crossOrigin = (link as HTMLLinkElement).crossOrigin;
+    targetHead.appendChild(clone);
+  });
+
+  // Copy <style> tags (Vite injects Tailwind here in dev mode)
+  parentHead.querySelectorAll('style').forEach((style) => {
+    const clone = targetDoc.createElement('style');
+    clone.textContent = style.textContent;
+    targetHead.appendChild(clone);
+  });
+
+  // Copy preconnect links for Google Fonts
+  parentHead.querySelectorAll('link[rel="preconnect"]').forEach((link) => {
+    const clone = targetDoc.createElement('link');
+    clone.rel = 'preconnect';
+    clone.href = (link as HTMLLinkElement).href;
+    if ((link as HTMLLinkElement).crossOrigin) clone.crossOrigin = (link as HTMLLinkElement).crossOrigin;
+    targetHead.appendChild(clone);
+  });
+
+  // Base styles
+  const baseStyle = targetDoc.createElement('style');
+  baseStyle.textContent = `
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    body { font-family: 'Nunito Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    #popout-root { height: 100%; display: flex; flex-direction: column; }
+  `;
+  targetHead.appendChild(baseStyle);
+}
+
+// Check if Document Picture-in-Picture API is available
+function hasDocPip(): boolean {
+  return 'documentPictureInPicture' in window;
+}
+
+// Open a Document PiP window (async, must be called from click handler)
+async function openDocPipWindow(): Promise<Window> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pip = (window as any).documentPictureInPicture;
+  const pipWindow: Window = await pip.requestWindow({ width: 600, height: 700 });
+  return pipWindow;
+}
+
+// Fallback: open a regular popup window (synchronous, from click handler)
+function openFallbackPopup(): Window | null {
   const w = 600, h = 700;
   const left = Math.round((screen.width - w) / 2);
   const top = Math.round((screen.height - h) / 2);
@@ -245,57 +296,18 @@ function PopoutPortal({
   children,
   popupWindow,
   onClose,
-  title = 'Stellar OPS Dashboard',
 }: {
   children: React.ReactNode;
   popupWindow: Window;
   onClose: () => void;
-  title?: string;
 }) {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const popup = popupWindow;
     if (popup.closed) { onClose(); return; }
-    popup.document.title = title;
 
-    // Copy all stylesheets from the parent window into the popup
-    const parentHead = document.head;
-    const popupHead = popup.document.head;
-
-    // Copy <link> stylesheets (Google Fonts, Tailwind CSS, etc.)
-    parentHead.querySelectorAll('link[rel="stylesheet"], link[href*="fonts"]').forEach((link) => {
-      const clone = popup.document.createElement('link');
-      clone.rel = 'stylesheet';
-      clone.href = (link as HTMLLinkElement).href;
-      if ((link as HTMLLinkElement).crossOrigin) clone.crossOrigin = (link as HTMLLinkElement).crossOrigin;
-      popupHead.appendChild(clone);
-    });
-
-    // Copy <style> tags (Vite injects Tailwind here in dev mode)
-    parentHead.querySelectorAll('style').forEach((style) => {
-      const clone = popup.document.createElement('style');
-      clone.textContent = style.textContent;
-      popupHead.appendChild(clone);
-    });
-
-    // Add base styles for the popup body
-    const baseStyle = popup.document.createElement('style');
-    baseStyle.textContent = `
-      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-      body { font-family: 'Nunito Sans', sans-serif; -webkit-font-smoothing: antialiased; }
-      #popout-root { height: 100%; display: flex; flex-direction: column; }
-    `;
-    popupHead.appendChild(baseStyle);
-
-    // Copy preconnect links for Google Fonts
-    parentHead.querySelectorAll('link[rel="preconnect"]').forEach((link) => {
-      const clone = popup.document.createElement('link');
-      clone.rel = 'preconnect';
-      clone.href = (link as HTMLLinkElement).href;
-      if ((link as HTMLLinkElement).crossOrigin) clone.crossOrigin = (link as HTMLLinkElement).crossOrigin;
-      popupHead.appendChild(clone);
-    });
+    copyStylesToWindow(popup.document);
 
     // Create mount point
     const root = popup.document.createElement('div');
@@ -303,14 +315,11 @@ function PopoutPortal({
     popup.document.body.appendChild(root);
     setContainer(root);
 
-    // Intercept browser close
-    popup.addEventListener('beforeunload', (e) => {
-      let skip = false;
-      try { skip = localStorage.getItem(CLOSE_WARN_KEY) === 'true'; } catch { /* ignore */ }
-      if (!skip) { e.preventDefault(); e.returnValue = ''; }
-    });
+    // Handle the pip window closing (works for both PiP 'pagehide' and regular popup)
+    const handleClose = () => onClose();
+    popup.addEventListener('pagehide', handleClose);
 
-    // Clean up when popup closes
+    // Poll as fallback for regular popups
     const checkClosed = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkClosed);
@@ -320,6 +329,7 @@ function PopoutPortal({
 
     return () => {
       clearInterval(checkClosed);
+      popup.removeEventListener('pagehide', handleClose);
       if (!popup.closed) popup.close();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -676,11 +686,20 @@ export default function DraggableEditModal({
     setFormData({});
   }, []);
 
-  // Open popup synchronously from click handler so browser treats it as a popup, not a tab
-  const handlePopOut = useCallback(() => {
-    const popup = openPopupWindow();
-    if (popup) {
-      setPopupWindow(popup);
+  // Open floating window from click handler — uses Document PiP when available
+  const handlePopOut = useCallback(async () => {
+    try {
+      if (hasDocPip()) {
+        const pip = await openDocPipWindow();
+        setPopupWindow(pip);
+      } else {
+        const popup = openFallbackPopup();
+        if (popup) setPopupWindow(popup);
+      }
+    } catch {
+      // PiP request can fail if not triggered by user gesture or denied
+      const popup = openFallbackPopup();
+      if (popup) setPopupWindow(popup);
     }
   }, []);
 
