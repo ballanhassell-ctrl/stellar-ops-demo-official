@@ -298,9 +298,42 @@ function copyStylesToWindow(targetDoc: Document) {
     .overflow-x-auto {
       scroll-behavior: auto !important;
     }
-    /* CSS-level scroll isolation for the form body */
+
+    /* ── FIX: Scrollbar-induced layout shift ──
+       overflow-y:auto toggles the scrollbar on/off as content changes,
+       causing ~15px width reflow each time → content "moves around".
+       Force the scrollbar to always be present so the width never changes.
+       scrollbar-gutter:stable reserves space even for overlay scrollbars.
+       will-change:scroll-position promotes to its own compositor layer
+       so any remaining reflows don't ripple through the whole PiP layout. */
     .overflow-y-auto {
+      overflow-y: scroll !important;
+      scrollbar-gutter: stable !important;
       overscroll-behavior: contain;
+      will-change: scroll-position;
+    }
+
+    /* Thin, unobtrusive scrollbar styling for the always-visible scrollbar */
+    .overflow-y-auto {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+    }
+    .overflow-y-auto::-webkit-scrollbar {
+      width: 6px;
+    }
+    .overflow-y-auto::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .overflow-y-auto::-webkit-scrollbar-thumb {
+      background: rgba(128, 128, 128, 0.3);
+      border-radius: 3px;
+    }
+
+    /* Disable CSS transitions on form elements in PiP to prevent
+       hover-state color transitions from causing micro-reflows during scroll.
+       Focus ring (focus:ring-2) still works — it's not a transition. */
+    input, select, textarea, label {
+      transition: none !important;
     }
   `;
   targetHead.appendChild(baseStyle);
