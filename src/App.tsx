@@ -2105,11 +2105,11 @@ const CourtStreetRCM = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
-                  className={`group relative flex items-center gap-2.5 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] hover-lift ${
+                  className={`group relative flex items-center gap-2.5 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap min-h-[44px] hover-lift backdrop-blur-md ${
                     isActive
                       ? 'btn-purple-glow shadow-glow-primary'
                       : isDayMode
-                      ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50 shadow-sm'
+                      ? 'bg-white/40 text-gray-800 hover:bg-white/60 border border-white/60 shadow-lg hover:shadow-xl'
                       : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
                   }`}
                 >
@@ -2135,11 +2135,11 @@ const CourtStreetRCM = () => {
                       setCurrentView(item.id);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all min-h-[52px] hover-lift ${
+                    className={`group flex items-center gap-3 py-3.5 px-4 rounded-xl font-semibold text-base transition-all min-h-[52px] hover-lift backdrop-blur-md ${
                       isActive
                         ? 'btn-purple-glow shadow-glow-primary'
                         : isDayMode
-                        ? 'bg-white/70 text-gray-700 hover:bg-white/90 border border-white/50'
+                        ? 'bg-white/40 text-gray-800 hover:bg-white/60 border border-white/60 shadow-lg hover:shadow-xl'
                         : 'bg-white/8 text-gray-300 hover:bg-white/12 border border-white/15'
                     }`}
                   >
