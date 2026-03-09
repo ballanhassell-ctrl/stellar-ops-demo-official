@@ -2165,7 +2165,7 @@ const CourtStreetRCM = () => {
         {currentView === 'dashboard' ? (
           <div className="space-y-10">
             {/* Dashboard Header */}
-            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-slide-up animate-float-slow`}>
+            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-slide-up`}>
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
@@ -2240,7 +2240,7 @@ const CourtStreetRCM = () => {
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slow border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
@@ -2288,7 +2288,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Collection Rate */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-medium border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2305,7 +2305,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Active Patients */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slower border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lifter border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2322,7 +2322,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift animate-float-slow border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} hover-lift border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
@@ -2368,7 +2368,7 @@ const CourtStreetRCM = () => {
             {/* Claims & Payments Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-medium`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
                 <h3 className={`text-xl font-display font-bold mb-5 ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                   Claims Status
                 </h3>
@@ -2421,7 +2421,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slower`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lifter`}>
                 <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
@@ -2495,7 +2495,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Follow-Up Tracking */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slow`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
               <h3 className={`text-xl font-display font-extrabold mb-2 ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                 Follow-Up Tracking
               </h3>
@@ -2614,7 +2614,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Automated Metrics Analysis */}
-            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-medium`}>
+            <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                 Automated Metrics Analysis
               </h3>
@@ -2692,7 +2692,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* Insurance A/R Aging Summary */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slow`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
               <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Summary
               </h3>
@@ -2707,7 +2707,7 @@ const CourtStreetRCM = () => {
             </div>
 
             {/* New Patient Tracker */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift animate-float-slower`}>
+            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lifter`}>
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   New Patient Tracker
