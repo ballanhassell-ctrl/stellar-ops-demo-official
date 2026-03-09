@@ -232,29 +232,30 @@ const FIELD_MAP: Record<TabKey, FieldDef[]> = {
 // Copies all stylesheets from the parent window so Tailwind CSS works identically.
 const CLOSE_WARN_KEY = 'stellar_popout_skip_close_warn';
 
+// Opens a popup window synchronously (must be called from a click handler).
+// Returns the Window reference, or null if blocked.
+function openPopupWindow(): Window | null {
+  const w = 600, h = 700;
+  const left = Math.round((screen.width - w) / 2);
+  const top = Math.round((screen.height - h) / 2);
+  return window.open('', '', `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no`);
+}
+
 function PopoutPortal({
   children,
+  popupWindow,
   onClose,
   title = 'Stellar OPS Dashboard',
 }: {
   children: React.ReactNode;
+  popupWindow: Window;
   onClose: () => void;
   title?: string;
 }) {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
-  const popupRef = useRef<Window | null>(null);
 
   useEffect(() => {
-    // Explicit left/top + width/height forces browsers to open as a popup window, not a tab
-    const w = 600, h = 700;
-    const left = Math.round((screen.width - w) / 2);
-    const top = Math.round((screen.height - h) / 2);
-    const popup = window.open('', '', `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no`);
-    if (!popup) {
-      onClose();
-      return;
-    }
-    popupRef.current = popup;
+    const popup = popupWindow;
     popup.document.title = title;
 
     // Copy all stylesheets from the parent window into the popup
@@ -630,9 +631,9 @@ export default function DraggableEditModal({
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  const [poppedOut, setPoppedOut] = useState(false);
+  const [popupWindow, setPopupWindow] = useState<Window | null>(null);
   const handleRef = useRef<HTMLDivElement>(null);
-  const { pos, resetPos } = useDrag(handleRef, isOpen && !poppedOut);
+  const { pos, resetPos } = useDrag(handleRef, isOpen && !popupWindow);
   const isNew = !initialData?.id;
 
   // Sync initial data when modal opens or tab changes
@@ -674,21 +675,25 @@ export default function DraggableEditModal({
     setFormData({});
   }, []);
 
+  // Open popup synchronously from click handler so browser treats it as a popup, not a tab
   const handlePopOut = useCallback(() => {
-    setPoppedOut(true);
+    const popup = openPopupWindow();
+    if (popup) {
+      setPopupWindow(popup);
+    }
   }, []);
 
   const handlePopoutClose = useCallback(() => {
-    setPoppedOut(false);
+    setPopupWindow(null);
     onClose();
   }, [onClose]);
 
   if (!isOpen) return null;
 
   // ── Pop-out mode: render via portal into a new browser window ──
-  if (poppedOut) {
+  if (popupWindow) {
     return (
-      <PopoutPortal onClose={handlePopoutClose}>
+      <PopoutPortal popupWindow={popupWindow} onClose={handlePopoutClose}>
         <ModalContent
           activeTab={activeTab}
           onTabChange={handleTabChange}
