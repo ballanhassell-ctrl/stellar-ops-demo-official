@@ -438,6 +438,28 @@ function ModalContent({
 }) {
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // ── PiP scroll hijack ──
+  // Chromium's Document PiP compositor routes wheel events to both window
+  // positioning and content scrolling, causing the window to move erratically.
+  // We preventDefault() the native wheel event and manually apply scrollTop
+  // so the browser never registers a native scroll on the PiP surface.
+  useEffect(() => {
+    if (!isPopout) return;
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      container.scrollTop += e.deltaY;
+      container.scrollLeft += e.deltaX;
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => container.removeEventListener('wheel', onWheel);
+  }, [isPopout, minimized]);
 
   const fields = FIELD_MAP[activeTab];
 
@@ -543,8 +565,12 @@ function ModalContent({
 
           {/* ── Form Body ── */}
           <div
+            ref={scrollRef}
             className={`${bgForm} px-5 py-4 overflow-y-auto flex-1 min-h-0`}
-            style={{ overscrollBehavior: 'contain' }}
+            style={{
+              overscrollBehavior: 'contain',
+              WebkitAppRegion: 'no-drag' as unknown as string,
+            }}
           >
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               {fields.map((field) => {
