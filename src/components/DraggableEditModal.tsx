@@ -245,7 +245,11 @@ function PopoutPortal({
   const popupRef = useRef<Window | null>(null);
 
   useEffect(() => {
-    const popup = window.open('', '_blank', 'popup=true,width=600,height=700,resizable=yes,scrollbars=no');
+    // Explicit left/top + width/height forces browsers to open as a popup window, not a tab
+    const w = 600, h = 700;
+    const left = Math.round((screen.width - w) / 2);
+    const top = Math.round((screen.height - h) / 2);
+    const popup = window.open('', '', `popup=yes,width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no`);
     if (!popup) {
       onClose();
       return;
