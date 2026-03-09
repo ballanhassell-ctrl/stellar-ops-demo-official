@@ -12,7 +12,15 @@ export const LiquidGlassBackground = () => {
         <div
           className="fixed top-0 left-0 w-full h-full z-[-2] overflow-hidden"
           style={{
-            backgroundImage: 'url(/Aerial Mountain River Photo.jpg)',
+            backgroundImage: `url(/Aerial Mountain River Photo.jpg), linear-gradient(135deg,
+              #1a2332 0%,
+              #2d3e50 15%,
+              #4a6fa5 30%,
+              #7b9cc4 45%,
+              #c9d5e8 60%,
+              #e8d4c8 75%,
+              #d4a898 85%,
+              #b88878 100%)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'
