@@ -18,13 +18,14 @@ body {
 /* Apple-inspired Glass UI - True frosted glass transparency */
 @layer utilities {
   .glass {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.4) 100%);
-    backdrop-filter: blur(32px) saturate(200%) brightness(1.1);
-    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(1.1);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1),
-                0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.05) inset;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.2) 100%);
+    backdrop-filter: blur(50px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(50px) saturate(180%) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15),
+                0 20px 60px 0 rgba(31, 38, 135, 0.08),
+                0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+                0 -1px 0 0 rgba(0, 0, 0, 0.1) inset;
   }
 
   .glass-dark {
@@ -38,14 +39,15 @@ body {
   }
 
   .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.55) 100%);
-    backdrop-filter: blur(40px) saturate(220%) brightness(1.15);
-    -webkit-backdrop-filter: blur(40px) saturate(220%) brightness(1.15);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.12),
-                0 4px 16px 0 rgba(31, 38, 135, 0.06),
-                0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.05) inset;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.25) 100%);
+    backdrop-filter: blur(60px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(60px) saturate(180%) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2),
+                0 20px 60px 0 rgba(31, 38, 135, 0.1),
+                0 2px 8px 0 rgba(255, 255, 255, 0.3),
+                0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
+                0 -1px 0 0 rgba(0, 0, 0, 0.1) inset;
   }
 
   .glass-card-dark {
@@ -78,12 +80,16 @@ body {
   }
 
   .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s ease;
   }
 
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px 0 rgba(31, 38, 135, 0.15);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25),
+                0 24px 80px 0 rgba(31, 38, 135, 0.15),
+                0 4px 12px 0 rgba(255, 255, 255, 0.4);
   }
 
   .hover-glow {
@@ -134,12 +140,13 @@ body {
   /* Enhanced Glass Effect with Liquid Distortion */
   .glass-liquid {
     position: relative;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15),
-                0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.2) 100%);
+    backdrop-filter: blur(50px) saturate(180%);
+    -webkit-backdrop-filter: blur(50px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2),
+                0 20px 60px 0 rgba(31, 38, 135, 0.1),
+                0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
                 0 -1px 0 0 rgba(0, 0, 0, 0.1) inset;
   }
 
@@ -229,11 +236,12 @@ body {
 
   /* Frosted Glass Headers */
   .header-frosted {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(30px) saturate(150%);
-    -webkit-backdrop-filter: blur(30px) saturate(150%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(50px) saturate(150%);
+    -webkit-backdrop-filter: blur(50px) saturate(150%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1),
+                0 1px 0 0 rgba(255, 255, 255, 0.5) inset;
   }
 
   .header-frosted-dark {
