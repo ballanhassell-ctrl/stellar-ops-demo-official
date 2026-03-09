@@ -2315,7 +2315,7 @@ const CourtStreetRCM = () => {
               </div>
 
               {/* Active Patients */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'}er border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
