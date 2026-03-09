@@ -263,36 +263,44 @@ function copyStylesToWindow(targetDoc: Document) {
   });
 
   // Base styles for popup/PiP windows.
-  // Key fixes for Chromium (Chrome/Arc/Edge):
-  //   1. position:fixed + inset:0 on #popout-root avoids height:100% chain fragility
-  //   2. min-height:0 on flex children — required by Chromium for overflow to work
-  //      inside flex column layouts (Safari does this implicitly, Chromium does not)
-  //   3. overflow:clip on html/body prevents document-level scroll entirely
-  //   4. overscroll-behavior:none prevents bounce/chaining at every level
+  // Uses !important to guarantee these can't be overridden by copied
+  // Tailwind/custom styles from the parent document.
   const baseStyle = targetDoc.createElement('style');
   baseStyle.textContent = `
     html, body {
-      margin: 0; padding: 0;
-      width: 100%; height: 100%;
-      overflow: clip;
-      overscroll-behavior: none;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      overflow: hidden !important;
+      overscroll-behavior: none !important;
     }
     body {
       font-family: 'Nunito Sans', sans-serif;
       -webkit-font-smoothing: antialiased;
     }
     #popout-root {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-height: 0;
+      position: fixed !important;
+      inset: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      min-height: 0 !important;
     }
     /* Chromium flexbox fix: flex column children need min-height:0 to allow
        overflow:auto to actually constrain and scroll instead of expanding. */
     #popout-root > * {
-      min-height: 0;
+      min-height: 0 !important;
+    }
+    /* The PiP window is 600px wide, which triggers the @media (max-width:640px)
+       rule in index.css that adds scroll-behavior:smooth to .overflow-x-auto.
+       This causes accumulated/delayed scrolling. Force it back to auto. */
+    .overflow-x-auto {
+      scroll-behavior: auto !important;
+    }
+    /* CSS-level scroll isolation for the form body */
+    .overflow-y-auto {
+      overscroll-behavior: contain;
     }
   `;
   targetHead.appendChild(baseStyle);
@@ -342,18 +350,6 @@ function PopoutPortal({
     popup.document.body.appendChild(root);
     setContainer(root);
 
-    // Prevent document-level scrolling in Chromium PiP/popup windows.
-    // Without this, wheel events that escape the form body can scroll the
-    // document itself, causing the entire layout to jump.
-    const blockDocScroll = (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      // Allow scrolling inside elements that have their own overflow scroll
-      if (target && target.closest('.overflow-y-auto, .overflow-x-auto')) return;
-      e.preventDefault();
-    };
-    popup.document.addEventListener('wheel', blockDocScroll, { passive: false });
-    popup.document.addEventListener('touchmove', blockDocScroll, { passive: false });
-
     // Handle the pip window closing (works for both PiP 'pagehide' and regular popup)
     const handleClose = () => onClose();
     popup.addEventListener('pagehide', handleClose);
@@ -368,8 +364,6 @@ function PopoutPortal({
 
     return () => {
       clearInterval(checkClosed);
-      popup.document.removeEventListener('wheel', blockDocScroll);
-      popup.document.removeEventListener('touchmove', blockDocScroll);
       popup.removeEventListener('pagehide', handleClose);
       if (!popup.closed) popup.close();
     };
@@ -487,18 +481,8 @@ function ModalContent({
           {/* ── Tab Navigation ── */}
           <div
             className={`${bgTabBar} flex gap-0 overflow-x-auto flex-shrink-0`}
-            style={{ overscrollBehavior: 'none', touchAction: 'pan-x', scrollbarWidth: 'none' }}
+            style={{ overscrollBehavior: 'none', scrollbarWidth: 'none' }}
             onTouchMove={(e) => e.stopPropagation()}
-            onWheel={(e) => {
-              // Only convert vertical→horizontal when tabs actually overflow
-              const el = e.currentTarget;
-              const hasOverflow = el.scrollWidth > el.clientWidth;
-              if (hasOverflow && e.deltaY !== 0 && e.deltaX === 0) {
-                e.preventDefault();
-                el.scrollLeft += e.deltaY;
-              }
-              // Otherwise let the event bubble up to the form body for normal scrolling
-            }}
           >
             {TABS.map((tab) => {
               const Icon = tab.icon;
