@@ -256,6 +256,7 @@ function PopoutPortal({
 
   useEffect(() => {
     const popup = popupWindow;
+    if (popup.closed) { onClose(); return; }
     popup.document.title = title;
 
     // Copy all stylesheets from the parent window into the popup
