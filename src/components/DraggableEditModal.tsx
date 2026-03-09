@@ -332,17 +332,17 @@ function buildPopoutHTML(activeTab: TabKey, formData: Record<string, unknown>, i
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Nunito Sans',sans-serif;background:${c.pageBg};color:${c.inputText};min-height:100vh;display:flex;justify-content:center;padding:16px;-webkit-font-smoothing:antialiased}
+html,body{overflow:hidden;height:100%;width:100%}
+body{font-family:'Nunito Sans',sans-serif;background:${c.modalBg};color:${c.inputText};-webkit-font-smoothing:antialiased}
 
-/* ── Floating card container (mirrors the in-app modal) ── */
+/* ── Full-window card container (matches the in-app modal exactly) ── */
 .modal-card{
-  width:100%;max-width:640px;border-radius:12px;overflow:hidden;
-  background:${c.modalBg};border:1px solid ${c.modalBorder};
-  box-shadow:${c.modalShadow};
-  display:flex;flex-direction:column;max-height:calc(100vh - 32px);
+  width:100%;height:100%;overflow:hidden;
+  background:${c.modalBg};
+  display:flex;flex-direction:column;
   transition:max-height .3s ease;
 }
-.modal-card.minimized{max-height:48px;overflow:hidden}
+.modal-card.minimized .tabs,.modal-card.minimized .form-body{display:none}
 
 /* ── Header ── */
 .header{
@@ -365,9 +365,13 @@ body{font-family:'Nunito Sans',sans-serif;background:${c.pageBg};color:${c.input
 /* ── Tabs ── */
 .tabs{
   display:flex;gap:0;background:${c.tabBarBg};border-bottom:1px solid ${c.tabBarBorder};
-  overflow-x:auto;flex-shrink:0;
-  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
-  touch-action:pan-x;scrollbar-width:none;
+  overflow-x:auto;overflow-y:hidden;flex-shrink:0;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:none;overscroll-behavior-x:contain;
+  scrollbar-width:none;
+  /* Isolate touch to horizontal scroll only — prevents window drag */
+  touch-action:pan-x;
+  -ms-touch-action:pan-x;
 }
 .tabs::-webkit-scrollbar{display:none}
 .tab-btn{
@@ -375,6 +379,7 @@ body{font-family:'Nunito Sans',sans-serif;background:${c.pageBg};color:${c.input
   font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:600;color:${c.tabText};
   background:none;border:none;border-bottom:2px solid transparent;
   cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;
+  touch-action:manipulation;
 }
 .tab-btn:hover{color:${c.tabHoverText};background:${c.tabHoverBg}}
 .tab-btn.active{color:${c.tabActiveText};border-bottom-color:${c.tabActiveBorder};background:${c.tabActiveBg}}
@@ -586,6 +591,20 @@ document.getElementById('closeDialog').addEventListener('click',function(e){
   if(e.target===this) this.classList.remove('open');
 });
 
+/* ── Prevent tab bar touch from moving the window ── */
+var tabsEl=document.getElementById('tabsBar');
+if(tabsEl){
+  tabsEl.addEventListener('touchmove',function(e){e.stopPropagation();},{passive:true});
+  tabsEl.addEventListener('wheel',function(e){
+    if(e.deltaX!==0){e.stopPropagation();}
+    // Convert vertical scroll to horizontal on the tab bar
+    if(e.deltaY!==0 && e.deltaX===0){
+      e.preventDefault();
+      this.scrollLeft+=e.deltaY;
+    }
+  },{passive:false});
+}
+
 /* ── Tab switching ── */
 document.querySelectorAll('.tab-btn').forEach(function(btn){
   btn.addEventListener('click',function(){
@@ -720,7 +739,7 @@ export default function DraggableEditModal({
     }
 
     // Fallback: regular popup window
-    const popup = window.open('', '_blank', 'popup=true,width=560,height=680,resizable=yes,scrollbars=yes');
+    const popup = window.open('', '_blank', 'popup=true,width=560,height=680,resizable=yes,scrollbars=no');
     if (popup) {
       popup.document.write(html);
       popup.document.close();
@@ -806,7 +825,17 @@ export default function DraggableEditModal({
         {!minimized && (
           <>
             {/* ── Tab Navigation ── */}
-            <div className={`${bgTabBar} flex gap-0 overflow-x-auto overscroll-x-contain`} style={{ touchAction: 'pan-x', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+            <div
+              className={`${bgTabBar} flex gap-0 overflow-x-auto`}
+              style={{ overscrollBehavior: 'none', touchAction: 'pan-x', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+              onTouchMove={(e) => e.stopPropagation()}
+              onWheel={(e) => {
+                e.stopPropagation();
+                if (e.deltaY !== 0 && e.deltaX === 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+            >
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.key === activeTab;
@@ -814,7 +843,7 @@ export default function DraggableEditModal({
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
                       isActive
                         ? isDayMode
                           ? 'border-primary-500 text-primary-600 bg-white'
