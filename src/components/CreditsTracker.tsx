@@ -21,6 +21,7 @@ import {
   ArrowDownRight,
   MessageSquare,
   History,
+  Edit2,
 } from 'lucide-react';
 import type { PatientCredit, PatientCreditStatus, NoteEntry } from '../types/database.types';
 import {
@@ -800,6 +801,13 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                     </td>
                     <td className="py-2.5 px-2">
                       <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => { setEditModalRecord(record); setEditModalOpen(true); }}
+                          className={`p-1.5 rounded-lg text-xs transition-colors ${isDayMode ? 'hover:bg-primary-100 text-primary-500' : 'hover:bg-primary-900/30 text-primary-400'}`}
+                          title="Edit record"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => handleDeleteRecord(record.id)}
                           className={`p-1.5 rounded-lg text-xs transition-colors ${isDayMode ? 'hover:bg-red-100 text-red-400' : 'hover:bg-red-900/30 text-red-400'}`}

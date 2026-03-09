@@ -24,6 +24,7 @@ import {
   MessageSquare,
   History,
   Mail,
+  Edit2,
 } from 'lucide-react';
 import type { PatientAR, PatientARStatus, NoteEntry } from '../types/database.types';
 import {
@@ -1461,6 +1462,14 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
                     {/* Actions */}
                     <td className="py-1.5 px-1.5">
                       <div className="flex items-center justify-center gap-1">
+                        {/* Open edit modal */}
+                        <button
+                          onClick={() => { setEditModalRecord(record); setEditModalOpen(true); }}
+                          className={`p-1.5 rounded-lg text-xs transition-colors ${isDayMode ? 'hover:bg-primary-100 text-primary-500' : 'hover:bg-primary-900/30 text-primary-400'}`}
+                          title="Edit record"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
                         {/* Toggle collectible / write-off */}
                         {activeTab === 'collectible' ? (
                           <button

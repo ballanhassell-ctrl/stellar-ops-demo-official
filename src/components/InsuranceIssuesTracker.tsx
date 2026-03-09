@@ -993,9 +993,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         <td className={`px-3 py-2 border-b ${tableBorder} whitespace-nowrap`}>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => handleStartEdit(issue)}
+              onClick={() => { setEditModalIssue(issue); setEditModalOpen(true); }}
               className={`p-1 rounded ${isDayMode ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:bg-blue-900/30'}`}
-              title="Edit"
+              title="Edit in modal"
             >
               <Edit2 className="w-4 h-4" />
             </button>
