@@ -262,12 +262,24 @@ function copyStylesToWindow(targetDoc: Document) {
     targetHead.appendChild(clone);
   });
 
-  // Base styles
+  // Base styles — use overflow:clip instead of hidden to prevent Chromium scroll
+  // chaining issues in PiP/popup windows where the viewport is tightly sized.
   const baseStyle = targetDoc.createElement('style');
   baseStyle.textContent = `
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      overflow: clip;
+      overscroll-behavior: none;
+    }
     body { font-family: 'Nunito Sans', sans-serif; -webkit-font-smoothing: antialiased; }
-    #popout-root { height: 100%; display: flex; flex-direction: column; }
+    #popout-root {
+      height: 100%; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    /* Ensure the scrollable form area creates its own scroll context */
+    #popout-root * { -webkit-overflow-scrolling: touch; }
+    /* Stable scrollbar gutter to prevent layout shift */
+    .overflow-y-auto { scrollbar-gutter: stable; overscroll-behavior-y: contain; }
   `;
   targetHead.appendChild(baseStyle);
 }
@@ -447,13 +459,17 @@ function ModalContent({
           {/* ── Tab Navigation ── */}
           <div
             className={`${bgTabBar} flex gap-0 overflow-x-auto flex-shrink-0`}
-            style={{ overscrollBehavior: 'none', touchAction: 'pan-x', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+            style={{ overscrollBehavior: 'none', touchAction: 'pan-x', scrollbarWidth: 'none' }}
             onTouchMove={(e) => e.stopPropagation()}
             onWheel={(e) => {
-              e.stopPropagation();
-              if (e.deltaY !== 0 && e.deltaX === 0) {
-                e.currentTarget.scrollLeft += e.deltaY;
+              // Only convert vertical→horizontal when tabs actually overflow
+              const el = e.currentTarget;
+              const hasOverflow = el.scrollWidth > el.clientWidth;
+              if (hasOverflow && e.deltaY !== 0 && e.deltaX === 0) {
+                e.preventDefault();
+                el.scrollLeft += e.deltaY;
               }
+              // Otherwise let the event bubble up to the form body for normal scrolling
             }}
           >
             {TABS.map((tab) => {
@@ -481,7 +497,10 @@ function ModalContent({
           </div>
 
           {/* ── Form Body ── */}
-          <div className={`${bgForm} px-5 py-4 overflow-y-auto flex-1`}>
+          <div
+            className={`${bgForm} px-5 py-4 overflow-y-auto flex-1`}
+            style={{ overscrollBehavior: 'contain' }}
+          >
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               {fields.map((field) => {
                 const value = formData[field.key] ?? '';
