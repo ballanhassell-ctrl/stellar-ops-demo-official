@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { getLocalDateString, toLocalDateString, getUTCBoundariesForLocalDate } from '../utils/dateUtils';
 import { getEmailLogoBaseUrl } from './emailService';
+import type { EFTReconciliationPeriod, EFTReconciliationEntry } from '../types/database.types';
 
 // Brand colors matching the EOD report template
 const COLORS = {
@@ -40,11 +41,26 @@ export interface DailyARReportItem {
   notes: string | null;
 }
 
+export interface EFTReconciliationSummary {
+  periodLabel: string;
+  totalAmount: number;
+  entryCount: number;
+  entries: Array<{
+    insurance_company: string;
+    amount: number;
+    trn_number: string;
+    status: string;
+    payment_date: string;
+  }>;
+}
+
 export interface DailyARReportSummary {
   openPatientARCount: number;
   openPatientARBalance: number;
   openInsuranceIssuesCount: number;
   priorDayCollected: number;
+  schedulingOpportunities: number;
+  schedulingOpportunitiesAmount: number;
 }
 
 export interface DailyARReportData {
@@ -53,6 +69,7 @@ export interface DailyARReportData {
   newNonCollectible: DailyARReportItem[];
   newCredits: DailyARReportItem[];
   newInsuranceIssues: DailyARReportItem[];
+  eftReconciliation: EFTReconciliationSummary | null;
   summary: DailyARReportSummary;
 }
 
@@ -140,6 +157,56 @@ export async function fetchDailyARReportData(reportDate?: string): Promise<Daily
     0,
   );
 
+  // Scheduling opportunities: unapplied credits with planned treatment
+  let schedulingOpportunities = 0;
+  let schedulingOpportunitiesAmount = 0;
+  try {
+    const { data: schedulingData } = await supabase
+      .from('patient_credits')
+      .select('credit_amount')
+      .eq('status', 'unapplied')
+      .eq('has_planned_treatment', true);
+    if (schedulingData) {
+      schedulingOpportunities = schedulingData.length;
+      schedulingOpportunitiesAmount = schedulingData.reduce((sum: number, r: { credit_amount: number }) => sum + (Number(r.credit_amount) || 0), 0);
+    }
+  } catch { /* column may not exist yet */ }
+
+  // Fetch most recent EFT reconciliation period and its entries
+  let eftReconciliation: EFTReconciliationSummary | null = null;
+  try {
+    const { data: eftPeriods } = await supabase
+      .from('eft_reconciliation_periods')
+      .select('*')
+      .order('period_start', { ascending: false })
+      .limit(1);
+
+    if (eftPeriods && eftPeriods.length > 0) {
+      const latestPeriod = eftPeriods[0] as EFTReconciliationPeriod;
+      const { data: eftEntries } = await supabase
+        .from('eft_reconciliation_entries')
+        .select('*')
+        .eq('period_id', latestPeriod.id)
+        .order('payment_date', { ascending: true });
+
+      const entries = (eftEntries || []) as EFTReconciliationEntry[];
+      eftReconciliation = {
+        periodLabel: latestPeriod.period_label,
+        totalAmount: entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+        entryCount: entries.length,
+        entries: entries.map((e) => ({
+          insurance_company: e.insurance_company,
+          amount: Number(e.amount) || 0,
+          trn_number: e.trn_number,
+          status: e.status || 'pending',
+          payment_date: e.payment_date,
+        })),
+      };
+    }
+  } catch (eftErr) {
+    console.warn('Could not fetch EFT reconciliation for daily report:', eftErr);
+  }
+
   return {
     reportDate: today,
     newPatientAR: (patientARData || []).map((r) => ({
@@ -174,11 +241,14 @@ export async function fetchDailyARReportData(reportDate?: string): Promise<Daily
       status: r.status,
       notes: r.notes,
     })),
+    eftReconciliation,
     summary: {
       openPatientARCount: openARCount || 0,
       openPatientARBalance: openARBalance,
       openInsuranceIssuesCount: openIssuesCount || 0,
       priorDayCollected,
+      schedulingOpportunities,
+      schedulingOpportunitiesAmount,
     },
   };
 }
@@ -381,6 +451,60 @@ ${message ? `
           ${renderSection('New Insurance Issues', data.newInsuranceIssues, COLORS.orange, false)}
           ${renderSection('New Non-Collectible Accounts', data.newNonCollectible, COLORS.red)}
 
+          ${data.eftReconciliation ? `
+          <!-- EFT Reconciliation Section -->
+          <tr>
+            <td style="padding: 24px 40px 0 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding-bottom: 12px;">
+                    <h2 style="margin: 0; color: ${COLORS.gray800}; font-size: 16px; font-weight: 700;">
+                      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${COLORS.primary}; margin-right: 8px; vertical-align: middle;"></span>
+                      EFT Reconciliation
+                      <span style="color: ${COLORS.gray500}; font-weight: 400; font-size: 14px; margin-left: 8px;">${data.eftReconciliation.periodLabel}</span>
+                    </h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid ${COLORS.gray200}; border-radius: 8px; overflow: hidden; margin-bottom: 8px;">
+                      <tr style="background-color: ${COLORS.primary}10;">
+                        <td style="padding: 12px 16px; text-align: center;" width="50%">
+                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total EFT Amount</p>
+                          <p style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; color: ${COLORS.primary};">${formatCurrency(data.eftReconciliation.totalAmount)}</p>
+                        </td>
+                        <td style="padding: 12px 16px; text-align: center; border-left: 1px solid ${COLORS.gray200};" width="50%">
+                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Entries</p>
+                          <p style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; color: ${COLORS.primary};">${data.eftReconciliation.entryCount}</p>
+                        </td>
+                      </tr>
+                    </table>
+                    ${data.eftReconciliation.entries.length > 0 ? `
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid ${COLORS.gray200}; border-radius: 8px; overflow: hidden;">
+                      <tr style="background-color: ${COLORS.gray50};">
+                        <th style="padding: 8px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: ${COLORS.gray500}; font-weight: 600; border-bottom: 1px solid ${COLORS.gray200};">Insurance</th>
+                        <th style="padding: 8px 12px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: ${COLORS.gray500}; font-weight: 600; border-bottom: 1px solid ${COLORS.gray200};">Amount</th>
+                        <th style="padding: 8px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: ${COLORS.gray500}; font-weight: 600; border-bottom: 1px solid ${COLORS.gray200};">TRN #</th>
+                        <th style="padding: 8px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: ${COLORS.gray500}; font-weight: 600; border-bottom: 1px solid ${COLORS.gray200};">Status</th>
+                      </tr>
+                      ${data.eftReconciliation.entries.map(e => `
+                      <tr>
+                        <td style="padding: 10px 12px; border-bottom: 1px solid ${COLORS.gray200}; font-size: 13px; color: ${COLORS.gray800};">${e.insurance_company}</td>
+                        <td style="padding: 10px 12px; border-bottom: 1px solid ${COLORS.gray200}; font-size: 13px; color: ${COLORS.gray800}; text-align: right; font-weight: 600;">${formatCurrency(e.amount)}</td>
+                        <td style="padding: 10px 12px; border-bottom: 1px solid ${COLORS.gray200}; font-size: 13px; color: ${COLORS.gray600};">${e.trn_number || '--'}</td>
+                        <td style="padding: 10px 12px; border-bottom: 1px solid ${COLORS.gray200}; font-size: 13px;">
+                          <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; background-color: ${COLORS.primary}20; color: ${COLORS.primary};">${e.status || 'pending'}</span>
+                        </td>
+                      </tr>`).join('')}
+                    </table>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          ` : ''}
+
           ${totalNewItems === 0 ? `
           <tr>
             <td style="padding: 40px; text-align: center;">
@@ -417,9 +541,14 @@ ${message ? `
                         </td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding: 14px 16px; text-align: center;">
+                        <td style="padding: 14px 16px; text-align: center; border-top: 1px solid ${COLORS.gray200};">
                           <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Prior Day A/R Collected</p>
                           <p style="margin: 4px 0 0 0; font-size: 24px; font-weight: 800; color: ${COLORS.green};">${formatCurrency(data.summary.priorDayCollected)}</p>
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center; border-left: 1px solid ${COLORS.gray200}; border-top: 1px solid ${COLORS.gray200};">
+                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Scheduling Opportunities</p>
+                          <p style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; color: ${data.summary.schedulingOpportunities > 0 ? COLORS.green : COLORS.gray500};">${data.summary.schedulingOpportunities}</p>
+                          ${data.summary.schedulingOpportunities > 0 ? `<p style="margin: 2px 0 0 0; font-size: 12px; color: ${COLORS.gray500};">${formatCurrency(data.summary.schedulingOpportunitiesAmount)} in credits</p>` : ''}
                         </td>
                       </tr>
                     </table>
