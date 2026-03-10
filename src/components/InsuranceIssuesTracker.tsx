@@ -2402,6 +2402,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         onClose={() => { setEditModalOpen(false); setEditModalIssue(null); }}
         onSave={async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
           const auditEntry = createAuditEntry(isNewEntry ? 'created' : 'updated', 'staff');
+          const submissionStatus = String(data.submission_status || '') || null;
+          const submittedBy = String(data.submitted_by || '') || null;
+          const now = new Date().toISOString();
           const issueData = {
             patient_name: sanitizePatientName(String(data.patient_name || '')),
             patient_id: String(data.patient_id || '') || null,
@@ -2410,6 +2413,8 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
             in_charge: String(data.in_charge || ''),
             issue_type: (String(data.issue_type) || 'Other') as InsuranceIssue['issue_type'],
             status: (String(data.status) || 'Open') as InsuranceIssue['status'],
+            submission_status: submissionStatus,
+            submitted_by: submittedBy,
             notes: String(data.notes || '') || null,
           };
           if (isNewEntry) {
@@ -2417,13 +2422,11 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
               ...issueData,
               in_vyne: false,
               is_pre_auth: false,
-              corrected_at: null,
+              corrected_at: issueData.status === 'Corrected' || issueData.status === 'Submitted' || issueData.status === 'Resolved' ? now : null,
               corrected_by: null,
               correction_note: null,
-              submission_status: null,
-              submitted_by: null,
-              submitted_at: null,
-              resolved_at: null,
+              submitted_at: submissionStatus === 'Submitted' ? now : null,
+              resolved_at: issueData.status === 'Resolved' ? now : null,
               structured_notes: [],
               audit_trail: [auditEntry],
             });
@@ -2431,10 +2434,40 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
             const id = String(data.id);
             const issue = issues.find((i) => i.id === id);
             const existingTrail = issue?.audit_trail || [];
-            await updateInsuranceIssue(id, {
+            const updates: Record<string, unknown> = {
               ...issueData,
               audit_trail: [...existingTrail, auditEntry],
-            });
+            };
+            // Auto-log timestamps on status transitions
+            if (issueData.status === 'Submitted' && issue?.status !== 'Submitted') {
+              if (!issue?.corrected_at) updates.corrected_at = now;
+              updates.submitted_at = now;
+              updates.submission_status = 'Submitted';
+            }
+            if (issueData.status === 'Resolved' && issue?.status !== 'Resolved') {
+              if (!issue?.corrected_at) updates.corrected_at = now;
+              if (!issue?.submitted_at) { updates.submitted_at = now; updates.submission_status = 'Submitted'; }
+              updates.resolved_at = now;
+            }
+            if (issueData.status === 'Open') {
+              updates.corrected_at = null;
+              updates.corrected_by = null;
+              updates.correction_note = null;
+              updates.submission_status = null;
+              updates.submitted_at = null;
+              updates.submitted_by = null;
+              updates.resolved_at = null;
+            }
+            // If submission_status toggled to Submitted and no submitted_at yet
+            if (submissionStatus === 'Submitted' && !issue?.submitted_at) {
+              updates.submitted_at = now;
+            }
+            // If submission_status cleared, clear submission fields
+            if (!submissionStatus && issue?.submission_status === 'Submitted') {
+              updates.submitted_at = null;
+              updates.submitted_by = null;
+            }
+            await updateInsuranceIssue(id, updates);
           }
           await loadIssues();
           setEditModalOpen(false);
