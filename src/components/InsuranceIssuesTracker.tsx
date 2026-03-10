@@ -376,7 +376,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const [statusFormNote, setStatusFormNote] = useState('');
   const [statusFormDate, setStatusFormDate] = useState('');
   const [statusFormSubmittedBy, setStatusFormSubmittedBy] = useState('');
-  const [statusFormSubmittedDate, setStatusFormSubmittedDate] = useState('');
   const [statusSaving, setStatusSaving] = useState(false);
 
   // Notes & Audit drawer
