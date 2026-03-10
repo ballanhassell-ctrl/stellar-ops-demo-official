@@ -813,10 +813,11 @@ export default function DraggableEditModal({
           maxHeight: minimized ? 'auto' : '82vh',
         }}
       >
-        {/* Invisible drag handle layered on header area only */}
+        {/* Invisible drag handle layered on header area — stops short of
+           the minimize/close buttons on the right so they remain clickable */}
         <div
           ref={handleRef}
-          className="absolute top-0 left-0 right-0 h-[48px] cursor-grab active:cursor-grabbing z-10 touch-none"
+          className="absolute top-0 left-0 right-[80px] h-[48px] cursor-grab active:cursor-grabbing z-10 touch-none"
           style={{ pointerEvents: 'auto' }}
         />
 
