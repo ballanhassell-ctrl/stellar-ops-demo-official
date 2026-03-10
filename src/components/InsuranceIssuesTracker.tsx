@@ -607,7 +607,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     setStatusFormNote('');
     setStatusFormDate(issue.corrected_at ? issue.corrected_at.split('T')[0] : getLocalDateString());
     setStatusFormSubmittedBy(issue.submitted_by || '');
-    setStatusFormSubmittedDate(issue.submitted_at ? issue.submitted_at.split('T')[0] : getLocalDateString());
     setStatusSaving(false);
   };
 
@@ -617,7 +616,6 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     setStatusFormNote('');
     setStatusFormDate('');
     setStatusFormSubmittedBy('');
-    setStatusFormSubmittedDate('');
   };
 
   // Open → Corrected (in-charge completed their edits)
