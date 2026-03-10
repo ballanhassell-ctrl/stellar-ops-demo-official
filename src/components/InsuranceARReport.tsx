@@ -292,6 +292,8 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   const [formData, setFormData] = useState<ClaimFormData>({ ...EMPTY_CLAIM_FORM });
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showModalCloseConfirm, setShowModalCloseConfirm] = useState(false);
+  const [initialFormSnapshot, setInitialFormSnapshot] = useState<ClaimFormData>({ ...EMPTY_CLAIM_FORM });
 
   // Delete confirmation
   const [deletingClaimId, setDeletingClaimId] = useState<string | null>(null);
@@ -525,16 +527,19 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
   };
 
   const openAddModal = () => {
-    setFormData({ ...EMPTY_CLAIM_FORM });
+    const initial = { ...EMPTY_CLAIM_FORM };
+    setFormData(initial);
+    setInitialFormSnapshot(initial);
     setEditingClaim(null);
     setFormError(null);
+    setShowModalCloseConfirm(false);
     setShowAddModal(true);
   };
 
   const openEditModal = (claim: Claim) => {
     setEditingClaim(claim);
     setFormError(null);
-    setFormData({
+    const initial: ClaimFormData = {
       patient_name: claim.patient_name,
       patient_id: claim.patient_id || '',
       date_of_service: claim.date_of_service,
@@ -551,7 +556,10 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       reference_number: claim.reference_number || '',
       notes: claim.notes || '',
       follow_up_date: claim.follow_up_date || '',
-    });
+    };
+    setFormData(initial);
+    setInitialFormSnapshot(initial);
+    setShowModalCloseConfirm(false);
     setShowAddModal(true);
   };
 
@@ -559,6 +567,21 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
     setShowAddModal(false);
     setEditingClaim(null);
     setFormData({ ...EMPTY_CLAIM_FORM });
+    setShowModalCloseConfirm(false);
+  };
+
+  const isClaimFormDirty = () => {
+    return (Object.keys(initialFormSnapshot) as (keyof ClaimFormData)[]).some(
+      (key) => String(formData[key] ?? '') !== String(initialFormSnapshot[key] ?? '')
+    );
+  };
+
+  const attemptCloseModal = () => {
+    if (isClaimFormDirty()) {
+      setShowModalCloseConfirm(true);
+    } else {
+      closeModal();
+    }
   };
 
   const handleFormChange = (
@@ -1880,7 +1903,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60" onClick={closeModal} />
+          <div className="absolute inset-0 bg-black/60" onClick={attemptCloseModal} />
 
           {/* Modal */}
           <div className={`relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl ${bgPrimary} ${cardShadow} border ${borderColor}`}>
@@ -1890,7 +1913,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                 {editingClaim ? 'Edit Claim' : 'Add New Claim'}
               </h2>
               <button
-                onClick={closeModal}
+                onClick={attemptCloseModal}
                 className={`p-1.5 rounded-md ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}
               >
                 <X className={`w-5 h-5 ${textMuted}`} />
@@ -2144,7 +2167,7 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
               )}
               <div className="flex items-center justify-end gap-3">
               <button
-                onClick={closeModal}
+                onClick={attemptCloseModal}
                 className={`px-4 py-2 rounded-lg border ${inputBorder} ${textSecondary} text-sm font-medium hover:${bgTertiary} transition-colors`}
               >
                 Cancel
@@ -2161,6 +2184,51 @@ export default function InsuranceARReport({ isDayMode }: InsuranceARReportProps)
                     : 'Add Claim'}
               </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Unsaved Changes Confirmation for Add/Edit Claim ===== */}
+      {showModalCloseConfirm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModalCloseConfirm(false); }}
+        >
+          <div
+            className={`rounded-xl p-6 w-[min(380px,90vw)] shadow-2xl ${
+              isDayMode ? 'bg-white border border-gray-200' : 'bg-gray-800 border border-gray-600'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${
+                isDayMode ? 'bg-amber-50 text-amber-600' : 'bg-amber-900/20 text-amber-400'
+              }`}
+            >
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <h3 className={`font-bold text-base mb-1.5 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+              Unsaved Changes
+            </h3>
+            <p className={`text-sm leading-relaxed mb-5 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              You have unsaved changes in the claim form. Closing now will discard your edits.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowModalCloseConfirm(false)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Discard & Close
+              </button>
             </div>
           </div>
         </div>
