@@ -443,7 +443,7 @@ export type InsuranceIssueType =
   | 'Pre-Auth Required'
   | 'Other';
 
-export type InsuranceIssueStatus = 'Open' | 'Corrected' | 'Resolved';
+export type InsuranceIssueStatus = 'Open' | 'Corrected' | 'Submitted' | 'Resolved';
 
 export type NoteSource = 'office' | 'stellar';
 
@@ -523,6 +523,7 @@ export type PatientCredit = {
   notes: string | null;
   structured_notes: NoteEntry[];
   audit_trail: AuditTrailEntry[];
+  has_planned_treatment: boolean; // patient has additional planned tx that could use credits (scheduling opportunity)
   created_by: string;
   updated_by: string;
   created_at?: string;

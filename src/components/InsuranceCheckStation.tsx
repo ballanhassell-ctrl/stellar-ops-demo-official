@@ -17,6 +17,7 @@ import {
   getActiveInsuranceChecks, getArchivedInsuranceChecks
 } from '../services/claimsService';
 import type { InsuranceCheck } from '../types/database.types';
+import { autoResolveSubmittedIssuesFromPayment } from '../services/insuranceIssuesService';
 
 // ---- Types ----
 
@@ -485,6 +486,17 @@ export default function InsuranceCheckStation({
       const savedCheck = await insertInsuranceCheck(recordToInsuranceCheck(newCheck));
       setInsuranceChecks(prev => [...prev, insuranceCheckToRecord(savedCheck)]);
       setShowAddModal(false);
+
+      // Auto-resolve matching Submitted insurance issues
+      const patientName = (formData.get('patientName') as string) || newCheck.insuranceCompany;
+      const dos = newCheck.dateOfService;
+      if (patientName) {
+        autoResolveSubmittedIssuesFromPayment(patientName, dos).then(resolvedIds => {
+          if (resolvedIds.length > 0) {
+            alert(`Auto-resolved ${resolvedIds.length} insurance issue(s) matching this payment.`);
+          }
+        }).catch(() => { /* silent */ });
+      }
     } catch (error) {
       console.error('Error saving insurance check:', error);
       alert('Failed to save insurance check. Please try again.');

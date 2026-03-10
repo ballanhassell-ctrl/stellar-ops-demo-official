@@ -220,6 +220,11 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
     [records],
   );
 
+  const schedulingOpportunities = useMemo(
+    () => records.filter((r) => r.has_planned_treatment && r.status === 'unapplied'),
+    [records],
+  );
+
   // ---------------------------------------------------
   // HANDLERS
   // ---------------------------------------------------
@@ -238,6 +243,7 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
         applied_to: null,
         applied_date: null,
         notes: newForm.notes.trim() || null,
+        has_planned_treatment: false,
         structured_notes: [],
         audit_trail: [createAuditEntry('created', 'staff', { notes: 'Credit record created' })],
         created_by: 'staff',
@@ -562,6 +568,7 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
         applied_to: String(data.applied_to || '') || null,
         applied_date: null,
         notes: String(data.notes || '') || null,
+        has_planned_treatment: false,
         structured_notes: [] as NoteEntry[],
         audit_trail: [createAuditEntry('created', 'staff')],
         created_by: 'staff',
@@ -668,7 +675,7 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}>
           <div className="flex items-center gap-2 mb-2">
             <div className="p-1.5 rounded-lg bg-amber-500/10"><CreditCard className="w-4 h-4 text-amber-500" /></div>
@@ -703,6 +710,19 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
           </div>
           <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{formatCurrency(totalRefunded)}</p>
           <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>{records.filter(r => r.status === 'refunded').length} records</p>
+        </div>
+
+        <div className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${schedulingOpportunities.length > 0 ? (isDayMode ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-emerald-600 ring-1 ring-emerald-800') : (isDayMode ? 'border-white/40' : 'border-white/10')} hover-lift`}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 rounded-lg bg-emerald-500/10"><AlertTriangle className="w-4 h-4 text-emerald-500" /></div>
+            <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Scheduling Opps.</span>
+          </div>
+          <p className={`text-2xl font-bold ${schedulingOpportunities.length > 0 ? (isDayMode ? 'text-emerald-700' : 'text-emerald-400') : (isDayMode ? 'text-gray-900' : 'text-white')}`}>
+            {schedulingOpportunities.length}
+          </p>
+          <p className={`text-xs mt-1 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            {schedulingOpportunities.length > 0 ? formatCurrency(schedulingOpportunities.reduce((s, r) => s + r.credit_amount, 0)) + ' in credits' : 'No planned tx flagged'}
+          </p>
         </div>
       </div>
 
@@ -765,6 +785,7 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Date</th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Source</th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
+                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`} title="Has additional planned treatment (scheduling opportunity)">Planned Tx</th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[120px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Applied To</th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[140px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Notes</th>
                   <th className={`text-center text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Audit</th>
@@ -804,6 +825,23 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                     </td>
                     <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
                       {renderStatusDropdown(record)}
+                    </td>
+                    <td className="py-2.5 px-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={record.has_planned_treatment || false}
+                        onChange={async (e) => {
+                          const val = e.target.checked;
+                          try {
+                            const updated = await updatePatientCredit(record.id, { has_planned_treatment: val });
+                            setRecords((prev) => prev.map((r) => r.id === record.id ? { ...r, ...updated } : r));
+                          } catch (err) {
+                            console.error('Error updating planned treatment:', err);
+                          }
+                        }}
+                        className={`w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer`}
+                        title={record.has_planned_treatment ? 'Has planned treatment - scheduling opportunity' : 'Mark if patient has additional planned treatment'}
+                      />
                     </td>
                     <td className="py-2.5 px-2">
                       {renderEditableCell(record, 'applied_to', record.applied_to)}

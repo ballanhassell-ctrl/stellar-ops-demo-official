@@ -22,6 +22,8 @@ import {
   History,
   Wrench,
   Zap,
+  Send,
+  Clock,
 } from 'lucide-react';
 import type { InsuranceIssue, InsuranceIssueType, InsuranceIssueStatus, NoteEntry, NoteSource, AuditTrailEntry } from '../types/database.types';
 import {
@@ -31,6 +33,7 @@ import {
   deleteInsuranceIssue,
   calculateIssuesSummary,
   RESOLUTION_TARGET_DAYS,
+  SUBMITTED_FOLLOW_UP_DAYS,
 } from '../services/insuranceIssuesService';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import InsuranceIssuesCSVUpload from './InsuranceIssuesCSVUpload';
@@ -104,6 +107,19 @@ const EMPTY_FORM: NewIssueForm = {
 
 function isResolved(issue: InsuranceIssue): boolean {
   return issue.status === 'Resolved';
+}
+
+function isSubmitted(issue: InsuranceIssue): boolean {
+  return issue.status === 'Submitted';
+}
+
+/** Returns true if a Submitted issue is past the 15-day follow-up window */
+function isSubmittedOverdue(issue: InsuranceIssue): boolean {
+  if (issue.status !== 'Submitted' || !issue.submitted_at) return false;
+  const submittedDate = new Date(issue.submitted_at).getTime();
+  const now = Date.now();
+  const daysSinceSubmitted = (now - submittedDate) / (1000 * 60 * 60 * 24);
+  return daysSinceSubmitted > SUBMITTED_FOLLOW_UP_DAYS;
 }
 
 function getProviderColor(provider: string, isDayMode: boolean) {
@@ -318,9 +334,16 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // View tabs: open vs resolved
-  type ViewTab = 'open' | 'resolved';
+  // View tabs: open (Active Issues) | submitted | resolved
+  type ViewTab = 'open' | 'submitted' | 'resolved';
   const [viewTab, setViewTab] = useState<ViewTab>('open');
+
+  // Confirmation dialog for status transitions
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -391,8 +414,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   // ----- Filtering -----
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
-      // Tab filter: open vs resolved (primary split)
-      if (viewTab === 'open' && isResolved(issue)) return false;
+      // Tab filter: open | submitted | resolved (3-tab split)
+      if (viewTab === 'open' && (isSubmitted(issue) || isResolved(issue))) return false;
+      if (viewTab === 'submitted' && !isSubmitted(issue)) return false;
       if (viewTab === 'resolved' && !isResolved(issue)) return false;
 
       // Search
@@ -425,9 +449,11 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const regularIssues = useMemo(() => filteredIssues.filter((i) => !i.is_pre_auth), [filteredIssues]);
   const preAuthIssues = useMemo(() => filteredIssues.filter((i) => i.is_pre_auth), [filteredIssues]);
 
-  // Counts for tab badges (Open tab shows both Open + Corrected; Resolved tab shows Resolved)
-  const openCount = useMemo(() => issues.filter((i) => !isResolved(i)).length, [issues]);
+  // Counts for tab badges (Open tab shows Open + Corrected; Submitted tab; Resolved tab)
+  const openCount = useMemo(() => issues.filter((i) => i.status === 'Open' || i.status === 'Corrected').length, [issues]);
   const correctedCount = useMemo(() => issues.filter((i) => i.status === 'Corrected').length, [issues]);
+  const submittedCount = useMemo(() => issues.filter((i) => isSubmitted(i)).length, [issues]);
+  const submittedOverdueCount = useMemo(() => issues.filter((i) => isSubmittedOverdue(i)).length, [issues]);
   const resolvedCount = useMemo(() => issues.filter((i) => isResolved(i)).length, [issues]);
 
   // ----- CRUD handlers -----
@@ -484,10 +510,21 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       if (updates.status === 'Corrected' && currentIssue?.status === 'Open') {
         updates.corrected_at = new Date().toISOString();
       }
+      if (updates.status === 'Submitted' && currentIssue?.status !== 'Submitted' && currentIssue?.status !== 'Resolved') {
+        updates.submission_status = 'Submitted';
+        updates.submitted_at = new Date().toISOString();
+        if (!currentIssue?.corrected_at) {
+          updates.corrected_at = new Date().toISOString();
+        }
+      }
       if (updates.status === 'Resolved' && currentIssue?.status !== 'Resolved') {
         updates.resolved_at = new Date().toISOString();
         if (!currentIssue?.corrected_at) {
           updates.corrected_at = new Date().toISOString();
+        }
+        if (!currentIssue?.submitted_at) {
+          updates.submission_status = 'Submitted';
+          updates.submitted_at = new Date().toISOString();
         }
       }
       // Clear timestamps when going back to Open
@@ -495,6 +532,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         updates.corrected_at = null;
         updates.corrected_by = null;
         updates.correction_note = null;
+        updates.submission_status = null;
+        updates.submitted_at = null;
+        updates.submitted_by = null;
         updates.resolved_at = null;
       }
       // Auto-log submitted_at when marking as Submitted for the first time
@@ -627,44 +667,109 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     }
   };
 
-  // Corrected → Resolved (submitted and fully resolved)
+  // Corrected → Submitted (claim resubmitted, awaiting payment)
+  const handleMarkSubmitted = async () => {
+    if (!statusPopupIssue || !statusFormSubmittedBy.trim()) return;
+
+    const doSubmit = async () => {
+      setStatusSaving(true);
+      try {
+        const now = new Date().toISOString();
+
+        const newAuditEntries: AuditTrailEntry[] = [
+          createAuditEntry('status_changed', statusFormSubmittedBy.trim(), {
+            field: 'status', oldValue: statusPopupIssue.status, newValue: 'Submitted',
+          }),
+        ];
+
+        const updates: Partial<InsuranceIssue> = {
+          status: 'Submitted',
+          submission_status: 'Submitted',
+          submitted_by: statusFormSubmittedBy.trim(),
+          submitted_at: now,
+          audit_trail: [...(statusPopupIssue.audit_trail || []), ...newAuditEntries],
+        };
+
+        // If going straight from Open → Submitted (bypass correction), set corrected fields too
+        if (statusPopupIssue.status === 'Open') {
+          updates.corrected_at = now;
+          updates.corrected_by = statusFormSubmittedBy.trim();
+        }
+
+        const updated = await updateInsuranceIssue(statusPopupIssue.id, updates);
+        setIssues((prev) => prev.map((i) => (i.id === statusPopupIssue.id ? updated : i)));
+        setToastMessage(`Marked as Submitted by ${statusFormSubmittedBy.trim()}`);
+        closeStatusPopup();
+      } catch (err) {
+        console.error('Error marking submitted:', err);
+      } finally {
+        setStatusSaving(false);
+      }
+    };
+
+    // Show confirmation dialog
+    setConfirmDialog({
+      title: 'Move to Submitted',
+      message: `Are you sure you want to move "${statusPopupIssue.patient_name}" from Active Issues to Submitted? This indicates the claim has been resubmitted and is now awaiting payment.`,
+      onConfirm: () => {
+        setConfirmDialog(null);
+        doSubmit();
+      },
+    });
+  };
+
+  // Submitted → Resolved (payment received, fully resolved)
   const handleMarkResolved = async () => {
     if (!statusPopupIssue || !statusFormSubmittedBy.trim()) return;
-    setStatusSaving(true);
-    try {
-      const now = new Date().toISOString();
-      const submittedDate = statusFormSubmittedDate ? new Date(statusFormSubmittedDate + 'T12:00:00').toISOString() : now;
 
-      const newAuditEntries: AuditTrailEntry[] = [
-        createAuditEntry('status_changed', statusFormSubmittedBy.trim(), {
-          field: 'status', oldValue: statusPopupIssue.status, newValue: 'Resolved',
-        }),
-      ];
+    const doResolve = async () => {
+      setStatusSaving(true);
+      try {
+        const now = new Date().toISOString();
 
-      const updates: Partial<InsuranceIssue> = {
-        status: 'Resolved',
-        resolved_at: now,
-        submission_status: 'Submitted',
-        submitted_by: statusFormSubmittedBy.trim(),
-        submitted_at: submittedDate,
-        audit_trail: [...(statusPopupIssue.audit_trail || []), ...newAuditEntries],
-      };
+        const newAuditEntries: AuditTrailEntry[] = [
+          createAuditEntry('status_changed', statusFormSubmittedBy.trim(), {
+            field: 'status', oldValue: statusPopupIssue.status, newValue: 'Resolved',
+          }),
+        ];
 
-      // If going straight from Open → Resolved (bypass), set corrected fields too
-      if (statusPopupIssue.status === 'Open') {
-        updates.corrected_at = now;
-        updates.corrected_by = statusFormSubmittedBy.trim();
+        const updates: Partial<InsuranceIssue> = {
+          status: 'Resolved',
+          resolved_at: now,
+          audit_trail: [...(statusPopupIssue.audit_trail || []), ...newAuditEntries],
+        };
+
+        // If coming from Open/Corrected directly, fill in the gaps
+        if (!statusPopupIssue.corrected_at) {
+          updates.corrected_at = now;
+          updates.corrected_by = statusFormSubmittedBy.trim();
+        }
+        if (!statusPopupIssue.submitted_at) {
+          updates.submission_status = 'Submitted';
+          updates.submitted_by = statusFormSubmittedBy.trim();
+          updates.submitted_at = now;
+        }
+
+        const updated = await updateInsuranceIssue(statusPopupIssue.id, updates);
+        setIssues((prev) => prev.map((i) => (i.id === statusPopupIssue.id ? updated : i)));
+        setToastMessage(`Issue resolved by ${statusFormSubmittedBy.trim()}`);
+        closeStatusPopup();
+      } catch (err) {
+        console.error('Error resolving issue:', err);
+      } finally {
+        setStatusSaving(false);
       }
+    };
 
-      const updated = await updateInsuranceIssue(statusPopupIssue.id, updates);
-      setIssues((prev) => prev.map((i) => (i.id === statusPopupIssue.id ? updated : i)));
-      setToastMessage(`Issue resolved by ${statusFormSubmittedBy.trim()}`);
-      closeStatusPopup();
-    } catch (err) {
-      console.error('Error resolving issue:', err);
-    } finally {
-      setStatusSaving(false);
-    }
+    // Show confirmation dialog
+    setConfirmDialog({
+      title: 'Mark as Resolved',
+      message: `Are you sure you want to mark "${statusPopupIssue.patient_name}" as Resolved? This confirms that payment has been received from the insurance company.`,
+      onConfirm: () => {
+        setConfirmDialog(null);
+        doResolve();
+      },
+    });
   };
 
   // Reopen: Corrected/Resolved → Open
@@ -680,6 +785,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         corrected_at: null,
         corrected_by: null,
         correction_note: null,
+        submission_status: null,
+        submitted_by: null,
+        submitted_at: null,
         resolved_at: null,
         audit_trail: [...(statusPopupIssue.audit_trail || []), auditEntry],
       };
@@ -837,6 +945,17 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         : 'bg-blue-900/40 text-blue-300 hover:bg-blue-900/60';
       icon = <Wrench className="w-3 h-3" />;
       label = 'Corrected';
+    } else if (s === 'Submitted') {
+      const overdue = isSubmittedOverdue(issue);
+      badgeCls = overdue
+        ? isDayMode
+          ? 'bg-red-100 text-red-700 hover:bg-red-200 ring-1 ring-red-300'
+          : 'bg-red-900/40 text-red-300 hover:bg-red-900/60 ring-1 ring-red-600'
+        : isDayMode
+          ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+          : 'bg-purple-900/40 text-purple-300 hover:bg-purple-900/60';
+      icon = overdue ? <Clock className="w-3 h-3" /> : <Send className="w-3 h-3" />;
+      label = overdue ? 'Submitted (Overdue)' : 'Submitted';
     } else {
       badgeCls = isDayMode
         ? 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -859,11 +978,16 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
 
   // ----- Render: table row -----
   const renderRow = (issue: InsuranceIssue) => {
-    const rowBg = issue.status === 'Resolved'
-      ? isDayMode ? 'bg-green-50/50' : 'bg-green-900/10'
-      : issue.status === 'Corrected'
-        ? isDayMode ? 'bg-blue-50/30' : 'bg-blue-900/10'
-        : '';
+    const overdue = isSubmittedOverdue(issue);
+    const rowBg = overdue
+      ? isDayMode ? 'bg-red-50 border-l-4 border-l-red-400' : 'bg-red-900/20 border-l-4 border-l-red-500'
+      : issue.status === 'Resolved'
+        ? isDayMode ? 'bg-green-50/50' : 'bg-green-900/10'
+        : issue.status === 'Submitted'
+          ? isDayMode ? 'bg-purple-50/30' : 'bg-purple-900/10'
+          : issue.status === 'Corrected'
+            ? isDayMode ? 'bg-blue-50/30' : 'bg-blue-900/10'
+            : '';
 
     return (
       <tr
@@ -1112,7 +1236,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
       </div>
 
       {/* ===== Summary Stats ===== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
         {/* Total */}
         <div className={`rounded-lg p-4 ${card}`}>
           <div className="flex items-center gap-2 mb-1">
@@ -1141,6 +1265,17 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
           </div>
           <span className={`text-2xl font-bold ${isDayMode ? 'text-blue-700' : 'text-blue-400'}`}>
             {summary.correctedIssues}
+          </span>
+        </div>
+
+        {/* Submitted */}
+        <div className={`rounded-lg p-4 ${card}`}>
+          <div className="flex items-center gap-2 mb-1">
+            <Send className={`w-4 h-4 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`} />
+            <span className={`text-xs font-medium ${subText}`}>Submitted</span>
+          </div>
+          <span className={`text-2xl font-bold ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>
+            {summary.submittedIssues}
           </span>
         </div>
 
@@ -1213,9 +1348,10 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         </div>
       </div>
 
-      {/* ===== Open / Resolved Tabs ===== */}
+      {/* ===== Active Issues / Submitted / Resolved Tabs ===== */}
       <div className={`rounded-lg overflow-hidden ${card}`}>
         <div className={`flex border-b ${tableBorder}`}>
+          {/* Active Issues Tab */}
           <button
             onClick={() => setViewTab('open')}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
@@ -1247,6 +1383,41 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
               </span>
             )}
           </button>
+
+          {/* Submitted Tab */}
+          <button
+            onClick={() => setViewTab('submitted')}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
+              viewTab === 'submitted'
+                ? isDayMode
+                  ? 'border-b-2 border-purple-600 text-purple-700 bg-purple-50/50'
+                  : 'border-b-2 border-purple-400 text-purple-300 bg-purple-900/20'
+                : isDayMode
+                  ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+            }`}
+          >
+            <Send className="w-4 h-4" />
+            Submitted
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+              viewTab === 'submitted'
+                ? isDayMode ? 'bg-purple-100 text-purple-700' : 'bg-purple-900/40 text-purple-300'
+                : isDayMode ? 'bg-gray-100 text-gray-600' : 'bg-gray-700 text-gray-400'
+            }`}>
+              {submittedCount}
+            </span>
+            {submittedOverdueCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                viewTab === 'submitted'
+                  ? isDayMode ? 'bg-red-100 text-red-700' : 'bg-red-900/40 text-red-300'
+                  : isDayMode ? 'bg-red-50 text-red-600' : 'bg-red-900/30 text-red-400'
+              }`}>
+                {submittedOverdueCount} overdue
+              </span>
+            )}
+          </button>
+
+          {/* Resolved Tab */}
           <button
             onClick={() => setViewTab('resolved')}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
@@ -1517,6 +1688,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   >
                     <option value="Open">Open / Needs Fix</option>
                     <option value="Corrected">Corrected</option>
+                    <option value="Submitted">Submitted</option>
                     <option value="Resolved">Resolved</option>
                   </select>
                 </div>
@@ -1695,6 +1867,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   >
                     <option value="Open">Open / Needs Fix</option>
                     <option value="Corrected">Corrected</option>
+                    <option value="Submitted">Submitted</option>
                     <option value="Resolved">Resolved</option>
                   </select>
                 </div>
@@ -1819,11 +1992,11 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
               </button>
             </div>
 
-            {/* Current status indicator */}
+            {/* Current status indicator - 4 step flow */}
             <div className="px-6 pt-4">
-              <div className={`flex items-center gap-3 p-3 rounded-lg ${isDayMode ? 'bg-gray-50 border border-gray-100' : 'bg-gray-700/50 border border-gray-600'}`}>
+              <div className={`flex items-center gap-2 p-3 rounded-lg ${isDayMode ? 'bg-gray-50 border border-gray-100' : 'bg-gray-700/50 border border-gray-600'}`}>
                 <span className={`text-xs font-medium ${subText}`}>Current:</span>
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-2 flex-1 flex-wrap">
                   {/* Open */}
                   <div className={`flex items-center gap-1 text-xs font-semibold ${
                     statusPopupIssue.status === 'Open'
@@ -1842,6 +2015,16 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   }`}>
                     <Wrench className="w-3.5 h-3.5" />
                     Corrected
+                  </div>
+                  <span className={subText}>&rarr;</span>
+                  {/* Submitted */}
+                  <div className={`flex items-center gap-1 text-xs font-semibold ${
+                    statusPopupIssue.status === 'Submitted'
+                      ? isDayMode ? 'text-purple-700' : 'text-purple-300'
+                      : isDayMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    <Send className="w-3.5 h-3.5" />
+                    Submitted
                   </div>
                   <span className={subText}>&rarr;</span>
                   {/* Resolved */}
@@ -1937,22 +2120,22 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   </div>
                 </div>
 
-                {/* Bypass: go straight to Resolved */}
-                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/20 border-green-800'}`}>
+                {/* Bypass: go straight to Submitted */}
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-purple-50 border-purple-200' : 'bg-purple-900/20 border-purple-800'}`}>
                   <div className="flex items-center gap-2 mb-3">
-                    <Zap className={`w-4 h-4 ${isDayMode ? 'text-green-600' : 'text-green-400'}`} />
-                    <h4 className={`text-sm font-semibold ${isDayMode ? 'text-green-800' : 'text-green-200'}`}>
-                      Resolve Directly
+                    <Zap className={`w-4 h-4 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`} />
+                    <h4 className={`text-sm font-semibold ${isDayMode ? 'text-purple-800' : 'text-purple-200'}`}>
+                      Submit Directly
                     </h4>
                   </div>
-                  <p className={`text-xs mb-3 ${isDayMode ? 'text-green-600' : 'text-green-300'}`}>
-                    Team member was able to resolve this without needing the correction step.
+                  <p className={`text-xs mb-3 ${isDayMode ? 'text-purple-600' : 'text-purple-300'}`}>
+                    Skip correction step and mark as resubmitted directly.
                   </p>
 
                   <div className="space-y-3">
                     <div>
-                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
-                        Resolved By (initials) <span className="text-red-500">*</span>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>
+                        Submitted By (initials) <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -1963,32 +2146,21 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                         className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
                       />
                     </div>
-                    <div>
-                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
-                        Submitted Date
-                      </label>
-                      <input
-                        type="date"
-                        value={statusFormSubmittedDate}
-                        onChange={(e) => setStatusFormSubmittedDate(e.target.value)}
-                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
-                      />
-                    </div>
                   </div>
 
                   <button
-                    onClick={handleMarkResolved}
+                    onClick={handleMarkSubmitted}
                     disabled={statusSaving || !statusFormSubmittedBy.trim()}
-                    className="mt-3 w-full px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                    className="mt-3 w-full px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                   >
-                    <CheckCircle className="w-4 h-4" />
-                    {statusSaving ? 'Saving...' : 'Resolve Directly'}
+                    <Send className="w-4 h-4" />
+                    {statusSaving ? 'Saving...' : 'Submit Directly'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* PART 2: Corrected → Resolved (shown when status is Corrected) */}
+            {/* PART 2: Corrected → Submitted (shown when status is Corrected) */}
             {statusPopupIssue.status === 'Corrected' && (
               <div className="px-6 py-4 space-y-4">
                 {/* Show correction info */}
@@ -2002,6 +2174,77 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   </div>
                 )}
 
+                {/* Submit form */}
+                <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-purple-50 border-purple-200' : 'bg-purple-900/20 border-purple-800'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Send className={`w-4 h-4 ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`} />
+                    <h4 className={`text-sm font-semibold ${isDayMode ? 'text-purple-800' : 'text-purple-200'}`}>
+                      Mark as Submitted
+                    </h4>
+                  </div>
+                  <p className={`text-xs mb-3 ${isDayMode ? 'text-purple-600' : 'text-purple-300'}`}>
+                    Claim has been resubmitted to insurance. Track until payment is received.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>
+                        Submitted By (initials) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={statusFormSubmittedBy}
+                        onChange={(e) => setStatusFormSubmittedBy(e.target.value.toUpperCase())}
+                        placeholder="e.g. BH, LP"
+                        maxLength={10}
+                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleMarkSubmitted}
+                    disabled={statusSaving || !statusFormSubmittedBy.trim()}
+                    className="mt-3 w-full px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    {statusSaving ? 'Saving...' : 'Mark as Submitted'}
+                  </button>
+                </div>
+
+                {/* Reopen option */}
+                <button
+                  onClick={handleReopenIssue}
+                  disabled={statusSaving}
+                  className={`w-full px-4 py-2 text-sm rounded-md border transition-colors font-medium inline-flex items-center justify-center gap-2 ${
+                    isDayMode
+                      ? 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                      : 'border-gray-600 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Reopen Issue
+                </button>
+              </div>
+            )}
+
+            {/* PART 2b: Submitted → Resolved (shown when status is Submitted) */}
+            {statusPopupIssue.status === 'Submitted' && (
+              <div className="px-6 py-4 space-y-4">
+                {/* Show submitted info */}
+                <div className={`p-3 rounded-lg ${isDayMode ? 'bg-purple-50 border border-purple-100' : 'bg-purple-900/20 border border-purple-800'}`}>
+                  <p className={`text-xs ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>
+                    Submitted by <strong>{statusPopupIssue.submitted_by}</strong>
+                    {statusPopupIssue.submitted_at && <> on {formatTimestamp(statusPopupIssue.submitted_at)}</>}
+                  </p>
+                  {isSubmittedOverdue(statusPopupIssue) && (
+                    <p className={`text-xs mt-2 font-semibold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>
+                      <Clock className="w-3 h-3 inline mr-1" />
+                      Overdue! This item has been in Submitted for more than {SUBMITTED_FOLLOW_UP_DAYS} days. Follow up required.
+                    </p>
+                  )}
+                </div>
+
                 {/* Resolve form */}
                 <div className={`p-4 rounded-lg border ${isDayMode ? 'bg-green-50 border-green-200' : 'bg-green-900/20 border-green-800'}`}>
                   <div className="flex items-center gap-2 mb-3">
@@ -2011,24 +2254,13 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                     </h4>
                   </div>
                   <p className={`text-xs mb-3 ${isDayMode ? 'text-green-600' : 'text-green-300'}`}>
-                    Claim has been resubmitted and the issue is fully resolved.
+                    Payment has been received from the insurance company. Issue is fully resolved.
                   </p>
 
                   <div className="space-y-3">
                     <div>
                       <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
-                        Submitted Date
-                      </label>
-                      <input
-                        type="date"
-                        value={statusFormSubmittedDate}
-                        onChange={(e) => setStatusFormSubmittedDate(e.target.value)}
-                        className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
-                      />
-                    </div>
-                    <div>
-                      <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-green-700' : 'text-green-300'}`}>
-                        Submitted By (initials) <span className="text-red-500">*</span>
+                        Resolved By (initials) <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -2051,7 +2283,7 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                   </button>
                 </div>
 
-                {/* Reopen option */}
+                {/* Move back to Active Issues */}
                 <button
                   onClick={handleReopenIssue}
                   disabled={statusSaving}
@@ -2130,6 +2362,42 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         onClose={() => setToastMessage(null)}
         isDayMode={isDayMode}
       />
+
+      {/* ===== Confirmation Dialog ===== */}
+      {confirmDialog && (
+        <div className={modalOverlay} onClick={() => setConfirmDialog(null)}>
+          <div
+            className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-xl shadow-xl max-w-sm w-full mx-4`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'notesPopupFadeIn 0.15s ease-out' }}
+          >
+            <div className={`px-6 py-4 border-b ${tableBorder}`}>
+              <h3 className={`text-lg font-semibold ${headerText}`}>{confirmDialog.title}</h3>
+            </div>
+            <div className="px-6 py-4">
+              <p className={`text-sm ${subText}`}>{confirmDialog.message}</p>
+            </div>
+            <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t ${tableBorder}`}>
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className={`px-4 py-2 text-sm rounded-md border transition-colors ${
+                  isDayMode
+                    ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Draggable Edit Modal */}
       <DraggableEditModal
