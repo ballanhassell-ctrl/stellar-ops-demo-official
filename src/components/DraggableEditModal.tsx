@@ -191,7 +191,33 @@ const INSURANCE_ISSUES_FIELDS: FieldDef[] = [
     options: [
       { value: 'Open', label: 'Open' },
       { value: 'Corrected', label: 'Corrected' },
+      { value: 'Submitted', label: 'Submitted' },
       { value: 'Resolved', label: 'Resolved' },
+    ],
+  },
+  {
+    key: 'submission_status',
+    label: 'Submission Status',
+    type: 'select',
+    options: [
+      { value: '', label: 'Not Submitted' },
+      { value: 'Submitted', label: 'Submitted' },
+    ],
+  },
+  {
+    key: 'submitted_by',
+    label: 'Submitted By',
+    type: 'select',
+    options: [
+      { value: '', label: '-- Select --' },
+      { value: 'BH', label: 'BH' },
+      { value: 'LP', label: 'LP' },
+      { value: 'VM', label: 'VM' },
+      { value: 'DM', label: 'DM' },
+      { value: 'LM', label: 'LM' },
+      { value: 'EY', label: 'EY' },
+      { value: 'MT', label: 'MT' },
+      { value: 'KM', label: 'KM' },
     ],
   },
   { key: 'notes', label: 'Notes', type: 'textarea' },

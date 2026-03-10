@@ -366,6 +366,10 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<InsuranceIssue>>({});
 
+  // Submission toggle popup
+  const [submissionPopupIssue, setSubmissionPopupIssue] = useState<InsuranceIssue | null>(null);
+  const [submissionInitials, setSubmissionInitials] = useState('');
+
   // CSV upload
   const [showCSVUpload, setShowCSVUpload] = useState(false);
 
@@ -799,6 +803,50 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
     }
   };
 
+  // ----- Toggle submission status (inline click) -----
+  const handleToggleSubmission = async (issue: InsuranceIssue, initials?: string) => {
+    const now = new Date().toISOString();
+    const isCurrentlySubmitted = issue.submission_status === 'Submitted';
+
+    if (isCurrentlySubmitted) {
+      // Un-submit: clear submission fields
+      const auditEntry = createAuditEntry('status_changed', 'staff', {
+        field: 'submission_status', oldValue: 'Submitted', newValue: 'Not Submitted',
+      });
+      const updates: Partial<InsuranceIssue> = {
+        submission_status: null,
+        submitted_by: null,
+        submitted_at: null,
+        audit_trail: [...(issue.audit_trail || []), auditEntry],
+      };
+      // If the main status was 'Submitted', move back to 'Corrected' (or 'Open' if never corrected)
+      if (issue.status === 'Submitted') {
+        updates.status = issue.corrected_at ? 'Corrected' : 'Open';
+      }
+      const updated = await updateInsuranceIssue(issue.id, updates);
+      setIssues((prev) => prev.map((i) => (i.id === issue.id ? updated : i)));
+      setToastMessage('Submission status cleared');
+    } else {
+      // Mark as submitted with initials
+      const by = initials?.trim() || '';
+      if (!by) return;
+      const auditEntry = createAuditEntry('status_changed', by, {
+        field: 'submission_status', oldValue: 'Not Submitted', newValue: 'Submitted',
+      });
+      const updates: Partial<InsuranceIssue> = {
+        submission_status: 'Submitted',
+        submitted_by: by,
+        submitted_at: now,
+        audit_trail: [...(issue.audit_trail || []), auditEntry],
+      };
+      const updated = await updateInsuranceIssue(issue.id, updates);
+      setIssues((prev) => prev.map((i) => (i.id === issue.id ? updated : i)));
+      setToastMessage(`Marked as Submitted by ${by}`);
+    }
+    setSubmissionPopupIssue(null);
+    setSubmissionInitials('');
+  };
+
   // ----- Add note handler -----
   const handleAddNote = async () => {
     if (!noteModalIssueId || !newNoteText.trim()) return;
@@ -1044,9 +1092,30 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
           {renderStatusBadge(issue)}
         </td>
 
-        {/* Submitted + Submitted By */}
+        {/* Submitted + Submitted By (clickable toggle) */}
         <td className={`px-3 py-2 text-xs border-b ${tableBorder} whitespace-nowrap`}>
-          <div>
+          <button
+            onClick={() => {
+              if (issue.submission_status === 'Submitted') {
+                // Directly un-submit (no initials needed)
+                handleToggleSubmission(issue);
+              } else {
+                // Open popup to pick initials
+                setSubmissionPopupIssue(issue);
+                setSubmissionInitials('');
+              }
+            }}
+            className={`text-left transition-colors rounded px-1.5 py-0.5 ${
+              issue.submission_status === 'Submitted'
+                ? isDayMode
+                  ? 'hover:bg-green-50'
+                  : 'hover:bg-green-900/20'
+                : isDayMode
+                  ? 'hover:bg-gray-100'
+                  : 'hover:bg-gray-700/50'
+            }`}
+            title={issue.submission_status === 'Submitted' ? 'Click to un-submit' : 'Click to mark as submitted'}
+          >
             {issue.submission_status === 'Submitted' ? (
               <div className="flex flex-col">
                 <span className={`font-medium ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>
@@ -1064,9 +1133,9 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
                 )}
               </div>
             ) : (
-              <span className={subText}>--</span>
+              <span className={`${subText} hover:underline`}>--</span>
             )}
-          </div>
+          </button>
         </td>
 
         {/* Notes (hover popup) */}
@@ -2396,12 +2465,70 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
         </div>
       )}
 
+      {/* Submission Toggle Popup (pick initials to mark as submitted) */}
+      {submissionPopupIssue && (
+        <div
+          className={modalOverlay}
+          onClick={() => { setSubmissionPopupIssue(null); setSubmissionInitials(''); }}
+        >
+          <div
+            className={`${isDayMode ? 'bg-white' : 'bg-gray-800'} rounded-xl shadow-xl max-w-sm w-full mx-4`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'notesPopupFadeIn 0.15s ease-out' }}
+          >
+            <div className={`flex items-center justify-between px-5 py-3 border-b ${tableBorder}`}>
+              <div>
+                <h3 className={`text-sm font-semibold ${headerText}`}>Mark as Submitted</h3>
+                <p className={`text-xs mt-0.5 ${subText}`}>
+                  {submissionPopupIssue.patient_name}
+                </p>
+              </div>
+              <button
+                onClick={() => { setSubmissionPopupIssue(null); setSubmissionInitials(''); }}
+                className={`p-1 rounded ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-gray-700 text-gray-400'}`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>
+                  Submitted By (initials) <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={submissionInitials}
+                  onChange={(e) => setSubmissionInitials(e.target.value)}
+                  className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
+                  autoFocus
+                >
+                  <option value="">-- Select --</option>
+                  {SUBMITTER_INITIALS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => handleToggleSubmission(submissionPopupIssue, submissionInitials)}
+                disabled={!submissionInitials}
+                className="w-full px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Mark as Submitted
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Draggable Edit Modal */}
       <DraggableEditModal
         isOpen={editModalOpen}
         onClose={() => { setEditModalOpen(false); setEditModalIssue(null); }}
         onSave={async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
           const auditEntry = createAuditEntry(isNewEntry ? 'created' : 'updated', 'staff');
+          const submissionStatus = String(data.submission_status || '') || null;
+          const submittedBy = String(data.submitted_by || '') || null;
+          const now = new Date().toISOString();
           const issueData = {
             patient_name: sanitizePatientName(String(data.patient_name || '')),
             patient_id: String(data.patient_id || '') || null,
@@ -2410,6 +2537,8 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
             in_charge: String(data.in_charge || ''),
             issue_type: (String(data.issue_type) || 'Other') as InsuranceIssue['issue_type'],
             status: (String(data.status) || 'Open') as InsuranceIssue['status'],
+            submission_status: submissionStatus,
+            submitted_by: submittedBy,
             notes: String(data.notes || '') || null,
           };
           if (isNewEntry) {
@@ -2417,13 +2546,11 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
               ...issueData,
               in_vyne: false,
               is_pre_auth: false,
-              corrected_at: null,
+              corrected_at: issueData.status === 'Corrected' || issueData.status === 'Submitted' || issueData.status === 'Resolved' ? now : null,
               corrected_by: null,
               correction_note: null,
-              submission_status: null,
-              submitted_by: null,
-              submitted_at: null,
-              resolved_at: null,
+              submitted_at: submissionStatus === 'Submitted' ? now : null,
+              resolved_at: issueData.status === 'Resolved' ? now : null,
               structured_notes: [],
               audit_trail: [auditEntry],
             });
@@ -2431,10 +2558,40 @@ export default function InsuranceIssuesTracker({ isDayMode }: InsuranceIssuesTra
             const id = String(data.id);
             const issue = issues.find((i) => i.id === id);
             const existingTrail = issue?.audit_trail || [];
-            await updateInsuranceIssue(id, {
+            const updates: Record<string, unknown> = {
               ...issueData,
               audit_trail: [...existingTrail, auditEntry],
-            });
+            };
+            // Auto-log timestamps on status transitions
+            if (issueData.status === 'Submitted' && issue?.status !== 'Submitted') {
+              if (!issue?.corrected_at) updates.corrected_at = now;
+              updates.submitted_at = now;
+              updates.submission_status = 'Submitted';
+            }
+            if (issueData.status === 'Resolved' && issue?.status !== 'Resolved') {
+              if (!issue?.corrected_at) updates.corrected_at = now;
+              if (!issue?.submitted_at) { updates.submitted_at = now; updates.submission_status = 'Submitted'; }
+              updates.resolved_at = now;
+            }
+            if (issueData.status === 'Open') {
+              updates.corrected_at = null;
+              updates.corrected_by = null;
+              updates.correction_note = null;
+              updates.submission_status = null;
+              updates.submitted_at = null;
+              updates.submitted_by = null;
+              updates.resolved_at = null;
+            }
+            // If submission_status toggled to Submitted and no submitted_at yet
+            if (submissionStatus === 'Submitted' && !issue?.submitted_at) {
+              updates.submitted_at = now;
+            }
+            // If submission_status cleared, clear submission fields
+            if (!submissionStatus && issue?.submission_status === 'Submitted') {
+              updates.submitted_at = null;
+              updates.submitted_by = null;
+            }
+            await updateInsuranceIssue(id, updates);
           }
           await loadIssues();
           setEditModalOpen(false);
