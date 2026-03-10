@@ -706,16 +706,22 @@ export default function DraggableEditModal({
   const [saving, setSaving] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [popupWindow, setPopupWindow] = useState<Window | null>(null);
+  const [showInAppCloseDialog, setShowInAppCloseDialog] = useState(false);
   const handleRef = useRef<HTMLDivElement>(null);
   const { pos, resetPos } = useDrag(handleRef, isOpen && !popupWindow);
   const isNew = !initialData?.id;
+  // Snapshot of form data when modal opened, used to detect dirty state
+  const initialDataRef = useRef<Record<string, unknown>>({});
 
   // Sync initial data when modal opens or tab changes
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
-      setFormData(initialData ? { ...initialData } : {});
+      const data = initialData ? { ...initialData } : {};
+      setFormData(data);
+      initialDataRef.current = data;
       setMinimized(false);
+      setShowInAppCloseDialog(false);
       resetPos();
     }
   }, [isOpen, initialTab, initialData, resetPos]);
@@ -747,7 +753,33 @@ export default function DraggableEditModal({
 
   const handleCreateNew = useCallback(() => {
     setFormData({});
+    initialDataRef.current = {};
   }, []);
+
+  // Check if form data has changed from initial state
+  const isFormDirty = useCallback(() => {
+    const initial = initialDataRef.current;
+    const fields = FIELD_MAP[activeTab];
+    return fields.some((f) => {
+      const cur = String(formData[f.key] ?? '');
+      const orig = String(initial[f.key] ?? '');
+      return cur !== orig;
+    });
+  }, [activeTab, formData]);
+
+  // Guard close for in-app modal
+  const attemptInAppClose = useCallback(() => {
+    if (isFormDirty()) {
+      setShowInAppCloseDialog(true);
+    } else {
+      onClose();
+    }
+  }, [isFormDirty, onClose]);
+
+  const confirmInAppClose = useCallback(() => {
+    setShowInAppCloseDialog(false);
+    onClose();
+  }, [onClose]);
 
   // Open floating window from click handler — uses Document PiP when available
   const handlePopOut = useCallback(async () => {
@@ -799,8 +831,8 @@ export default function DraggableEditModal({
   // ── In-app modal mode ──
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+      {/* Backdrop — guarded against accidental close when form is dirty */}
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={attemptInAppClose} />
 
       {/* Draggable Modal */}
       <div
@@ -828,7 +860,7 @@ export default function DraggableEditModal({
           onFieldChange={handleFieldChange}
           onSave={handleSave}
           onCreateNew={handleCreateNew}
-          onClose={onClose}
+          onClose={attemptInAppClose}
           saving={saving}
           isNew={isNew}
           isDayMode={isDayMode}
@@ -846,6 +878,40 @@ export default function DraggableEditModal({
           <ExternalLink size={15} />
         </button>
       </div>
+
+      {/* ── Unsaved changes confirmation dialog (in-app modal) ── */}
+      {showInAppCloseDialog && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowInAppCloseDialog(false); }}
+        >
+          <div className={`rounded-xl p-6 w-[min(380px,90vw)] shadow-2xl ${isDayMode ? 'bg-white border border-gray-200' : 'bg-gray-800 border border-white/10'}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${isDayMode ? 'bg-amber-50 text-amber-600' : 'bg-amber-900/20 text-amber-400'}`}>
+              <AlertTriangle size={20} />
+            </div>
+            <h3 className={`font-display font-bold text-base mb-1.5 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+              Unsaved Changes
+            </h3>
+            <p className={`text-sm leading-relaxed mb-5 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              You have unsaved changes. Closing now will discard your edits.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowInAppCloseDialog(false)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={confirmInAppClose}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Discard & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

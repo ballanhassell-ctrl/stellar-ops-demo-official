@@ -124,6 +124,7 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newForm, setNewForm] = useState<NewCreditForm>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [showCreditCloseConfirm, setShowCreditCloseConfirm] = useState(false);
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [editingValue, setEditingValue] = useState('');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(null);
@@ -136,6 +137,32 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
   // Draggable edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editModalRecord, setEditModalRecord] = useState<PatientCredit | null>(null);
+
+  // Guard add-credit modal close when form has been modified
+  const isCreditFormDirty = () => {
+    const empty = EMPTY_FORM;
+    return (Object.keys(empty) as (keyof NewCreditForm)[]).some(
+      (key) => {
+        // credit_date defaults to today so ignore it for dirty check
+        if (key === 'credit_date') return false;
+        return String(newForm[key] ?? '') !== String(empty[key] ?? '');
+      }
+    );
+  };
+
+  const attemptCloseCreditModal = () => {
+    if (isCreditFormDirty()) {
+      setShowCreditCloseConfirm(true);
+    } else {
+      setShowAddModal(false);
+    }
+  };
+
+  const confirmCloseCreditModal = () => {
+    setShowCreditCloseConfirm(false);
+    setShowAddModal(false);
+    setNewForm({ ...EMPTY_FORM });
+  };
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -828,14 +855,14 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
 
       {/* ADD CREDIT MODAL */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={attemptCloseCreditModal}>
           <div
             className={`w-full max-w-lg rounded-2xl p-6 ${isDayMode ? 'glass-card border border-white/40' : 'glass-card-dark border border-white/10'} shadow-2xl`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>Add Credit</h3>
-              <button onClick={() => setShowAddModal(false)} className={`p-2 rounded-lg ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-white/10 text-gray-400'}`}>
+              <button onClick={attemptCloseCreditModal} className={`p-2 rounded-lg ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-white/10 text-gray-400'}`}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -928,7 +955,7 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
 
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={attemptCloseCreditModal}
                 className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${isDayMode ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/10'}`}
               >
                 Cancel
@@ -939,6 +966,51 @@ export default function CreditsTracker({ isDayMode }: { isDayMode: boolean }) {
                 className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all hover-lift font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? (<><Loader2 className="w-4 h-4 animate-spin" />Saving...</>) : (<><Plus className="w-4 h-4" />Add Credit</>)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Unsaved Changes Confirmation for Add Credit ===== */}
+      {showCreditCloseConfirm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCreditCloseConfirm(false); }}
+        >
+          <div
+            className={`rounded-xl p-6 w-[min(380px,90vw)] shadow-2xl ${
+              isDayMode ? 'bg-white border border-gray-200' : 'bg-gray-800 border border-gray-600'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${
+                isDayMode ? 'bg-amber-50 text-amber-600' : 'bg-amber-900/20 text-amber-400'
+              }`}
+            >
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <h3 className={`font-bold text-base mb-1.5 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+              Unsaved Changes
+            </h3>
+            <p className={`text-sm leading-relaxed mb-5 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              You have unsaved changes in the credit form. Closing now will discard your edits.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowCreditCloseConfirm(false)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={confirmCloseCreditModal}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Discard & Close
               </button>
             </div>
           </div>

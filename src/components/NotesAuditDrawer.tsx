@@ -15,6 +15,7 @@ import {
   ArrowRight,
   FileText,
   User,
+  AlertTriangle,
 } from 'lucide-react';
 import type { NoteEntry, NoteSource, AuditTrailEntry } from '../types/database.types';
 
@@ -119,8 +120,27 @@ export default function NotesAuditDrawer({
   const [noteAuthor, setNoteAuthor] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
 
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
   const drawerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Track whether the user has unsaved content in the note form
+  const hasUnsavedChanges = showAddForm && (noteText.trim() !== '' || noteAuthor.trim() !== '');
+
+  // Attempt to close — shows confirmation if there are unsaved changes
+  const attemptClose = () => {
+    if (hasUnsavedChanges) {
+      setShowCloseConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const confirmClose = () => {
+    setShowCloseConfirm(false);
+    onClose();
+  };
 
   // Sort notes newest first
   const sortedNotes = useMemo(
@@ -134,15 +154,15 @@ export default function NotesAuditDrawer({
     [auditTrail],
   );
 
-  // Close on Escape
+  // Close on Escape (with unsaved-changes guard)
   useEffect(() => {
     if (!isOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') attemptClose();
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, attemptClose]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Focus textarea when showing add form
   useEffect(() => {
@@ -157,6 +177,7 @@ export default function NotesAuditDrawer({
       setNoteText('');
       setNoteAuthor('');
       setShowAddForm(false);
+      setShowCloseConfirm(false);
     }
   }, [isOpen]);
 
@@ -212,7 +233,7 @@ export default function NotesAuditDrawer({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={onClose}
+      onClick={attemptClose}
       style={{ animation: 'notesPopupFadeIn 0.15s ease-out' }}
     >
       <div
@@ -231,7 +252,7 @@ export default function NotesAuditDrawer({
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={attemptClose}
             className={`p-1.5 rounded-lg transition-colors ${
               isDayMode ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
             }`}
@@ -541,6 +562,51 @@ export default function NotesAuditDrawer({
           )}
         </div>
       </div>
+
+      {/* ===== Unsaved Changes Confirmation Dialog ===== */}
+      {showCloseConfirm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCloseConfirm(false); }}
+        >
+          <div
+            className={`rounded-xl p-6 w-[min(380px,90vw)] shadow-2xl ${
+              isDayMode ? 'bg-white border border-gray-200' : 'bg-gray-800 border border-gray-600'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${
+                isDayMode ? 'bg-amber-50 text-amber-600' : 'bg-amber-900/20 text-amber-400'
+              }`}
+            >
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <h3 className={`font-bold text-base mb-1.5 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+              Unsaved Note
+            </h3>
+            <p className={`text-sm leading-relaxed mb-5 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              You have an unsaved note in progress. Closing now will discard your changes.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowCloseConfirm(false)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  isDayMode ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={confirmClose}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Discard & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
