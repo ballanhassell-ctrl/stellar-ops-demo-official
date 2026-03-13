@@ -40,6 +40,7 @@ import {
   formatPeriodLabel,
 } from '../services/eftReconciliationService';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import { getLocalDateString } from '../utils/dateUtils';
 import NotesAuditDrawer from './NotesAuditDrawer';
 import SuccessToast from './SuccessToast';
 
@@ -366,7 +367,7 @@ export default function EFTReconciliation({ isDayMode }: EFTReconciliationProps)
       await insertEFTEntry({
         period_id: periodId,
         insurance_company: sanitizePatientName(entryForm.insurance_company),
-        payment_date: entryForm.payment_date || new Date().toISOString().split('T')[0],
+        payment_date: entryForm.payment_date || getLocalDateString(),
         trn_number: entryForm.trn_number.trim(),
         date_posted: entryForm.date_posted || null,
         amount: parseFloat(entryForm.amount) || 0,
