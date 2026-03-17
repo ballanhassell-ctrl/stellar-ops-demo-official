@@ -742,6 +742,95 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
 
 
 
+// Mock payment data
+const mockPayments = [
+  {
+    id: 'PAY-001',
+    patientName: 'John Doe',
+    amount: 450.00,
+    date: '2025-11-08',
+    method: 'Insurance',
+    status: 'Posted',
+    claimId: 'CLM-1234'
+  },
+  {
+    id: 'PAY-002',
+    patientName: 'Jane Smith',
+    amount: 275.50,
+    date: '2025-11-07',
+    method: 'Credit Card',
+    status: 'Posted',
+    claimId: 'CLM-1235'
+  },
+  {
+    id: 'PAY-003',
+    patientName: 'Robert Johnson',
+    amount: 892.00,
+    date: '2025-11-07',
+    method: 'Insurance',
+    status: 'Posted',
+    claimId: 'CLM-1236'
+  },
+  {
+    id: 'PAY-004',
+    patientName: 'Emily Davis',
+    amount: 325.00,
+    date: '2025-11-06',
+    method: 'Check',
+    status: 'Posted',
+    claimId: 'CLM-1237'
+  },
+  {
+    id: 'PAY-005',
+    patientName: 'Michael Brown',
+    amount: 540.75,
+    date: '2025-11-05',
+    method: 'Insurance',
+    status: 'Posted',
+    claimId: 'CLM-1238'
+  }
+];
+
+// Mock claims requiring attention
+const mockClaimsNeedingAttention = [
+  {
+    id: 'CLM-2101',
+    patientName: 'Sarah Williams',
+    issue: 'Denied - Missing Documentation',
+    amount: 680.00,
+    daysOutstanding: 15,
+    priority: 'High',
+    lastAction: '2025-10-25'
+  },
+  {
+    id: 'CLM-2102',
+    patientName: 'David Martinez',
+    issue: 'Pending Additional Info',
+    amount: 425.50,
+    daysOutstanding: 8,
+    priority: 'Medium',
+    lastAction: '2025-11-01'
+  },
+  {
+    id: 'CLM-2103',
+    patientName: 'Lisa Anderson',
+    issue: 'Payment Discrepancy',
+    amount: 950.00,
+    daysOutstanding: 22,
+    priority: 'High',
+    lastAction: '2025-10-18'
+  },
+  {
+    id: 'CLM-2104',
+    patientName: 'James Taylor',
+    issue: 'Pre-Auth Expired',
+    amount: 1200.00,
+    daysOutstanding: 5,
+    priority: 'Medium',
+    lastAction: '2025-11-04'
+  }
+];
+
 const CourtStreetRCM = () => {
   const { signOut, isAdmin } = useAuth();
   const [currentView, setCurrentViewState] = useState(() => {
