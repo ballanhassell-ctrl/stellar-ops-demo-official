@@ -2011,7 +2011,7 @@ const CourtStreetRCM = () => {
               {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <img
-                  src="/IMG_9537.PNG"
+                  src="/stellar-logo.jpg"
                   alt="Stellar Consults Logo"
                   className="hidden sm:block h-8 sm:h-10 w-auto object-contain"
                 />
