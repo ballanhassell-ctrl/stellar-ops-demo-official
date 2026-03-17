@@ -4,6 +4,7 @@ import App from './App.tsx'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import LoginPage from './components/LoginPage'
+import GlobalPixelDissolve from './components/GlobalPixelDissolve'
 import './index.css'
 
 function AuthGate() {
@@ -31,6 +32,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
+        <GlobalPixelDissolve />
         <AuthGate />
       </AuthProvider>
     </ThemeProvider>
