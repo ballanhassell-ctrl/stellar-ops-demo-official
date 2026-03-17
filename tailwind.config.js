@@ -8,8 +8,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Nunito Sans', 'sans-serif'],
-        display: ['Manrope', 'sans-serif'],
+        sans: ['Manrope', 'Nunito Sans', 'sans-serif'],
+        display: ['Sora', 'Manrope', 'sans-serif'],
       },
       colors: {
         // Modern theme colors
