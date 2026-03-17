@@ -41,6 +41,7 @@ const EFTReconciliation = lazy(() => import('./components/EFTReconciliation'));
 const InsuranceCheckStation = lazy(() => import('./components/InsuranceCheckStation'));
 const EODReport = lazy(() => import('./components/eod-report').then(m => ({ default: m.EODReport })));
 import { LiquidGlassBackground } from './components/LiquidGlassBackground';
+import PixelDissolveCard from './components/PixelDissolveCard';
 import { sanitizePatientName } from './utils/sanitizePatientName';
 import { getLocalDateString } from './utils/dateUtils';
 import { useAuth } from './contexts/AuthContext';
@@ -1986,7 +1987,7 @@ const CourtStreetRCM = () => {
   }
 
   return (
-    <div className="min-h-screen font-sans transition-all duration-500 relative overflow-x-hidden">
+    <div className="min-h-screen font-sans text-slate-100 transition-all duration-500 relative overflow-x-hidden">
       {/* Liquid Glass Background */}
       <LiquidGlassBackground />
 
@@ -2011,7 +2012,7 @@ const CourtStreetRCM = () => {
               {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <img
-                  src="/Stellar2 copy.jpg"
+                  src="/IMG_9537.PNG"
                   alt="Stellar Consults Logo"
                   className="hidden sm:block h-8 sm:h-10 w-auto object-contain"
                 />
@@ -2025,7 +2026,7 @@ const CourtStreetRCM = () => {
 
               {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
-                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.02em'}}>
+                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.04em', fontFamily: 'Space Grotesk, sans-serif'}}>
                   Court Street Dental <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
                 </h1>
                 <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
@@ -2179,7 +2180,7 @@ const CourtStreetRCM = () => {
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
+                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                       {getGreeting()}, Team! 👋
                     </h2>
                     <h3 className={`text-xl font-display font-bold ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
@@ -2250,7 +2251,7 @@ const CourtStreetRCM = () => {
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
+              <PixelDissolveCard className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
@@ -2295,10 +2296,10 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </PixelDissolveCard>
 
               {/* Collection Rate */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
+              <PixelDissolveCard className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2312,10 +2313,10 @@ const CourtStreetRCM = () => {
                     <Activity className="w-6 h-6 text-primary-600" />
                   </div>
                 </div>
-              </div>
+              </PixelDissolveCard>
 
               {/* Active Patients */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
+              <PixelDissolveCard className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
@@ -2329,10 +2330,10 @@ const CourtStreetRCM = () => {
                     <Users className="w-6 h-6 text-purple-600" />
                   </div>
                 </div>
-              </div>
+              </PixelDissolveCard>
 
               {/* Outstanding A/R */}
-              <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
+              <PixelDissolveCard className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
@@ -2372,7 +2373,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </PixelDissolveCard>
             </div>
 
             {/* Claims & Payments Overview */}
