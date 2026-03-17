@@ -1,0 +1,164 @@
+Section,Field Name,Field Key,Data Type,Current Value,Description/Notes
+DASHBOARD,BAM Current Revenue,bamCurrentRevenue,number,0,Current revenue in this BAM cycle (19 business days)
+DASHBOARD,BAM Target Goal,bamTargetGoal,number,241389,BAM cycle revenue target goal
+DASHBOARD,Collection Rate,collectionRate,number,0,Percentage of collections (0-100)
+DASHBOARD,Active Patients,activePatients,number,0,Number of active patients
+DASHBOARD,Active Claims,activeClaims,number,0,Number of currently active insurance claims
+DASHBOARD,Pending Payments,pendingPayments,number,0,Amount in pending payments
+DASHBOARD,Outstanding AR,outstandingAR,number,0,Outstanding accounts receivable amount
+PAYMENTS,Today's Payments,todaysPayments,number,0,Total payments collected today
+PAYMENTS,Weekly Payments,weeklyPayments,number,0,Total payments for the week
+PAYMENTS,Monthly Payments,monthlyPayments,number,0,Total payments for the month
+PAYMENTS,Pending Deposits,pendingDeposits,number,0,Amount in pending deposits
+PAYMENTS,Insurance Payments,insurancePayments,number,0,Total from insurance payments
+PAYMENTS,Patient Payments,patientPayments,number,0,Total from patient payments
+PAYMENTS,Unapplied Credits,unappliedCredits,number,0,Amount in unapplied credits
+PAYMENTS,Refunds Pending,refundsPending,number,0,Amount in pending refunds
+PATIENTS,Total Patients,totalPatients,number,0,Total number of patients
+PATIENTS,Active Patients,activePatients,number,0,Number of active patients
+PATIENTS,Patients With Balance,patientsWithBalance,number,0,Number of patients with outstanding balance
+PATIENTS,Total Patient AR,totalPatientAR,number,0,Total patient accounts receivable
+PATIENTS,Patient AR 0-30 Days,patientARAging.zeroToThirty,number,0,AR aging bucket: 0-30 days
+PATIENTS,Patient AR 31-60 Days,patientARAging.thirtyOneToSixty,number,0,AR aging bucket: 31-60 days
+PATIENTS,Patient AR 61-90 Days,patientARAging.sixtyOneToNinety,number,0,AR aging bucket: 61-90 days
+PATIENTS,Patient AR 90+ Days,patientARAging.ninetyPlus,number,0,AR aging bucket: 90+ days
+PATIENTS,Payment Plans,paymentPlans,number,0,Number of active payment plans
+PATIENTS,Past Due Accounts,pastDueAccounts,number,0,Number of past due patient accounts
+PRE-AUTHS,Total Pre-Auths,totalPreAuths,number,0,Total number of pre-authorizations
+PRE-AUTHS,Pending Pre-Auths,pending,number,0,Number of pending pre-auths
+PRE-AUTHS,Approved Pre-Auths,approved,number,0,Number of approved pre-auths
+PRE-AUTHS,Denied Pre-Auths,denied,number,0,Number of denied pre-auths
+PRE-AUTHS,Expiring Soon,expiringSoon,number,0,Number expiring within 7 days
+PRE-AUTHS,Expiring This Month,expiringThisMonth,number,0,Number expiring this month
+INSURANCE,Total Providers,totalProviders,number,11,Total number of insurance providers
+INSURANCE,Active Plans,activePlans,number,11,Number of active insurance plans
+INSURANCE,Credentialing Pending,credentialingPending,number,0,Number of providers pending credentialing
+INSURANCE,Verifications Pending,verificationsPending,number,0,Number of pending verifications
+INSURANCE,Top Payer By Volume,topPayerByVolume,text,Delta Dental,Insurance provider with most claims
+INSURANCE,Top Payer By Revenue,topPayerByRevenue,text,Aetna,Insurance provider with highest revenue
+INSURANCE,Total Portals,totalPortals,number,11,Number of insurance portals
+INSURANCE,EFT Enrolled,eftEnrolled,number,11,Number enrolled in EFT
+INSURANCE,Connection Network,connectionNetwork,number,4,Number using connection network
+INSURANCE,Direct Contracts,directContracts,number,6,Number of direct contracts
+SCORECARD,Production Goal,productionGoal,number,50000,Monthly production goal
+SCORECARD,Production Actual,productionActual,number,0,Actual production to date
+SCORECARD,Collection Goal %,collectionGoal,number,95,Collection rate goal percentage
+SCORECARD,Collection Actual %,collectionActual,number,60.7,Actual collection rate percentage
+SCORECARD,New Patients Goal,newPatientsGoal,number,20,Monthly new patient goal
+SCORECARD,New Patients Actual,newPatientsActual,number,7,Actual new patients to date
+SCORECARD,Claim Approval Rate,claimApprovalRate,number,0,Percentage of approved claims
+SCORECARD,Avg Days To Pay,avgDaysToPay,number,0,Average days for payment receipt
+SCORECARD,Avg Show Rate Dr,avgShowRateDr,number,77.5,Doctor appointment show rate %
+SCORECARD,Avg Show Rate Dr Target,avgShowRateDrTarget,number,90,Doctor show rate target %
+SCORECARD,Avg Show Rate Hyg,avgShowRateHyg,number,49.3,Hygienist appointment show rate %
+SCORECARD,Avg Show Rate Hyg Target,avgShowRateHygTarget,number,85,Hygienist show rate target %
+SCORECARD,Avg New Patients Per Week,avgNewPatientsPerWeek,number,7,Average new patients weekly
+SCORECARD,Tx Acceptance %,txAcceptance,number,52.6,Treatment acceptance rate %
+SCORECARD,Tx Acceptance Target %,txAcceptanceTarget,number,50,Treatment acceptance target %
+SCORECARD,Avg Collection Rate %,avgCollectionRate,number,60.7,Average collection rate %
+SCORECARD,Avg Collection Rate Target %,avgCollectionRateTarget,number,95,Collection rate target %
+SCORECARD,Total Tx Presented,totalTxPresented,number,57425,Total treatment value presented
+SCORECARD,Total Tx Accepted,totalTxAccepted,number,51192.2,Total treatment value accepted
+SCORECARD,Total New Patients,totalNewPatients,number,13,Total new patients (period)
+SCORECARD,Five Star Reviews,fiveStarReviews,number,0,Number of 5-star reviews received
+CHECKLIST,Daily Completed,dailyCompleted,number,0,Number of daily tasks completed
+CHECKLIST,Daily Total,dailyTotal,number,8,Total daily tasks
+CHECKLIST,Weekly Completed,weeklyCompleted,number,0,Number of weekly tasks completed
+CHECKLIST,Weekly Total,weeklyTotal,number,5,Total weekly tasks
+CHECKLIST,Monthly Completed,monthlyCompleted,number,0,Number of monthly tasks completed
+CHECKLIST,Monthly Total,monthlyTotal,number,4,Total monthly tasks
+EOD REPORT,Daily Production,dailyProduction,number,8750,Production for the day
+EOD REPORT,Daily Production Goal,dailyProductionGoal,number,19991,Daily production goal
+EOD REPORT,Payments Collected,paymentsCollected,number,6825,Total payments collected today
+EOD REPORT,Collection Rate %,collectionRate,number,78,Collection rate percentage
+EOD REPORT,Insurance Payments,insurancePayments,number,4200,Insurance payments today
+EOD REPORT,Patient Payments,patientPayments,number,2625,Patient payments today
+EOD REPORT,Payment Method - Visa,paymentMethods.visa,number,0,Visa card payments
+EOD REPORT,Payment Method - MasterCard,paymentMethods.mastercard,number,0,MasterCard payments
+EOD REPORT,Payment Method - American Express,paymentMethods.americanExpress,number,0,American Express payments
+EOD REPORT,Payment Method - Discover,paymentMethods.discover,number,0,Discover card payments
+EOD REPORT,Payment Method - Insurance Checks,paymentMethods.insuranceCheck,number,0,Check payments from insurance companies
+EOD REPORT,Payment Method - Other Checks,paymentMethods.otherCheck,number,0,Check payments from patients/other sources
+EOD REPORT,Payment Method - Cash,paymentMethods.cash,number,0,Cash payments
+EOD REPORT,Payment Method - EFT,paymentMethods.eft,number,0,EFT/ACH payments
+EOD REPORT,Patients Seen Today,patientsSeenToday,number,24,Number of patients seen
+EOD REPORT,New Patients,newPatients,number,3,New patients seen today
+EOD REPORT,Procedures Completed,proceduresCompleted,number,32,Total procedures completed
+EOD REPORT,Unbilled Procedures,unbilledProcedures,number,2,Procedures not yet billed
+EOD REPORT,Unapplied Payments,unappliedPayments,number,450,Payments not applied to accounts
+EOD REPORT,Failed Transactions,failedTransactions,number,1,Number of failed payment transactions
+EOD REPORT,Claims To Submit,actionItems.claimsToSubmit,number,5,Claims needing submission
+EOD REPORT,Denied Claims To Resubmit,actionItems.deniedClaimsToResubmit,number,2,Denied claims to resubmit
+EOD REPORT,Pre-Auths Expiring,actionItems.preAuthsExpiring,number,3,Pre-auths expiring soon
+EOD REPORT,Accounts Needing Follow-Up,actionItems.accountsNeedingFollowUp,number,7,Accounts requiring follow-up
+EOD REPORT,Missed Appointments,actionItems.missedAppointments,number,4,Appointments missed today
+EOD REPORT,MTD Production,monthToDateSummary.production,number,87500,Month-to-date production
+EOD REPORT,MTD Production Goal,monthToDateSummary.productionGoal,number,150000,Month-to-date production goal
+EOD REPORT,MTD Collected,monthToDateSummary.collected,number,71250,Month-to-date collected amount
+EOD REPORT,MTD Collection Rate %,monthToDateSummary.collectionRate,number,81.4,Month-to-date collection rate
+EOD REPORT,MTD New Patients,monthToDateSummary.newPatients,number,15,Month-to-date new patients
+CLAIMS,Total Active Claims,totalActive,number,0,Total number of active claims
+CLAIMS,Pending Claims,pending,number,0,Claims pending with insurance
+CLAIMS,Denied Claims,denied,number,0,Claims that were denied
+CLAIMS,Claims Over 60 Days,overSixtyDays,number,0,Claims older than 60 days
+CLAIMS,AR 0-30 Days Amount,arAging.zeroToThirty.amount,number,0,AR aging 0-30 days amount
+CLAIMS,AR 0-30 Days Count,arAging.zeroToThirty.count,number,0,AR aging 0-30 days count
+CLAIMS,AR 31-60 Days Amount,arAging.thirtyOneToSixty.amount,number,0,AR aging 31-60 days amount
+CLAIMS,AR 31-60 Days Count,arAging.thirtyOneToSixty.count,number,0,AR aging 31-60 days count
+CLAIMS,AR 61-90 Days Amount,arAging.sixtyOneToNinety.amount,number,0,AR aging 61-90 days amount
+CLAIMS,AR 61-90 Days Count,arAging.sixtyOneToNinety.count,number,0,AR aging 61-90 days count
+CLAIMS,AR 90+ Days Amount,arAging.ninetyPlus.amount,number,0,AR aging 90+ days amount
+CLAIMS,AR 90+ Days Count,arAging.ninetyPlus.count,number,0,AR aging 90+ days count
+NEW PATIENT TRACKER,Per Day,perDay,number,0,New patients seen today
+NEW PATIENT TRACKER,Per Day Goal,perDayGoal,number,5,Daily new patient goal (default: 5)
+NEW PATIENT TRACKER,Per Week,perWeek,number,0,New patients in the last 7 days
+NEW PATIENT TRACKER,Per Week Goal,perWeekGoal,number,35,Weekly new patient goal (default: 35)
+NEW PATIENT TRACKER,Per Month,perMonth,number,0,New patients this month
+NEW PATIENT TRACKER,Per Month Goal,perMonthGoal,number,150,Monthly new patient goal (default: 150)
+NEW PATIENT TRACKER,Quarterly,quarterly,number,0,New patients this quarter
+NEW PATIENT TRACKER,Quarterly Goal,quarterlyGoal,number,450,Quarterly new patient goal (default: 450)
+NEW PATIENT TRACKER,6-Month Average Month 1,monthlyAverages[0].count,number,0,New patient count for oldest month (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 2,monthlyAverages[1].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 3,monthlyAverages[2].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 4,monthlyAverages[3].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 5,monthlyAverages[4].count,number,0,New patient count (auto-labeled with actual month)
+NEW PATIENT TRACKER,6-Month Average Month 6,monthlyAverages[5].count,number,0,New patient count for most recent month (auto-labeled with actual month)
+THIRD PARTY FINANCING,Cherry Patients (30 days),cherryPatients,number,0,Number of patients using Cherry financing (past 30 days)
+THIRD PARTY FINANCING,Cherry Amount (30 days),cherryAmount,number,0,Total amount financed through Cherry (past 30 days)
+THIRD PARTY FINANCING,CareCredit Patients (30 days),careCreditPatients,number,0,Number of patients using CareCredit (past 30 days)
+THIRD PARTY FINANCING,CareCredit Amount (30 days),careCreditAmount,number,0,Total amount financed through CareCredit (past 30 days)
+THIRD PARTY FINANCING,Total Patients (30 days),totalPatients,number,0,Combined patients using financing (past 30 days)
+THIRD PARTY FINANCING,Total Amount (30 days),totalAmount,number,0,Combined amount financed (past 30 days)
+DAILY PRODUCTION BY PROVIDER,Dr. Gajjar Production,drGajjar,number,0,Daily production for Dr. Gajjar (use date selector)
+DAILY PRODUCTION BY PROVIDER,Dr. Judge Production,drJudge,number,0,Daily production for Dr. Judge (use date selector)
+DAILY PRODUCTION BY PROVIDER,Dr. Strachan Production,drStrachan,number,0,Daily production for Dr. Strachan (use date selector)
+DAILY PRODUCTION BY PROVIDER,Doctor Total,doctorTotal,number,0,Total daily production for all doctors
+DAILY PRODUCTION BY PROVIDER,Farah Production,farah,number,0,Daily production for Farah (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Olga Production,olga,number,0,Daily production for Olga (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Jissel Production,jissel,number,0,Daily production for Jissel (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Temp HYG Production,tempHyg,number,0,Daily production for Temp HYG (Hygienist)
+DAILY PRODUCTION BY PROVIDER,Hygienist Total,hygienistTotal,number,0,Total daily production for all hygienists
+DAILY PRODUCTION BY PROVIDER,Combined Total,combinedTotal,number,0,Combined daily production for all providers (doctors + hygienists)
+ADVANCED METRICS - FINANCIAL,Customer Acquisition Cost (CAC),cac,number,0,Cost to acquire a new patient
+ADVANCED METRICS - FINANCIAL,Gross Profit Margin %,grossProfitMargin,number,0,Gross profit as percentage of revenue
+ADVANCED METRICS - FINANCIAL,Operating Profit Margin %,operatingProfitMargin,number,0,Operating profit as percentage of revenue
+ADVANCED METRICS - FINANCIAL,Cash Flow,cashFlow,number,0,Current period cash flow
+ADVANCED METRICS - FINANCIAL,Revenue Growth Rate %,revenueGrowthRate,number,0,Year over year revenue growth percentage
+ADVANCED METRICS - COGS,Dental Supplies,cogs.dentalSupplies,number,0,Cost of dental supplies
+ADVANCED METRICS - COGS,Lab Fees,cogs.labFees,number,0,Laboratory fees
+ADVANCED METRICS - COGS,Associate Doctor Expense,cogs.associateDoctorExpense,number,0,Associate doctor compensation
+ADVANCED METRICS - COGS,Hygiene Payroll,cogs.hygienePayroll,number,0,Hygienist payroll costs
+ADVANCED METRICS - COGS,Assistant Payroll,cogs.assistantPayroll,number,0,Dental assistant payroll costs
+ADVANCED METRICS - COGS,Total COGS,cogs.totalCOGS,number,0,Total cost of goods sold
+ADVANCED METRICS - COGS,Operating Costs,operatingCosts,number,0,Total operating expenses
+ADVANCED METRICS - PATIENT LIFECYCLE,Churned Patients Per Month,churnedPatientsPerMonth,number,0,Number of patients lost per month
+ADVANCED METRICS - PATIENT LIFECYCLE,Churn Rate %,churnRate,number,0,Patient churn rate percentage
+ADVANCED METRICS - PATIENT LIFECYCLE,Patient Lifecycle (Months),patientLifeCycleMonths,number,0,Average patient lifecycle in months
+ADVANCED METRICS - PATIENT LIFECYCLE,Patient Lifecycle (Years),patientLifeCycleYears,number,0,Average patient lifecycle in years
+ADVANCED METRICS - PATIENT LIFECYCLE,Active Pts 1st of Prior Month,activePtsFirstOfPriorMonth,number,0,Active patients at beginning of last month
+ADVANCED METRICS - PATIENT LIFECYCLE,Avg Retention Period (Months),avgRetentionPeriod,number,0,Average patient retention period in months
+ADVANCED METRICS - REVENUE,Average Revenue Per Client (ARPC),averageRevenuePerClient,number,0,Average revenue per patient
+ADVANCED METRICS - REVENUE,Lifetime Value (LTV),ltv,number,0,Patient lifetime value (ARPC x Avg Retention Period)
+ADVANCED METRICS - SATISFACTION,Net Promoter Score (NPS),nps,number,0,Patient satisfaction score (-100 to 100)
+ADVANCED METRICS - SATISFACTION,Employee NPS (eNPS),enps,number,0,Employee satisfaction score (-100 to 100)
+ADVANCED METRICS - EMPLOYEE,Employee Utilization Rate %,employeeUtilizationRate,number,0,Employee productivity percentage

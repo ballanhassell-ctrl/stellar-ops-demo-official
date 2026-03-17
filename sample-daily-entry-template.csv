@@ -1,0 +1,62 @@
+display_order,category,field_key,field_name,data_type,value,notes
+1,BAM Revenue,bam_current_revenue,BAM Current Revenue,currency,,From Open Dental
+2,Dashboard KPIs,collection_rate,Collection Rate,percentage,,From daily report
+3,Dashboard KPIs,active_patients,Active Patients,count,,From patient list
+4,Dashboard KPIs,active_claims,Active Claims,count,,From claims report
+10,EOD Summary,eod_daily_production,Daily Production,currency,,From EOD report
+11,EOD Summary,eod_payments_collected,Payments Collected,currency,,From EOD report
+12,EOD Summary,eod_insurance_payments,Insurance Payments,currency,,From EOD report
+13,EOD Summary,eod_patient_payments,Patient Payments,currency,,From EOD report
+14,EOD Summary,eod_patients_seen,Patients Seen,count,,From schedule
+15,EOD Summary,eod_new_patients,New Patients,count,,From schedule
+16,EOD Summary,eod_procedures_completed,Procedures Completed,count,,From EOD report
+20,Payment Methods,eod_payment_visa,Visa Payments,currency,,From payment breakdown
+21,Payment Methods,eod_payment_mastercard,Mastercard Payments,currency,,From payment breakdown
+22,Payment Methods,eod_payment_amex,American Express Payments,currency,,From payment breakdown
+23,Payment Methods,eod_payment_discover,Discover Payments,currency,,From payment breakdown
+24,Payment Methods,eod_payment_cherry,Cherry Financing,currency,,From payment breakdown
+25,Payment Methods,eod_payment_carecredit,CareCredit Financing,currency,,From payment breakdown
+26,Payment Methods,eod_payment_insurance_check,Insurance Check Payments,currency,,From payment breakdown
+27,Payment Methods,eod_payment_other_check,Other Check Payments,currency,,From payment breakdown
+28,Payment Methods,eod_payment_cash,Cash Payments,currency,,From payment breakdown
+29,Payment Methods,eod_payment_eft,EFT Payments,currency,,From payment breakdown
+40,Provider Production,provider_dr_gajjar,Dr. Gajjar Production,currency,,From provider report
+41,Provider Production,provider_dr_judge,Dr. Judge Production,currency,,From provider report
+42,Provider Production,provider_dr_strachan,Dr. Strachan Production,currency,,From provider report
+43,Provider Production,provider_farah,Farah (Hygienist) Production,currency,,From provider report
+44,Provider Production,provider_olga,Olga (Hygienist) Production,currency,,From provider report
+45,Provider Production,provider_jissel,Jissel (Hygienist) Production,currency,,From provider report
+46,Provider Production,provider_temp_hyg,Temp Hygienist Production,currency,,From provider report
+60,MTD Summary,eod_mtd_production,MTD Production,currency,,From month-to-date report
+61,MTD Summary,eod_mtd_collected,MTD Collected,currency,,From month-to-date report
+62,MTD Summary,eod_mtd_new_patients,MTD New Patients,count,,From month-to-date report
+70,Payments,todays_payments,Today's Payments,currency,,From payment summary
+71,Payments,insurance_payments,Insurance Payments,currency,,From payment summary
+72,Payments,patient_payments,Patient Payments,currency,,From payment summary
+73,Payments,unapplied_credits,Unapplied Credits,currency,,From payment summary
+80,Patient AR,patients_with_balance,Patients with Balance,count,,From AR aging report
+81,Patient AR,total_patient_ar,Total Patient A/R,currency,,From AR aging report
+82,Patient AR,past_due_accounts,Past Due Accounts,count,,From AR aging report
+83,Patient AR Aging,patient_ar_0_30,Patient A/R 0-30 Days,currency,,From AR aging report
+84,Patient AR Aging,patient_ar_31_60,Patient A/R 31-60 Days,currency,,From AR aging report
+85,Patient AR Aging,patient_ar_61_90,Patient A/R 61-90 Days,currency,,From AR aging report
+86,Patient AR Aging,patient_ar_90_plus,Patient A/R 90+ Days,currency,,From AR aging report
+90,Insurance AR,insurance_ar_0_30_amount,Insurance A/R 0-30 Days,currency,,From insurance AR report
+91,Insurance AR,insurance_ar_31_60_amount,Insurance A/R 31-60 Days,currency,,From insurance AR report
+92,Insurance AR,insurance_ar_61_90_amount,Insurance A/R 61-90 Days,currency,,From insurance AR report
+93,Insurance AR,insurance_ar_90_plus_amount,Insurance A/R 90+ Days,currency,,From insurance AR report
+94,Insurance AR,insurance_ar_0_30_count,Claims 0-30 Days Count,count,,From insurance AR report
+95,Insurance AR,insurance_ar_31_60_count,Claims 31-60 Days Count,count,,From insurance AR report
+96,Insurance AR,insurance_ar_61_90_count,Claims 61-90 Days Count,count,,From insurance AR report
+97,Insurance AR,insurance_ar_90_plus_count,Claims 90+ Days Count,count,,From insurance AR report
+100,Pre-Auths,total_pre_auths,Total Pre-Authorizations,count,,From pre-auth report
+101,EOD Action Items,eod_claims_to_submit,Claims to Submit,count,,From claims report
+110,Scorecard,scorecard_production_actual,Production Actual,currency,,From scorecard
+111,Scorecard,scorecard_collection_actual,Collection Actual,percentage,,From scorecard
+112,Scorecard,scorecard_new_patients_actual,New Patients Actual,count,,From scorecard
+113,Scorecard,scorecard_show_rate_dr,Doctor Show Rate,percentage,,From schedule report
+114,Scorecard,scorecard_show_rate_hyg,Hygienist Show Rate,percentage,,From schedule report
+120,New Patients,new_pts_per_day,New Patients Per Day,number,,Calculated from today
+121,New Patients,new_pts_per_week,New Patients Per Week,number,,Calculated from last 7 days
+122,New Patients,new_pts_per_month,New Patients Per Month,number,,Calculated month-to-date
+123,New Patients,new_pts_quarterly,New Patients Quarterly,number,,Calculated this quarter
