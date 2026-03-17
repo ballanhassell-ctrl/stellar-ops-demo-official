@@ -2251,7 +2251,7 @@ const CourtStreetRCM = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
               {/* BAM Cycle Revenue */}
               <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -2299,7 +2299,7 @@ const CourtStreetRCM = () => {
 
               {/* Collection Rate */}
               <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
                     <p className={`text-sm font-bold mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-300'}`}>Collection Rate</p>
@@ -2316,7 +2316,7 @@ const CourtStreetRCM = () => {
 
               {/* Active Patients */}
               <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
                     <p className={`text-sm font-bold mb-2 ${isDayMode ? 'text-purple-700' : 'text-purple-300'}`}>Active Patients</p>
@@ -2333,7 +2333,7 @@ const CourtStreetRCM = () => {
 
               {/* Outstanding A/R */}
               <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-coral-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="w-full">
                     <div className="flex items-center justify-between mb-3">
@@ -2520,7 +2520,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-primary-500/20 mb-3 group-hover:bg-primary-500/30 transition-colors">
                       <FileText className="w-6 h-6 text-primary-600" />
@@ -2541,7 +2541,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-purple-500/20 mb-3 group-hover:bg-purple-500/30 transition-colors">
                       <Shield className="w-6 h-6 text-purple-600" />
@@ -2563,7 +2563,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-emerald-500/20 mb-3 group-hover:bg-emerald-500/30 transition-colors">
                       <Users className="w-6 h-6 text-emerald-600" />
@@ -2585,7 +2585,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-coral-200/50' : 'border-coral-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-coral-500/20 mb-3 group-hover:bg-coral-500/30 transition-colors">
                       <Clock className="w-6 h-6 text-coral-600" />
@@ -2607,7 +2607,7 @@ const CourtStreetRCM = () => {
                   }}
                   className={`group ${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl relative overflow-hidden`}
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-red-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="p-2.5 rounded-xl bg-red-500/20 mb-3 group-hover:bg-red-500/30 transition-colors">
                       <Activity className="w-6 h-6 text-red-600" />
@@ -2630,7 +2630,7 @@ const CourtStreetRCM = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Avg Claims Aging</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2641,7 +2641,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Collection Rate</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2652,7 +2652,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-coral-700' : 'text-coral-400'}`}>Active Claims</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2663,7 +2663,7 @@ const CourtStreetRCM = () => {
                 </div>
 
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} p-5 rounded-xl relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-red-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${isDayMode ? 'text-red-700' : 'text-red-400'}`}>Denied Claims</p>
                     <p className={`text-4xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -2735,7 +2735,7 @@ const CourtStreetRCM = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Per Day */}
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -2766,7 +2766,7 @@ const CourtStreetRCM = () => {
 
                 {/* Per Week */}
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -2808,7 +2808,7 @@ const CourtStreetRCM = () => {
 
                 {/* Per Month */}
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -2850,7 +2850,7 @@ const CourtStreetRCM = () => {
 
                 {/* Quarterly */}
                 <div className={`${isDayMode ? 'glass-eod-ultra-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -3183,7 +3183,7 @@ const CourtStreetRCM = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Total Pre-Auths */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3198,7 +3198,7 @@ const CourtStreetRCM = () => {
 
                     {/* Pending */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3213,7 +3213,7 @@ const CourtStreetRCM = () => {
 
                     {/* Approved */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3228,7 +3228,7 @@ const CourtStreetRCM = () => {
 
                     {/* Scheduled */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3243,7 +3243,7 @@ const CourtStreetRCM = () => {
 
                     {/* Denied */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-red-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3424,7 +3424,7 @@ const CourtStreetRCM = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Average Aging Days */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
                           <div>
@@ -3442,7 +3442,7 @@ const CourtStreetRCM = () => {
 
                     {/* Total Requested Amount */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
                           <div>
@@ -3458,7 +3458,7 @@ const CourtStreetRCM = () => {
 
                     {/* Total Approved Amount */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
                           <div>
@@ -3474,7 +3474,7 @@ const CourtStreetRCM = () => {
 
                     {/* Approval Rate */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
                           <div>
@@ -3492,7 +3492,7 @@ const CourtStreetRCM = () => {
 
                     {/* Treatment Scheduled */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
                           <div>
@@ -3508,7 +3508,7 @@ const CourtStreetRCM = () => {
 
                     {/* Potential Production Waiting to be Scheduled */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-center justify-between">
                           <div>
@@ -3565,7 +3565,7 @@ const CourtStreetRCM = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Today's Payments */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3582,7 +3582,7 @@ const CourtStreetRCM = () => {
 
                     {/* Weekly Payments */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3599,7 +3599,7 @@ const CourtStreetRCM = () => {
 
                     {/* Monthly Payments */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -3616,7 +3616,7 @@ const CourtStreetRCM = () => {
 
                     {/* Pending Deposits */}
                     <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                       <div className="relative z-10">
                         <div className="flex items-start justify-between">
                           <div>
@@ -4085,7 +4085,7 @@ const CourtStreetRCM = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Insurance Providers */}
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
                       <div>
@@ -4102,7 +4102,7 @@ const CourtStreetRCM = () => {
 
                 {/* Active Plans */}
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
                       <div>
@@ -4119,7 +4119,7 @@ const CourtStreetRCM = () => {
 
                 {/* Credentialing Pending */}
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
                       <div>
@@ -4136,7 +4136,7 @@ const CourtStreetRCM = () => {
 
                 {/* Verifications Pending */}
                 <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative z-10">
                     <div className="flex items-start justify-between">
                       <div>
@@ -4364,7 +4364,7 @@ const CourtStreetRCM = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Daily Tasks */}
               <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -4391,7 +4391,7 @@ const CourtStreetRCM = () => {
 
               {/* Weekly Tasks */}
               <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -4418,7 +4418,7 @@ const CourtStreetRCM = () => {
 
               {/* Monthly Tasks */}
               <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -4599,7 +4599,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Financial Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>CAC</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4609,7 +4609,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Gross Profit Margin</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4619,7 +4619,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-indigo-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Operating Profit Margin</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4629,7 +4629,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-teal-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Cash Flow</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4639,7 +4639,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-cyan-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>Revenue Growth Rate</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4656,7 +4656,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Cost of Goods Sold (COGS)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-orange-200/50' : 'border-orange-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-orange-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-orange-700' : 'text-orange-400'}`}>Dental Supplies</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4665,7 +4665,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-amber-700' : 'text-amber-400'}`}>Lab Fees</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4674,7 +4674,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-yellow-200/50' : 'border-yellow-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-yellow-700' : 'text-yellow-400'}`}>Associate Doctor Expense</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4683,7 +4683,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-lime-200/50' : 'border-lime-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-lime-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-lime-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-lime-700' : 'text-lime-400'}`}>Hygiene Payroll</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4692,7 +4692,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-green-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Assistant Payroll</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4701,7 +4701,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Total COGS</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4712,7 +4712,7 @@ const CourtStreetRCM = () => {
                 </div>
                 <div className="mt-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-rose-200/50' : 'border-rose-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
                         <p className={`text-sm font-bold mb-1 ${isDayMode ? 'text-rose-700' : 'text-rose-300'}`}>Operating Costs</p>
@@ -4740,7 +4740,7 @@ const CourtStreetRCM = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-purple-700' : 'text-purple-400'}`}>Churned Patients</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4750,7 +4750,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-fuchsia-200/50' : 'border-fuchsia-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-fuchsia-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-fuchsia-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-fuchsia-700' : 'text-fuchsia-400'}`}>Churn Rate</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4760,7 +4760,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-pink-200/50' : 'border-pink-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-pink-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-pink-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-pink-700' : 'text-pink-400'}`}>Patient Lifecycle</p>
                       <p className={`text-xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4770,7 +4770,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-violet-200/50' : 'border-violet-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-violet-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-violet-700' : 'text-violet-400'}`}>Active Pts (Prior Month)</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4780,7 +4780,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-indigo-200/50' : 'border-indigo-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-indigo-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-indigo-700' : 'text-indigo-400'}`}>Avg Retention Period</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4797,7 +4797,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Revenue & Customer Value</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-sky-200/50' : 'border-sky-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-sky-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-sky-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-sky-700' : 'text-sky-400'}`}>Average Revenue Per Client</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4807,7 +4807,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-primary-700' : 'text-primary-400'}`}>Lifetime Value (LTV)</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4817,7 +4817,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-cyan-200/50' : 'border-cyan-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-cyan-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-cyan-700' : 'text-cyan-400'}`}>LTV:CAC Ratio</p>
                       <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4834,7 +4834,7 @@ const CourtStreetRCM = () => {
                 <h4 className={`text-sm font-bold mb-4 uppercase tracking-wide ${isDayMode ? 'text-gray-700' : 'text-gray-300'}`}>Satisfaction & Employee Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-green-200/50' : 'border-green-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-green-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-green-700' : 'text-green-400'}`}>Net Promoter Score</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4844,7 +4844,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-teal-200/50' : 'border-teal-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-teal-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-teal-700' : 'text-teal-400'}`}>Employee NPS (eNPS)</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -4854,7 +4854,7 @@ const CourtStreetRCM = () => {
                     </div>
                   </div>
                   <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-5 relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute -top-4 -right-4 w-36 h-36 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative z-10">
                       <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${isDayMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Employee Utilization Rate</p>
                       <p className={`text-3xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
@@ -5521,35 +5521,35 @@ const CourtStreetRCM = () => {
                       {/* VIP Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${vipMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${vipMetrics.productionScheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{vipMetrics.totalPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{vipMetrics.unscheduledPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{vipMetrics.scheduledPatients}</p>
@@ -5678,35 +5678,35 @@ const CourtStreetRCM = () => {
                       {/* Recare Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${recareMetrics.productionScheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{recareMetrics.totalPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{recareMetrics.unscheduledPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{recareMetrics.scheduledPatients}</p>
@@ -5839,35 +5839,35 @@ const CourtStreetRCM = () => {
                       {/* Treatment Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${treatmentMetrics.productionScheduled.toLocaleString()}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{treatmentMetrics.totalPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{treatmentMetrics.unscheduledPatients}</p>
                           </div>
                         </div>
                         <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-xl opacity-40 group-hover:opacity-100 transition-opacity duration-500"></div>
                           <div className="relative z-10">
                             <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
                             <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{treatmentMetrics.scheduledPatients}</p>

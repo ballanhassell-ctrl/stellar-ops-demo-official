@@ -38,28 +38,82 @@ body {
     box-shadow: var(--shadow-panel);
   }
 
+  /* ─── LIGHT MODE GLASS CARD ─── Full 3D: layered shadows + bevel + hover tilt */
   .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.25) 100%);
+    position: relative;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      rgba(255, 255, 255, 0.22) 100%
+    );
     backdrop-filter: blur(60px) saturate(180%) brightness(1.05);
     -webkit-backdrop-filter: blur(60px) saturate(180%) brightness(1.05);
     border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2),
-                0 20px 60px 0 rgba(31, 38, 135, 0.1),
-                0 2px 8px 0 rgba(255, 255, 255, 0.3),
-                0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.1) inset;
+    border-top: 1px solid rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(31, 38, 135, 0.08),
+      0 16px 40px rgba(31, 38, 135, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                border-color 0.4s ease;
   }
 
+  .glass-card:hover {
+    transform: perspective(800px) rotateX(1.5deg) translateY(-4px);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.06),
+      0 8px 20px rgba(31, 38, 135, 0.12),
+      0 24px 56px rgba(31, 38, 135, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+    border-top-color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* ─── DARK MODE GLASS CARD ─── Full 3D: layered shadows + bevel + hover tilt + glow */
   .glass-card-dark {
     position: relative;
-    background: linear-gradient(135deg, var(--glass-bg-primary) 0%, var(--glass-bg-secondary) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.01) 50%,
+      rgba(0, 0, 0, 0.05) 100%
+    ),
+    linear-gradient(135deg, var(--glass-bg-primary) 0%, var(--glass-bg-secondary) 100%);
     backdrop-filter: blur(var(--glass-blur-heavy)) saturate(160%);
     -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(160%);
     border: 1px solid var(--glass-border-strong);
-    box-shadow: var(--shadow-panel);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.15),
+      0 16px 40px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                border-color 0.4s ease;
   }
 
-  /* Smoked glass reflection layer */
+  .glass-card-dark:hover {
+    transform: perspective(800px) rotateX(1.5deg) translateY(-4px);
+    border-top-color: rgba(255, 255, 255, 0.18);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.25),
+      0 8px 20px rgba(0, 0, 0, 0.2),
+      0 24px 56px rgba(0, 0, 0, 0.25),
+      0 0 40px rgba(124, 92, 191, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  }
+
+  /* Smoked glass reflection sheen */
   .glass-card-dark::before {
     content: '';
     position: absolute;
@@ -70,7 +124,7 @@ body {
     border-radius: inherit;
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.05) 0%,
       rgba(255, 255, 255, 0.01) 40%,
       rgba(255, 255, 255, 0) 60%
     );
@@ -78,7 +132,7 @@ body {
     z-index: 0;
   }
 
-  /* Smoked glass refraction band */
+  /* Top refraction highlight band */
   .glass-card-dark::after {
     content: '';
     position: absolute;
@@ -88,12 +142,32 @@ body {
     height: 1px;
     background: linear-gradient(
       90deg, transparent,
-      rgba(255, 255, 255, 0.06),
-      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.03),
       transparent
     );
     pointer-events: none;
     z-index: 0;
+  }
+
+  /* ─── COLORED GLOW HALO ─── Sits behind cards for ambient depth */
+  .glow-halo {
+    position: relative;
+  }
+  .glow-halo::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+    background: var(--halo-color, rgba(124, 92, 191, 0.12));
+    filter: blur(16px);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .glow-halo:hover::before {
+    opacity: 1;
   }
 
   /* Ultra-transparent glass variants for glacier background visibility */
@@ -174,16 +248,18 @@ body {
   }
 
   .hover-lift {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                border-color 0.3s ease;
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                border-color 0.4s ease;
   }
 
   .hover-lift:hover {
-    transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25),
-                0 24px 80px 0 rgba(31, 38, 135, 0.15),
-                0 4px 12px 0 rgba(255, 255, 255, 0.4);
+    transform: perspective(800px) rotateX(1deg) translateY(-4px);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(31, 38, 135, 0.15),
+      0 24px 56px rgba(31, 38, 135, 0.12);
   }
 
   .hover-glow {
