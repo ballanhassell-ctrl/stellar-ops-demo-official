@@ -1,9 +1,16 @@
-import { ReactNode, useRef } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 
 type PixelDissolveCardProps = {
   children: ReactNode;
   className?: string;
   disabled?: boolean;
+};
+
+type GsapModule = {
+  timeline: (vars?: Record<string, unknown>) => {
+    to: (targets: unknown, vars: Record<string, unknown>, position?: string) => unknown;
+  };
+  killTweensOf: (targets: unknown) => void;
 };
 
 const GRID_SIZE = 4;
@@ -12,25 +19,52 @@ export default function PixelDissolveCard({ children, className = '', disabled =
   const cardRef = useRef<HTMLDivElement>(null);
   const pixelGridRef = useRef<HTMLDivElement>(null);
   const cleanupTimerRef = useRef<number | null>(null);
+  const animationTimeoutsRef = useRef<number[]>([]);
+  const gsapRef = useRef<GsapModule | null>(null);
 
-  const triggerDissolve = () => {
-    if (disabled || !cardRef.current || !pixelGridRef.current) return;
+  useEffect(() => {
+    let isMounted = true;
 
-    if (cleanupTimerRef.current) {
-      window.clearTimeout(cleanupTimerRef.current);
-      cleanupTimerRef.current = null;
-    }
+    import('gsap')
+      .then((module) => {
+        if (!isMounted) return;
+        gsapRef.current = (module as { gsap?: GsapModule; default?: GsapModule }).gsap
+          ?? (module as { default?: GsapModule }).default
+          ?? null;
+      })
+      .catch(() => {
+        gsapRef.current = null;
+      });
 
-    const pixelGrid = pixelGridRef.current;
-    const card = cardRef.current;
-    pixelGrid.innerHTML = '';
+    return () => {
+      isMounted = false;
+      animationTimeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
+      animationTimeoutsRef.current = [];
 
+      if (cleanupTimerRef.current) {
+        window.clearTimeout(cleanupTimerRef.current);
+        cleanupTimerRef.current = null;
+      }
+
+      if (cardRef.current && pixelGridRef.current) {
+        gsapRef.current?.killTweensOf([cardRef.current, ...Array.from(pixelGridRef.current.children)]);
+      }
+    };
+  }, []);
+
+  const clearAnimationTimers = () => {
+    animationTimeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
+    animationTimeoutsRef.current = [];
+  };
+
+  const buildPixelGrid = (pixelGrid: HTMLDivElement) => {
     const totalCells = GRID_SIZE * GRID_SIZE;
     const skipIndexes = new Set<number>();
     while (skipIndexes.size < 3) {
       skipIndexes.add(Math.floor(Math.random() * totalCells));
     }
 
+    pixelGrid.innerHTML = '';
     const pixels: HTMLDivElement[] = [];
 
     for (let row = 0; row < GRID_SIZE; row += 1) {
@@ -56,6 +90,63 @@ export default function PixelDissolveCard({ children, className = '', disabled =
       }
     }
 
+    return pixels;
+  };
+
+  const triggerDissolve = () => {
+    if (disabled || !cardRef.current || !pixelGridRef.current) return;
+
+    clearAnimationTimers();
+
+    if (cleanupTimerRef.current) {
+      window.clearTimeout(cleanupTimerRef.current);
+      cleanupTimerRef.current = null;
+    }
+
+    const pixelGrid = pixelGridRef.current;
+    const card = cardRef.current;
+    const pixels = buildPixelGrid(pixelGrid);
+    const gsap = gsapRef.current;
+
+    if (gsap) {
+      const shuffledPixels = [...pixels].sort(() => Math.random() - 0.5);
+      const staggerDuration = 0.45 / Math.max(shuffledPixels.length, 1);
+
+      gsap.killTweensOf([card, ...pixels]);
+
+      const timeline = gsap.timeline({ defaults: { overwrite: 'auto' } });
+      timeline.to(card, { scale: 0.995, duration: 0.2, ease: 'power2.in' });
+      timeline.to(
+        shuffledPixels,
+        {
+          opacity: (index: number) => {
+            const col = index % GRID_SIZE;
+            const row = Math.floor(index / GRID_SIZE);
+            const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
+            return 0.5 + normalizedPosition * 0.5;
+          },
+          duration: 0.2,
+          stagger: { each: staggerDuration, from: 'random' },
+          ease: 'power2.inOut',
+        },
+        '<',
+      );
+      timeline.to(shuffledPixels, { opacity: 0, duration: 0.3, ease: 'power2.out' });
+      timeline.to(
+        card,
+        {
+          scale: 1,
+          duration: 0.3,
+          ease: 'power2.out',
+          onComplete: () => {
+            pixelGrid.innerHTML = '';
+          },
+        },
+        '<',
+      );
+      return;
+    }
+
     card.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 1, 1)';
     card.style.transform = 'scale(0.995)';
 
@@ -74,10 +165,12 @@ export default function PixelDissolveCard({ children, className = '', disabled =
         pixel.style.opacity = `${peakOpacity}`;
       });
 
-      window.setTimeout(() => {
+      const fadeTimeout = window.setTimeout(() => {
         pixel.style.transition = 'opacity 300ms ease';
         pixel.style.opacity = '0';
       }, fadeDelayMs);
+
+      animationTimeoutsRef.current.push(fadeTimeout);
     });
 
     const totalDurationMs = shuffledPixels.length * 20 + 550;
