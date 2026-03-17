@@ -247,11 +247,11 @@ function generateManyPayments(): Partial<ScenarioOverrides> {
   // Add more EFT entries for the heavy day
   const today = getLocalDateString();
   const extraEFTs = [
-    { ...eftEntries[0], id: 'eft-extra-001', insurance_company: 'Delta Dental', payment_amount: 2850.00, payment_date: today, status: 'matched' as const },
-    { ...eftEntries[0], id: 'eft-extra-002', insurance_company: 'Cigna', payment_amount: 1920.00, payment_date: today, status: 'matched' as const },
-    { ...eftEntries[0], id: 'eft-extra-003', insurance_company: 'MetLife', payment_amount: 3100.00, payment_date: today, status: 'matched' as const },
-    { ...eftEntries[0], id: 'eft-extra-004', insurance_company: 'Guardian', payment_amount: 875.00, payment_date: today, status: 'unmatched' as const },
-    { ...eftEntries[0], id: 'eft-extra-005', insurance_company: 'UnitedHealthcare', payment_amount: 4200.00, payment_date: today, status: 'matched' as const },
+    { ...eftEntries[0], id: 'eft-extra-001', insurance_company: 'Delta Dental', payment_amount: 2850.00, payment_date: today, status: 'posted' as const },
+    { ...eftEntries[0], id: 'eft-extra-002', insurance_company: 'Cigna', payment_amount: 1920.00, payment_date: today, status: 'posted' as const },
+    { ...eftEntries[0], id: 'eft-extra-003', insurance_company: 'MetLife', payment_amount: 3100.00, payment_date: today, status: 'reconciled' as const },
+    { ...eftEntries[0], id: 'eft-extra-004', insurance_company: 'Guardian', payment_amount: 875.00, payment_date: today, status: 'pending' as const },
+    { ...eftEntries[0], id: 'eft-extra-005', insurance_company: 'UnitedHealthcare', payment_amount: 4200.00, payment_date: today, status: 'posted' as const },
   ];
 
   // Add more patient credits
@@ -295,9 +295,6 @@ function generateInsuranceHeavy(): Partial<ScenarioOverrides> {
 
   // Add more denied claims
   const deniedStatuses: Array<typeof claims[0]['status']> = ['Denied', 'Denied/2nd Appeal'];
-  const extraDeniedClaims = [
-    ...claims.filter(c => c.status === 'Denied' || c.status === 'Denied/2nd Appeal'),
-  ];
 
   // Generate additional denied claims
   const additionalDenied = Array.from({ length: 5 }, (_, i) => ({
@@ -326,7 +323,7 @@ function generateInsuranceHeavy(): Partial<ScenarioOverrides> {
     id: `extra-issue-${i + 1}`,
     patient_name: ['Bennett, Laura', 'Santos, Miguel', 'Park, Ji-Yeon', 'Williams, Tasha', 'Cohen, Rebecca', 'Okoro, Chidi', 'Reeves, Martin', 'Dunn, Catherine'][i],
     insurance_company: ['Aetna', 'Cigna', 'Delta Dental', 'MetLife', 'Guardian', 'UHC', 'BCBS', 'Humana'][i],
-    issue_type: ['Claim Denied', 'Missing Info', 'Pre-Auth Required', 'Coordination of Benefits', 'Timely Filing', 'Wrong Provider', 'Duplicate Claim', 'Patient Eligibility'][i],
+    issue_type: (['Needs Perio Chart', 'Invalid Tooth Code for Carrier', 'Pre-Auth Required', 'Needs Narrative', 'Need Provider Change', 'Invalid Tooth/Surface Code', 'Invalid Number of Surfaces', 'Other'] as const)[i],
     status: 'Open' as const,
     priority: (['high', 'medium', 'high', 'low', 'high', 'medium', 'low', 'high'] as const)[i],
     amount_at_risk: [3200, 1500, 4800, 850, 2100, 1950, 720, 5600][i],
