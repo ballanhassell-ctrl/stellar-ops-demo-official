@@ -1,4 +1,5 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useRef } from 'react';
+import { gsap } from 'gsap';
 
 type PixelDissolveCardProps = {
   children: ReactNode;
@@ -6,65 +7,24 @@ type PixelDissolveCardProps = {
   disabled?: boolean;
 };
 
-type GsapModule = {
-  timeline: (vars?: Record<string, unknown>) => {
-    to: (targets: unknown, vars: Record<string, unknown>, position?: string) => unknown;
-  };
-  killTweensOf: (targets: unknown) => void;
-};
-
 const GRID_SIZE = 4;
 
 export default function PixelDissolveCard({ children, className = '', disabled = false }: PixelDissolveCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const pixelGridRef = useRef<HTMLDivElement>(null);
-  const cleanupTimerRef = useRef<number | null>(null);
-  const animationTimeoutsRef = useRef<number[]>([]);
-  const gsapRef = useRef<GsapModule | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const triggerDissolve = () => {
+    if (disabled || !cardRef.current || !pixelGridRef.current) return;
 
-    import('gsap')
-      .then((module) => {
-        if (!isMounted) return;
-        gsapRef.current = (module as { gsap?: GsapModule; default?: GsapModule }).gsap
-          ?? (module as { default?: GsapModule }).default
-          ?? null;
-      })
-      .catch(() => {
-        gsapRef.current = null;
-      });
+    const pixelGrid = pixelGridRef.current;
+    pixelGrid.innerHTML = '';
 
-    return () => {
-      isMounted = false;
-      animationTimeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
-      animationTimeoutsRef.current = [];
-
-      if (cleanupTimerRef.current) {
-        window.clearTimeout(cleanupTimerRef.current);
-        cleanupTimerRef.current = null;
-      }
-
-      if (cardRef.current && pixelGridRef.current) {
-        gsapRef.current?.killTweensOf([cardRef.current, ...Array.from(pixelGridRef.current.children)]);
-      }
-    };
-  }, []);
-
-  const clearAnimationTimers = () => {
-    animationTimeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
-    animationTimeoutsRef.current = [];
-  };
-
-  const buildPixelGrid = (pixelGrid: HTMLDivElement) => {
     const totalCells = GRID_SIZE * GRID_SIZE;
     const skipIndexes = new Set<number>();
     while (skipIndexes.size < 3) {
       skipIndexes.add(Math.floor(Math.random() * totalCells));
     }
 
-    pixelGrid.innerHTML = '';
     const pixels: HTMLDivElement[] = [];
 
     for (let row = 0; row < GRID_SIZE; row += 1) {
@@ -90,96 +50,44 @@ export default function PixelDissolveCard({ children, className = '', disabled =
       }
     }
 
-    return pixels;
-  };
+    const staggerDuration = 0.45 / Math.max(pixels.length, 1);
 
-  const triggerDissolve = () => {
-    if (disabled || !cardRef.current || !pixelGridRef.current) return;
+    gsap.killTweensOf([cardRef.current, ...pixels]);
 
-    clearAnimationTimers();
-
-    if (cleanupTimerRef.current) {
-      window.clearTimeout(cleanupTimerRef.current);
-      cleanupTimerRef.current = null;
-    }
-
-    const pixelGrid = pixelGridRef.current;
-    const card = cardRef.current;
-    const pixels = buildPixelGrid(pixelGrid);
-    const gsap = gsapRef.current;
-
-    if (gsap) {
-      const shuffledPixels = [...pixels].sort(() => Math.random() - 0.5);
-      const staggerDuration = 0.45 / Math.max(shuffledPixels.length, 1);
-
-      gsap.killTweensOf([card, ...pixels]);
-
-      const timeline = gsap.timeline({ defaults: { overwrite: 'auto' } });
-      timeline.to(card, { scale: 0.995, duration: 0.2, ease: 'power2.in' });
-      timeline.to(
-        shuffledPixels,
-        {
-          opacity: (index: number) => {
-            const col = index % GRID_SIZE;
-            const row = Math.floor(index / GRID_SIZE);
-            const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
-            return 0.5 + normalizedPosition * 0.5;
-          },
-          duration: 0.2,
-          stagger: { each: staggerDuration, from: 'random' },
-          ease: 'power2.inOut',
-        },
-        '<',
-      );
-      timeline.to(shuffledPixels, { opacity: 0, duration: 0.3, ease: 'power2.out' });
-      timeline.to(
-        card,
-        {
-          scale: 1,
-          duration: 0.3,
-          ease: 'power2.out',
-          onComplete: () => {
-            pixelGrid.innerHTML = '';
-          },
-        },
-        '<',
-      );
-      return;
-    }
-
-    card.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 1, 1)';
-    card.style.transform = 'scale(0.995)';
-
-    const shuffledPixels = [...pixels].sort(() => Math.random() - 0.5);
-
-    shuffledPixels.forEach((pixel, index) => {
-      const col = index % GRID_SIZE;
-      const row = Math.floor(index / GRID_SIZE);
-      const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
-      const peakOpacity = 0.5 + normalizedPosition * 0.5;
-      const enterDelayMs = Math.floor(index * 20);
-      const fadeDelayMs = enterDelayMs + 200;
-
-      pixel.style.transition = `opacity 200ms ease ${enterDelayMs}ms`;
-      requestAnimationFrame(() => {
-        pixel.style.opacity = `${peakOpacity}`;
-      });
-
-      const fadeTimeout = window.setTimeout(() => {
-        pixel.style.transition = 'opacity 300ms ease';
-        pixel.style.opacity = '0';
-      }, fadeDelayMs);
-
-      animationTimeoutsRef.current.push(fadeTimeout);
+    const tl = gsap.timeline();
+    tl.to(cardRef.current, {
+      scale: 0.995,
+      duration: 0.2,
+      ease: 'power2.in',
     });
 
-    const totalDurationMs = shuffledPixels.length * 20 + 550;
-    cleanupTimerRef.current = window.setTimeout(() => {
-      pixelGrid.innerHTML = '';
-      card.style.transition = 'transform 300ms cubic-bezier(0, 0, 0.2, 1)';
-      card.style.transform = 'scale(1)';
-      cleanupTimerRef.current = null;
-    }, totalDurationMs);
+    tl.to(
+      pixels,
+      {
+        opacity: (index) => {
+          const col = index % GRID_SIZE;
+          const row = Math.floor(index / GRID_SIZE);
+          const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
+          return 0.5 + normalizedPosition * 0.5;
+        },
+        duration: 0.2,
+        stagger: { each: staggerDuration, from: 'random' },
+        ease: 'power2.inOut',
+      },
+      '<'
+    );
+
+    tl.to(pixels, {
+      opacity: 0,
+      duration: 0.3,
+      ease: 'power2.out',
+    });
+
+    tl.to(cardRef.current, {
+      scale: 1,
+      duration: 0.3,
+      ease: 'power2.out',
+    }, '<');
   };
 
   return (

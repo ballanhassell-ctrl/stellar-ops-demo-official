@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
@@ -859,14 +859,30 @@ const CourtStreetRCM = () => {
   const { data: weeklyScorecardData } = useWeeklyScorecardData(12);
 
   // Debounce date input changes to prevent refresh while user is typing
-  // Waits 3 seconds after user stops typing before triggering data refresh
+  // Waits 1.5 seconds after user stops changing before triggering data refresh
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDashboardDate(inputDate);
-    }, 3000);
+    }, 1500);
 
     return () => clearTimeout(timeoutId);
   }, [inputDate]);
+
+  // Immediately apply the date when the date picker loses focus (e.g. user
+  // selects a date from the native calendar popup and it closes).
+  const handleDateBlur = useCallback(() => {
+    if (inputDate && inputDate !== dashboardDate) {
+      setDashboardDate(inputDate);
+    }
+  }, [inputDate, dashboardDate]);
+
+  // Jump straight to today's date (for the circle/today button in native pickers
+  // or explicit "Today" buttons)
+  const goToToday = useCallback(() => {
+    const today = getLocalDateString();
+    setInputDate(today);
+    setDashboardDate(today);
+  }, []);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
@@ -2196,13 +2212,27 @@ const CourtStreetRCM = () => {
                       type="date"
                       value={inputDate}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputDate(e.target.value)}
+                      onBlur={handleDateBlur}
                       className={`px-3 sm:px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all min-h-[44px] ${
                         isDayMode
                           ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
                           : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                       } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
-                      title="Date input updates after 3 seconds"
+                      title="Select a date"
                     />
+                    {inputDate !== getLocalDateString() && (
+                      <button
+                        onClick={goToToday}
+                        className={`px-2.5 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] whitespace-nowrap ${
+                          isDayMode
+                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
+                            : 'bg-amber-900/30 text-amber-400 hover:bg-amber-900/50 border border-amber-800/30'
+                        }`}
+                        title="Go to today"
+                      >
+                        Today
+                      </button>
+                    )}
                     <button
                       onClick={refreshMetrics}
                       disabled={metricsLoading}
@@ -5187,13 +5217,27 @@ const CourtStreetRCM = () => {
                     type="date"
                     value={inputDate}
                     onChange={(e) => setInputDate(e.target.value)}
+                    onBlur={handleDateBlur}
                     className={`px-4 py-2 rounded-xl text-sm transition-all ${
                       isDayMode
                         ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
                         : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                     } focus:ring-2 focus:ring-gold-400 focus:outline-none`}
-                    title="Date input updates after 3 seconds"
+                    title="Select a date"
                   />
+                  {inputDate !== getLocalDateString() && (
+                    <button
+                      onClick={goToToday}
+                      className={`px-2 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+                        isDayMode
+                          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                          : 'bg-amber-900/30 text-amber-400 hover:bg-amber-900/50'
+                      }`}
+                      title="Go to today"
+                    >
+                      Today
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -6309,6 +6353,25 @@ const CourtStreetRCM = () => {
                       status: formData.get('status') as 'unscheduled' | 'scheduled',
                       notes: formData.get('notes') as string
                     };
+
+                    // Auto-resolve follow-up if new contact was added and follow-up is due
+                    const hasNewContact = (
+                      (!selectedSchedulingItem.firstContactDate && updatedItem.firstContactDate) ||
+                      (!selectedSchedulingItem.secondContactDate && updatedItem.secondContactDate) ||
+                      (!selectedSchedulingItem.thirdContactDate && updatedItem.thirdContactDate)
+                    );
+
+                    if (hasNewContact && isFollowUpDue(selectedSchedulingItem.followUpDate)) {
+                      // Update follow-up date to 7 days from now
+                      const newFollowUpDate = new Date();
+                      newFollowUpDate.setDate(newFollowUpDate.getDate() + 7);
+                      updatedItem.followUpDate = newFollowUpDate.toISOString().split('T')[0];
+
+                      // Append resolution note
+                      const resolutionNote = `\n[${new Date().toLocaleDateString()}] Follow-up resolved - contact made by ${updatedItem.employeeInitials}`;
+                      updatedItem.notes = (updatedItem.notes || '') + resolutionNote;
+                    }
+
                     try {
                       await updateSchedulingListItem(selectedSchedulingItem.id, recordToSchedulingItem(updatedItem));
                       // Update the appropriate list
@@ -7481,6 +7544,40 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
+
+                      // Auto-resolve follow-up if status change was made and follow-up is due
+                      if (updateType === 'status_change') {
+                        const claim = claims.find(c => c.id === updateTarget.id);
+                        if (claim && isFollowUpDue(claim.followUpDate)) {
+                          // Update follow-up date to 7 days from now
+                          const newFollowUpDate = new Date();
+                          newFollowUpDate.setDate(newFollowUpDate.getDate() + 7);
+                          const followUpDateStr = newFollowUpDate.toISOString().split('T')[0];
+
+                          await supabase
+                            .from('claims')
+                            .update({ follow_up_date: followUpDateStr })
+                            .eq('id', updateTarget.id);
+
+                          // Log the follow-up resolution
+                          await addClaimUpdate({
+                            claim_id: updateTarget.id,
+                            handler,
+                            update_type: 'general',
+                            old_status: null,
+                            new_status: null,
+                            old_amount: null,
+                            new_amount: null,
+                            notes: `Follow-up marked as resolved by ${handler}`
+                          });
+
+                          // Refresh the claims list to show updated follow-up date
+                          const updatedClaims = showArchivedClaims
+                            ? await getArchivedClaims()
+                            : await getActiveClaims();
+                          setClaims(updatedClaims.map(claimToRecord));
+                        }
+                      }
                     } else if (updateTarget.type === 'preauth') {
                       // If status is changing, update the actual record first
                       if (updateType === 'status_change' && newStatus) {
@@ -7512,6 +7609,40 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
+
+                      // Auto-resolve follow-up if status change was made and follow-up is due
+                      if (updateType === 'status_change') {
+                        const preAuth = preAuths.find(p => p.id === updateTarget.id);
+                        if (preAuth && isFollowUpDue(preAuth.followUpDate)) {
+                          // Update follow-up date to 7 days from now
+                          const newFollowUpDate = new Date();
+                          newFollowUpDate.setDate(newFollowUpDate.getDate() + 7);
+                          const followUpDateStr = newFollowUpDate.toISOString().split('T')[0];
+
+                          await supabase
+                            .from('pre_auths')
+                            .update({ follow_up_date: followUpDateStr })
+                            .eq('id', updateTarget.id);
+
+                          // Log the follow-up resolution
+                          await addPreAuthUpdate({
+                            pre_auth_id: updateTarget.id,
+                            handler,
+                            update_type: 'general',
+                            old_status: null,
+                            new_status: null,
+                            old_amount: null,
+                            new_amount: null,
+                            notes: `Follow-up marked as resolved by ${handler}`
+                          });
+
+                          // Refresh the pre-auths list to show updated follow-up date
+                          const updatedPreAuths = showArchivedPreAuths
+                            ? await getArchivedPreAuths()
+                            : await getActivePreAuths();
+                          setPreAuths(updatedPreAuths.map(preAuthToRecord));
+                        }
+                      }
                     } else {
                       // If status is changing, update the actual record first using direct Supabase call
                       if (updateType === 'status_change' && newStatus) {

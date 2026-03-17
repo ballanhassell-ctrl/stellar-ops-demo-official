@@ -252,6 +252,18 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
 
   const handleAddRecord = useCallback(async () => {
     if (!newForm.patient_name.trim() || !newForm.dos || !newForm.current_balance) return;
+
+    const currentBal = parseFloat(newForm.current_balance);
+    if (isNaN(currentBal) || currentBal < 0) {
+      setError('Current balance must be a valid positive number.');
+      return;
+    }
+    const originalBal = newForm.original_balance ? parseFloat(newForm.original_balance) : null;
+    if (originalBal !== null && (isNaN(originalBal) || originalBal < 0)) {
+      setError('Original balance must be a valid positive number.');
+      return;
+    }
+
     setSaving(true);
     try {
       const record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'> = {
@@ -313,7 +325,10 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
       setToastMessage('Patient A/R record added successfully');
     } catch (err) {
       console.error('Error adding patient AR:', err);
-      setError('Failed to add record. Please try again.');
+      const msg = err && typeof err === 'object' && 'message' in err
+        ? (err as { message: string }).message
+        : 'Unknown error';
+      setError(`Failed to add record: ${msg}`);
     } finally {
       setSaving(false);
     }

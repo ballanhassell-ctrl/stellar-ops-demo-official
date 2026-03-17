@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabaseClient';
 import { getLocalDateString } from '../utils/dateUtils';
 import type {
   PatientAR,
+  PatientARStatus,
   PatientARContact,
   PatientARPayment,
   PatientPaymentPlan,
@@ -21,6 +22,114 @@ import {
 } from '../data/sampleData';
 
 // =====================================================
+// SCHEMA DETECTION
+// Detects whether the revamped schema (with is_collectible,
+// contact tracking columns, etc.) has been applied.
+// =====================================================
+
+let _schemaVersion: 'revamped' | 'original' | null = null;
+
+// Columns that only exist after the revamp migration
+const REVAMP_ONLY_COLUMNS = [
+  'related_family', 'is_collectible', 'background_notes',
+  'team_discussion_notes', 'action_needed', 'dr_decision',
+  'first_contact_date', 'first_contact_initials',
+  'second_contact_date', 'second_contact_initials',
+  'final_contact_date', 'final_contact_initials',
+  'write_off_reason', 'collected_amount'
+];
+
+// Map new status values to original schema values
+const STATUS_TO_LEGACY: Record<string, string> = {
+  'not_started': 'active',
+  '1st_contact_made': 'active',
+  '2nd_contact_made': 'active',
+  'final_contact_made': 'collections',
+  'paid': 'paid',
+  'pending_writeoff': 'write_off_suggested',
+  'high_balance_alert': 'active',
+  'completed': 'archived',
+};
+
+// Map original schema status values to new values
+const STATUS_FROM_LEGACY: Record<string, PatientARStatus> = {
+  'active': 'not_started',
+  'collections': 'final_contact_made',
+  'paid': 'paid',
+  'written_off': 'completed',
+  'uncollectible': 'pending_writeoff',
+  'write_off_suggested': 'pending_writeoff',
+  'archived': 'completed',
+};
+
+async function detectPatientARSchema(): Promise<'revamped' | 'original'> {
+  if (_schemaVersion) return _schemaVersion;
+
+  try {
+    // Try selecting a column that only exists in the revamped schema
+    const { error } = await supabase
+      .from('patient_ar')
+      .select('is_collectible')
+      .limit(1);
+
+    _schemaVersion = error ? 'original' : 'revamped';
+  } catch {
+    _schemaVersion = 'original';
+  }
+
+  if (_schemaVersion === 'original') {
+    console.warn(
+      '[Patient A/R] Database is using the original schema. ' +
+      'Run supabase/migrations/revamp_patient_ar_table.sql on your ' +
+      'Supabase database to enable all features (contact tracking, collectibility, etc.).'
+    );
+  }
+
+  return _schemaVersion;
+}
+
+/**
+ * Normalize a raw DB row to a full PatientAR object,
+ * filling in defaults for columns that may be missing in the original schema.
+ */
+function normalizePatientAR(raw: Record<string, unknown>): PatientAR {
+  const rawStatus = raw.status as string;
+  const status: PatientARStatus =
+    STATUS_FROM_LEGACY[rawStatus] ?? (rawStatus as PatientARStatus) ?? 'not_started';
+
+  return {
+    id: raw.id as string,
+    patient_id: (raw.patient_id as string) ?? null,
+    patient_name: raw.patient_name as string,
+    related_family: (raw.related_family as string) ?? null,
+    dos: raw.dos as string,
+    original_balance: (raw.original_balance as number) ?? null,
+    current_balance: raw.current_balance as number,
+    aging_days: (raw.aging_days as number) ?? 0,
+    aging_bucket: (raw.aging_bucket as PatientAR['aging_bucket']) ?? '0-30',
+    is_collectible: (raw.is_collectible as boolean) ?? true,
+    status,
+    background_notes: (raw.background_notes as string) ?? null,
+    team_discussion_notes: (raw.team_discussion_notes as string) ?? null,
+    action_needed: (raw.action_needed as string) ?? null,
+    dr_decision: (raw.dr_decision as string) ?? null,
+    first_contact_date: (raw.first_contact_date as string) ?? null,
+    first_contact_initials: (raw.first_contact_initials as string) ?? null,
+    second_contact_date: (raw.second_contact_date as string) ?? null,
+    second_contact_initials: (raw.second_contact_initials as string) ?? null,
+    final_contact_date: (raw.final_contact_date as string) ?? null,
+    final_contact_initials: (raw.final_contact_initials as string) ?? null,
+    write_off_suggested_date: (raw.write_off_suggested_date as string) ?? null,
+    write_off_reason: (raw.write_off_reason as string) ?? null,
+    collected_amount: (raw.collected_amount as number) ?? 0,
+    created_by: raw.created_by as string,
+    created_at: raw.created_at as string | undefined,
+    updated_at: raw.updated_at as string | undefined,
+    updated_by: raw.updated_by as string,
+  };
+}
+
+// =====================================================
 // PATIENT A/R - CRUD OPERATIONS
 // =====================================================
 
@@ -31,6 +140,8 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
   if (isStaticDataMode()) {
     return [...samplePatientAR];
   }
+
+  const schema = await detectPatientARSchema();
 
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
@@ -58,6 +169,14 @@ export async function getActivePatientAR(): Promise<PatientAR[]> {
     return samplePatientAR.filter(ar => ar.is_collectible === true);
   }
 
+  const schema = await detectPatientARSchema();
+
+  if (schema === 'original') {
+    // Original schema has no is_collectible column; fetch all and filter in JS
+    const all = await getPatientARRecords();
+    return all.filter(r => r.is_collectible);
+  }
+
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
     .select('*')
@@ -78,6 +197,14 @@ export async function getActivePatientAR(): Promise<PatientAR[]> {
 export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
   if (isStaticDataMode()) {
     return samplePatientAR.filter(ar => ar.is_collectible === false);
+  }
+
+  const schema = await detectPatientARSchema();
+
+  if (schema === 'original') {
+    // Original schema has no is_collectible column; fetch all and filter in JS
+    const all = await getPatientARRecords();
+    return all.filter(r => !r.is_collectible);
   }
 
   const { data, error } = await supabase
@@ -182,7 +309,14 @@ export async function insertPatientAR(
     throw error;
   }
 
-  return data;
+  // Map the legacy response back to a full PatientAR shape
+  return normalizePatientAR({
+    ...data,
+    // Carry over the values the user provided even though they're not stored
+    is_collectible: record.is_collectible,
+    background_notes: record.background_notes,
+    action_needed: record.action_needed,
+  });
 }
 
 /**
@@ -222,7 +356,7 @@ export async function updatePatientAR(
     throw error;
   }
 
-  return data;
+  return schema === 'original' ? normalizePatientAR(data) : data;
 }
 
 /**
@@ -547,15 +681,24 @@ export async function rejectWriteOffSuggestion(
   }
 
   // Return patient_ar to collectible status
+  const schema = await detectPatientARSchema();
+  const rejectUpdate: Record<string, unknown> = schema === 'revamped'
+    ? {
+        status: 'not_started',
+        is_collectible: true,
+        write_off_suggested_date: null,
+        write_off_reason: null,
+        updated_by: reviewedBy
+      }
+    : {
+        status: 'active',
+        write_off_suggested_date: null,
+        updated_by: reviewedBy
+      };
+
   const { error: updateARError } = await supabase
     .from('patient_ar')
-    .update({
-      status: 'not_started',
-      is_collectible: true,
-      write_off_suggested_date: null,
-      write_off_reason: null,
-      updated_by: reviewedBy
-    })
+    .update(rejectUpdate)
     .eq('id', suggestion.patient_ar_id);
 
   if (updateARError) {
@@ -589,13 +732,14 @@ export async function batchMoveToCollections(
   ids: string[],
   movedBy: string
 ): Promise<PatientAR[]> {
+  const schema = await detectPatientARSchema();
+  const updatePayload: Record<string, unknown> = schema === 'revamped'
+    ? { status: 'pending_writeoff', is_collectible: false, updated_by: movedBy }
+    : { status: 'write_off_suggested', updated_by: movedBy };
+
   const { data, error } = await supabase
     .from('patient_ar')
-    .update({
-      status: 'pending_writeoff',
-      is_collectible: false,
-      updated_by: movedBy
-    })
+    .update(updatePayload)
     .in('id', ids)
     .select();
 
@@ -604,7 +748,9 @@ export async function batchMoveToCollections(
     throw error;
   }
 
-  return data || [];
+  return schema === 'original'
+    ? (data || []).map((row: Record<string, unknown>) => normalizePatientAR(row))
+    : data || [];
 }
 
 /**
