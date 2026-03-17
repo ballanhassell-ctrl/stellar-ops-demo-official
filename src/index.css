@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Sora:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,7 +11,7 @@
 
 body {
   margin: 0;
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -64,23 +64,19 @@ body {
 
   /* Ultra-transparent glass variants for glacier background visibility */
   .glass-eod-light {
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.12) 55%, rgba(255, 255, 255, 0.07) 100%);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.52);
-    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.14),
-                0 20px 60px rgba(30, 41, 59, 0.12),
-                0 1px 0 rgba(255, 255, 255, 0.62) inset;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: none;
   }
 
   .glass-eod-dark {
-    background: linear-gradient(140deg, rgba(17, 25, 40, 0.46) 0%, rgba(15, 20, 36, 0.34) 50%, rgba(10, 14, 28, 0.52) 100%);
-    backdrop-filter: blur(20px) saturate(170%);
-    -webkit-backdrop-filter: blur(20px) saturate(170%);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 12px 42px rgba(2, 6, 23, 0.52),
-                0 24px 72px rgba(30, 41, 59, 0.3),
-                0 1px 0 rgba(255, 255, 255, 0.16) inset;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
   }
 
   .glass-eod-ultra-light {
