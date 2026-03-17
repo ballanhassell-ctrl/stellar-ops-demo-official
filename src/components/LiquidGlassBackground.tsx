@@ -15,14 +15,6 @@ export const LiquidGlassBackground = () => {
       {/* Noise + glow overlay */}
       <div className={isDark ? 'liquid-glass-overlay liquid-glass-overlay-dark' : 'liquid-glass-overlay'} />
 
-
-      {isDark && (
-        <>
-          <div className="futuristic-grid-overlay" />
-          <div className="futuristic-spotlight" />
-        </>
-      )}
-
       {/* Floating orbs for depth - keep for both modes */}
       <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
         <div

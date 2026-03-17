@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,7 +11,7 @@
 
 body {
   margin: 0;
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -64,19 +64,23 @@ body {
 
   /* Ultra-transparent glass variants for glacier background visibility */
   .glass-eod-light {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px) saturate(120%);
-    -webkit-backdrop-filter: blur(12px) saturate(120%);
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    box-shadow: none;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.12) 55%, rgba(255, 255, 255, 0.07) 100%);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.14),
+                0 20px 60px rgba(30, 41, 59, 0.12),
+                0 1px 0 rgba(255, 255, 255, 0.62) inset;
   }
 
   .glass-eod-dark {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px) saturate(120%);
-    -webkit-backdrop-filter: blur(12px) saturate(120%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: none;
+    background: linear-gradient(140deg, rgba(17, 25, 40, 0.46) 0%, rgba(15, 20, 36, 0.34) 50%, rgba(10, 14, 28, 0.52) 100%);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 12px 42px rgba(2, 6, 23, 0.52),
+                0 24px 72px rgba(30, 41, 59, 0.3),
+                0 1px 0 rgba(255, 255, 255, 0.16) inset;
   }
 
   .glass-eod-ultra-light {
@@ -178,12 +182,12 @@ body {
 
   .liquid-glass-bg-dark {
     background:
-      radial-gradient(circle at 16% 16%, rgba(99, 102, 241, 0.22) 0%, transparent 36%),
-      radial-gradient(circle at 84% 18%, rgba(59, 130, 246, 0.2) 0%, transparent 34%),
-      radial-gradient(circle at 78% 78%, rgba(14, 165, 233, 0.16) 0%, transparent 42%),
-      linear-gradient(140deg, #000000 0%, #050714 35%, #090b16 70%, #020205 100%);
+      radial-gradient(circle at 16% 16%, rgba(244, 114, 182, 0.22) 0%, transparent 38%),
+      radial-gradient(circle at 84% 18%, rgba(251, 146, 60, 0.2) 0%, transparent 35%),
+      radial-gradient(circle at 78% 78%, rgba(56, 189, 248, 0.16) 0%, transparent 42%),
+      linear-gradient(135deg, #050714 0%, #0b1020 34%, #181c3a 64%, #2a1a3a 100%);
     background-size: 120% 120%;
-    animation: liquidGradient 20s ease infinite;
+    animation: liquidGradient 24s ease infinite;
   }
 
   @keyframes liquidGradient {
@@ -205,42 +209,6 @@ body {
       radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 55%);
   }
 
-
-  .futuristic-grid-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image:
-      linear-gradient(rgba(99, 102, 241, 0.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(99, 102, 241, 0.07) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(circle at 50% 35%, black 32%, transparent 80%);
-    opacity: 0.45;
-    animation: gridPulse 8s ease-in-out infinite;
-  }
-
-  .futuristic-spotlight {
-    position: fixed;
-    inset: -25%;
-    z-index: -1;
-    pointer-events: none;
-    background:
-      conic-gradient(from 180deg at 50% 50%, rgba(99, 102, 241, 0.22), rgba(15, 23, 42, 0), rgba(56, 189, 248, 0.2), rgba(15, 23, 42, 0), rgba(99, 102, 241, 0.22));
-    filter: blur(80px);
-    animation: spotlightSpin 24s linear infinite;
-  }
-
-  @keyframes spotlightSpin {
-    from { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.08); }
-    to { transform: rotate(360deg) scale(1); }
-  }
-
-  @keyframes gridPulse {
-    0%, 100% { opacity: 0.32; }
-    50% { opacity: 0.52; }
-  }
   .liquid-glass-overlay-dark {
     background:
       linear-gradient(155deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 45%),

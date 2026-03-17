@@ -2012,7 +2012,7 @@ const CourtStreetRCM = () => {
               {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <img
-                  src="/IMG_9537.PNG"
+                  src="/stellar-logo.jpg"
                   alt="Stellar Consults Logo"
                   className="hidden sm:block h-8 sm:h-10 w-auto object-contain"
                 />
@@ -2026,7 +2026,7 @@ const CourtStreetRCM = () => {
 
               {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
-                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.04em', fontFamily: 'Space Grotesk, sans-serif'}}>
+                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.03em', fontFamily: 'Sora, Manrope, sans-serif'}}>
                   Court Street Dental <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
                 </h1>
                 <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
@@ -2180,7 +2180,7 @@ const CourtStreetRCM = () => {
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{ fontFamily: 'Sora, Manrope, sans-serif' }}>
                       {getGreeting()}, Team! 👋
                     </h2>
                     <h3 className={`text-xl font-display font-bold ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
