@@ -62,16 +62,19 @@ export async function getTopProceduresForDateRange(
       return [];
     }
 
-    // Aggregate by procedure name and code
+    // Aggregate by procedure code only (codes are unique identifiers)
+    // This fixes issues where the same code might have slightly different names
     const aggregated = new Map<string, { procedure_name: string; procedure_code: string; count: number; revenue: number }>();
 
     data.forEach(proc => {
-      const key = `${proc.procedure_name}|${proc.procedure_code}`;
+      // Use procedure code as the key since that's the unique identifier
+      const key = proc.procedure_code;
       const existing = aggregated.get(key);
 
       if (existing) {
         existing.count += proc.count || 0;
         existing.revenue += proc.revenue || 0;
+        // Keep the first procedure name encountered for this code
       } else {
         aggregated.set(key, {
           procedure_name: proc.procedure_name,
@@ -83,9 +86,10 @@ export async function getTopProceduresForDateRange(
     });
 
     // Convert to array and sort by revenue
+    // Return more than 10 to allow frontend categorization into hygiene/operative
     return Array.from(aggregated.values())
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10); // Top 10
+      .slice(0, 50); // Top 50 to ensure enough for both categories
   } catch (err) {
     console.error('Error in getTopProceduresForDateRange:', err);
     return [];

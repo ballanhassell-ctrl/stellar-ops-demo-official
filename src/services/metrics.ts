@@ -1,5 +1,15 @@
 // src/services/metrics.ts
 import { supabase } from '../lib/supabaseClient';
+import { isStaticDataMode } from '../config/dataMode';
+import {
+  sampleWeeklyScorecardData,
+  sampleMonthlyNewPatients,
+  sampleNewPatientAggregates
+} from '../data/sampleData';
+
+// Cache for getMetricsForDate to prevent redundant fetches within the same session
+const metricsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 60000; // 1 minute cache
 
 export type MetricWithValue = {
   field_key: string;
@@ -18,16 +28,24 @@ export type MetricWithValue = {
 /**
  * Fetches the most recent value for a specific metric field_key
  * This is used for persistent metrics that should not reset on a new day
+ * For financing metrics, gets the last non-zero value
  */
-export async function getLatestMetricValue(fieldKey: string): Promise<number | null> {
+export async function getLatestMetricValue(fieldKey: string, skipZeros: boolean = false): Promise<number | null> {
   try {
-    const { data, error } = await supabase
+    const query = supabase
       .from('csd_metric_values')
       .select('value, as_of_date')
       .eq('field_key', fieldKey)
-      .order('as_of_date', { ascending: false })
-      .limit(1)
-      .single();
+      .order('as_of_date', { ascending: false });
+
+    // For financing amounts, skip zero values to get last meaningful amount
+    if (skipZeros) {
+      query.gt('value', 0).limit(1);
+    } else {
+      query.limit(1);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       console.warn(`No data found for ${fieldKey}:`, error.message);
@@ -44,20 +62,31 @@ export async function getLatestMetricValue(fieldKey: string): Promise<number | n
 /**
  * Fetches the latest values for multiple metric field_keys
  * Returns a map of field_key -> value
+ * For financing amount metrics, skips zero values to get last meaningful amount
  */
 export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<string, number>> {
   const results = new Map<string, number>();
 
+  // Financing amount metrics should skip zero values
+  const financingAmountKeys = ['financing_cherry_amount', 'financing_carecredit_amount'];
+
   try {
     // Fetch all the latest values in parallel
     const promises = fieldKeys.map(async (fieldKey) => {
-      const { data, error } = await supabase
+      const skipZeros = financingAmountKeys.includes(fieldKey);
+
+      const query = supabase
         .from('csd_metric_values')
         .select('value, as_of_date')
         .eq('field_key', fieldKey)
-        .order('as_of_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('as_of_date', { ascending: false });
+
+      // For financing amounts, skip zero values to get last meaningful amount
+      if (skipZeros) {
+        query.gt('value', 0);
+      }
+
+      const { data, error } = await query.limit(1).maybeSingle();
 
       if (!error && data) {
         results.set(fieldKey, data.value || 0);
@@ -77,7 +106,19 @@ export async function getLatestMetricValues(fieldKeys: string[]): Promise<Map<st
  * This is faster than aggregating from daily values
  */
 export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number; goal: number }>> {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    // For new patients, return the sample monthly data
+    if (fieldKey === 'eod_new_patients') {
+      return sampleMonthlyNewPatients.slice(-numMonths);
+    }
+    // For other fields, return empty array (can be extended later if needed)
+    return [];
+  }
+
   try {
+    console.log(`[getMonthlyTrends] Fetching ${numMonths} months of data for ${fieldKey}`);
+
     const { data, error } = await supabase
       .from('monthly_metric_trends')
       .select('year, month, month_name, value, goal_value')
@@ -85,6 +126,9 @@ export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6):
       .order('year', { ascending: false })
       .order('month', { ascending: false })
       .limit(numMonths);
+
+    console.log('[getMonthlyTrends] Raw data from database:', data);
+    console.log('[getMonthlyTrends] Data length:', data?.length);
 
     if (error) {
       console.warn('Error fetching monthly trends, falling back to daily aggregation:', error);
@@ -97,14 +141,109 @@ export async function getMonthlyTrends(fieldKey: string, numMonths: number = 6):
     }
 
     // Reverse to get chronological order (oldest to newest)
-    return data.reverse().map((record: any) => ({
+    const result = data.reverse().map((record: any) => ({
       month: record.month_name,
       year: record.year,
       count: record.value || 0,
       goal: record.goal_value || 0
     }));
+
+    console.log('[getMonthlyTrends] Formatted result:', result);
+    return result;
   } catch (err) {
     console.error('Error in getMonthlyTrends:', err);
+    return [];
+  }
+}
+
+/**
+ * Gets monthly new-patient totals for the last N months using eod_mtd_new_patients
+ * as the authoritative source. For each month, fetches the latest MTD value
+ * recorded within that month (the highest as_of_date entry).
+ * Falls back to monthly_metric_trends if no MTD data exists for a month.
+ */
+export async function getMonthlyNewPatientMTD(numMonths: number = 6): Promise<Array<{ month: string; year: number; count: number; goal: number }>> {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    return sampleMonthlyNewPatients.slice(-numMonths);
+  }
+
+  try {
+    const now = new Date();
+    const results: Array<{ month: string; year: number; count: number; goal: number }> = [];
+
+    // Build month ranges (oldest to newest)
+    const monthRanges: Array<{ year: number; month: number; monthStart: string; monthEnd: string; monthName: string }> = [];
+    for (let i = numMonths - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth(); // 0-indexed
+      const monthStart = date.toISOString().split('T')[0];
+      const lastDay = new Date(year, month + 1, 0);
+      // For current month, cap at today
+      const effectiveEnd = (year === now.getFullYear() && month === now.getMonth())
+        ? now
+        : lastDay;
+      const monthEnd = effectiveEnd.toISOString().split('T')[0];
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      monthRanges.push({ year, month: month + 1, monthStart, monthEnd, monthName });
+    }
+
+    console.log('[getMonthlyNewPatientMTD] Fetching MTD values for months:', monthRanges.map(m => m.monthName));
+
+    // Fetch the latest eod_mtd_new_patients for each month in parallel
+    const mtdQueries = monthRanges.map(range =>
+      supabase
+        .from('csd_metric_values')
+        .select('value, as_of_date')
+        .eq('field_key', 'eod_mtd_new_patients')
+        .gte('as_of_date', range.monthStart)
+        .lte('as_of_date', range.monthEnd)
+        .order('as_of_date', { ascending: false })
+        .limit(1)
+    );
+
+    // Also fetch monthly_metric_trends as fallback source
+    const trendsFallback = supabase
+      .from('monthly_metric_trends')
+      .select('year, month, month_name, value, goal_value')
+      .eq('field_key', 'eod_new_patients')
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .limit(numMonths);
+
+    const [trendsResult, ...mtdResults] = await Promise.all([trendsFallback, ...mtdQueries]);
+
+    // Build a lookup from monthly_metric_trends for fallback
+    const trendsMap = new Map<string, number>();
+    if (trendsResult?.data) {
+      trendsResult.data.forEach((record: any) => {
+        trendsMap.set(`${record.year}-${record.month}`, record.value || 0);
+      });
+    }
+
+    // For each month, prefer the MTD value, then fall back to monthly_metric_trends
+    monthRanges.forEach((range, index) => {
+      const mtdResult = mtdResults[index];
+      const mtdValue = mtdResult?.data?.[0]?.value;
+      const hasMTD = mtdValue != null && mtdValue > 0;
+      const trendValue = trendsMap.get(`${range.year}-${range.month}`) ?? 0;
+
+      const count = hasMTD ? mtdValue : trendValue;
+
+      results.push({
+        month: range.monthName,
+        year: range.year,
+        count,
+        goal: 40
+      });
+
+      console.log(`[getMonthlyNewPatientMTD] ${range.monthName}: MTD=${mtdValue ?? 'none'}, trend=${trendValue}, using=${count}`);
+    });
+
+    return results;
+  } catch (err) {
+    console.error('Error in getMonthlyNewPatientMTD:', err);
     return [];
   }
 }
@@ -212,90 +351,316 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
   }
 }
 
+// Quarter helper: returns label, date range, and 1-indexed month numbers
+function getQuarterInfo(year: number, quarterNum: number) {
+  const quarterNames = ['Q1', 'Q2', 'Q3', 'Q4'];
+  const quarterStartMonths = [0, 3, 6, 9]; // 0-indexed
+  const startMonth = quarterStartMonths[quarterNum - 1];
+  const startDate = new Date(year, startMonth, 1);
+  const endDate = new Date(year, startMonth + 3, 0); // last day of quarter
+  const startStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return {
+    label: `${quarterNames[quarterNum - 1]} ${year}`,
+    dateRange: `${startStr} - ${endStr}`,
+    months: [startMonth + 1, startMonth + 2, startMonth + 3], // 1-indexed for DB
+    quarterNum,
+    year
+  };
+}
+
+export interface NPAggregateResult {
+  perMonth: number | null;
+  perMonthStatus: string; // '' | 'Not calculated'
+  perWeek: number | null;
+  perWeekStatus: string;  // '' | 'Calculated at end of week' | 'Not calculated'
+  quarterly: number | null;
+  quarterlyStatus: string; // '' | 'Not calculated'
+  quarterlyLabel: string;        // e.g. "Q1 2026"
+  quarterlyDateRange: string;    // e.g. "Jan 1 - Mar 31"
+  priorQuarterly: number | null;
+  priorQuarterlyLabel: string;   // e.g. "Q4 2025"
+  priorQuarterlyDateRange: string;
+}
+
 /**
- * Aggregates new patient counts for various time periods
- * AUTO-CALCULATED from daily eod_new_patients values (Phase 2)
+ * Aggregates new patient counts for various time periods.
+ *
+ * Per Month:  Always uses eod_mtd_new_patients. No daily-sum fallback.
+ *             Shows "Not calculated" if no MTD data exists.
+ *
+ * Per Week:   Mon-Thu → status "Calculated at end of week" (no value).
+ *             Fri-Sun → sums eod_new_patients for Mon-Fri of current business week.
+ *             If no daily entries exist by Friday → "Not calculated".
+ *
+ * Quarterly:  Current quarter running total = prior completed months (eod_mtd_new_patients)
+ *             + current month (eod_mtd_new_patients). All months use MTD as source.
+ *             Also returns the prior completed quarter total with clear label.
  */
-export async function getNewPatientsAggregates() {
+export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    const today = new Date();
+    const currentQuarterNum = Math.floor(today.getMonth() / 3) + 1;
+    const currentQ = getQuarterInfo(today.getFullYear(), currentQuarterNum);
+    const priorQNum = currentQuarterNum === 1 ? 4 : currentQuarterNum - 1;
+    const priorQYear = currentQuarterNum === 1 ? today.getFullYear() - 1 : today.getFullYear();
+    const priorQ = getQuarterInfo(priorQYear, priorQNum);
+    return {
+      ...sampleNewPatientAggregates,
+      perMonthStatus: '',
+      perWeekStatus: '',
+      quarterlyStatus: '',
+      quarterlyLabel: currentQ.label,
+      quarterlyDateRange: currentQ.dateRange,
+      priorQuarterly: sampleNewPatientAggregates.quarterly,
+      priorQuarterlyLabel: priorQ.label,
+      priorQuarterlyDateRange: priorQ.dateRange,
+    };
+  }
+
   try {
-    console.log('[getNewPatientsAggregates] Auto-calculating from daily eod_new_patients values...');
+    console.log('[getNewPatientsAggregates] Calculating from eod_mtd_new_patients and daily values...');
 
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon ... 5=Fri, 6=Sat
 
-    // Calculate date ranges
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
-
+    // --- Date ranges ---
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
 
-    // Calculate current calendar quarter (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec)
+    // Current business week (Mon-Fri)
+    // getDay(): 0=Sun,1=Mon..6=Sat  →  daysFromMonday: Mon=0..Sun=6
+    const daysFromMonday = (dayOfWeek + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysFromMonday);
+    const mondayStr = monday.toISOString().split('T')[0];
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+    const fridayStr = friday.toISOString().split('T')[0];
+
+    // --- Quarter info ---
     const currentMonth = today.getMonth(); // 0-11
-    const quarterStartMonth = Math.floor(currentMonth / 3) * 3; // 0, 3, 6, or 9
-    const quarterStart = new Date(today.getFullYear(), quarterStartMonth, 1);
-    const quarterEnd = new Date(today.getFullYear(), quarterStartMonth + 3, 0); // Last day of quarter
+    const currentQuarterNum = Math.floor(currentMonth / 3) + 1;
+    const currentQ = getQuarterInfo(today.getFullYear(), currentQuarterNum);
 
-    console.log('[getNewPatientsAggregates] Calendar quarter:', {
-      start: quarterStart.toISOString().split('T')[0],
-      end: quarterEnd.toISOString().split('T')[0],
-      quarter: `Q${Math.floor(currentMonth / 3) + 1}`
+    // Prior quarter
+    const priorQNum = currentQuarterNum === 1 ? 4 : currentQuarterNum - 1;
+    const priorQYear = currentQuarterNum === 1 ? today.getFullYear() - 1 : today.getFullYear();
+    const priorQ = getQuarterInfo(priorQYear, priorQNum);
+
+    // Prior months in the CURRENT quarter (excluding current month, 1-indexed)
+    const priorMonthsInCurrentQuarter = currentQ.months.filter(m => m < currentMonth + 1);
+
+    console.log('[getNewPatientsAggregates] Quarter info:', {
+      current: currentQ.label, currentMonths: currentQ.months,
+      prior: priorQ.label, priorMonths: priorQ.months,
+      priorMonthsInCurrentQuarter,
+      dayOfWeek, daysFromMonday, mondayStr, fridayStr
     });
 
-    // Fetch daily new patient data for different time ranges
-    const [weekData, monthData, quarterData] = await Promise.all([
-      // Last 7 days
-      supabase
-        .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+    // --- Fetch all data in parallel ---
+    const isFriOrLater = dayOfWeek >= 5 || dayOfWeek === 0; // Fri=5, Sat=6, Sun=0
 
-      // Current month (from start of month to today)
-      supabase
-        .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', monthStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+    // Helper: build queries to get latest eod_mtd_new_patients for a list of months
+    // Each month gets its own query fetching the latest MTD entry within that month
+    const buildMTDQueriesForMonths = (months: number[], year: number) =>
+      months.map(m => {
+        const mStart = new Date(year, m - 1, 1); // m is 1-indexed
+        const mEnd = new Date(year, m, 0); // last day of month
+        return supabase
+          .from('csd_metric_values')
+          .select('value, as_of_date')
+          .eq('field_key', 'eod_mtd_new_patients')
+          .gte('as_of_date', mStart.toISOString().split('T')[0])
+          .lte('as_of_date', mEnd.toISOString().split('T')[0])
+          .order('as_of_date', { ascending: false })
+          .limit(1);
+      });
 
-      // Current calendar quarter (from start of quarter to today)
+    // All months we need for quarterly calculations (for fallback lookup)
+    const allQuarterMonths = [
+      ...priorMonthsInCurrentQuarter.map(m => ({ month: m, year: today.getFullYear() })),
+      ...priorQ.months.map(m => ({ month: m, year: priorQ.year })),
+    ];
+
+    // Build MTD queries for prior months in current quarter
+    const priorMonthMTDQueries = buildMTDQueriesForMonths(priorMonthsInCurrentQuarter, today.getFullYear());
+    // Build MTD queries for all 3 months of the prior quarter
+    const priorQuarterMTDQueries = buildMTDQueriesForMonths(priorQ.months, priorQ.year);
+
+    const [
+      mtdCurrentMonth,
+      weekDailyData,
+      trendsFallback,
+      ...quarterMTDResults
+    ] = await Promise.all([
+      // Latest eod_mtd_new_patients for the current month (authoritative MTD total)
       supabase
         .from('csd_metric_values')
-        .select('value')
-        .eq('field_key', 'eod_new_patients')
-        .gte('as_of_date', quarterStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .select('value, as_of_date')
+        .eq('field_key', 'eod_mtd_new_patients')
+        .gte('as_of_date', monthStartStr)
+        .lte('as_of_date', todayStr)
+        .order('as_of_date', { ascending: false })
+        .limit(1),
+
+      // Daily eod_new_patients for Mon-Fri of this business week (only needed Fri-Sun)
+      isFriOrLater
+        ? supabase
+            .from('csd_metric_values')
+            .select('value, as_of_date')
+            .eq('field_key', 'eod_new_patients')
+            .gte('as_of_date', mondayStr)
+            .lte('as_of_date', fridayStr)
+        : Promise.resolve({ data: [], error: null }),
+
+      // Fallback: monthly_metric_trends for all quarterly months (used when eod_mtd_new_patients is missing)
+      allQuarterMonths.length > 0
+        ? supabase
+            .from('monthly_metric_trends')
+            .select('value, month, year, month_name')
+            .eq('field_key', 'eod_new_patients')
+            .or(allQuarterMonths.map(m => `and(year.eq.${m.year},month.eq.${m.month})`).join(','))
+        : Promise.resolve({ data: [], error: null }),
+
+      // Prior months in current quarter (eod_mtd_new_patients per month)
+      ...priorMonthMTDQueries,
+
+      // All 3 months of the prior quarter (eod_mtd_new_patients per month)
+      ...priorQuarterMTDQueries,
     ]);
 
-    // Sum up the values
-    const sumValues = (data: any) => {
-      return data?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
-    };
+    // Split the quarterMTDResults back into current-quarter-prior-months and prior-quarter
+    const priorMonthMTDResults = quarterMTDResults.slice(0, priorMonthMTDQueries.length);
+    const priorQuarterMTDResults = quarterMTDResults.slice(priorMonthMTDQueries.length);
 
-    const perWeek = sumValues(weekData);
-    const perMonth = sumValues(monthData);
-    const quarterly = sumValues(quarterData);
+    // Build fallback lookup from monthly_metric_trends
+    const trendsMap = new Map<string, number>();
+    if (trendsFallback?.data) {
+      trendsFallback.data.forEach((record: any) => {
+        trendsMap.set(`${record.year}-${record.month}`, record.value || 0);
+      });
+    }
 
-    console.log('[getNewPatientsAggregates] Auto-calculated from daily values:', {
-      perWeek,
-      perMonth,
-      quarterly,
-      weekRecords: weekData?.data?.length || 0,
-      monthRecords: monthData?.data?.length || 0,
-      quarterRecords: quarterData?.data?.length || 0
+    const sumValues = (result: any) =>
+      result?.data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+
+    // Helper: for an array of MTD query results + corresponding month info,
+    // use MTD value if available, otherwise fall back to monthly_metric_trends
+    const sumWithFallback = (results: any[], months: number[], year: number) =>
+      results.reduce((total, r, i) => {
+        const mtdVal = r?.data?.[0]?.value;
+        if (mtdVal != null && mtdVal > 0) return total + mtdVal;
+        // Fallback to monthly_metric_trends
+        const trendVal = trendsMap.get(`${year}-${months[i]}`) ?? 0;
+        return total + trendVal;
+      }, 0);
+
+    // ========== PER MONTH ==========
+    // ONLY use eod_mtd_new_patients. No daily-sum fallback.
+    const latestMTDValue = mtdCurrentMonth?.data?.[0]?.value;
+    const hasMTD = latestMTDValue != null && latestMTDValue > 0;
+    const perMonth = hasMTD ? latestMTDValue : null;
+    const perMonthStatus = hasMTD ? '' : 'Not calculated';
+
+    console.log('[getNewPatientsAggregates] perMonth:', {
+      mtdValue: latestMTDValue,
+      mtdDate: mtdCurrentMonth?.data?.[0]?.as_of_date,
+      final: perMonth, status: perMonthStatus
+    });
+
+    // ========== PER WEEK ==========
+    // Mon-Thu: "Calculated at end of week"
+    // Fri/Sat/Sun: sum daily eod_new_patients for Mon-Fri; if none → "Not calculated"
+    let perWeek: number | null = null;
+    let perWeekStatus = '';
+
+    if (!isFriOrLater) {
+      // Monday through Thursday
+      perWeekStatus = 'Calculated at end of week';
+    } else {
+      // Friday, Saturday, or Sunday — calculate from this week's Mon-Fri dailies
+      const weekSum = sumValues(weekDailyData);
+      const hasWeekData = weekDailyData?.data && weekDailyData.data.length > 0;
+
+      if (hasWeekData && weekSum > 0) {
+        perWeek = weekSum;
+        perWeekStatus = '';
+      } else {
+        perWeekStatus = 'Not calculated';
+      }
+    }
+
+    console.log('[getNewPatientsAggregates] perWeek:', {
+      dayOfWeek, isFriOrLater,
+      weekDailyRecords: weekDailyData?.data?.length,
+      final: perWeek, status: perWeekStatus
+    });
+
+    // ========== QUARTERLY ==========
+    // Current quarter running total = prior completed months in quarter + current month MTD
+    // Each month: try eod_mtd_new_patients first, fall back to monthly_metric_trends
+    const priorMonthsTotal = sumWithFallback(priorMonthMTDResults, priorMonthsInCurrentQuarter, today.getFullYear());
+    const currentMonthMTD = perMonth ?? 0;
+    const quarterly = priorMonthsTotal + currentMonthMTD;
+    const quarterlyStatus = (priorMonthsTotal === 0 && currentMonthMTD === 0) ? 'Not calculated' : '';
+
+    // Prior quarter: same fallback logic
+    const priorQuarterly = sumWithFallback(priorQuarterMTDResults, priorQ.months, priorQ.year);
+    const hasPriorQuarterData = priorQuarterly > 0;
+
+    console.log('[getNewPatientsAggregates] quarterly:', {
+      priorMonthsInQuarter: priorMonthsTotal,
+      priorMonthDetails: priorMonthsInCurrentQuarter.map((m, i) => {
+        const mtdVal = priorMonthMTDResults[i]?.data?.[0]?.value;
+        const trendVal = trendsMap.get(`${today.getFullYear()}-${m}`) ?? 0;
+        return { month: m, mtd: mtdVal ?? 'none', trend: trendVal, used: (mtdVal != null && mtdVal > 0) ? mtdVal : trendVal };
+      }),
+      currentMonthMTD,
+      currentQuarterTotal: quarterly,
+      priorQuarterTotal: priorQuarterly,
+      priorQuarterDetails: priorQ.months.map((m: number, i: number) => {
+        const mtdVal = priorQuarterMTDResults[i]?.data?.[0]?.value;
+        const trendVal = trendsMap.get(`${priorQ.year}-${m}`) ?? 0;
+        return { month: m, mtd: mtdVal ?? 'none', trend: trendVal, used: (mtdVal != null && mtdVal > 0) ? mtdVal : trendVal };
+      })
     });
 
     return {
-      perWeek,
       perMonth,
-      quarterly
+      perMonthStatus,
+      perWeek,
+      perWeekStatus,
+      quarterly: quarterlyStatus === '' ? quarterly : null,
+      quarterlyStatus,
+      quarterlyLabel: currentQ.label,
+      quarterlyDateRange: currentQ.dateRange,
+      priorQuarterly: hasPriorQuarterData ? priorQuarterly : null,
+      priorQuarterlyLabel: priorQ.label,
+      priorQuarterlyDateRange: priorQ.dateRange,
     };
   } catch (err) {
     console.error('Error in getNewPatientsAggregates:', err);
+    const today = new Date();
+    const currentQuarterNum = Math.floor(today.getMonth() / 3) + 1;
+    const currentQ = getQuarterInfo(today.getFullYear(), currentQuarterNum);
+    const priorQNum = currentQuarterNum === 1 ? 4 : currentQuarterNum - 1;
+    const priorQYear = currentQuarterNum === 1 ? today.getFullYear() - 1 : today.getFullYear();
+    const priorQ = getQuarterInfo(priorQYear, priorQNum);
     return {
-      perWeek: 0,
-      perMonth: 0,
-      quarterly: 0
+      perMonth: null,
+      perMonthStatus: 'Not calculated',
+      perWeek: null,
+      perWeekStatus: 'Not calculated',
+      quarterly: null,
+      quarterlyStatus: 'Not calculated',
+      quarterlyLabel: currentQ.label,
+      quarterlyDateRange: currentQ.dateRange,
+      priorQuarterly: null,
+      priorQuarterlyLabel: priorQ.label,
+      priorQuarterlyDateRange: priorQ.dateRange,
     };
   }
 }
@@ -349,6 +714,49 @@ export async function getPaymentAggregates() {
       perWeek: 0,
       perMonth: 0,
     };
+  }
+}
+
+/**
+ * Gets BAM cycle revenue for a specific cycle date range
+ * Filters revenue entries by as_of_date within the cycle and sums them
+ * Returns 0 if no data exists for the cycle (new cycle with no data entered yet)
+ */
+export async function getBAMCycleRevenue(cycleStartDate: Date | null, cycleEndDate: Date | null): Promise<number> {
+  try {
+    // If no cycle dates provided, return 0
+    if (!cycleStartDate || !cycleEndDate) {
+      console.log('[getBAMCycleRevenue] No cycle dates provided, returning 0');
+      return 0;
+    }
+
+    const startDateStr = cycleStartDate.toISOString().split('T')[0];
+    const endDateStr = cycleEndDate.toISOString().split('T')[0];
+
+    console.log('[getBAMCycleRevenue] Fetching BAM revenue for cycle:', startDateStr, 'to', endDateStr);
+
+    // Fetch all bam_current_revenue entries within the cycle date range
+    const { data, error } = await supabase
+      .from('csd_metric_values')
+      .select('value, as_of_date')
+      .eq('field_key', 'bam_current_revenue')
+      .gte('as_of_date', startDateStr)
+      .lte('as_of_date', endDateStr);
+
+    if (error) {
+      console.error('[getBAMCycleRevenue] Error fetching BAM cycle revenue:', error);
+      return 0;
+    }
+
+    // Sum up all revenue entries for this cycle
+    const totalRevenue = data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+
+    console.log('[getBAMCycleRevenue] Found', data?.length || 0, 'entries, total revenue:', totalRevenue);
+
+    return totalRevenue;
+  } catch (err) {
+    console.error('[getBAMCycleRevenue] Unexpected error:', err);
+    return 0;
   }
 }
 
@@ -414,6 +822,31 @@ export async function getClaimsTotals() {
 }
 
 export async function getMetricsForDate(date: string) {
+  // Include data mode in cache key to prevent stale data when switching modes
+  const dataMode = isStaticDataMode() ? 'static' : 'live';
+  const cacheKey = `${date}-${dataMode}`;
+
+  // Check cache first
+  const cached = metricsCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log(`Using cached ${dataMode} metrics for date:`, date);
+    return cached.data;
+  }
+
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    const { sampleProviderMetrics } = await import('../data/sampleData');
+    // Update the date to match the requested date
+    const staticData = sampleProviderMetrics.map(metric => ({
+      ...metric,
+      as_of_date: date
+    }));
+
+    // Cache the static data
+    metricsCache.set(cacheKey, { data: staticData, timestamp: Date.now() });
+    return staticData;
+  }
+
   console.log('Fetching metrics for date:', date);
 
   try {
@@ -472,6 +905,10 @@ export async function getMetricsForDate(date: string) {
     }));
 
     console.log('Client-side joined data:', joined.length, 'records');
+
+    // Cache the result with data mode in key
+    metricsCache.set(cacheKey, { data: joined, timestamp: Date.now() });
+
     return joined;
   } catch (err) {
     console.error('Unexpected error in getMetricsForDate:', err);
@@ -484,6 +921,11 @@ export async function getMetricsForDate(date: string) {
  * Aggregates daily metrics into weekly summaries
  */
 export async function getWeeklyScorecardData(numWeeks: number = 12) {
+  // Return static sample data if in static mode
+  if (isStaticDataMode()) {
+    return sampleWeeklyScorecardData.slice(-numWeeks);
+  }
+
   try {
     const today = new Date();
     const startDate = new Date(today);

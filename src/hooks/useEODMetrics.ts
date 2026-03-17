@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getMetricsForDate, getLatestMetricValues } from '../services/metrics';
+import { getMetricsForDate, getLatestMetricValues, type MetricWithValue } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
 import { getRealTimeActionItems } from '../services/actionItems';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleEODData } from '../data/sampleData';
 
 export interface EODData {
   reportDate: string;
@@ -28,15 +30,14 @@ export interface EODData {
   patientsSeenToday: number;
   newPatients: number;
   proceduresCompleted: number;
-  unbilledProcedures: number;
   unappliedPayments: number;
-  failedTransactions: number;
   actionItems: {
     claimsToSubmit: number;
     deniedClaimsToResubmit: number;
     preAuthsApproved: number;
     accountsNeedingFollowUp: number;
     missedAppointments: number;
+    patientsDueForRecall: number;
   };
   payments: any[]; // Keep as array for now (not stored in Supabase)
   topProcedures: any[]; // Keep as array for now (not stored in Supabase)
@@ -59,6 +60,13 @@ export const useEODMetrics = (date: string) => {
       setLoading(true);
       setError(null);
 
+      // Return static sample data if in static mode
+      if (isStaticDataMode()) {
+        setData({ ...sampleEODData, reportDate: targetDate });
+        setLoading(false);
+        return;
+      }
+
       const metrics = await getMetricsForDate(targetDate);
 
       // Define persistent metrics for EOD data (metrics that should show latest value)
@@ -75,7 +83,7 @@ export const useEODMetrics = (date: string) => {
 
       // Helper function to find metric value by field_key
       const getMetricValue = (fieldKey: string, defaultValue: number = 0, usePersistent: boolean = false): number => {
-        const metric = metrics.find(m => m.field_key === fieldKey);
+        const metric = metrics.find((m: MetricWithValue) => m.field_key === fieldKey);
         const currentValue = metric ? metric.value : 0;
 
         // If this is a persistent metric and we don't have data for the current date, use latest
@@ -157,9 +165,7 @@ export const useEODMetrics = (date: string) => {
         patientsSeenToday: getMetricValue('eod_patients_seen'),
         newPatients: getMetricValue('eod_new_patients', 0, true), // Use persistent data
         proceduresCompleted: getMetricValue('eod_procedures_completed'),
-        unbilledProcedures: getMetricValue('eod_unbilled_procedures'),
-        unappliedPayments: getMetricValue('eod_unapplied_payments'),
-        failedTransactions: getMetricValue('eod_failed_transactions'),
+        unappliedPayments: getMetricValue('unapplied_credits'),
 
         // Action Items - Real-time data from RCM Management
         actionItems: {
@@ -168,6 +174,7 @@ export const useEODMetrics = (date: string) => {
           preAuthsApproved: realTimeActionItems.preAuthsApproved,
           accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
           missedAppointments: realTimeActionItems.missedAppointments,
+          patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
         },
 
         // Arrays (not stored in Supabase for now)

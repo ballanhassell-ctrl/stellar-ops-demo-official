@@ -1,12 +1,21 @@
 // src/services/schedulingService.ts
 import { supabase } from '../lib/supabaseClient';
 import type { SchedulingListItem } from '../types/database.types';
+import { isStaticDataMode } from '../config/dataMode';
+import { sampleSchedulingListItems } from '../data/sampleData';
 
 // =====================================================
 // SCHEDULING LIST CRUD OPERATIONS
 // =====================================================
 
 export async function getSchedulingListItems(listType?: 'vip' | 'recare' | 'treatment') {
+  if (isStaticDataMode()) {
+    if (listType) {
+      return sampleSchedulingListItems.filter(item => item.list_type === listType);
+    }
+    return [...sampleSchedulingListItems];
+  }
+
   let query = supabase
     .from('scheduling_list_items')
     .select('*')
