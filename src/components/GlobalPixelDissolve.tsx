@@ -2,10 +2,6 @@ import { useEffect } from 'react';
 
 const CARD_SELECTOR = '.glass-card, .glass-card-dark, .glass-eod-light, .glass-eod-dark';
 const GRID_SIZE = 4;
-const PIXEL_STAGGER_MS = 12;
-const PIXEL_RISE_MS = 140;
-const PIXEL_FALL_MS = 240;
-const OVERLAY_FADE_MS = 220;
 
 const createPixels = () => {
   const overlay = document.createElement('div');
@@ -76,87 +72,60 @@ export default function GlobalPixelDissolve() {
         const row = Math.floor(index / GRID_SIZE);
         const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
         const peakOpacity = 0.5 + normalizedPosition * 0.5;
-        const enterDelayMs = index * PIXEL_STAGGER_MS;
+        const enterDelayMs = index * 20;
 
-        pixel.style.transition = `opacity ${PIXEL_RISE_MS}ms ease ${enterDelayMs}ms`;
+        pixel.style.transition = `opacity 200ms ease ${enterDelayMs}ms`;
         requestAnimationFrame(() => {
           pixel.style.opacity = `${peakOpacity}`;
         });
 
         window.setTimeout(() => {
-          pixel.style.transition = `opacity ${PIXEL_FALL_MS}ms ease`;
+          pixel.style.transition = 'opacity 300ms ease';
           pixel.style.opacity = '0';
-        }, enterDelayMs + PIXEL_RISE_MS);
+        }, enterDelayMs + 200);
       });
 
-      const animationDurationMs = shuffled.length * PIXEL_STAGGER_MS + PIXEL_RISE_MS + PIXEL_FALL_MS;
-
       const cleanup = window.setTimeout(() => {
-        overlay.style.transition = `opacity ${OVERLAY_FADE_MS}ms ease`;
-        overlay.style.opacity = '0';
-
-        window.setTimeout(() => {
-          overlay.remove();
-          timeoutMap.delete(target);
-        }, OVERLAY_FADE_MS);
-      }, animationDurationMs);
+        overlay.remove();
+        timeoutMap.delete(target);
+      }, shuffled.length * 20 + 550);
 
       timeoutMap.set(target, cleanup);
     };
 
-    const bindCard = (card: HTMLElement) => {
-      if (card.dataset.pixelDissolveBound === 'true' || card.dataset.pixelDissolveDisabled === 'true') return;
-      card.dataset.pixelDissolveBound = 'true';
-      card.addEventListener('mouseleave', handleLeave);
+    const wireCards = () => {
+      document.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach((card) => {
+        if (card.dataset.pixelDissolveBound === 'true') return;
+        card.dataset.pixelDissolveBound = 'true';
+        card.addEventListener('mouseleave', handleLeave);
+      });
     };
 
-    const cleanupCard = (card: HTMLElement) => {
-      if (card.dataset.pixelDissolveBound === 'true') {
-        card.removeEventListener('mouseleave', handleLeave);
-        delete card.dataset.pixelDissolveBound;
-      }
+    wireCards();
 
-      const existingTimeout = timeoutMap.get(card);
-      if (existingTimeout) {
-        window.clearTimeout(existingTimeout);
-        timeoutMap.delete(card);
-      }
-
-      card.querySelectorAll(':scope > [data-pixel-dissolve-overlay="true"]').forEach((node) => node.remove());
-    };
-
-    document.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(bindCard);
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        mutation.addedNodes.forEach((node) => {
-          if (!(node instanceof HTMLElement)) return;
-          if (node.dataset.pixelDissolveOverlay === 'true') return;
-
-          if (node.matches(CARD_SELECTOR)) {
-            bindCard(node);
-          }
-
-          node.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(bindCard);
-        });
-
-        mutation.removedNodes.forEach((node) => {
-          if (!(node instanceof HTMLElement)) return;
-
-          if (node.matches(CARD_SELECTOR)) {
-            cleanupCard(node);
-          }
-
-          node.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(cleanupCard);
-        });
-      }
+    const observer = new MutationObserver(() => {
+      wireCards();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       observer.disconnect();
-      document.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(cleanupCard);
+
+      document.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach((card) => {
+        if (card.dataset.pixelDissolveBound === 'true') {
+          card.removeEventListener('mouseleave', handleLeave);
+          delete card.dataset.pixelDissolveBound;
+        }
+
+        const existingTimeout = timeoutMap.get(card);
+        if (existingTimeout) {
+          window.clearTimeout(existingTimeout);
+          timeoutMap.delete(card);
+        }
+
+        card.querySelectorAll(':scope > [data-pixel-dissolve-overlay="true"]').forEach((node) => node.remove());
+      });
     };
   }, []);
 

@@ -114,7 +114,7 @@ export default function PixelDissolveCard({ children, className = '', disabled =
 
     if (gsap) {
       const shuffledPixels = [...pixels].sort(() => Math.random() - 0.5);
-      const staggerDuration = 0.3 / Math.max(shuffledPixels.length, 1);
+      const staggerDuration = 0.45 / Math.max(shuffledPixels.length, 1);
 
       gsap.killTweensOf([card, ...pixels]);
 
@@ -129,13 +129,13 @@ export default function PixelDissolveCard({ children, className = '', disabled =
             const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
             return 0.5 + normalizedPosition * 0.5;
           },
-          duration: 0.14,
+          duration: 0.2,
           stagger: { each: staggerDuration, from: 'random' },
           ease: 'power2.inOut',
         },
         '<',
       );
-      timeline.to(shuffledPixels, { opacity: 0, duration: 0.24, ease: 'power2.out' });
+      timeline.to(shuffledPixels, { opacity: 0, duration: 0.3, ease: 'power2.out' });
       timeline.to(
         card,
         {
@@ -143,14 +143,7 @@ export default function PixelDissolveCard({ children, className = '', disabled =
           duration: 0.3,
           ease: 'power2.out',
           onComplete: () => {
-            pixelGrid.style.transition = `opacity ${OVERLAY_FADE_MS}ms ease`;
-            pixelGrid.style.opacity = '0';
-
-            window.setTimeout(() => {
-              pixelGrid.innerHTML = '';
-              pixelGrid.style.opacity = '1';
-              pixelGrid.style.transition = '';
-            }, OVERLAY_FADE_MS);
+            pixelGrid.innerHTML = '';
           },
         },
         '<',
@@ -177,7 +170,7 @@ export default function PixelDissolveCard({ children, className = '', disabled =
       });
 
       const fadeTimeout = window.setTimeout(() => {
-        pixel.style.transition = `opacity ${PIXEL_FALL_MS}ms ease`;
+        pixel.style.transition = 'opacity 300ms ease';
         pixel.style.opacity = '0';
       }, fadeDelayMs);
 
