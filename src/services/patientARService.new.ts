@@ -4,6 +4,7 @@
 // =====================================================
 
 import { supabase } from '../lib/supabaseClient';
+import { getLocalDateString } from '../utils/dateUtils';
 import type {
   PatientAR,
   PatientARStatus,
@@ -152,12 +153,12 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
     throw error;
   }
 
-  if (!data) return [];
-
-  // Normalize rows so missing columns (original schema) get safe defaults
-  return schema === 'original'
-    ? data.map((row: Record<string, unknown>) => normalizePatientAR(row))
-    : data;
+  // Coalesce null JSONB fields to empty arrays to prevent spread errors
+  return (data || []).map((record: PatientAR) => ({
+    ...record,
+    structured_notes: record.structured_notes || [],
+    audit_trail: record.audit_trail || [],
+  }));
 }
 
 /**
@@ -226,44 +227,85 @@ export async function getCollectionsPatientAR(): Promise<PatientAR[]> {
 export async function insertPatientAR(
   record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>
 ): Promise<PatientAR> {
-  const schema = await detectPatientARSchema();
+  // Validate patient_id: if the DB column is still UUID-typed (pre-migration),
+  // only send values that are valid UUIDs.  Otherwise set to null so the insert
+  // doesn't fail with "invalid input syntax for type uuid".
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const rawPatientId = record.patient_id?.trim() || null;
+  const safePatientId = rawPatientId && !UUID_RE.test(rawPatientId) ? null : rawPatientId;
 
-  if (schema === 'revamped') {
-    const { data, error } = await supabase
-      .from('patient_ar')
-      .insert(record)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[Patient A/R] Insert error:', error.message, error.details, error.hint, error.code);
-      throw error;
-    }
-    return data;
-  }
-
-  // Original schema: only send columns that exist in the original table
-  const legacyRecord: Record<string, unknown> = {
-    patient_id: record.patient_id,
+  // Build a clean record with only the columns that exist in the patient_ar table.
+  // This prevents 400 errors if certain migrations haven't been applied yet.
+  const insertRecord: Record<string, unknown> = {
+    patient_id: safePatientId,
     patient_name: record.patient_name,
     dos: record.dos,
     original_balance: record.original_balance ?? record.current_balance,
     current_balance: record.current_balance,
-    balance_created_date: record.dos, // Required in original schema
-    status: STATUS_TO_LEGACY[record.status] || 'active',
-    write_off_suggested_date: record.write_off_suggested_date,
+    status: record.status,
     created_by: record.created_by,
     updated_by: record.updated_by,
+    // Columns from revamp migration
+    related_family: record.related_family ?? null,
+    is_collectible: record.is_collectible ?? true,
+    background_notes: record.background_notes ?? null,
+    team_discussion_notes: record.team_discussion_notes ?? null,
+    action_needed: record.action_needed ?? null,
+    dr_decision: record.dr_decision ?? null,
+    first_contact_date: record.first_contact_date ?? null,
+    first_contact_initials: record.first_contact_initials ?? null,
+    second_contact_date: record.second_contact_date ?? null,
+    second_contact_initials: record.second_contact_initials ?? null,
+    final_contact_date: record.final_contact_date ?? null,
+    final_contact_initials: record.final_contact_initials ?? null,
+    write_off_suggested_date: record.write_off_suggested_date ?? null,
+    write_off_reason: record.write_off_reason ?? null,
+    collected_amount: record.collected_amount ?? 0,
+    // JSONB columns from structured notes migration
+    structured_notes: record.structured_notes || [],
+    audit_trail: record.audit_trail || [],
   };
 
-  const { data, error } = await supabase
+  // Remove any undefined values to avoid sending them to Supabase
+  Object.keys(insertRecord).forEach((key) => {
+    if (insertRecord[key] === undefined) {
+      delete insertRecord[key];
+    }
+  });
+
+  // First attempt: insert with all columns (post-revamp schema)
+  let { data, error } = await supabase
     .from('patient_ar')
-    .insert(legacyRecord)
+    .insert(insertRecord)
     .select()
     .single();
 
+  // If the insert fails (e.g. columns don't exist yet), try a minimal insert
+  // compatible with the original schema (pre-revamp)
+  if (error && (error.code === 'PGRST204' || error.message?.includes('column') || error.code === '42703')) {
+    console.warn('Full insert failed, retrying with minimal columns:', error.message);
+    const minimalRecord: Record<string, unknown> = {
+      patient_id: safePatientId,
+      patient_name: record.patient_name,
+      dos: record.dos,
+      original_balance: record.original_balance ?? record.current_balance,
+      current_balance: record.current_balance,
+      balance_created_date: record.dos, // legacy required field
+      status: record.status || 'active', // use provided status, fall back to legacy value
+      created_by: record.created_by,
+      updated_by: record.updated_by,
+    };
+    const retryResult = await supabase
+      .from('patient_ar')
+      .insert(minimalRecord)
+      .select()
+      .single();
+    data = retryResult.data;
+    error = retryResult.error;
+  }
+
   if (error) {
-    console.error('[Patient A/R] Insert error (legacy):', error.message, error.details, error.hint, error.code);
+    console.error('Error inserting patient A/R:', error.message, error.details, error.hint, error.code);
     throw error;
   }
 
@@ -284,37 +326,33 @@ export async function updatePatientAR(
   id: string,
   updates: Partial<Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'>>
 ): Promise<PatientAR> {
-  const schema = await detectPatientARSchema();
-
-  let effectiveUpdates = { ...updates };
-
-  if (schema === 'original') {
-    // Strip columns that don't exist in the original schema
-    for (const col of REVAMP_ONLY_COLUMNS) {
-      delete (effectiveUpdates as Record<string, unknown>)[col];
-    }
-    // Map status to legacy value if present
-    if (effectiveUpdates.status) {
-      effectiveUpdates.status = (STATUS_TO_LEGACY[effectiveUpdates.status] || effectiveUpdates.status) as PatientARStatus;
-    }
+  // Ensure JSONB fields are proper arrays, not null
+  const sanitizedUpdates = { ...updates };
+  if ('structured_notes' in sanitizedUpdates && sanitizedUpdates.structured_notes === null) {
+    sanitizedUpdates.structured_notes = [];
+  }
+  if ('audit_trail' in sanitizedUpdates && sanitizedUpdates.audit_trail === null) {
+    sanitizedUpdates.audit_trail = [];
   }
 
-  // Don't send an empty update
-  if (Object.keys(effectiveUpdates).length === 0) {
-    const existing = await supabase.from('patient_ar').select('*').eq('id', id).single();
-    if (existing.error) throw existing.error;
-    return normalizePatientAR(existing.data);
+  // Sanitize patient_id for UUID-typed columns (pre-migration compatibility)
+  if ('patient_id' in sanitizedUpdates && sanitizedUpdates.patient_id != null) {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const pid = String(sanitizedUpdates.patient_id).trim();
+    if (pid && !UUID_RE.test(pid)) {
+      sanitizedUpdates.patient_id = null;
+    }
   }
 
   const { data, error } = await supabase
     .from('patient_ar')
-    .update(effectiveUpdates)
+    .update(sanitizedUpdates)
     .eq('id', id)
     .select()
     .single();
 
   if (error) {
-    console.error('[Patient A/R] Update error:', error.message, error.details, error.hint, error.code);
+    console.error('Error updating patient A/R:', error.message, error.details, error.hint, error.code);
     throw error;
   }
 
@@ -581,7 +619,7 @@ export async function approveWriteOffSuggestion(
     .update({
       status: 'approved',
       reviewed_by: reviewedBy,
-      reviewed_date: new Date().toISOString().split('T')[0],
+      reviewed_date: getLocalDateString(),
       review_notes: reviewNotes
     })
     .eq('id', suggestionId);
@@ -632,7 +670,7 @@ export async function rejectWriteOffSuggestion(
     .update({
       status: 'rejected',
       reviewed_by: reviewedBy,
-      reviewed_date: new Date().toISOString().split('T')[0],
+      reviewed_date: getLocalDateString(),
       review_notes: reviewNotes
     })
     .eq('id', suggestionId);

@@ -59,7 +59,7 @@ export type UnifiedClaimStatus =
   | 'Pending Review' | 'Resubmitted - 1st' | 'Resubmitted - 2nd'
   | 'Final Review' | 'Consultant Review'
   | 'Closed/Paid' | 'Closed/Unpaid'
-  | 'Appeal Filed' | 'Waiting for Info'
+  | 'Appeal Filed' | 'Waiting for CSD/Moved to IIR'
   | 'Lori Review' | 'Paid/Check or EFT Pending' | 'SEE NOTES';
 
 export type Claim = {
@@ -94,6 +94,8 @@ export type Claim = {
   aging_status: '0-30 Days' | '31-60 Days' | '61-90 Days' | '91-120 Days' | '121+ Days' | null;
   carrier_phone: string | null;
   date_sent_orig: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
   created_at?: string;
   updated_at?: string;
 };
@@ -236,6 +238,8 @@ export type SchedulingListItem = {
   employee_initials: string;
   status: 'unscheduled' | 'scheduled';
   notes: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
   created_at?: string;
   updated_at?: string;
 };
@@ -286,6 +290,10 @@ export type PatientAR = {
 
   // Collected amount (when marked as paid)
   collected_amount: number;
+
+  // Structured team notes + audit trail
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
 
   created_by: string;
   created_at?: string;
@@ -384,7 +392,7 @@ export type InsuranceARClaimStatus =
   | 'Closed/Unpaid'
   | 'Appeal Filed'
   | 'Denied'
-  | 'Waiting for Info'
+  | 'Waiting for CSD/Moved to IIR'
   | 'Lori Review'
   | 'Paid/Check or EFT Pending'
   | 'SEE NOTES';
@@ -435,7 +443,7 @@ export type InsuranceIssueType =
   | 'Pre-Auth Required'
   | 'Other';
 
-export type InsuranceIssueStatus = 'Open' | 'Corrected';
+export type InsuranceIssueStatus = 'Open' | 'Corrected' | 'Submitted' | 'Resolved';
 
 export type NoteSource = 'office' | 'stellar';
 
@@ -444,6 +452,31 @@ export type NoteEntry = {
   source: NoteSource;
   author: string; // initials e.g. "BH", "LP"
   created_at: string; // ISO timestamp
+};
+
+// =====================================================
+// Shared Audit Trail Entry (stored as JSON array on records)
+// =====================================================
+
+export type AuditTrailAction =
+  | 'created'
+  | 'updated'
+  | 'status_changed'
+  | 'note_added'
+  | 'deleted'
+  | 'archived'
+  | 'unarchived'
+  | 'moved';
+
+export type AuditTrailEntry = {
+  id: string;
+  action: AuditTrailAction;
+  field?: string;
+  old_value?: string | null;
+  new_value?: string | null;
+  changed_by: string; // initials
+  changed_at: string; // ISO timestamp
+  notes?: string;
 };
 
 export type InsuranceIssue = {
@@ -455,14 +488,44 @@ export type InsuranceIssue = {
   in_charge: string; // provider code e.g. "DDS1", "HYG2", "DMD1", "Daniely"
   issue_type: InsuranceIssueType;
   in_vyne: boolean;
-  status: InsuranceIssueStatus; // "Open" or "Corrected"
+  status: InsuranceIssueStatus; // "Open" → "Corrected" → "Resolved"
+  corrected_at: string | null; // ISO timestamp - when in-charge marked correction done
+  corrected_by: string | null; // initials of person who completed correction
+  correction_note: string | null; // optional note from corrector
   submission_status: string | null; // "Submitted" or null
   submitted_by: string | null; // initials e.g. "BH", "LP", "BH/LP"
   submitted_at: string | null; // ISO timestamp - auto-logged when marked Submitted
-  resolved_at: string | null; // ISO timestamp - auto-logged when status → Corrected
+  resolved_at: string | null; // ISO timestamp - auto-logged when status → Resolved
   notes: string | null; // legacy plain-text (kept for backward compat)
   structured_notes: NoteEntry[]; // structured notes with source tagging
+  audit_trail: AuditTrailEntry[]; // audit trail entries
   is_pre_auth: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// =====================================================
+// Patient Credits Types (unapplied credits and credit tracking)
+// =====================================================
+
+export type PatientCreditStatus = 'unapplied' | 'applied' | 'refunded' | 'pending_refund';
+
+export type PatientCredit = {
+  id: string;
+  patient_id: string | null;
+  patient_name: string;
+  credit_date: string; // ISO date string - when the credit was created
+  credit_amount: number;
+  credit_source: 'overpayment' | 'insurance_overpayment' | 'refund_pending' | 'adjustment' | 'other';
+  status: PatientCreditStatus;
+  applied_to: string | null; // description of what the credit was applied to
+  applied_date: string | null; // ISO date string
+  notes: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
+  has_planned_treatment: boolean; // patient has additional planned tx that could use credits (scheduling opportunity)
+  created_by: string;
+  updated_by: string;
   created_at?: string;
   updated_at?: string;
 };
@@ -536,6 +599,43 @@ export type PatientAREnhanced = PatientAR & {
   doctor_decision: string | null; // Dr. Gajjar's decision on non-collectible accounts
 };
 
+// =====================================================
+// EFT Reconciliation Types
+// Tracks weekly EFT payment periods and individual entries
+// =====================================================
+
+export type EFTReconciliationEntryStatus = '' | 'posted' | 'pending' | 'posted already by via' | 'exception' | 'reconciled';
+
+export type EFTReconciliationPeriod = {
+  id: string;
+  period_start: string; // ISO date string
+  period_end: string; // ISO date string
+  period_label: string; // e.g., "EFT (02/07/2026 - 02/13/2026)"
+  total_amount: number;
+  entry_count: number;
+  notes: string | null;
+  created_by: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type EFTReconciliationEntry = {
+  id: string;
+  period_id: string;
+  insurance_company: string;
+  payment_date: string; // ISO date string
+  trn_number: string; // Transaction/trace number
+  date_posted: string | null; // ISO date string, nullable for pending
+  amount: number;
+  status: EFTReconciliationEntryStatus;
+  notes: string | null;
+  structured_notes: NoteEntry[];
+  audit_trail: AuditTrailEntry[];
+  entered_by: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type Database = {
   patients: Patient;
   appointments: Appointment;
@@ -560,4 +660,7 @@ export type Database = {
   insurance_ar_claims: InsuranceARClaim;
   insurance_issues: InsuranceIssue;
   ar_snapshots: ARSnapshot;
+  patient_credits: PatientCredit;
+  eft_reconciliation_periods: EFTReconciliationPeriod;
+  eft_reconciliation_entries: EFTReconciliationEntry;
 };

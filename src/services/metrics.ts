@@ -1,6 +1,7 @@
 // src/services/metrics.ts
 import { supabase } from '../lib/supabaseClient';
 import { isStaticDataMode } from '../config/dataMode';
+import { toLocalDateString } from '../utils/dateUtils';
 import {
   sampleWeeklyScorecardData,
   sampleMonthlyNewPatients,
@@ -178,13 +179,13 @@ export async function getMonthlyNewPatientMTD(numMonths: number = 6): Promise<Ar
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = date.getFullYear();
       const month = date.getMonth(); // 0-indexed
-      const monthStart = date.toISOString().split('T')[0];
+      const monthStart = toLocalDateString(date);
       const lastDay = new Date(year, month + 1, 0);
       // For current month, cap at today
       const effectiveEnd = (year === now.getFullYear() && month === now.getMonth())
         ? now
         : lastDay;
-      const monthEnd = effectiveEnd.toISOString().split('T')[0];
+      const monthEnd = toLocalDateString(effectiveEnd);
       const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       monthRanges.push({ year, month: month + 1, monthStart, monthEnd, monthName });
     }
@@ -300,8 +301,8 @@ export async function getNewPatientsByMonth(numMonths: number = 6): Promise<Arra
     startDate.setMonth(startDate.getMonth() - (numMonths - 1));
     startDate.setDate(1); // First day of the start month
 
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const startDateStr = toLocalDateString(startDate);
+    const endDateStr = toLocalDateString(endDate);
 
     // Fetch all new patient data for the date range
     const { data, error } = await supabase
@@ -423,22 +424,22 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
     console.log('[getNewPatientsAggregates] Calculating from eod_mtd_new_patients and daily values...');
 
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = toLocalDateString(today);
     const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon ... 5=Fri, 6=Sat
 
     // --- Date ranges ---
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     // Current business week (Mon-Fri)
     // getDay(): 0=Sun,1=Mon..6=Sat  →  daysFromMonday: Mon=0..Sun=6
     const daysFromMonday = (dayOfWeek + 6) % 7;
     const monday = new Date(today);
     monday.setDate(today.getDate() - daysFromMonday);
-    const mondayStr = monday.toISOString().split('T')[0];
+    const mondayStr = toLocalDateString(monday);
     const friday = new Date(monday);
     friday.setDate(monday.getDate() + 4);
-    const fridayStr = friday.toISOString().split('T')[0];
+    const fridayStr = toLocalDateString(friday);
 
     // --- Quarter info ---
     const currentMonth = today.getMonth(); // 0-11
@@ -473,8 +474,8 @@ export async function getNewPatientsAggregates(): Promise<NPAggregateResult> {
           .from('csd_metric_values')
           .select('value, as_of_date')
           .eq('field_key', 'eod_mtd_new_patients')
-          .gte('as_of_date', mStart.toISOString().split('T')[0])
-          .lte('as_of_date', mEnd.toISOString().split('T')[0])
+          .gte('as_of_date', toLocalDateString(mStart))
+          .lte('as_of_date', toLocalDateString(mEnd))
           .order('as_of_date', { ascending: false })
           .limit(1);
       });
@@ -687,16 +688,16 @@ export async function getPaymentAggregates() {
         .from('csd_metric_values')
         .select('value')
         .eq('field_key', 'todays_payments')
-        .gte('as_of_date', sevenDaysAgo.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .gte('as_of_date', toLocalDateString(sevenDaysAgo))
+        .lte('as_of_date', toLocalDateString(today)),
 
       // Current month
       supabase
         .from('csd_metric_values')
         .select('value')
         .eq('field_key', 'todays_payments')
-        .gte('as_of_date', monthStart.toISOString().split('T')[0])
-        .lte('as_of_date', today.toISOString().split('T')[0]),
+        .gte('as_of_date', toLocalDateString(monthStart))
+        .lte('as_of_date', toLocalDateString(today)),
     ]);
 
     // Sum up the values
@@ -719,7 +720,8 @@ export async function getPaymentAggregates() {
 
 /**
  * Gets BAM cycle revenue for a specific cycle date range
- * Filters revenue entries by as_of_date within the cycle and sums them
+ * Returns the most recent bam_current_revenue entry within the cycle,
+ * since each entry represents the cumulative running total for that cycle.
  * Returns 0 if no data exists for the cycle (new cycle with no data entered yet)
  */
 export async function getBAMCycleRevenue(cycleStartDate: Date | null, cycleEndDate: Date | null): Promise<number> {
@@ -730,30 +732,32 @@ export async function getBAMCycleRevenue(cycleStartDate: Date | null, cycleEndDa
       return 0;
     }
 
-    const startDateStr = cycleStartDate.toISOString().split('T')[0];
-    const endDateStr = cycleEndDate.toISOString().split('T')[0];
+    const startDateStr = toLocalDateString(cycleStartDate);
+    const endDateStr = toLocalDateString(cycleEndDate);
 
     console.log('[getBAMCycleRevenue] Fetching BAM revenue for cycle:', startDateStr, 'to', endDateStr);
 
-    // Fetch all bam_current_revenue entries within the cycle date range
+    // Fetch the most recent bam_current_revenue entry within the cycle date range.
+    // Each entry is a cumulative running total, so we only need the latest one.
     const { data, error } = await supabase
       .from('csd_metric_values')
       .select('value, as_of_date')
       .eq('field_key', 'bam_current_revenue')
       .gte('as_of_date', startDateStr)
-      .lte('as_of_date', endDateStr);
+      .lte('as_of_date', endDateStr)
+      .order('as_of_date', { ascending: false })
+      .limit(1);
 
     if (error) {
       console.error('[getBAMCycleRevenue] Error fetching BAM cycle revenue:', error);
       return 0;
     }
 
-    // Sum up all revenue entries for this cycle
-    const totalRevenue = data?.reduce((sum: number, record: any) => sum + (record.value || 0), 0) || 0;
+    const latestRevenue = data?.[0]?.value || 0;
 
-    console.log('[getBAMCycleRevenue] Found', data?.length || 0, 'entries, total revenue:', totalRevenue);
+    console.log('[getBAMCycleRevenue] Latest entry:', data?.[0]?.as_of_date, 'revenue:', latestRevenue);
 
-    return totalRevenue;
+    return latestRevenue;
   } catch (err) {
     console.error('[getBAMCycleRevenue] Unexpected error:', err);
     return 0;
@@ -770,7 +774,7 @@ export async function getClaimsTotals() {
 
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
+    const sixtyDaysAgoStr = toLocalDateString(sixtyDaysAgo);
 
     const [activeClaimsResult, pendingResult, deniedResult, oldClaimsResult] = await Promise.all([
       // Total active claims (not archived)
@@ -929,10 +933,12 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
   try {
     const today = new Date();
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - (numWeeks * 7));
+    // Fetch an extra week of data to account for the prior-week attribution shift:
+    // metrics entered during week N represent week N-1's performance
+    startDate.setDate(today.getDate() - ((numWeeks + 1) * 7));
 
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const todayStr = today.toISOString().split('T')[0];
+    const startDateStr = toLocalDateString(startDate);
+    const todayStr = toLocalDateString(today);
 
     console.log('[getWeeklyScorecardData] Fetching data from', startDateStr, 'to', todayStr);
 
@@ -964,19 +970,27 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
       return [];
     }
 
-    // Group data by week
-    // Week starts on Monday
+    // Group data by week (weeks run Monday–Sunday).
+    // Scorecard metrics are entered via the Monday metrics report (or anytime
+    // during a calendar week) and represent the PRIOR week's performance.
+    // Therefore we attribute each record to the previous week by subtracting
+    // 7 days before computing the week's Monday.
     const weeklyData: Map<string, any> = new Map();
 
     data.forEach((record) => {
       const date = new Date(record.as_of_date);
 
-      // Get the Monday of the week this date belongs to
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      // Shift back 7 days so metrics entered during week N are
+      // attributed to week N-1 (the week the data actually represents)
+      const priorWeekDate = new Date(date);
+      priorWeekDate.setDate(date.getDate() - 7);
+
+      // Get the Monday of the prior week
+      const dayOfWeek = priorWeekDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
       const daysFromMonday = (dayOfWeek + 6) % 7; // Monday = 0, Tuesday = 1, ..., Sunday = 6
-      const monday = new Date(date);
-      monday.setDate(date.getDate() - daysFromMonday);
-      const weekKey = monday.toISOString().split('T')[0];
+      const monday = new Date(priorWeekDate);
+      monday.setDate(priorWeekDate.getDate() - daysFromMonday);
+      const weekKey = toLocalDateString(monday);
 
       if (!weeklyData.has(weekKey)) {
         weeklyData.set(weekKey, {
@@ -1022,12 +1036,16 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
       }
     });
 
-    // Calculate weekly averages/sums and format output
-    const result = Array.from(weeklyData.entries())
-      .map(([weekStart, data], index) => {
-        const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
-        const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+    // Calculate weekly averages/sums and format output.
+    // Sort by week-start date chronologically, then limit to the requested
+    // number of weeks (we fetched one extra week of raw data above).
+    const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+    const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
+    const result = Array.from(weeklyData.entries())
+      .sort(([a], [b]) => a.localeCompare(b)) // sort by week-start ISO date
+      .slice(-numWeeks) // keep only the most recent numWeeks
+      .map(([weekStart, data], index) => {
         const weekDate = new Date(weekStart);
         const formattedDate = `${weekDate.getMonth() + 1}/${weekDate.getDate()}/${weekDate.getFullYear()}`;
 
@@ -1043,8 +1061,7 @@ export async function getWeeklyScorecardData(numWeeks: number = 12) {
           collectionPct: avg(data.collectionRate),
           fiveStars: sum(data.fiveStars)
         };
-      })
-      .sort((a, b) => a.week - b.week);
+      });
 
     console.log('[getWeeklyScorecardData] Aggregated', result.length, 'weeks of data');
     return result;

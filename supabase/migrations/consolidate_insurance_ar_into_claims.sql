@@ -151,12 +151,12 @@ CREATE INDEX IF NOT EXISTS idx_ar_snapshots_date ON ar_snapshots(snapshot_date);
 ALTER TABLE insurance_issues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ar_snapshots ENABLE ROW LEVEL SECURITY;
 
--- Allow all operations for authenticated users
-CREATE POLICY IF NOT EXISTS "Allow all for authenticated" ON insurance_issues
-  FOR ALL USING (true) WITH CHECK (true);
+-- Allow all operations for authenticated and anon users
+CREATE POLICY IF NOT EXISTS "Allow all for all users" ON insurance_issues
+  FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Allow all for authenticated" ON ar_snapshots
-  FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS "Allow all for all users" ON ar_snapshots
+  FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
 -- =====================================================
 -- STEP 7: Auto-update updated_at timestamp
