@@ -2,10 +2,6 @@ import { useEffect } from 'react';
 
 const CARD_SELECTOR = '.glass-card, .glass-card-dark, .glass-eod-light, .glass-eod-dark';
 const GRID_SIZE = 4;
-const PIXEL_STAGGER_MS = 12;
-const PIXEL_RISE_MS = 140;
-const PIXEL_FALL_MS = 240;
-const OVERLAY_FADE_MS = 220;
 
 const createPixels = () => {
   const overlay = document.createElement('div');
@@ -76,30 +72,23 @@ export default function GlobalPixelDissolve() {
         const row = Math.floor(index / GRID_SIZE);
         const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
         const peakOpacity = 0.5 + normalizedPosition * 0.5;
-        const enterDelayMs = index * PIXEL_STAGGER_MS;
+        const enterDelayMs = index * 20;
 
-        pixel.style.transition = `opacity ${PIXEL_RISE_MS}ms ease ${enterDelayMs}ms`;
+        pixel.style.transition = `opacity 200ms ease ${enterDelayMs}ms`;
         requestAnimationFrame(() => {
           pixel.style.opacity = `${peakOpacity}`;
         });
 
         window.setTimeout(() => {
-          pixel.style.transition = `opacity ${PIXEL_FALL_MS}ms ease`;
+          pixel.style.transition = 'opacity 300ms ease';
           pixel.style.opacity = '0';
-        }, enterDelayMs + PIXEL_RISE_MS);
+        }, enterDelayMs + 200);
       });
 
-      const animationDurationMs = shuffled.length * PIXEL_STAGGER_MS + PIXEL_RISE_MS + PIXEL_FALL_MS;
-
       const cleanup = window.setTimeout(() => {
-        overlay.style.transition = `opacity ${OVERLAY_FADE_MS}ms ease`;
-        overlay.style.opacity = '0';
-
-        window.setTimeout(() => {
-          overlay.remove();
-          timeoutMap.delete(target);
-        }, OVERLAY_FADE_MS);
-      }, animationDurationMs);
+        overlay.remove();
+        timeoutMap.delete(target);
+      }, shuffled.length * 20 + 550);
 
       timeoutMap.set(target, cleanup);
     };
