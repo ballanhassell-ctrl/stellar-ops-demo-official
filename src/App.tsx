@@ -6353,6 +6353,25 @@ const CourtStreetRCM = () => {
                       status: formData.get('status') as 'unscheduled' | 'scheduled',
                       notes: formData.get('notes') as string
                     };
+
+                    // Auto-resolve follow-up if new contact was added and follow-up is due
+                    const hasNewContact = (
+                      (!selectedSchedulingItem.firstContactDate && updatedItem.firstContactDate) ||
+                      (!selectedSchedulingItem.secondContactDate && updatedItem.secondContactDate) ||
+                      (!selectedSchedulingItem.thirdContactDate && updatedItem.thirdContactDate)
+                    );
+
+                    if (hasNewContact && isFollowUpDue(selectedSchedulingItem.followUpDate)) {
+                      // Update follow-up date to 7 days from now
+                      const newFollowUpDate = new Date();
+                      newFollowUpDate.setDate(newFollowUpDate.getDate() + 7);
+                      updatedItem.followUpDate = newFollowUpDate.toISOString().split('T')[0];
+
+                      // Append resolution note
+                      const resolutionNote = `\n[${new Date().toLocaleDateString()}] Follow-up resolved - contact made by ${updatedItem.employeeInitials}`;
+                      updatedItem.notes = (updatedItem.notes || '') + resolutionNote;
+                    }
+
                     try {
                       await updateSchedulingListItem(selectedSchedulingItem.id, recordToSchedulingItem(updatedItem));
                       // Update the appropriate list
@@ -7525,6 +7544,40 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
+
+                      // Auto-resolve follow-up if status change was made and follow-up is due
+                      if (updateType === 'status_change') {
+                        const claim = claims.find(c => c.id === updateTarget.id);
+                        if (claim && isFollowUpDue(claim.followUpDate)) {
+                          // Update follow-up date to 7 days from now
+                          const newFollowUpDate = new Date();
+                          newFollowUpDate.setDate(newFollowUpDate.getDate() + 7);
+                          const followUpDateStr = newFollowUpDate.toISOString().split('T')[0];
+
+                          await supabase
+                            .from('claims')
+                            .update({ follow_up_date: followUpDateStr })
+                            .eq('id', updateTarget.id);
+
+                          // Log the follow-up resolution
+                          await addClaimUpdate({
+                            claim_id: updateTarget.id,
+                            handler,
+                            update_type: 'general',
+                            old_status: null,
+                            new_status: null,
+                            old_amount: null,
+                            new_amount: null,
+                            notes: `Follow-up marked as resolved by ${handler}`
+                          });
+
+                          // Refresh the claims list to show updated follow-up date
+                          const updatedClaims = showArchivedClaims
+                            ? await getArchivedClaims()
+                            : await getActiveClaims();
+                          setClaims(updatedClaims.map(claimToRecord));
+                        }
+                      }
                     } else if (updateTarget.type === 'preauth') {
                       // If status is changing, update the actual record first
                       if (updateType === 'status_change' && newStatus) {
@@ -7556,6 +7609,40 @@ const CourtStreetRCM = () => {
                         new_amount: updateType === 'amount_change' && newAmount ? parseFloat(newAmount) : null,
                         notes
                       });
+
+                      // Auto-resolve follow-up if status change was made and follow-up is due
+                      if (updateType === 'status_change') {
+                        const preAuth = preAuths.find(p => p.id === updateTarget.id);
+                        if (preAuth && isFollowUpDue(preAuth.followUpDate)) {
+                          // Update follow-up date to 7 days from now
+                          const newFollowUpDate = new Date();
+                          newFollowUpDate.setDate(newFollowUpDate.getDate() + 7);
+                          const followUpDateStr = newFollowUpDate.toISOString().split('T')[0];
+
+                          await supabase
+                            .from('pre_auths')
+                            .update({ follow_up_date: followUpDateStr })
+                            .eq('id', updateTarget.id);
+
+                          // Log the follow-up resolution
+                          await addPreAuthUpdate({
+                            pre_auth_id: updateTarget.id,
+                            handler,
+                            update_type: 'general',
+                            old_status: null,
+                            new_status: null,
+                            old_amount: null,
+                            new_amount: null,
+                            notes: `Follow-up marked as resolved by ${handler}`
+                          });
+
+                          // Refresh the pre-auths list to show updated follow-up date
+                          const updatedPreAuths = showArchivedPreAuths
+                            ? await getArchivedPreAuths()
+                            : await getActivePreAuths();
+                          setPreAuths(updatedPreAuths.map(preAuthToRecord));
+                        }
+                      }
                     } else {
                       // If status is changing, update the actual record first using direct Supabase call
                       if (updateType === 'status_change' && newStatus) {
