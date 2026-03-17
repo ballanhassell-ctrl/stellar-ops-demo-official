@@ -783,7 +783,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
       background_notes: 'Background Notes',
       team_discussion_notes: 'Team Discussion',
       action_needed: 'Action Needed',
-      dr_decision: 'Dr. Gajjar Decision',
+      dr_decision: 'Dr. Patel Decision',
       write_off_reason: 'Write-Off Reason',
     };
 
@@ -1331,7 +1331,7 @@ export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: 
                   {activeTab === 'non_collectible' && (
                     <>
                       <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[120px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                        Dr. Gajjar Decision
+                        Dr. Patel Decision
                       </th>
                       <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[120px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                         Write-Off Reason

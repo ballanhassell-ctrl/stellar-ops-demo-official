@@ -1,7 +1,7 @@
 // =====================================================
 // EFT Reconciliation Tracker
 // Tracks EFT payments organized by weekly periods
-// Matches Lori's spreadsheet layout with period grouping
+// Matches manager's spreadsheet layout with period grouping
 // =====================================================
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';

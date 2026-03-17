@@ -6,13 +6,14 @@
 import { supabase } from '../lib/supabaseClient';
 import type { EFTReconciliationPeriod, EFTReconciliationEntry } from '../types/database.types';
 import { isStaticDataMode } from '../config/dataMode';
+import { sampleEFTReconciliationPeriods, sampleEFTReconciliationEntries } from '../data/sampleData';
 
 // =====================================================
 // PERIOD OPERATIONS
 // =====================================================
 
 export async function getEFTPeriods(): Promise<EFTReconciliationPeriod[]> {
-  if (isStaticDataMode()) return [];
+  if (isStaticDataMode()) return [...sampleEFTReconciliationPeriods];
 
   const { data, error } = await supabase
     .from('eft_reconciliation_periods')
@@ -80,7 +81,10 @@ export async function deleteEFTPeriod(id: string): Promise<void> {
 // =====================================================
 
 export async function getEFTEntries(periodId?: string): Promise<EFTReconciliationEntry[]> {
-  if (isStaticDataMode()) return [];
+  if (isStaticDataMode()) {
+    const entries = [...sampleEFTReconciliationEntries];
+    return periodId ? entries.filter(e => e.period_id === periodId) : entries;
+  }
 
   let query = supabase
     .from('eft_reconciliation_entries')
@@ -106,7 +110,7 @@ export async function getEFTEntries(periodId?: string): Promise<EFTReconciliatio
 }
 
 export async function getAllEFTEntries(): Promise<EFTReconciliationEntry[]> {
-  if (isStaticDataMode()) return [];
+  if (isStaticDataMode()) return [...sampleEFTReconciliationEntries];
 
   const { data, error } = await supabase
     .from('eft_reconciliation_entries')

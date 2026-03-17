@@ -249,7 +249,7 @@ const calculateBAMCycle = (referenceStartDate: Date) => {
  *
  * To update daily metrics:
  * - Use updateEODData({ dailyProduction: 1000, paymentsCollected: 800, ... })
- * - Use updateDailyProduction({ drGajjar: 500, drJudge: 300, ... })
+ * - Use updateDailyProduction({ drPatel: 500, drNovak: 300, ... })
  *
  * To manually save current day:
  * - Call saveCurrentEODToHistory() from the browser console
@@ -369,13 +369,13 @@ const getInitialEODData = () => ({
 });
 
 const getInitialDailyProductionByProvider = () => ({
-  drGajjar: 0,
-  drJudge: 0,
-  drStrachan: 0,
+  drPatel: 0,
+  drNovak: 0,
+  drChen: 0,
   doctorTotal: 0,
-  farah: 0,
-  olga: 0,
-  jissel: 0,
+  nadia: 0,
+  lily: 0,
+  maya: 0,
   tempHyg: 0,
   hygienistTotal: 0,
   combinedTotal: 0
@@ -755,7 +755,7 @@ const mockPayments = [
   },
   {
     id: 'PAY-002',
-    patientName: 'Jane Smith',
+    patientName: 'Laura Bennett',
     amount: 275.50,
     date: '2025-11-07',
     method: 'Credit Card',
@@ -1532,17 +1532,17 @@ const CourtStreetRCM = () => {
 
   // Insurance data - use Supabase if available, otherwise fallback to hardcoded
   const defaultProviders = [
-    { name: 'Aetna', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
-    { name: 'Cigna', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
-    { name: 'Delta Dental Insurance', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
-    { name: 'MetLife', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
-    { name: 'Anthem BCBS', feeSchedule: 'Decare', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
-    { name: 'United Healthcare (Optum ID)', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
-    { name: 'Guardian', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'Out', drJudge: 'Out', drStrachan: 'Out' },
-    { name: 'Humana', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
-    { name: 'Ameritas', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
-    { name: 'Principal', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' },
-    { name: 'Beam Benefits', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drGajjar: 'In', drJudge: 'In', drStrachan: 'In' }
+    { name: 'Aetna', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' },
+    { name: 'Cigna', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' },
+    { name: 'Delta Dental Insurance', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'Out', drNovak: 'Out', drChen: 'Out' },
+    { name: 'MetLife', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' },
+    { name: 'Anthem BCBS', feeSchedule: 'Decare', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' },
+    { name: 'United Healthcare (Optum ID)', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'Out', drNovak: 'Out', drChen: 'Out' },
+    { name: 'Guardian', feeSchedule: 'Connection', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'Out', drNovak: 'Out', drChen: 'Out' },
+    { name: 'Humana', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' },
+    { name: 'Ameritas', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' },
+    { name: 'Principal', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' },
+    { name: 'Beam Benefits', feeSchedule: 'Direct', portalStatus: 'All Set!', eftStatus: 'Enrolled', drPatel: 'In', drNovak: 'In', drChen: 'In' }
   ];
 
   const providers = insuranceProviders.length > 0
@@ -1551,18 +1551,18 @@ const CourtStreetRCM = () => {
         feeSchedule: p.fee_schedule,
         portalStatus: p.portal_status,
         eftStatus: p.eft_status,
-        drGajjar: p.dr_gajjar_network,
-        drJudge: p.dr_judge_network,
-        drStrachan: p.dr_strachan_network
+        drPatel: p.dr_patel_network,
+        drNovak: p.dr_novak_network,
+        drChen: p.dr_chen_network
       }))
     : defaultProviders;
 
   // Calculate in-network count (all 3 doctors must be "In")
-  type ProviderData = { name: string; feeSchedule: string; portalStatus: string; eftStatus: string; drGajjar: string; drJudge: string; drStrachan: string };
-  const inNetworkCount = providers.filter((p: ProviderData) => p.drGajjar === 'In' && p.drJudge === 'In' && p.drStrachan === 'In').length;
-  const gajjarIn = providers.filter((p: ProviderData) => p.drGajjar === 'In').length;
-  const judgeIn = providers.filter((p: ProviderData) => p.drJudge === 'In').length;
-  const strachanIn = providers.filter((p: ProviderData) => p.drStrachan === 'In').length;
+  type ProviderData = { name: string; feeSchedule: string; portalStatus: string; eftStatus: string; drPatel: string; drNovak: string; drChen: string };
+  const inNetworkCount = providers.filter((p: ProviderData) => p.drPatel === 'In' && p.drNovak === 'In' && p.drChen === 'In').length;
+  const patelIn = providers.filter((p: ProviderData) => p.drPatel === 'In').length;
+  const novakIn = providers.filter((p: ProviderData) => p.drNovak === 'In').length;
+  const chenIn = providers.filter((p: ProviderData) => p.drChen === 'In').length;
   const totalPlans = providers.length;
 
   const insuranceData = {
@@ -1578,9 +1578,9 @@ const CourtStreetRCM = () => {
     directContracts: providers.filter((p: ProviderData) => p.feeSchedule === 'Direct').length,
     providers,
     networkSummary: {
-      drGajjar: { inNetwork: gajjarIn, outNetwork: totalPlans - gajjarIn, percentage: totalPlans > 0 ? Math.round((gajjarIn / totalPlans) * 100) : 0 },
-      drJudge: { inNetwork: judgeIn, outNetwork: totalPlans - judgeIn, percentage: totalPlans > 0 ? Math.round((judgeIn / totalPlans) * 100) : 0 },
-      drStrachan: { inNetwork: strachanIn, outNetwork: totalPlans - strachanIn, percentage: totalPlans > 0 ? Math.round((strachanIn / totalPlans) * 100) : 0 }
+      drPatel: { inNetwork: patelIn, outNetwork: totalPlans - patelIn, percentage: totalPlans > 0 ? Math.round((patelIn / totalPlans) * 100) : 0 },
+      drNovak: { inNetwork: novakIn, outNetwork: totalPlans - novakIn, percentage: totalPlans > 0 ? Math.round((novakIn / totalPlans) * 100) : 0 },
+      drChen: { inNetwork: chenIn, outNetwork: totalPlans - chenIn, percentage: totalPlans > 0 ? Math.round((chenIn / totalPlans) * 100) : 0 }
     }
   };
 
@@ -4286,9 +4286,9 @@ const CourtStreetRCM = () => {
                       <th className="text-left p-3 font-semibold text-gray-700">Fee Schedule</th>
                       <th className="text-left p-3 font-semibold text-gray-700">Portal Status</th>
                       <th className="text-left p-3 font-semibold text-gray-700">EFT Status</th>
-                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Gajjar</th>
-                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Judge</th>
-                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Strachan</th>
+                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Patel</th>
+                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Novak</th>
+                      <th className="text-center p-3 font-semibold text-gray-700">Dr. Chen</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4318,23 +4318,23 @@ const CourtStreetRCM = () => {
                         </td>
                         <td className="p-3 text-center">
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                            provider.drGajjar === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            provider.drPatel === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>
-                            {provider.drGajjar}
+                            {provider.drPatel}
                           </span>
                         </td>
                         <td className="p-3 text-center">
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                            provider.drJudge === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            provider.drNovak === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>
-                            {provider.drJudge}
+                            {provider.drNovak}
                           </span>
                         </td>
                         <td className="p-3 text-center">
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                            provider.drStrachan === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            provider.drChen === 'In' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>
-                            {provider.drStrachan}
+                            {provider.drChen}
                           </span>
                         </td>
                       </tr>
@@ -4389,76 +4389,76 @@ const CourtStreetRCM = () => {
                 Provider Network Summary
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Dr. Gajjar */}
+                {/* Dr. Patel */}
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-5">
-                  <h4 className="text-lg font-bold text-blue-900 mb-3">Dr. Gajjar</h4>
+                  <h4 className="text-lg font-bold text-blue-900 mb-3">Dr. Patel</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700">In-Network:</span>
                       <span className="text-lg font-bold text-green-700">
-                        {insuranceData.networkSummary.drGajjar.inNetwork} ({insuranceData.networkSummary.drGajjar.percentage}%)
+                        {insuranceData.networkSummary.drPatel.inNetwork} ({insuranceData.networkSummary.drPatel.percentage}%)
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700">Out-of-Network:</span>
                       <span className="text-lg font-bold text-red-700">
-                        {insuranceData.networkSummary.drGajjar.outNetwork}
+                        {insuranceData.networkSummary.drPatel.outNetwork}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
                       <div
                         className="bg-green-500 h-3 rounded-full"
-                        style={{ width: `${insuranceData.networkSummary.drGajjar.percentage}%` }}
+                        style={{ width: `${insuranceData.networkSummary.drPatel.percentage}%` }}
                       ></div>
                     </div>
                   </div>
                 </div>
 
-                {/* Dr. Judge */}
+                {/* Dr. Novak */}
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-5">
-                  <h4 className="text-lg font-bold text-purple-900 mb-3">Dr. Judge</h4>
+                  <h4 className="text-lg font-bold text-purple-900 mb-3">Dr. Novak</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700">In-Network:</span>
                       <span className="text-lg font-bold text-green-700">
-                        {insuranceData.networkSummary.drJudge.inNetwork} ({insuranceData.networkSummary.drJudge.percentage}%)
+                        {insuranceData.networkSummary.drNovak.inNetwork} ({insuranceData.networkSummary.drNovak.percentage}%)
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700">Out-of-Network:</span>
                       <span className="text-lg font-bold text-red-700">
-                        {insuranceData.networkSummary.drJudge.outNetwork}
+                        {insuranceData.networkSummary.drNovak.outNetwork}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
                       <div
                         className="bg-green-500 h-3 rounded-full"
-                        style={{ width: `${insuranceData.networkSummary.drJudge.percentage}%` }}
+                        style={{ width: `${insuranceData.networkSummary.drNovak.percentage}%` }}
                       ></div>
                     </div>
                   </div>
                 </div>
 
-                {/* Dr. Strachan */}
+                {/* Dr. Chen */}
                 <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-200 rounded-lg p-5">
-                  <h4 className="text-lg font-bold text-teal-900 mb-3">Dr. Strachan</h4>
+                  <h4 className="text-lg font-bold text-teal-900 mb-3">Dr. Chen</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700">In-Network:</span>
                       <span className="text-lg font-bold text-green-700">
-                        {insuranceData.networkSummary.drStrachan.inNetwork} ({insuranceData.networkSummary.drStrachan.percentage}%)
+                        {insuranceData.networkSummary.drChen.inNetwork} ({insuranceData.networkSummary.drChen.percentage}%)
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700">Out-of-Network:</span>
                       <span className="text-lg font-bold text-red-700">
-                        {insuranceData.networkSummary.drStrachan.outNetwork}
+                        {insuranceData.networkSummary.drChen.outNetwork}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
                       <div
                         className="bg-green-500 h-3 rounded-full"
-                        style={{ width: `${insuranceData.networkSummary.drStrachan.percentage}%` }}
+                        style={{ width: `${insuranceData.networkSummary.drChen.percentage}%` }}
                       ></div>
                     </div>
                   </div>
@@ -5341,45 +5341,45 @@ const CourtStreetRCM = () => {
               <div className="mb-6">
                 <h4 className="text-md font-bold text-gray-700 mb-3">Doctors</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Dr. Gajjar */}
+                  {/* Dr. Patel */}
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="text-sm font-semibold text-blue-900 mb-1">Dr. Gajjar</h4>
+                        <h4 className="text-sm font-semibold text-blue-900 mb-1">Dr. Patel</h4>
                         <p className="text-xs text-blue-700">Provider</p>
                       </div>
                       <DollarSign className="w-6 h-6 text-blue-600" />
                     </div>
                     <p className="text-3xl font-bold text-blue-900">
-                      ${dailyProductionByProvider.drGajjar.toLocaleString()}
+                      ${dailyProductionByProvider.drPatel.toLocaleString()}
                     </p>
                   </div>
 
-                  {/* Dr. Judge */}
+                  {/* Dr. Novak */}
                   <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="text-sm font-semibold text-green-900 mb-1">Dr. Judge</h4>
+                        <h4 className="text-sm font-semibold text-green-900 mb-1">Dr. Novak</h4>
                         <p className="text-xs text-green-700">Provider</p>
                       </div>
                       <DollarSign className="w-6 h-6 text-green-600" />
                     </div>
                     <p className="text-3xl font-bold text-green-900">
-                      ${dailyProductionByProvider.drJudge.toLocaleString()}
+                      ${dailyProductionByProvider.drNovak.toLocaleString()}
                     </p>
                   </div>
 
-                  {/* Dr. Strachan */}
+                  {/* Dr. Chen */}
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="text-sm font-semibold text-purple-900 mb-1">Dr. Strachan</h4>
+                        <h4 className="text-sm font-semibold text-purple-900 mb-1">Dr. Chen</h4>
                         <p className="text-xs text-purple-700">Provider</p>
                       </div>
                       <DollarSign className="w-6 h-6 text-purple-600" />
                     </div>
                     <p className="text-3xl font-bold text-purple-900">
-                      ${dailyProductionByProvider.drStrachan.toLocaleString()}
+                      ${dailyProductionByProvider.drChen.toLocaleString()}
                     </p>
                   </div>
 
@@ -5403,45 +5403,45 @@ const CourtStreetRCM = () => {
               <div className="mb-6">
                 <h4 className="text-md font-bold text-gray-700 mb-3">Hygienists</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  {/* Farah */}
+                  {/* Nadia */}
                   <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-300 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="text-sm font-semibold text-teal-900 mb-1">Farah</h4>
+                        <h4 className="text-sm font-semibold text-teal-900 mb-1">Nadia</h4>
                         <p className="text-xs text-teal-700">Hygienist</p>
                       </div>
                       <DollarSign className="w-6 h-6 text-teal-600" />
                     </div>
                     <p className="text-3xl font-bold text-teal-900">
-                      ${dailyProductionByProvider.farah.toLocaleString()}
+                      ${dailyProductionByProvider.nadia.toLocaleString()}
                     </p>
                   </div>
 
-                  {/* Olga */}
+                  {/* Lily */}
                   <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-300 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="text-sm font-semibold text-cyan-900 mb-1">Olga</h4>
+                        <h4 className="text-sm font-semibold text-cyan-900 mb-1">Lily</h4>
                         <p className="text-xs text-cyan-700">Hygienist</p>
                       </div>
                       <DollarSign className="w-6 h-6 text-cyan-600" />
                     </div>
                     <p className="text-3xl font-bold text-cyan-900">
-                      ${dailyProductionByProvider.olga.toLocaleString()}
+                      ${dailyProductionByProvider.lily.toLocaleString()}
                     </p>
                   </div>
 
-                  {/* Jissel */}
+                  {/* Maya */}
                   <div className="bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-300 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="text-sm font-semibold text-sky-900 mb-1">Jissel</h4>
+                        <h4 className="text-sm font-semibold text-sky-900 mb-1">Maya</h4>
                         <p className="text-xs text-sky-700">Hygienist</p>
                       </div>
                       <DollarSign className="w-6 h-6 text-sky-600" />
                     </div>
                     <p className="text-3xl font-bold text-sky-900">
-                      ${dailyProductionByProvider.jissel.toLocaleString()}
+                      ${dailyProductionByProvider.maya.toLocaleString()}
                     </p>
                   </div>
 
