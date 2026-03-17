@@ -29,28 +29,6 @@ import {
 
 let _schemaVersion: 'revamped' | 'original' | null = null;
 
-// Columns that only exist after the revamp migration
-const REVAMP_ONLY_COLUMNS = [
-  'related_family', 'is_collectible', 'background_notes',
-  'team_discussion_notes', 'action_needed', 'dr_decision',
-  'first_contact_date', 'first_contact_initials',
-  'second_contact_date', 'second_contact_initials',
-  'final_contact_date', 'final_contact_initials',
-  'write_off_reason', 'collected_amount'
-];
-
-// Map new status values to original schema values
-const STATUS_TO_LEGACY: Record<string, string> = {
-  'not_started': 'active',
-  '1st_contact_made': 'active',
-  '2nd_contact_made': 'active',
-  'final_contact_made': 'collections',
-  'paid': 'paid',
-  'pending_writeoff': 'write_off_suggested',
-  'high_balance_alert': 'active',
-  'completed': 'archived',
-};
-
 // Map original schema status values to new values
 const STATUS_FROM_LEGACY: Record<string, PatientARStatus> = {
   'active': 'not_started',
@@ -126,6 +104,8 @@ function normalizePatientAR(raw: Record<string, unknown>): PatientAR {
     created_at: raw.created_at as string | undefined,
     updated_at: raw.updated_at as string | undefined,
     updated_by: raw.updated_by as string,
+    structured_notes: Array.isArray(raw.structured_notes) ? raw.structured_notes : [],
+    audit_trail: Array.isArray(raw.audit_trail) ? raw.audit_trail : [],
   };
 }
 
@@ -141,7 +121,7 @@ export async function getPatientARRecords(): Promise<PatientAR[]> {
     return [...samplePatientAR];
   }
 
-  const schema = await detectPatientARSchema();
+  await detectPatientARSchema();
 
   const { data, error } = await supabase
     .from('patient_ar_with_aging')
@@ -356,7 +336,7 @@ export async function updatePatientAR(
     throw error;
   }
 
-  return schema === 'original' ? normalizePatientAR(data) : data;
+  return normalizePatientAR(data);
 }
 
 /**
