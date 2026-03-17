@@ -1,5 +1,4 @@
 import { ReactNode, useRef } from 'react';
-import { gsap } from 'gsap';
 
 type PixelDissolveCardProps = {
   children: ReactNode;
@@ -12,11 +11,18 @@ const GRID_SIZE = 4;
 export default function PixelDissolveCard({ children, className = '', disabled = false }: PixelDissolveCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const pixelGridRef = useRef<HTMLDivElement>(null);
+  const cleanupTimerRef = useRef<number | null>(null);
 
   const triggerDissolve = () => {
     if (disabled || !cardRef.current || !pixelGridRef.current) return;
 
+    if (cleanupTimerRef.current) {
+      window.clearTimeout(cleanupTimerRef.current);
+      cleanupTimerRef.current = null;
+    }
+
     const pixelGrid = pixelGridRef.current;
+    const card = cardRef.current;
     pixelGrid.innerHTML = '';
 
     const totalCells = GRID_SIZE * GRID_SIZE;
@@ -50,44 +56,37 @@ export default function PixelDissolveCard({ children, className = '', disabled =
       }
     }
 
-    const staggerDuration = 0.45 / Math.max(pixels.length, 1);
+    card.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 1, 1)';
+    card.style.transform = 'scale(0.995)';
 
-    gsap.killTweensOf([cardRef.current, ...pixels]);
+    const shuffledPixels = [...pixels].sort(() => Math.random() - 0.5);
 
-    const tl = gsap.timeline();
-    tl.to(cardRef.current, {
-      scale: 0.995,
-      duration: 0.2,
-      ease: 'power2.in',
+    shuffledPixels.forEach((pixel, index) => {
+      const col = index % GRID_SIZE;
+      const row = Math.floor(index / GRID_SIZE);
+      const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
+      const peakOpacity = 0.5 + normalizedPosition * 0.5;
+      const enterDelayMs = Math.floor(index * 20);
+      const fadeDelayMs = enterDelayMs + 200;
+
+      pixel.style.transition = `opacity 200ms ease ${enterDelayMs}ms`;
+      requestAnimationFrame(() => {
+        pixel.style.opacity = `${peakOpacity}`;
+      });
+
+      window.setTimeout(() => {
+        pixel.style.transition = 'opacity 300ms ease';
+        pixel.style.opacity = '0';
+      }, fadeDelayMs);
     });
 
-    tl.to(
-      pixels,
-      {
-        opacity: (index) => {
-          const col = index % GRID_SIZE;
-          const row = Math.floor(index / GRID_SIZE);
-          const normalizedPosition = (col + row) / (GRID_SIZE * 2 - 2);
-          return 0.5 + normalizedPosition * 0.5;
-        },
-        duration: 0.2,
-        stagger: { each: staggerDuration, from: 'random' },
-        ease: 'power2.inOut',
-      },
-      '<'
-    );
-
-    tl.to(pixels, {
-      opacity: 0,
-      duration: 0.3,
-      ease: 'power2.out',
-    });
-
-    tl.to(cardRef.current, {
-      scale: 1,
-      duration: 0.3,
-      ease: 'power2.out',
-    }, '<');
+    const totalDurationMs = shuffledPixels.length * 20 + 550;
+    cleanupTimerRef.current = window.setTimeout(() => {
+      pixelGrid.innerHTML = '';
+      card.style.transition = 'transform 300ms cubic-bezier(0, 0, 0.2, 1)';
+      card.style.transform = 'scale(1)';
+      cleanupTimerRef.current = null;
+    }, totalDurationMs);
   };
 
   return (
