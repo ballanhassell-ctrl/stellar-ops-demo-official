@@ -103,12 +103,14 @@ export async function fetchDailyARReportData(reportDate?: string): Promise<Daily
     .gte('created_at', startOfDay)
     .lte('created_at', endOfDay);
 
-  // Fetch new Insurance Issues added today (only Open items)
+  // ONE-TIME: Fetch ALL open Insurance Issues (not just today's) for the first EOD report
+  // after re-enablement so the team sees every active issue.
+  // TODO: After the first EOD report has been sent, restore the date filters:
+  //   .gte('created_at', startOfDay)
+  //   .lte('created_at', endOfDay)
   const { data: issuesData } = await supabase
     .from('insurance_issues')
     .select('patient_name, date_of_service, issue_type, status, notes, created_at')
-    .gte('created_at', startOfDay)
-    .lte('created_at', endOfDay)
     .eq('status', 'Open');
 
   // --- Summary queries: open counts & prior-day collected ---
@@ -448,23 +450,7 @@ ${message ? `
           <!-- Detail Sections -->
           ${renderSection('New Patient A/R Accounts', data.newPatientAR, COLORS.blue)}
           ${renderSection('New Credits', data.newCredits, COLORS.amber)}
-          <!-- Insurance Issues section temporarily disabled while under further development -->
-          <tr>
-            <td style="padding: 24px 40px 0 40px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid ${COLORS.gray200}; border-radius: 12px; overflow: hidden;">
-                <tr>
-                  <td style="background: linear-gradient(135deg, ${COLORS.orange}, #f59e0b); padding: 14px 20px;">
-                    <p style="margin: 0; font-size: 15px; font-weight: 700; color: #ffffff;">Insurance Issues</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px; text-align: center; background-color: ${COLORS.gray50};">
-                    <p style="margin: 0; font-size: 14px; color: ${COLORS.gray600}; font-style: italic;">Coming back soon: under further development</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+          ${renderSection('New Insurance Issues', data.newInsuranceIssues, COLORS.orange, false)}
           ${renderSection('New Non-Collectible Accounts', data.newNonCollectible, COLORS.red)}
 
           ${data.eftReconciliation ? `
@@ -551,9 +537,9 @@ ${message ? `
                           <p style="margin: 2px 0 0 0; font-size: 12px; color: ${COLORS.gray500};">Total balance: ${formatCurrency(data.summary.openPatientARBalance)}</p>
                         </td>
                         <td style="padding: 14px 16px; border-bottom: 1px solid ${COLORS.gray200}; border-left: 1px solid ${COLORS.gray200}; width: 50%;">
-                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Insurance Issues</p>
-                          <p style="margin: 4px 0 0 0; font-size: 14px; font-weight: 600; color: ${COLORS.orange}; font-style: italic;">Coming back soon</p>
-                          <p style="margin: 2px 0 0 0; font-size: 12px; color: ${COLORS.gray500};">Under further development</p>
+                          <p style="margin: 0; font-size: 11px; color: ${COLORS.gray500}; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Open Insurance Issues</p>
+                          <p style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; color: ${COLORS.orange};">${data.summary.openInsuranceIssuesCount}</p>
+                          <p style="margin: 2px 0 0 0; font-size: 12px; color: ${COLORS.gray500};">Still unresolved</p>
                         </td>
                       </tr>
                       <tr>

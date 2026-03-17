@@ -2988,8 +2988,6 @@ const CourtStreetRCM = () => {
                 >
                   Credits
                 </button>
-                {/* TEMPORARILY HIDDEN FROM TEAM - Insurance Issues tab is admin-only while under further development */}
-                {isAdmin && (
                 <button
                   onClick={() => setPatientManagementView('insurance-issues')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
@@ -3002,7 +3000,6 @@ const CourtStreetRCM = () => {
                 >
                   Insurance Issues
                 </button>
-                )}
                 <button
                   onClick={() => setPatientManagementView('vcc-payments')}
                   className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all ${
@@ -4523,8 +4520,7 @@ const CourtStreetRCM = () => {
               </>
             )}
 
-            {/* TEMPORARILY HIDDEN FROM TEAM - Insurance Issues content is admin-only while under further development */}
-            {isAdmin && patientManagementView === 'insurance-issues' && (
+            {patientManagementView === 'insurance-issues' && (
               <Suspense fallback={<LazyFallback />}><InsuranceIssuesTracker isDayMode={isDayMode} /></Suspense>
             )}
 
