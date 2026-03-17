@@ -1,18 +1,21 @@
 /**
  * Data Mode Configuration
  *
- * Toggle between live Supabase data and static sample data for presentations.
+ * Uses env-based mode selection so demo and live builds can be generated
+ * without editing source files.
  *
- * To enable static sample data:
- * 1. Change USE_STATIC_DATA to true
- * 2. Restart the development server
+ * Supported values for VITE_APP_MODE:
+ * - 'demo'   => static sample data mode
+ * - 'live'   => Supabase-backed mode
  *
- * To return to live Supabase data:
- * 1. Change USE_STATIC_DATA to false
- * 2. Restart the development server
+ * Backwards compatibility:
+ * - VITE_USE_STATIC_DATA=true will also enable static mode.
  */
 
-export const USE_STATIC_DATA = false; // Set to false to use live Supabase data
+const appMode = (import.meta.env.VITE_APP_MODE as string | undefined)?.toLowerCase();
+const staticDataFlag = (import.meta.env.VITE_USE_STATIC_DATA as string | undefined)?.toLowerCase();
+
+export const USE_STATIC_DATA = appMode === 'demo' || staticDataFlag === 'true';
 
 export const getDataMode = () => {
   return USE_STATIC_DATA ? 'static' : 'live';
