@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabaseClient';
 import type { PatientCredit } from '../types/database.types';
 import { isStaticDataMode } from '../config/dataMode';
+import { samplePatientCredits } from '../data/sampleData';
 
 // =====================================================
 // CRUD OPERATIONS
@@ -13,7 +14,7 @@ import { isStaticDataMode } from '../config/dataMode';
 
 export async function getPatientCredits(): Promise<PatientCredit[]> {
   if (isStaticDataMode()) {
-    return [];
+    return [...samplePatientCredits];
   }
 
   const { data, error } = await supabase

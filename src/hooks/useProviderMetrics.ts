@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { getMetricsForDate, type MetricWithValue } from '../services/metrics';
 
 export interface ProviderProductionData {
-  drGajjar: number;
-  drJudge: number;
-  drStrachan: number;
+  drPatel: number;
+  drNovak: number;
+  drChen: number;
   doctorTotal: number;
-  farah: number;
-  olga: number;
-  jissel: number;
+  nadia: number;
+  lily: number;
+  maya: number;
   tempHyg: number;
   hygienistTotal: number;
   combinedTotal: number;
@@ -33,27 +33,27 @@ export const useProviderMetrics = (date: string) => {
       };
 
       // Get individual provider values
-      const drGajjar = getMetricValue('provider_dr_gajjar');
-      const drJudge = getMetricValue('provider_dr_judge');
-      const drStrachan = getMetricValue('provider_dr_strachan');
-      const farah = getMetricValue('provider_farah');
-      const olga = getMetricValue('provider_olga');
-      const jissel = getMetricValue('provider_jissel');
+      const drPatel = getMetricValue('provider_dr_patel');
+      const drNovak = getMetricValue('provider_dr_novak');
+      const drChen = getMetricValue('provider_dr_chen');
+      const nadia = getMetricValue('provider_nadia');
+      const lily = getMetricValue('provider_lily');
+      const maya = getMetricValue('provider_maya');
       const tempHyg = getMetricValue('provider_temp_hyg');
 
       // Calculate totals
-      const doctorTotal = drGajjar + drJudge + drStrachan;
-      const hygienistTotal = farah + olga + jissel + tempHyg;
+      const doctorTotal = drPatel + drNovak + drChen;
+      const hygienistTotal = nadia + lily + maya + tempHyg;
       const combinedTotal = doctorTotal + hygienistTotal;
 
       const mappedData: ProviderProductionData = {
-        drGajjar,
-        drJudge,
-        drStrachan,
+        drPatel,
+        drNovak,
+        drChen,
         doctorTotal,
-        farah,
-        olga,
-        jissel,
+        nadia,
+        lily,
+        maya,
         tempHyg,
         hygienistTotal,
         combinedTotal,
