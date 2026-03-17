@@ -12,20 +12,7 @@ export default {
         display: ['Manrope', 'sans-serif'],
       },
       colors: {
-        // Stellar Design System - Observatory palette
-        stellar: {
-          coral: '#E07A5F',
-          purple: '#7C5CBF',
-          headline: '#D4967D',
-          sage: '#495A58',
-          dark: '#303636',
-          copper: '#C4856C',
-          obsidian: '#1A1E1E',
-          charcoal: '#232828',
-          slate: '#2C3232',
-          bone: '#E8E4DB',
-        },
-        // Modern theme colors (kept for compatibility, shifted warm)
+        // Modern theme colors
         cyan: {
           DEFAULT: '#00D4FF',
           50: '#E5F9FF',
@@ -84,31 +71,14 @@ export default {
           600: '#00B894',
         },
       },
-      borderRadius: {
-        'stellar-hero': '20px',
-        'stellar': '16px',
-        'stellar-compact': '16px',
-        'stellar-button': '8px',
-      },
       backdropBlur: {
         xs: '2px',
-        'stellar-heavy': '40px',
-        'stellar-medium': '24px',
-        'stellar-light': '12px',
-      },
-      spacing: {
-        'stellar-xs': '0.5rem',
-        'stellar-sm': '1rem',
-        'stellar-md': '1.5rem',
-        'stellar-lg': '2.5rem',
-        'stellar-xl': '4rem',
-        'stellar-2xl': '6rem',
       },
       animation: {
-        'slide-up': 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-        'slide-down': 'slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-        'fade-in': 'fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-        'scale-in': 'scaleIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        'slide-up': 'slideUp 0.5s ease-out',
+        'slide-down': 'slideDown 0.5s ease-out',
+        'fade-in': 'fadeIn 0.5s ease-out',
+        'scale-in': 'scaleIn 0.3s ease-out',
         'glow': 'glow 2s ease-in-out infinite',
       },
       keyframes: {
@@ -129,8 +99,8 @@ export default {
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
         glow: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(224, 122, 95, 0.3)' },
-          '50%': { boxShadow: '0 0 30px rgba(224, 122, 95, 0.5)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(124, 92, 191, 0.5)' },
+          '50%': { boxShadow: '0 0 30px rgba(124, 92, 191, 0.8)' },
         },
       },
       boxShadow: {
@@ -140,15 +110,6 @@ export default {
         'glow-primary': '0 0 20px rgba(124, 92, 191, 0.5)', // Purple glow
         'glow-purple': '0 0 20px rgba(124, 92, 191, 0.5)',
         'glow-coral': '0 0 20px rgba(224, 122, 95, 0.5)',
-        // Stellar panel shadows
-        'stellar-panel': '0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
-        'stellar-panel-hover': '0 2px 4px rgba(0,0,0,0.35), 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
-        'stellar-glow': '0 0 40px rgba(224, 122, 95, 0.06)',
-        'stellar-glow-accent': '0 0 60px rgba(224, 122, 95, 0.10)',
-      },
-      transitionTimingFunction: {
-        'stellar-glass': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        'stellar-reveal': 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
     },
   },
