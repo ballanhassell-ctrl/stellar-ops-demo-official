@@ -5,11 +5,12 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import { toLocalDateString } from '../utils/dateUtils';
 
 /**
- * Calculate MTD Production by summing daily production for the full month
- * MTD Production is calculated from the 1st of the month to the selected date (30-day cycle)
- * This is different from BAM Current Revenue which is based on ~19 business days
+ * Calculate MTD Production by reading the most recent eod_mtd_production value for the month.
+ * Falls back to summing daily eod_daily_production if no stored MTD value exists.
+ * The stored eod_mtd_production is the authoritative source (uploaded via CSV).
  */
 export async function calculateMTDProduction(date: string): Promise<number> {
   try {
@@ -19,17 +20,33 @@ export async function calculateMTDProduction(date: string): Promise<number> {
 
     // First day of current month
     const monthStart = new Date(year, month, 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     // Last day of current month or current date, whichever is earlier
     const monthEnd = new Date(year, month + 1, 0);
     const currentDate = new Date(date);
     const endDate = currentDate < monthEnd ? currentDate : monthEnd;
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const endDateStr = toLocalDateString(endDate);
 
     console.log(`Calculating MTD Production from ${monthStartStr} to ${endDateStr}`);
 
-    // Sum all daily production for the month
+    // First, try to get the most recent stored eod_mtd_production for this month
+    const { data: mtdData, error: mtdError } = await supabase
+      .from('csd_metric_values')
+      .select('value, as_of_date')
+      .eq('field_key', 'eod_mtd_production')
+      .gte('as_of_date', monthStartStr)
+      .lte('as_of_date', endDateStr)
+      .order('as_of_date', { ascending: false })
+      .limit(1);
+
+    if (!mtdError && mtdData && mtdData.length > 0 && mtdData[0].value > 0) {
+      console.log(`MTD Production from stored value (${mtdData[0].as_of_date}): ${mtdData[0].value}`);
+      return mtdData[0].value;
+    }
+
+    // Fallback: Sum all daily production for the month
+    console.log('No stored MTD production found, falling back to daily sum');
     const { data, error } = await supabase
       .from('csd_metric_values')
       .select('value')
@@ -43,7 +60,7 @@ export async function calculateMTDProduction(date: string): Promise<number> {
     }
 
     const total = data?.reduce((sum, record) => sum + (record.value || 0), 0) || 0;
-    console.log(`MTD Production total: ${total}`);
+    console.log(`MTD Production total (from daily sum): ${total}`);
 
     return total;
   } catch (err) {
@@ -53,7 +70,9 @@ export async function calculateMTDProduction(date: string): Promise<number> {
 }
 
 /**
- * Calculate MTD Collected by summing daily payments for the current month
+ * Calculate MTD Collected by reading the most recent eod_mtd_collected value for the month.
+ * Falls back to summing daily eod_payments_collected if no stored MTD value exists.
+ * The stored eod_mtd_collected is the authoritative source (uploaded via CSV).
  */
 export async function calculateMTDCollected(date: string): Promise<number> {
   try {
@@ -63,17 +82,33 @@ export async function calculateMTDCollected(date: string): Promise<number> {
 
     // First day of current month
     const monthStart = new Date(year, month, 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     // Last day of current month or current date, whichever is earlier
     const monthEnd = new Date(year, month + 1, 0);
     const currentDate = new Date(date);
     const endDate = currentDate < monthEnd ? currentDate : monthEnd;
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const endDateStr = toLocalDateString(endDate);
 
     console.log(`Calculating MTD Collected from ${monthStartStr} to ${endDateStr}`);
 
-    // Sum all daily payments for the month
+    // First, try to get the most recent stored eod_mtd_collected for this month
+    const { data: mtdData, error: mtdError } = await supabase
+      .from('csd_metric_values')
+      .select('value, as_of_date')
+      .eq('field_key', 'eod_mtd_collected')
+      .gte('as_of_date', monthStartStr)
+      .lte('as_of_date', endDateStr)
+      .order('as_of_date', { ascending: false })
+      .limit(1);
+
+    if (!mtdError && mtdData && mtdData.length > 0 && mtdData[0].value > 0) {
+      console.log(`MTD Collected from stored value (${mtdData[0].as_of_date}): ${mtdData[0].value}`);
+      return mtdData[0].value;
+    }
+
+    // Fallback: Sum all daily payments for the month
+    console.log('No stored MTD collected found, falling back to daily sum');
     const { data, error } = await supabase
       .from('csd_metric_values')
       .select('value')
@@ -87,7 +122,7 @@ export async function calculateMTDCollected(date: string): Promise<number> {
     }
 
     const total = data?.reduce((sum, record) => sum + (record.value || 0), 0) || 0;
-    console.log(`MTD Collected total: ${total}`);
+    console.log(`MTD Collected total (from daily sum): ${total}`);
 
     return total;
   } catch (err) {
@@ -105,7 +140,8 @@ export function calculateCollectionRate(production: number, collected: number): 
 }
 
 /**
- * Calculate MTD New Patients by summing daily new patients for the current month
+ * Calculate MTD New Patients by reading the most recent eod_mtd_new_patients value for the month.
+ * Falls back to summing daily eod_new_patients if no stored MTD value exists.
  */
 export async function calculateMTDNewPatients(date: string): Promise<number> {
   try {
@@ -114,10 +150,27 @@ export async function calculateMTDNewPatients(date: string): Promise<number> {
     const month = targetDate.getMonth();
 
     const monthStart = new Date(year, month, 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     const endDateStr = date;
 
+    // First, try to get the most recent stored eod_mtd_new_patients for this month
+    const { data: mtdData, error: mtdError } = await supabase
+      .from('csd_metric_values')
+      .select('value, as_of_date')
+      .eq('field_key', 'eod_mtd_new_patients')
+      .gte('as_of_date', monthStartStr)
+      .lte('as_of_date', endDateStr)
+      .order('as_of_date', { ascending: false })
+      .limit(1);
+
+    if (!mtdError && mtdData && mtdData.length > 0 && mtdData[0].value > 0) {
+      console.log(`MTD New Patients from stored value (${mtdData[0].as_of_date}): ${mtdData[0].value}`);
+      return mtdData[0].value;
+    }
+
+    // Fallback: Sum all daily new patients for the month
+    console.log('No stored MTD new patients found, falling back to daily sum');
     const { data, error } = await supabase
       .from('csd_metric_values')
       .select('value')

@@ -6,18 +6,20 @@ import type { Session } from '@supabase/supabase-js';
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
-  signIn: (password: string) => Promise<{ error: string | null }>;
+  isAdmin: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Fixed email for single-password mode — only the password matters
-const AUTH_EMAIL = 'admin@dashboard.local';
+const ADMIN_EMAIL = 'admin@dashboard.local';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
     // Check for existing session
@@ -34,13 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = useCallback(async (password: string): Promise<{ error: string | null }> => {
+  const signIn = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({
-      email: AUTH_EMAIL,
+      email,
       password,
     });
     if (error) {
-      return { error: 'Invalid password. Please try again.' };
+      return { error: 'Invalid email or password. Please try again.' };
     }
     return { error: null };
   }, []);
@@ -51,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, loading, isAdmin, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

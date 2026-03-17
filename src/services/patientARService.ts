@@ -1,5 +1,6 @@
 // src/services/patientARService.ts
 import { supabase } from '../lib/supabaseClient';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export interface PatientARRecord {
   id: string;
@@ -170,7 +171,7 @@ export async function getPatientARByStatus(status: string): Promise<PatientARRec
  */
 export async function getPatientARAlerts(): Promise<PatientARRecord[]> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     const { data, error } = await supabase
       .from('patient_ar_tracker')

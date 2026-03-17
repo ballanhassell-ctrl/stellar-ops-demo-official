@@ -17,12 +17,16 @@ import {
   FileX2,
   TrendingDown,
   ChevronDown,
-  Save,
+
   Loader2,
   RefreshCw,
   Trash2,
+  MessageSquare,
+  History,
+  Mail,
+  Edit2,
 } from 'lucide-react';
-import type { PatientAR, PatientARStatus } from '../types/database.types';
+import type { PatientAR, PatientARStatus, NoteEntry } from '../types/database.types';
 import {
   getPatientARRecords,
   insertPatientAR,
@@ -32,6 +36,12 @@ import {
 import { isStaticDataMode } from '../config/dataMode';
 import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
+import { fetchDailyARReportData, generateDailyARReportHTML, sendDailyARReport } from '../services/dailyARReportService';
+import { getLocalDateString } from '../utils/dateUtils';
+import NotesAuditDrawer, { createAuditEntry } from './NotesAuditDrawer';
+import SuccessToast from './SuccessToast';
+import DraggableEditModal from './DraggableEditModal';
+import type { TabKey } from './DraggableEditModal';
 
 // =====================================================
 // CONSTANTS
@@ -63,7 +73,7 @@ type ActiveTab = 'collectible' | 'non_collectible';
 
 type EditingCell = {
   recordId: string;
-  field: 'background_notes' | 'team_discussion_notes' | 'action_needed' | 'dr_decision' | 'write_off_reason';
+  field: 'patient_name' | 'patient_id' | 'related_family' | 'current_balance' | 'dos' | 'background_notes' | 'team_discussion_notes' | 'action_needed' | 'dr_decision' | 'write_off_reason';
 } | null;
 
 type EditingContact = {
@@ -126,7 +136,7 @@ function getStatusLabel(status: PatientARStatus): string {
 // COMPONENT
 // =====================================================
 
-export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) {
+export default function PatientARTracker({ isDayMode, isAdmin, dashboardDate }: { isDayMode: boolean; isAdmin?: boolean; dashboardDate?: string }) {
   // ---------------------------------------------------
   // STATE
   // ---------------------------------------------------
@@ -146,6 +156,22 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   const [clearing, setClearing] = useState(false);
   const [contactInitials, setContactInitials] = useState('');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(null);
+
+  // Notes & Audit drawer state
+  const [drawerRecordId, setDrawerRecordId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Draggable edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalRecord, setEditModalRecord] = useState<PatientAR | null>(null);
+
+  // Daily report state
+  const [sendingReport, setSendingReport] = useState(false);
+  const [showReportPreview, setShowReportPreview] = useState(false);
+  const [reportPreviewHtml, setReportPreviewHtml] = useState('');
+  const [reportDate, setReportDate] = useState(dashboardDate || '');
+  const [reportRecipients, setReportRecipients] = useState('');
+  const [reportMessage, setReportMessage] = useState('');
 
   // ---------------------------------------------------
   // DATA FETCHING
@@ -229,11 +255,11 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     setSaving(true);
     try {
       const record: Omit<PatientAR, 'id' | 'created_at' | 'updated_at' | 'aging_days' | 'aging_bucket'> = {
-        patient_id: newForm.patient_id || null,
+        patient_id: newForm.patient_id.trim() || null,
         patient_name: sanitizePatientName(newForm.patient_name.trim()),
         related_family: newForm.related_family.trim() || null,
         dos: newForm.dos,
-        original_balance: newForm.original_balance ? parseFloat(newForm.original_balance) : null,
+        original_balance: newForm.original_balance ? parseFloat(newForm.original_balance) : parseFloat(newForm.current_balance),
         current_balance: parseFloat(newForm.current_balance),
         is_collectible: newForm.is_collectible,
         status: newForm.status,
@@ -250,6 +276,8 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         write_off_suggested_date: null,
         write_off_reason: null,
         collected_amount: 0,
+        structured_notes: [],
+        audit_trail: [createAuditEntry('created', 'staff', { notes: 'Record created' })],
         created_by: 'staff',
         updated_by: 'staff',
       };
@@ -269,6 +297,8 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
           id: fakeId,
           aging_days: agingDays,
           aging_bucket: agingBucket,
+          structured_notes: record.structured_notes || [],
+          audit_trail: record.audit_trail || [createAuditEntry('created', 'staff', { notes: 'Record created' })],
           created_at: now,
           updated_at: now,
         };
@@ -280,6 +310,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
       setNewForm({ ...EMPTY_FORM });
       setShowAddModal(false);
+      setToastMessage('Patient A/R record added successfully');
     } catch (err) {
       console.error('Error adding patient AR:', err);
       setError('Failed to add record. Please try again.');
@@ -291,12 +322,25 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   const handleUpdateField = useCallback(
     async (id: string, field: string, value: string | null) => {
       try {
+        const record = records.find((r) => r.id === id);
+        const oldValue = record ? String((record as Record<string, unknown>)[field] ?? '') : '';
+        const auditEntry = createAuditEntry('updated', 'staff', {
+          field,
+          oldValue: oldValue || null,
+          newValue: value,
+        });
+
         if (isStaticDataMode()) {
           setRecords((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, [field]: value, updated_at: new Date().toISOString() } : r)),
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, [field]: value, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
+                : r,
+            ),
           );
         } else {
-          await updatePatientAR(id, { [field]: value, updated_by: 'staff' });
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(id, { [field]: value, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
           await fetchData();
         }
       } catch (err) {
@@ -304,18 +348,31 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         setError('Failed to update. Please try again.');
       }
     },
-    [fetchData],
+    [fetchData, records],
   );
 
   const handleStatusChange = useCallback(
     async (id: string, newStatus: PatientARStatus) => {
       try {
+        const record = records.find((r) => r.id === id);
+        const oldStatus = record?.status || '';
+        const auditEntry = createAuditEntry('status_changed', 'staff', {
+          field: 'status',
+          oldValue: oldStatus,
+          newValue: newStatus,
+        });
+
         if (isStaticDataMode()) {
           setRecords((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, status: newStatus, updated_at: new Date().toISOString() } : r)),
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, status: newStatus, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
+                : r,
+            ),
           );
         } else {
-          await updatePatientAR(id, { status: newStatus, updated_by: 'staff' });
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(id, { status: newStatus, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
           await fetchData();
         }
         setStatusDropdownOpen(null);
@@ -324,22 +381,30 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         setError('Failed to update status.');
       }
     },
-    [fetchData],
+    [fetchData, records],
   );
 
   const handleToggleCollectible = useCallback(
     async (id: string, makeCollectible: boolean) => {
       try {
+        const record = records.find((r) => r.id === id);
+        const auditEntry = createAuditEntry('moved', 'staff', {
+          field: 'is_collectible',
+          oldValue: record?.is_collectible ? 'Collectible' : 'Non-Collectible',
+          newValue: makeCollectible ? 'Collectible' : 'Non-Collectible',
+        });
+
         if (isStaticDataMode()) {
           setRecords((prev) =>
             prev.map((r) =>
               r.id === id
-                ? { ...r, is_collectible: makeCollectible, updated_at: new Date().toISOString() }
+                ? { ...r, is_collectible: makeCollectible, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() }
                 : r,
             ),
           );
         } else {
-          await updatePatientAR(id, { is_collectible: makeCollectible, updated_by: 'staff' });
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(id, { is_collectible: makeCollectible, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
           await fetchData();
         }
       } catch (err) {
@@ -347,7 +412,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
         setError('Failed to move record.');
       }
     },
-    [fetchData],
+    [fetchData, records],
   );
 
   const handleMarkCompleted = useCallback(
@@ -393,10 +458,57 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
 
   const handleSaveEditingCell = useCallback(async () => {
     if (!editingCell) return;
-    await handleUpdateField(editingCell.recordId, editingCell.field, editingValue.trim() || null);
+    const { recordId, field } = editingCell;
+
+    if (field === 'current_balance') {
+      const numValue = parseFloat(editingValue);
+      if (isNaN(numValue) || numValue < 0) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      try {
+        const record = records.find((r) => r.id === recordId);
+        const oldValue = record ? String(record.current_balance) : '';
+        const auditEntry = createAuditEntry('updated', 'staff', {
+          field: 'current_balance',
+          oldValue,
+          newValue: String(numValue),
+        });
+        if (isStaticDataMode()) {
+          setRecords((prev) =>
+            prev.map((r) => (r.id === recordId ? { ...r, current_balance: numValue, audit_trail: [...(r.audit_trail || []), auditEntry], updated_at: new Date().toISOString() } : r)),
+          );
+        } else {
+          const existingTrail = record?.audit_trail || [];
+          await updatePatientAR(recordId, { current_balance: numValue, audit_trail: [...existingTrail, auditEntry], updated_by: 'staff' });
+          await fetchData();
+        }
+      } catch (err) {
+        console.error('Error updating field:', err);
+        setError('Failed to update. Please try again.');
+      }
+    } else if (field === 'patient_name') {
+      const trimmed = sanitizePatientName(editingValue.trim());
+      if (!trimmed) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, trimmed);
+    } else if (field === 'dos') {
+      if (!editingValue) {
+        setEditingCell(null);
+        setEditingValue('');
+        return;
+      }
+      await handleUpdateField(recordId, field, editingValue);
+    } else {
+      await handleUpdateField(recordId, field, editingValue.trim() || null);
+    }
     setEditingCell(null);
     setEditingValue('');
-  }, [editingCell, editingValue, handleUpdateField]);
+  }, [editingCell, editingValue, handleUpdateField, fetchData]);
 
   const handleSaveContact = useCallback(async () => {
     if (!editingContact) return;
@@ -415,6 +527,14 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
           : 'final_contact_initials';
 
     try {
+      const record = records.find((r) => r.id === recordId);
+      const auditEntry = createAuditEntry('updated', contactInitials.trim() || 'staff', {
+        field: `${contactType}_contact`,
+        oldValue: (record as Record<string, unknown>)?.[dateField] as string || null,
+        newValue: contactDate || null,
+        notes: `${contactType} contact set: ${contactDate || 'cleared'} by ${contactInitials.trim() || 'staff'}`,
+      });
+
       if (isStaticDataMode()) {
         setRecords((prev) =>
           prev.map((r) =>
@@ -423,15 +543,18 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                   ...r,
                   [dateField]: contactDate || null,
                   [initialsField]: contactInitials.trim() || null,
+                  audit_trail: [...(r.audit_trail || []), auditEntry],
                   updated_at: new Date().toISOString(),
                 }
               : r,
           ),
         );
       } else {
+        const existingTrail = record?.audit_trail || [];
         await updatePatientAR(recordId, {
           [dateField]: contactDate || null,
           [initialsField]: contactInitials.trim() || null,
+          audit_trail: [...existingTrail, auditEntry],
           updated_by: 'staff',
         });
         await fetchData();
@@ -484,6 +607,102 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
   }, []);
 
   // ---------------------------------------------------
+  // DAILY REPORT HANDLERS
+  // ---------------------------------------------------
+
+  const handlePreviewDailyReport = useCallback(async (dateOverride?: string) => {
+    try {
+      const data = await fetchDailyARReportData(dateOverride || reportDate || undefined);
+      const logoBaseUrl = window.location.origin;
+      const html = generateDailyARReportHTML(data, logoBaseUrl);
+      setReportPreviewHtml(html);
+      setShowReportPreview(true);
+    } catch (err) {
+      console.error('Error generating daily report preview:', err);
+      setError('Failed to generate daily report preview.');
+    }
+  }, [reportDate]);
+
+  const handleSendDailyReport = useCallback(async () => {
+    const recipientList = reportRecipients.split(',').map(e => e.trim()).filter(Boolean);
+    if (recipientList.length === 0) {
+      setError('Please enter at least one email recipient.');
+      return;
+    }
+    setSendingReport(true);
+    try {
+      const data = await fetchDailyARReportData(reportDate || undefined);
+      const result = await sendDailyARReport(
+        recipientList,
+        data,
+        reportMessage || undefined,
+      );
+      if (result.success) {
+        setToastMessage('Daily A/R report sent successfully!');
+      } else {
+        // Fallback: open in new tab for manual sending
+        const html = generateDailyARReportHTML(data, window.location.origin, reportMessage || undefined);
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setToastMessage('Report opened in new tab (email service not configured). You can print or forward it.');
+      }
+      setShowReportPreview(false);
+    } catch (err) {
+      console.error('Error sending daily report:', err);
+      setError('Failed to send daily report.');
+    } finally {
+      setSendingReport(false);
+    }
+  }, [reportDate, reportRecipients, reportMessage]);
+
+  // ---------------------------------------------------
+  // NOTES & AUDIT DRAWER HANDLERS
+  // ---------------------------------------------------
+
+  const drawerRecord = useMemo(
+    () => records.find((r) => r.id === drawerRecordId) || null,
+    [records, drawerRecordId],
+  );
+
+  const handleAddNote = useCallback(
+    async (note: NoteEntry) => {
+      if (!drawerRecordId) return;
+      const record = records.find((r) => r.id === drawerRecordId);
+      if (!record) return;
+
+      const updatedNotes = [...(record.structured_notes || []), note];
+      const auditEntry = createAuditEntry('note_added', note.author || 'staff', {
+        notes: `Note added by ${note.author || 'staff'} (${note.source})`,
+      });
+      const updatedTrail = [...(record.audit_trail || []), auditEntry];
+
+      try {
+        if (isStaticDataMode()) {
+          setRecords((prev) =>
+            prev.map((r) =>
+              r.id === drawerRecordId
+                ? { ...r, structured_notes: updatedNotes, audit_trail: updatedTrail, updated_at: new Date().toISOString() }
+                : r,
+            ),
+          );
+        } else {
+          await updatePatientAR(drawerRecordId, {
+            structured_notes: updatedNotes,
+            audit_trail: updatedTrail,
+            updated_by: 'staff',
+          });
+          await fetchData();
+        }
+      } catch (err) {
+        console.error('Error adding note:', err);
+        setError('Failed to add note.');
+      }
+    },
+    [drawerRecordId, records, fetchData],
+  );
+
+  // ---------------------------------------------------
   // RENDER HELPERS
   // ---------------------------------------------------
 
@@ -533,57 +752,106 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     record: PatientAR,
     field: NonNullable<EditingCell>['field'],
     value: string | null,
+    displayValue?: string,
+    customClassName?: string,
   ) {
     const isEditing = editingCell?.recordId === record.id && editingCell?.field === field;
+    const inputType = field === 'current_balance' ? 'number' : field === 'dos' ? 'date' : 'text';
+    const useTextarea = !['patient_name', 'patient_id', 'related_family', 'current_balance', 'dos'].includes(field);
 
-    if (isEditing) {
-      return (
-        <div className="flex items-center gap-1">
-          <textarea
-            value={editingValue}
-            onChange={(e) => setEditingValue(e.target.value)}
-            autoFocus
-            rows={2}
-            className={`w-full px-2 py-1 rounded-lg border text-xs resize-none ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSaveEditingCell();
-              }
-              if (e.key === 'Escape') {
-                setEditingCell(null);
-                setEditingValue('');
-              }
-            }}
-          />
-          <button
-            onClick={handleSaveEditingCell}
-            className="p-1 text-emerald-500 hover:text-emerald-600 flex-shrink-0"
-            title="Save"
-          >
-            <Save className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => {
-              setEditingCell(null);
-              setEditingValue('');
-            }}
-            className="p-1 text-red-400 hover:text-red-500 flex-shrink-0"
-            title="Cancel"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      );
-    }
+    const fieldLabels: Record<string, string> = {
+      patient_name: 'Patient Name',
+      patient_id: 'Patient ID',
+      related_family: 'Related Family',
+      current_balance: 'Balance',
+      dos: 'Date of Service',
+      background_notes: 'Background Notes',
+      team_discussion_notes: 'Team Discussion',
+      action_needed: 'Action Needed',
+      dr_decision: 'Dr. Gajjar Decision',
+      write_off_reason: 'Write-Off Reason',
+    };
+
+    const shownValue = displayValue || value;
 
     return (
-      <div
-        onClick={() => startEditCell(record.id, field, value)}
-        className={`cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs leading-relaxed ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${value ? '' : 'italic opacity-40'}`}
-        title="Click to edit"
-      >
-        {value || 'Click to add...'}
+      <div className="relative">
+        <div
+          onClick={() => startEditCell(record.id, field, value)}
+          className={customClassName || `cursor-pointer min-h-[24px] px-1 py-0.5 rounded text-xs leading-snug ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${shownValue ? '' : 'italic opacity-40'}`}
+          title="Click to edit"
+        >
+          {shownValue || '--'}
+        </div>
+
+        {/* Floating edit popover */}
+        {isEditing && (
+          <div
+            className={`absolute z-50 left-0 top-full mt-1 rounded-xl shadow-2xl border ${isDayMode ? 'bg-white border-gray-200' : 'bg-gray-800 border-white/15'} p-3`}
+            style={{ minWidth: useTextarea ? '280px' : '220px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-1.5 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {fieldLabels[field] || field}
+            </p>
+            {useTextarea ? (
+              <textarea
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                autoFocus
+                rows={3}
+                className={`w-full px-3 py-2 rounded-lg border text-sm resize-none ${isDayMode ? 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-300' : 'bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500/40'} focus:outline-none`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveEditingCell();
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingCell(null);
+                    setEditingValue('');
+                  }
+                }}
+              />
+            ) : (
+              <input
+                type={inputType}
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                autoFocus
+                step={field === 'current_balance' ? '0.01' : undefined}
+                min={field === 'current_balance' ? '0' : undefined}
+                className={`w-full px-3 py-2 rounded-lg border text-sm ${isDayMode ? 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-300' : 'bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500/40'} focus:outline-none`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSaveEditingCell();
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingCell(null);
+                    setEditingValue('');
+                  }
+                }}
+              />
+            )}
+            <div className="flex items-center justify-end gap-2 mt-2">
+              <button
+                onClick={() => {
+                  setEditingCell(null);
+                  setEditingValue('');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/10'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditingCell}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -595,74 +863,160 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
     initialsValue: string | null,
   ) {
     const isEditing = editingContact?.recordId === record.id && editingContact?.contactType === contactType;
-
-    if (isEditing) {
-      return (
-        <div className="flex flex-col gap-1">
-          <input
-            type="date"
-            value={contactDate}
-            onChange={(e) => setContactDate(e.target.value)}
-            className={`w-full px-2 py-1 rounded-lg border text-xs ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
-          />
-          <input
-            type="text"
-            placeholder="Initials"
-            value={contactInitials}
-            onChange={(e) => setContactInitials(e.target.value.toUpperCase())}
-            maxLength={5}
-            className={`w-full px-2 py-1 rounded-lg border text-xs ${isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/5 border-white/10 text-white'}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSaveContact();
-              if (e.key === 'Escape') {
-                setEditingContact(null);
-                setContactDate('');
-                setContactInitials('');
-              }
-            }}
-          />
-          <div className="flex gap-1">
-            <button
-              onClick={handleSaveContact}
-              className="p-1 text-emerald-500 hover:text-emerald-600"
-              title="Save"
-            >
-              <Save className="w-3 h-3" />
-            </button>
-            <button
-              onClick={() => {
-                setEditingContact(null);
-                setContactDate('');
-                setContactInitials('');
-              }}
-              className="p-1 text-red-400 hover:text-red-500"
-              title="Cancel"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      );
-    }
-
     const hasData = dateValue || initialsValue;
+    const contactLabel = contactType === 'final' ? 'Final Contact' : `${contactType} Contact`;
+
     return (
-      <div
-        onClick={() => startEditContact(record.id, contactType, dateValue, initialsValue)}
-        className={`cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs text-center ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${hasData ? '' : 'italic opacity-40'}`}
-        title="Click to set contact"
-      >
-        {hasData ? (
-          <div className="flex flex-col items-center">
-            <span>{formatShortDate(dateValue)}</span>
-            {initialsValue && <span className="font-semibold text-[10px] opacity-70">{initialsValue}</span>}
+      <div className="relative">
+        <div
+          onClick={() => startEditContact(record.id, contactType, dateValue, initialsValue)}
+          className={`cursor-pointer min-h-[24px] px-1 py-0.5 rounded text-xs text-center ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'} ${hasData ? '' : 'italic opacity-40'}`}
+          title="Click to set contact"
+        >
+          {hasData ? (
+            <div className="flex flex-col items-center leading-tight">
+              <span>{formatShortDate(dateValue)}</span>
+              {initialsValue && <span className="font-semibold text-[10px] opacity-70">{initialsValue}</span>}
+            </div>
+          ) : (
+            '--'
+          )}
+        </div>
+
+        {/* Floating contact popover */}
+        {isEditing && (
+          <div
+            className={`absolute z-50 left-1/2 -translate-x-1/2 top-full mt-1 rounded-xl shadow-2xl border ${isDayMode ? 'bg-white border-gray-200' : 'bg-gray-800 border-white/15'} p-3`}
+            style={{ minWidth: '200px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {contactLabel}
+            </p>
+            <div className="space-y-2">
+              <div>
+                <label className={`text-[10px] font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Date</label>
+                <input
+                  type="date"
+                  value={contactDate}
+                  onChange={(e) => setContactDate(e.target.value)}
+                  autoFocus
+                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDayMode ? 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-300' : 'bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500/40'} focus:outline-none`}
+                />
+              </div>
+              <div>
+                <label className={`text-[10px] font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>Initials</label>
+                <input
+                  type="text"
+                  placeholder="e.g. DM"
+                  value={contactInitials}
+                  onChange={(e) => setContactInitials(e.target.value.toUpperCase())}
+                  maxLength={5}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDayMode ? 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-300' : 'bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500/40'} focus:outline-none`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveContact();
+                    if (e.key === 'Escape') {
+                      setEditingContact(null);
+                      setContactDate('');
+                      setContactInitials('');
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-2">
+              <button
+                onClick={() => {
+                  setEditingContact(null);
+                  setContactDate('');
+                  setContactInitials('');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/10'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveContact}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              >
+                Save
+              </button>
+            </div>
           </div>
-        ) : (
-          '--'
         )}
       </div>
     );
   }
+
+  // ---------------------------------------------------
+  // MODAL SAVE HANDLER (must be before early returns to satisfy hooks rules)
+  // ---------------------------------------------------
+  const handleModalSave = useCallback(async (_tab: TabKey, data: Record<string, unknown>, isNewEntry: boolean) => {
+    try {
+      if (isNewEntry) {
+        const newRecord = {
+          patient_name: sanitizePatientName(String(data.patient_name || '')),
+          patient_id: String(data.patient_id || '') || null,
+          related_family: String(data.related_family || '') || null,
+          dos: String(data.dos || getLocalDateString()),
+          current_balance: Number(data.current_balance) || 0,
+          original_balance: data.original_balance ? Number(data.original_balance) : null,
+          status: (String(data.status) || 'not_started') as PatientARStatus,
+          action_needed: String(data.action_needed || '') || null,
+          background_notes: String(data.background_notes || '') || null,
+          is_collectible: activeTab === 'collectible',
+          collected_amount: 0,
+          team_discussion_notes: null,
+          dr_decision: null,
+          first_contact_date: null,
+          first_contact_initials: null,
+          second_contact_date: null,
+          second_contact_initials: null,
+          final_contact_date: null,
+          final_contact_initials: null,
+          write_off_suggested_date: null,
+          write_off_reason: null,
+          created_by: 'staff',
+          updated_by: 'staff',
+          structured_notes: [] as NoteEntry[],
+          audit_trail: [createAuditEntry('created', 'staff')],
+        };
+        if (isStaticDataMode()) {
+          setRecords((prev) => [{ ...newRecord, id: crypto.randomUUID(), aging_days: 0, aging_bucket: '0-30' as const }, ...prev]);
+        } else {
+          await insertPatientAR(newRecord);
+          await fetchData();
+        }
+      } else {
+        const id = String(data.id);
+        const record = records.find((r) => r.id === id);
+        const auditEntry = createAuditEntry('updated', 'staff');
+        const existingTrail = record?.audit_trail || [];
+        const updates: Record<string, unknown> = {
+          patient_name: sanitizePatientName(String(data.patient_name || '')),
+          patient_id: String(data.patient_id || '') || null,
+          related_family: String(data.related_family || '') || null,
+          dos: String(data.dos || ''),
+          current_balance: Number(data.current_balance) || 0,
+          status: String(data.status) || 'not_started',
+          action_needed: String(data.action_needed || '') || null,
+          background_notes: String(data.background_notes || '') || null,
+          audit_trail: [...existingTrail, auditEntry],
+          updated_by: 'staff',
+        };
+        if (isStaticDataMode()) {
+          setRecords((prev) => prev.map((r) => r.id === id ? { ...r, ...updates, updated_at: new Date().toISOString() } as PatientAR : r));
+        } else {
+          await updatePatientAR(id, updates);
+          await fetchData();
+        }
+      }
+      setEditModalOpen(false);
+      setEditModalRecord(null);
+    } catch (err) {
+      throw err;
+    }
+  }, [activeTab, fetchData, records]);
 
   // ---------------------------------------------------
   // RENDER: LOADING / ERROR
@@ -745,6 +1099,30 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
             <Plus className="w-4 h-4" />
             Add Patient A/R
           </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <input
+                type="date"
+                value={reportDate}
+                max={getLocalDateString()}
+                onChange={(e) => setReportDate(e.target.value)}
+                className={`px-2 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  isDayMode ? 'bg-white/60 border-gray-300 text-gray-900' : 'bg-white/10 border-white/20 text-white'
+                }`}
+              />
+            )}
+            <button
+              onClick={() => handlePreviewDailyReport()}
+              disabled={sendingReport}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
+                isDayMode ? 'border-blue-300 text-blue-600 hover:bg-blue-50' : 'border-blue-700 text-blue-400 hover:bg-blue-900/30'
+              }`}
+              title="Preview & send daily A/R report"
+            >
+              <Mail className="w-4 h-4" />
+              Daily Report{isAdmin && reportDate && reportDate !== getLocalDateString() ? ` (${reportDate})` : ''}
+            </button>
+          </div>
           <button
             onClick={() => setShowClearConfirm(true)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
@@ -778,108 +1156,30 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
       )}
 
       {/* ============================================= */}
-      {/* SUMMARY CARDS */}
+      {/* SUMMARY STRIP — compact single-row metrics */}
       {/* ============================================= */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {/* Total Collectible Accounts */}
-        <div
-          className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 rounded-lg bg-blue-500/10">
-              <Users className="w-4 h-4 text-blue-500" />
-            </div>
-            <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Collectible Accounts
-            </span>
-          </div>
-          <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-            {collectibleRecords.length}
-          </p>
-        </div>
-
-        {/* Total Non-Collectible Accounts */}
-        <div
-          className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 rounded-lg bg-red-500/10">
-              <FileX2 className="w-4 h-4 text-red-500" />
-            </div>
-            <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Non-Collectible
-            </span>
-          </div>
-          <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-            {nonCollectibleRecords.length}
-          </p>
-        </div>
-
-        {/* Total Collectible Balance */}
-        <div
-          className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 rounded-lg bg-emerald-500/10">
-              <DollarSign className="w-4 h-4 text-emerald-500" />
-            </div>
-            <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Collectible Balance
-            </span>
-          </div>
-          <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-            {formatCurrency(totalCollectibleBalance)}
-          </p>
-        </div>
-
-        {/* Total Write-Off Balance */}
-        <div
-          className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 rounded-lg bg-orange-500/10">
-              <TrendingDown className="w-4 h-4 text-orange-500" />
-            </div>
-            <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Write-Off Balance
-            </span>
-          </div>
-          <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-            {formatCurrency(totalWriteOffBalance)}
-          </p>
-        </div>
-
-        {/* Total Collected */}
-        <div
-          className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 rounded-lg bg-green-500/10">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-            </div>
-            <span className={`text-xs font-medium ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Total Collected
-            </span>
-          </div>
-          <p className={`text-2xl font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-            {formatCurrency(totalCollected)}
-          </p>
-        </div>
-      </div>
-
-      {/* ============================================= */}
-      {/* STATUS COLOR KEY */}
-      {/* ============================================= */}
-      <div
-        className={`rounded-2xl p-4 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}
-      >
-        <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-          Status Color Key
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map((opt) => (
-            <span key={opt.value}>{renderStatusBadge(opt.value)}</span>
-          ))}
+      <div className={`rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+        <div className="flex items-stretch divide-x ${isDayMode ? 'divide-gray-200/60' : 'divide-white/10'}">
+          {[
+            { label: 'Collectible', value: String(collectibleRecords.length), icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+            { label: 'Non-Collect.', value: String(nonCollectibleRecords.length), icon: FileX2, color: 'text-red-500', bg: 'bg-red-500/10' },
+            { label: 'Collect. Balance', value: formatCurrency(totalCollectibleBalance), icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+            { label: 'Write-Off Bal.', value: formatCurrency(totalWriteOffBalance), icon: TrendingDown, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+            { label: 'Collected', value: formatCurrency(totalCollected), icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-500/10' },
+          ].map((m) => {
+            const Icon = m.icon;
+            return (
+              <div key={m.label} className="flex-1 flex items-center gap-2.5 px-4 py-3">
+                <div className={`p-1.5 rounded-lg ${m.bg} flex-shrink-0`}>
+                  <Icon className={`w-3.5 h-3.5 ${m.color}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-400' : 'text-gray-500'} truncate`}>{m.label}</p>
+                  <p className={`text-sm font-bold ${isDayMode ? 'text-gray-900' : 'text-white'} truncate`}>{m.value}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -940,25 +1240,28 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
       {/* SECTION HEADER */}
       {/* ============================================= */}
       <div
-        className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'} hover-lift`}
+        className={`rounded-xl ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}
       >
-        <h3 className={`text-lg font-bold mb-1 ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-          {activeTab === 'collectible'
-            ? 'Collectible Accounts - Weekly A/R Review'
-            : 'Non-Collectible Accounts - Potential Write-Offs (Discuss with Dr. Gajjar)'}
-        </h3>
-        <p className={`text-xs mb-4 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-          {activeTab === 'collectible'
-            ? 'Active patient balances being pursued for collection. Click cells to edit notes, contacts, and status.'
-            : 'Accounts recommended for write-off. Includes Dr. Gajjar decision column. Click cells to edit.'}
-        </p>
+        <div className="flex items-center justify-between px-5 py-3 border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}">
+          <div>
+            <h3 className={`text-sm font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+              {activeTab === 'collectible'
+                ? 'Collectible Accounts'
+                : 'Non-Collectible — Write-Offs'}
+            </h3>
+            <p className={`text-[10px] mt-0.5 ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Click any cell to edit. Status key:
+              {' '}{STATUS_OPTIONS.slice(0, 4).map((o) => o.label).join(' / ')} / ...
+            </p>
+          </div>
+        </div>
 
         {/* ============================================= */}
         {/* TABLE */}
         {/* ============================================= */}
         {activeRecords.length === 0 ? (
-          <div className="text-center py-12">
-            <p className={`text-sm ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className="text-center py-8 px-5">
+            <p className={`text-xs ${isDayMode ? 'text-gray-400' : 'text-gray-500'}`}>
               {searchQuery
                 ? 'No matching records found.'
                 : activeTab === 'collectible'
@@ -967,35 +1270,38 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 px-6">
+          <div className="overflow-x-auto">
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className={`border-b ${isDayMode ? 'border-gray-200' : 'border-white/10'}`}>
-                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Patient Name
                   </th>
-                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Patient ID
+                  </th>
+                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Family
                   </th>
-                  <th className={`text-right text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-right text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Balance
                   </th>
-                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     DOS
                   </th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[140px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Background Notes
                   </th>
-                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-left text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Status
                   </th>
-                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     1st Contact
                   </th>
-                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     2nd Contact
                   </th>
-                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Final Contact
                   </th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[140px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
@@ -1003,6 +1309,9 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                   </th>
                   <th className={`text-left text-xs font-semibold uppercase tracking-wider py-3 px-2 min-w-[120px] ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Action Needed
+                  </th>
+                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Notes / Audit
                   </th>
                   {activeTab === 'non_collectible' && (
                     <>
@@ -1014,7 +1323,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                       </th>
                     </>
                   )}
-                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-3 px-2 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <th className={`text-center text-xs font-semibold uppercase tracking-wider py-2 px-1.5 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                     Actions
                   </th>
                 </tr>
@@ -1023,31 +1332,67 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                 {activeRecords.map((record) => (
                   <tr
                     key={record.id}
-                    className={`${isDayMode ? 'hover:bg-white/40' : 'hover:bg-white/5'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
+                    className={`${isDayMode ? 'stellar-row-hover' : 'stellar-row-hover-dark'} transition-colors border-b ${isDayMode ? 'border-gray-100' : 'border-white/5'}`}
                     onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={() => { setEditModalRecord(record); setEditModalOpen(true); }}
                   >
                     {/* Patient Name */}
-                    <td className={`py-2.5 px-2 text-sm font-medium ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {record.patient_name}
+                    <td className="py-1.5 px-1.5">
+                      {renderEditableCell(
+                        record,
+                        'patient_name',
+                        record.patient_name,
+                        record.patient_name,
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-medium ${isDayMode ? 'text-gray-900 hover:bg-gray-100' : 'text-white hover:bg-white/5'}`,
+                      )}
+                    </td>
+
+                    {/* Patient ID */}
+                    <td className="py-1.5 px-1.5">
+                      {renderEditableCell(
+                        record,
+                        'patient_id',
+                        record.patient_id,
+                        record.patient_id || '--',
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'} ${!record.patient_id ? 'italic opacity-40' : ''}`,
+                      )}
                     </td>
 
                     {/* Related Family */}
-                    <td className={`py-2.5 px-2 text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {record.related_family || '--'}
+                    <td className="py-1.5 px-1.5">
+                      {renderEditableCell(
+                        record,
+                        'related_family',
+                        record.related_family,
+                        record.related_family || '--',
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'} ${!record.related_family ? 'italic opacity-40' : ''}`,
+                      )}
                     </td>
 
                     {/* Balance */}
-                    <td className={`py-2.5 px-2 text-sm font-semibold text-right ${record.current_balance >= 500 ? 'text-red-500' : isDayMode ? 'text-gray-900' : 'text-white'}`}>
-                      {formatCurrency(record.current_balance)}
+                    <td className="py-1.5 px-1.5">
+                      {renderEditableCell(
+                        record,
+                        'current_balance',
+                        String(record.current_balance),
+                        formatCurrency(record.current_balance),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-sm font-semibold text-right ${record.current_balance >= 500 ? 'text-red-500' : isDayMode ? 'text-gray-900' : 'text-white'} ${isDayMode ? 'hover:bg-gray-100' : 'hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* DOS */}
-                    <td className={`py-2.5 px-2 text-xs ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {formatDate(record.dos)}
+                    <td className="py-1.5 px-1.5">
+                      {renderEditableCell(
+                        record,
+                        'dos',
+                        record.dos,
+                        formatDate(record.dos),
+                        `cursor-pointer min-h-[28px] px-1 py-0.5 rounded text-xs ${isDayMode ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/5'}`,
+                      )}
                     </td>
 
                     {/* Background Notes */}
-                    <td className="py-2.5 px-2">
+                    <td className="py-1.5 px-1.5">
                       {renderEditableCell(record, 'background_notes', record.background_notes)}
                     </td>
 
@@ -1057,45 +1402,75 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
                     </td>
 
                     {/* 1st Contact */}
-                    <td className="py-2.5 px-2">
+                    <td className="py-1.5 px-1.5">
                       {renderContactCell(record, '1st', record.first_contact_date, record.first_contact_initials)}
                     </td>
 
                     {/* 2nd Contact */}
-                    <td className="py-2.5 px-2">
+                    <td className="py-1.5 px-1.5">
                       {renderContactCell(record, '2nd', record.second_contact_date, record.second_contact_initials)}
                     </td>
 
                     {/* Final Contact */}
-                    <td className="py-2.5 px-2">
+                    <td className="py-1.5 px-1.5">
                       {renderContactCell(record, 'final', record.final_contact_date, record.final_contact_initials)}
                     </td>
 
                     {/* Team Discussion Notes */}
-                    <td className="py-2.5 px-2">
+                    <td className="py-1.5 px-1.5">
                       {renderEditableCell(record, 'team_discussion_notes', record.team_discussion_notes)}
                     </td>
 
                     {/* Action Needed */}
-                    <td className="py-2.5 px-2">
+                    <td className="py-1.5 px-1.5">
                       {renderEditableCell(record, 'action_needed', record.action_needed)}
+                    </td>
+
+                    {/* Notes & Audit Trail */}
+                    <td className="py-1.5 px-1.5">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => setDrawerRecordId(record.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            isDayMode
+                              ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+                              : 'text-blue-300 bg-blue-900/30 hover:bg-blue-900/50'
+                          }`}
+                          title="View notes & audit trail"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          {(record.structured_notes || []).length > 0 && (
+                            <span>{(record.structured_notes || []).length}</span>
+                          )}
+                          <History className="w-3 h-3 ml-0.5" />
+                        </button>
+                      </div>
                     </td>
 
                     {/* Non-collectible extra columns */}
                     {activeTab === 'non_collectible' && (
                       <>
-                        <td className="py-2.5 px-2">
+                        <td className="py-1.5 px-1.5">
                           {renderEditableCell(record, 'dr_decision', record.dr_decision)}
                         </td>
-                        <td className="py-2.5 px-2">
+                        <td className="py-1.5 px-1.5">
                           {renderEditableCell(record, 'write_off_reason', record.write_off_reason)}
                         </td>
                       </>
                     )}
 
                     {/* Actions */}
-                    <td className="py-2.5 px-2">
+                    <td className="py-1.5 px-1.5">
                       <div className="flex items-center justify-center gap-1">
+                        {/* Open edit modal */}
+                        <button
+                          onClick={() => { setEditModalRecord(record); setEditModalOpen(true); }}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-colors ${isDayMode ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-blue-900/20 text-blue-400 hover:bg-blue-900/40'}`}
+                          title="Edit record"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          Edit
+                        </button>
                         {/* Toggle collectible / write-off */}
                         {activeTab === 'collectible' ? (
                           <button
@@ -1149,7 +1524,7 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
       {/* ============================================= */}
       {showAddModal && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
           onClick={() => setShowAddModal(false)}
         >
           <div
@@ -1351,6 +1726,112 @@ export default function PatientARTracker({ isDayMode }: { isDayMode: boolean }) 
           </div>
         </div>
       )}
+
+      {/* Daily Report Preview Modal */}
+      {showReportPreview && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowReportPreview(false)}
+        >
+          <div
+            className={`w-full max-w-3xl max-h-[85vh] rounded-2xl ${isDayMode ? 'glass-card border border-white/40' : 'glass-card-dark border border-white/10'} shadow-2xl flex flex-col`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>
+                  Daily A/R Report Preview
+                </h3>
+                <button
+                  onClick={() => setShowReportPreview(false)}
+                  className={`p-2 rounded-lg ${isDayMode ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-white/10 text-gray-400'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Recipients (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={reportRecipients}
+                    onChange={(e) => setReportRecipients(e.target.value)}
+                    placeholder="email@example.com, another@example.com"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-white/20 bg-white/10 text-white'
+                    }`}
+                  />
+                </div>
+                <button
+                  onClick={handleSendDailyReport}
+                  disabled={sendingReport || !reportRecipients.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-semibold text-sm disabled:opacity-50"
+                >
+                  {sendingReport ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />Sending...</>
+                  ) : (
+                    <><Mail className="w-4 h-4" />Email Report</>
+                  )}
+                </button>
+              </div>
+              <div className="mt-3">
+                <label className={`block text-xs font-medium mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  Additional Message (Optional)
+                </label>
+                <textarea
+                  value={reportMessage}
+                  onChange={(e) => setReportMessage(e.target.value)}
+                  rows={2}
+                  placeholder="Add a note for the team..."
+                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                    isDayMode ? 'border-gray-300 bg-white text-gray-900' : 'border-white/20 bg-white/10 text-white'
+                  }`}
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <iframe
+                srcDoc={reportPreviewHtml}
+                className="w-full h-full min-h-[500px]"
+                title="Daily A/R Report Preview"
+                sandbox="allow-same-origin"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notes & Audit Trail Drawer */}
+      <NotesAuditDrawer
+        isOpen={!!drawerRecordId}
+        onClose={() => setDrawerRecordId(null)}
+        isDayMode={isDayMode}
+        entityType="Patient A/R"
+        entityLabel={drawerRecord?.patient_name || ''}
+        notes={drawerRecord?.structured_notes || []}
+        auditTrail={drawerRecord?.audit_trail || []}
+        onAddNote={handleAddNote}
+      />
+
+      {/* Success Toast */}
+      <SuccessToast
+        message={toastMessage || ''}
+        isVisible={!!toastMessage}
+        onClose={() => setToastMessage(null)}
+        isDayMode={isDayMode}
+      />
+
+      {/* Draggable Edit Modal */}
+      <DraggableEditModal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditModalRecord(null); }}
+        onSave={handleModalSave}
+        initialTab="patient_ar"
+        initialData={editModalRecord}
+        isDayMode={isDayMode}
+      />
     </div>
   );
 }

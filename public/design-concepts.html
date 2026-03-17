@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stellar Dashboard - Design Concepts</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+    }
+
+    /* Control Panel */
+    .control-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-bottom: 2px solid #e5e7eb;
+      padding: 1rem 2rem;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .control-panel h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #1a202c;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .tab-button {
+      padding: 0.75rem 1.5rem;
+      border: 2px solid #e5e7eb;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .tab-button:hover {
+      border-color: #00D4FF;
+      background: #f0f9ff;
+    }
+
+    .tab-button.active {
+      background: #00D4FF;
+      color: white;
+      border-color: #00D4FF;
+    }
+
+    .mode-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #f3f4f6;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      background: #cbd5e1;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch.active {
+      background: #00D4FF;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .toggle-switch.active::after {
+      transform: translateX(24px);
+    }
+
+    /* Dashboard Container */
+    .dashboard-container {
+      margin-top: 180px;
+      padding: 2rem;
+      max-width: 1400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .design-panel {
+      display: none;
+    }
+
+    .design-panel.active {
+      display: block;
+    }
+
+    /* ============================================ */
+    /* DESIGN 1: STELLAR MINIMALIST */
+    /* ============================================ */
+
+    .design1-light {
+      background: #ffffff;
+      color: #1a202c;
+    }
+
+    .design1-dark {
+      background: #1a202c;
+      color: #ffffff;
+    }
+
+    .design1 .header {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .design1-dark .header {
+      background: #2d3748;
+      border-color: #4a5568;
+    }
+
+    .design1 .header h2 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #1a202c;
+      font-weight: 700;
+    }
+
+    .design1-dark .header h2 {
+      color: #ffffff;
+    }
+
+    .design1 .header p {
+      color: #4a5568;
+      font-size: 1rem;
+    }
+
+    .design1-dark .header p {
+      color: #cbd5e1;
+    }
+
+    .design1 .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .design1 .kpi-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .design1 .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .design1-dark .kpi-card {
+      background: #2d3748;
+      border-color: #4a5568;
+    }
+
+    .design1 .kpi-label {
+      font-size: 0.875rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .design1-dark .kpi-label {
+      color: #94a3b8;
+    }
+
+    .design1 .kpi-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin-bottom: 0.25rem;
+    }
+
+    .design1-dark .kpi-value {
+      color: #ffffff;
+    }
+
+    .design1 .kpi-card.accent .kpi-value {
+      color: #00D4FF;
+    }
+
+    .design1 .kpi-subtitle {
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+
+    .design1 .section {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 1.5rem;
+    }
+
+    .design1-dark .section {
+      background: #2d3748;
+      border-color: #4a5568;
+    }
+
+    .design1 .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin-bottom: 1.5rem;
+    }
+
+    .design1-dark .section-title {
+      color: #ffffff;
+    }
+
+    .design1 .btn-primary {
+      background: #00D4FF;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .design1 .btn-primary:hover {
+      background: #00b8e6;
+      transform: translateY(-1px);
+    }
+
+    /* ============================================ */
+    /* DESIGN 2: STELLAR FUTURISTIC */
+    /* ============================================ */
+
+    .design2-light {
+      background: linear-gradient(135deg, #f0f9ff 0%, #fef3f2 100%);
+      color: #1a202c;
+    }
+
+    .design2-dark {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    .design2-dark .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      padding: 3rem;
+      border-radius: 32px;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      box-shadow: 0 0 40px rgba(0, 212, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .design2-light .header {
+      background: white;
+      padding: 3rem;
+      border-radius: 32px;
+      margin-bottom: 2rem;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    .design2-dark .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .design2 .header h2 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00D4FF 0%, #0080FF 50%, #6366F1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 1;
+    }
+
+    .design2-light .header h2 {
+      background: linear-gradient(135deg, #00B8E6 0%, #0066CC 50%, #5B52E8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .design2 .header p {
+      color: #94a3b8;
+      font-size: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .design2-light .header p {
+      color: #64748b;
+    }
+
+    .design2 .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .design2-dark .kpi-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      padding: 2rem;
+      border-radius: 24px;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .design2-light .kpi-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 24px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s;
+    }
+
+    .design2-dark .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      transition: transform 0.5s;
+    }
+
+    .design2-dark .kpi-card:hover::before {
+      transform: scale(1.5);
+    }
+
+    .design2 .kpi-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .design2-dark .kpi-card:hover {
+      box-shadow: 0 0 40px rgba(0, 212, 255, 0.3);
+      border-color: rgba(0, 212, 255, 0.4);
+    }
+
+    .design2-light .kpi-card:hover {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    .design2 .kpi-label {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.75rem;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+    }
+
+    .design2-light .kpi-label {
+      color: #64748b;
+    }
+
+    .design2 .kpi-value {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .design2-dark .kpi-value {
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .design2-light .kpi-value {
+      color: #1a202c;
+    }
+
+    .design2-dark .kpi-card.accent .kpi-value {
+      background: linear-gradient(135deg, #00D4FF 0%, #0080FF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .design2-light .kpi-card.accent .kpi-value {
+      background: linear-gradient(135deg, #00B8E6 0%, #0066CC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .design2 .kpi-subtitle {
+      font-size: 0.875rem;
+      color: #64748b;
+      position: relative;
+      z-index: 1;
+    }
+
+    .design2-dark .section {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      padding: 2rem;
+      border-radius: 24px;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      margin-bottom: 2rem;
+    }
+
+    .design2-light .section {
+      background: white;
+      padding: 2rem;
+      border-radius: 24px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      margin-bottom: 2rem;
+    }
+
+    .design2 .section-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+    }
+
+    .design2-dark .section-title {
+      background: linear-gradient(135deg, #00D4FF 0%, #EC4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .design2-light .section-title {
+      background: linear-gradient(135deg, #00B8E6 0%, #D946AA 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .design2-dark .btn-primary {
+      background: linear-gradient(135deg, #00D4FF 0%, #0080FF 100%);
+      color: white;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .design2-light .btn-primary {
+      background: linear-gradient(135deg, #00B8E6 0%, #0066CC 100%);
+      color: white;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 184, 230, 0.2);
+    }
+
+    .design2 .btn-primary:hover {
+      transform: translateY(-2px);
+    }
+
+    .design2-dark .btn-primary:hover {
+      box-shadow: 0 0 40px rgba(0, 212, 255, 0.5);
+    }
+
+    .design2-light .btn-primary:hover {
+      box-shadow: 0 8px 24px rgba(0, 184, 230, 0.3);
+    }
+
+    /* ============================================ */
+    /* DESIGN 3: STELLAR DARK MINIMAL (HYBRID) */
+    /* ============================================ */
+
+    .design3-light {
+      background: #f8fafc;
+      color: #1a202c;
+    }
+
+    .design3-dark {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    .design3-dark .header {
+      background: #0f172a;
+      padding: 2.5rem;
+      border-radius: 16px;
+      margin-bottom: 2rem;
+      border: 1px solid #1e293b;
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.08);
+    }
+
+    .design3-light .header {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 16px;
+      margin-bottom: 2rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .design3 .header h2 {
+      font-size: 2.25rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .design3-dark .header h2 {
+      color: #ffffff;
+    }
+
+    .design3-light .header h2 {
+      color: #1a202c;
+    }
+
+    .design3 .header p {
+      font-size: 1rem;
+    }
+
+    .design3-dark .header p {
+      color: #94a3b8;
+    }
+
+    .design3-light .header p {
+      color: #64748b;
+    }
+
+    .design3 .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .design3-dark .kpi-card {
+      background: #0f172a;
+      padding: 1.75rem;
+      border-radius: 16px;
+      border: 1px solid #1e293b;
+      transition: all 0.3s;
+    }
+
+    .design3-light .kpi-card {
+      background: white;
+      padding: 1.75rem;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s;
+    }
+
+    .design3-dark .kpi-card:hover {
+      border-color: rgba(0, 212, 255, 0.3);
+      box-shadow: 0 0 24px rgba(0, 212, 255, 0.15);
+    }
+
+    .design3-light .kpi-card:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
+
+    .design3 .kpi-label {
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    .design3-dark .kpi-label {
+      color: #64748b;
+    }
+
+    .design3-light .kpi-label {
+      color: #475569;
+    }
+
+    .design3 .kpi-value {
+      font-size: 2.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .design3-dark .kpi-value {
+      color: #ffffff;
+    }
+
+    .design3-light .kpi-value {
+      color: #1a202c;
+    }
+
+    .design3 .kpi-card.accent .kpi-value {
+      color: #00D4FF;
+    }
+
+    .design3 .kpi-subtitle {
+      font-size: 0.875rem;
+    }
+
+    .design3-dark .kpi-subtitle {
+      color: #64748b;
+    }
+
+    .design3-light .kpi-subtitle {
+      color: #64748b;
+    }
+
+    .design3-dark .section {
+      background: #0f172a;
+      padding: 2rem;
+      border-radius: 16px;
+      border: 1px solid #1e293b;
+      margin-bottom: 1.5rem;
+    }
+
+    .design3-light .section {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+      margin-bottom: 1.5rem;
+    }
+
+    .design3 .section-title {
+      font-size: 1.375rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    .design3-dark .section-title {
+      color: #ffffff;
+    }
+
+    .design3-light .section-title {
+      color: #1a202c;
+    }
+
+    .design3 .btn-primary {
+      background: #00D4FF;
+      color: #000000;
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .design3 .btn-primary:hover {
+      background: #00b8e6;
+      transform: translateY(-1px);
+    }
+
+    .design3-dark .btn-primary:hover {
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    }
+
+    .design3-light .btn-primary:hover {
+      box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Claims items */
+    .claims-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .design1-dark .claims-item {
+      background: #1a202c;
+    }
+
+    .design1-light .claims-item {
+      background: #f8fafc;
+    }
+
+    .design2-dark .claims-item {
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.1);
+    }
+
+    .design2-light .claims-item {
+      background: #f0f9ff;
+      border: 1px solid #e0f2fe;
+    }
+
+    .design3-dark .claims-item {
+      background: #1e293b;
+    }
+
+    .design3-light .claims-item {
+      background: #f8fafc;
+    }
+
+    .info-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+
+    .design1 .info-badge {
+      background: #f0f9ff;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .design1-dark .info-badge {
+      background: rgba(3, 105, 161, 0.1);
+      color: #7dd3fc;
+      border-color: rgba(3, 105, 161, 0.3);
+    }
+
+    .design2-dark .info-badge {
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+      color: #00D4FF;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .design2-light .info-badge {
+      background: #f0f9ff;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+
+    .design3 .info-badge {
+      background: rgba(0, 212, 255, 0.1);
+      color: #00D4FF;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- Control Panel -->
+  <div class="control-panel">
+    <h1>🎨 Stellar Dashboard - Design Concepts</h1>
+    <div class="tabs">
+      <button class="tab-button active" data-design="design1">
+        Design 1: Minimalist
+      </button>
+      <button class="tab-button" data-design="design2">
+        Design 2: Futuristic
+      </button>
+      <button class="tab-button" data-design="design3">
+        Design 3: Dark Minimal
+      </button>
+    </div>
+    <div class="mode-toggle">
+      <span>Light</span>
+      <div class="toggle-switch" id="modeToggle"></div>
+      <span>Dark</span>
+    </div>
+  </div>
+
+  <!-- Dashboard Container -->
+  <div class="dashboard-container">
+
+    <!-- DESIGN 1: STELLAR MINIMALIST -->
+    <div class="design-panel design1 design1-light active" id="design1">
+      <div class="header">
+        <h2>Good Morning, Team! 👋</h2>
+        <p>Practice Overview Dashboard - Clean, Professional, Focused</p>
+        <div class="info-badge">🎯 Minimalist • Neutral • Business-Forward</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card accent">
+          <div class="kpi-label">BAM Revenue</div>
+          <div class="kpi-value">$45,230</div>
+          <div class="kpi-subtitle">Target: $50,000</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Collection Rate</div>
+          <div class="kpi-value">98.5%</div>
+          <div class="kpi-subtitle">Industry avg: 95%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Patients</div>
+          <div class="kpi-value">1,247</div>
+          <div class="kpi-subtitle">This month</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Outstanding A/R</div>
+          <div class="kpi-value">$12,450</div>
+          <div class="kpi-subtitle">31+ days</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Claims Status</div>
+        <div class="claims-item">
+          <span>Active Claims</span>
+          <strong>234</strong>
+        </div>
+        <div class="claims-item">
+          <span>Pending Claims</span>
+          <strong>56</strong>
+        </div>
+        <div class="claims-item">
+          <span>Denied Claims</span>
+          <strong>8</strong>
+        </div>
+        <button class="btn-primary">View All Claims →</button>
+      </div>
+    </div>
+
+    <!-- DESIGN 2: STELLAR FUTURISTIC -->
+    <div class="design-panel design2 design2-dark" id="design2">
+      <div class="header">
+        <h2>Good Morning, Team! 👋</h2>
+        <p>Practice Overview Dashboard - Bold, Premium, Innovative</p>
+        <div class="info-badge">✨ Futuristic • Gradients • Tech-Forward</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card accent">
+          <div class="kpi-label">BAM Revenue</div>
+          <div class="kpi-value">$45,230</div>
+          <div class="kpi-subtitle">Target: $50,000</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Collection Rate</div>
+          <div class="kpi-value">98.5%</div>
+          <div class="kpi-subtitle">Industry avg: 95%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Patients</div>
+          <div class="kpi-value">1,247</div>
+          <div class="kpi-subtitle">This month</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Outstanding A/R</div>
+          <div class="kpi-value">$12,450</div>
+          <div class="kpi-subtitle">31+ days</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Claims Status</div>
+        <div class="claims-item">
+          <span>Active Claims</span>
+          <strong>234</strong>
+        </div>
+        <div class="claims-item">
+          <span>Pending Claims</span>
+          <strong>56</strong>
+        </div>
+        <div class="claims-item">
+          <span>Denied Claims</span>
+          <strong>8</strong>
+        </div>
+        <button class="btn-primary">View All Claims →</button>
+      </div>
+    </div>
+
+    <!-- DESIGN 3: STELLAR DARK MINIMAL -->
+    <div class="design-panel design3 design3-dark" id="design3">
+      <div class="header">
+        <h2>Good Morning, Team! 👋</h2>
+        <p>Practice Overview Dashboard - Sleek, Modern, Balanced</p>
+        <div class="info-badge">💎 Hybrid • Subtle • Chrome-Ready</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card accent">
+          <div class="kpi-label">BAM Revenue</div>
+          <div class="kpi-value">$45,230</div>
+          <div class="kpi-subtitle">Target: $50,000</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Collection Rate</div>
+          <div class="kpi-value">98.5%</div>
+          <div class="kpi-subtitle">Industry avg: 95%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Patients</div>
+          <div class="kpi-value">1,247</div>
+          <div class="kpi-subtitle">This month</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Outstanding A/R</div>
+          <div class="kpi-value">$12,450</div>
+          <div class="kpi-subtitle">31+ days</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Claims Status</div>
+        <div class="claims-item">
+          <span>Active Claims</span>
+          <strong>234</strong>
+        </div>
+        <div class="claims-item">
+          <span>Pending Claims</span>
+          <strong>56</strong>
+        </div>
+        <div class="claims-item">
+          <span>Denied Claims</span>
+          <strong>8</strong>
+        </div>
+        <button class="btn-primary">View All Claims →</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab switching
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const designPanels = document.querySelectorAll('.design-panel');
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const designId = button.getAttribute('data-design');
+
+        // Update active tab
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        // Show corresponding design
+        designPanels.forEach(panel => panel.classList.remove('active'));
+        document.getElementById(designId).classList.add('active');
+      });
+    });
+
+    // Mode toggle
+    const modeToggle = document.getElementById('modeToggle');
+    let isDark = true;
+
+    modeToggle.addEventListener('click', () => {
+      isDark = !isDark;
+      modeToggle.classList.toggle('active', isDark);
+
+      // Toggle all design panels
+      document.getElementById('design1').className = isDark
+        ? 'design-panel design1 design1-dark active'
+        : 'design-panel design1 design1-light active';
+
+      document.getElementById('design2').className = isDark
+        ? 'design-panel design2 design2-dark'
+        : 'design-panel design2 design2-light';
+
+      document.getElementById('design3').className = isDark
+        ? 'design-panel design3 design3-dark'
+        : 'design-panel design3 design3-light';
+
+      // Update active panel
+      const activeButton = document.querySelector('.tab-button.active');
+      const designId = activeButton.getAttribute('data-design');
+      designPanels.forEach(panel => panel.classList.remove('active'));
+      document.getElementById(designId).classList.add('active');
+    });
+
+    // Initialize dark mode
+    modeToggle.classList.add('active');
+  </script>
+</body>
+</html>

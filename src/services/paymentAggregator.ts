@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import { toLocalDateString } from '../utils/dateUtils';
 
 /**
  * Calculate total insurance payments from daily data
@@ -97,7 +98,7 @@ export async function calculateMTDPayments(date: string) {
 
     // First day of current month
     const monthStart = new Date(year, month, 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthStartStr = toLocalDateString(monthStart);
 
     // Current date or end of month, whichever is earlier
     const endDateStr = date;

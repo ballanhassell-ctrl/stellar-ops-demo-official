@@ -24,18 +24,25 @@ import type {
   InsuranceIssue,
   ARSnapshot,
 } from '../types/database.types';
+import { getLocalDateString } from '../utils/dateUtils';
 
 // Helper function to generate dates
 const daysAgo = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const daysFromNow = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() + days);
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // ===== PATIENTS =====
@@ -162,6 +169,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL002',
@@ -193,6 +202,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL003',
@@ -224,6 +235,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL004',
@@ -255,6 +268,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL005',
@@ -286,6 +301,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL006',
@@ -317,6 +334,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL007',
@@ -348,6 +367,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL008',
@@ -379,6 +400,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL009',
@@ -410,6 +433,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL010',
@@ -441,6 +466,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL011',
@@ -472,6 +499,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'CL012',
@@ -503,6 +532,8 @@ export const sampleClaims: Claim[] = [
     aging_status: null,
     carrier_phone: null,
     date_sent_orig: null,
+    structured_notes: [],
+    audit_trail: [],
   },
 ];
 
@@ -754,6 +785,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'Patient interested, needs to check schedule',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL002',
@@ -770,6 +803,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'MS',
     status: 'unscheduled',
     notes: 'Left voicemail on 2nd contact',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL003',
@@ -786,6 +821,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'High-value case, patient considering financing options',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL004',
@@ -802,6 +839,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'MS',
     status: 'unscheduled',
     notes: 'Patient wants cosmetic consultation',
+    structured_notes: [],
+    audit_trail: [],
   },
   // Recare List
   {
@@ -819,6 +858,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'LK',
     status: 'unscheduled',
     notes: 'Due for 6-month cleaning',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL006',
@@ -835,6 +876,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'LK',
     status: 'unscheduled',
     notes: 'Past due for recall',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL007',
@@ -851,6 +894,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'LK',
     status: 'scheduled',
     notes: 'Scheduled for next week',
+    structured_notes: [],
+    audit_trail: [],
   },
   // Treatment List
   {
@@ -868,6 +913,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'Waiting on pre-auth approval',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL009',
@@ -884,6 +931,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'MS',
     status: 'unscheduled',
     notes: 'Patient considering payment plan',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'SL010',
@@ -900,6 +949,8 @@ export const sampleSchedulingListItems: SchedulingListItem[] = [
     employee_initials: 'JD',
     status: 'unscheduled',
     notes: 'Patient will call back to schedule',
+    structured_notes: [],
+    audit_trail: [],
   },
 ];
 
@@ -932,6 +983,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'JM',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR002',
@@ -960,6 +1013,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 650.00,
     created_by: 'Admin',
     updated_by: 'SR',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR003',
@@ -988,6 +1043,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'JM',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR004',
@@ -1016,6 +1073,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'Admin',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR005',
@@ -1044,6 +1103,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 800.00,
     created_by: 'Admin',
     updated_by: 'SR',
+    structured_notes: [],
+    audit_trail: [],
   },
   {
     id: 'AR006',
@@ -1072,6 +1133,8 @@ export const samplePatientAR: PatientAR[] = [
     collected_amount: 0,
     created_by: 'Admin',
     updated_by: 'JM',
+    structured_notes: [],
+    audit_trail: [],
   },
 ];
 
@@ -1388,7 +1451,7 @@ export const sampleMetricsData = {
 
 // ===== EOD REPORT DATA =====
 export const sampleEODData = {
-  reportDate: new Date().toISOString().split('T')[0],
+  reportDate: getLocalDateString(),
   dailyProduction: 12700.00,
   dailyProductionGoal: 15000.00,
   paymentsCollected: 12650.00,
@@ -1479,7 +1542,7 @@ export const sampleNewPatientAggregates = {
 export const sampleProviderMetrics = [
   {
     field_key: 'provider_dr_gajjar',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 4250.00,
     source: 'manual',
     notes: null,
@@ -1492,7 +1555,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_dr_judge',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 3850.00,
     source: 'manual',
     notes: null,
@@ -1505,7 +1568,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_dr_strachan',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 4100.00,
     source: 'manual',
     notes: null,
@@ -1518,7 +1581,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_farah',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 1850.00,
     source: 'manual',
     notes: null,
@@ -1531,7 +1594,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_olga',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 1650.00,
     source: 'manual',
     notes: null,
@@ -1544,7 +1607,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_jissel',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 1750.00,
     source: 'manual',
     notes: null,
@@ -1557,7 +1620,7 @@ export const sampleProviderMetrics = [
   },
   {
     field_key: 'provider_temp_hyg',
-    as_of_date: new Date().toISOString().split('T')[0],
+    as_of_date: getLocalDateString(),
     value: 0.00,
     source: 'manual',
     notes: null,
@@ -1600,7 +1663,7 @@ export const sampleInsuranceARClaims: InsuranceARClaim[] = [
     total_claim: 275.00,
     collected: 0,
     outstanding: 275.00,
-    claim_status: 'Waiting for Info',
+    claim_status: 'Waiting for CSD/Moved to IIR',
     aging_status: '31-60 Days',
     assigned_to: 'BH',
     procedure_types: 'Prophy: Adult',
@@ -1877,9 +1940,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: 'Submitted',
     submitted_by: 'BH/LP',
     submitted_at: '2025-10-30T10:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1895,9 +1962,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: 'Submitted',
     submitted_by: 'BH',
     submitted_at: '2025-12-05T14:30:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1913,9 +1984,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: 'Submitted',
     submitted_by: 'BH',
     submitted_at: '2025-12-05T14:30:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1931,9 +2006,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: 'Submitted',
     submitted_by: 'BH',
     submitted_at: '2025-12-20T09:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1945,16 +2024,20 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     in_charge: 'Daniely',
     issue_type: 'Invalid Number of Surfaces',
     in_vyne: true,
-    status: 'Corrected',
+    status: 'Resolved',
     submission_status: 'Submitted',
     submitted_by: 'LP',
     submitted_at: '2025-12-09T11:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: '2025-12-11T15:30:00Z',
     notes: null,
     structured_notes: [
       { text: "it's requesting x-rays", source: 'stellar', author: 'DM', created_at: '2025-12-10T09:00:00Z' },
       { text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-12-11T15:30:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1966,16 +2049,20 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     in_charge: 'Daniely',
     issue_type: 'Invalid Tooth Code for Carrier',
     in_vyne: true,
-    status: 'Corrected',
+    status: 'Resolved',
     submission_status: 'Submitted',
     submitted_by: 'LP/BH',
     submitted_at: '2025-11-13T10:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: '2025-11-15T14:00:00Z',
     notes: null,
     structured_notes: [
       { text: 'Original claim had wrong code for anterior; corrected by office and resubmitted.', source: 'office', author: 'BH', created_at: '2025-11-14T11:00:00Z' },
       { text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-11-15T14:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -1987,15 +2074,19 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     in_charge: 'Daniely',
     issue_type: 'Invalid Tooth Code for Carrier',
     in_vyne: true,
-    status: 'Corrected',
+    status: 'Resolved',
     submission_status: 'Submitted',
     submitted_by: 'BH',
     submitted_at: '2025-11-13T10:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: '2025-11-16T09:00:00Z',
     notes: null,
     structured_notes: [
       { text: '#13 is considered pre-molar to Insurance, code changed from D3330 to D3320. Codes need to be changed in OD, clinical note reattached and resigned. Please assist DM/Dr. Judge.', source: 'stellar', author: 'BH', created_at: '2025-11-16T09:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2007,13 +2098,17 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     in_charge: 'Daniely',
     issue_type: 'Invalid Tooth Code for Carrier',
     in_vyne: true,
-    status: 'Corrected',
+    status: 'Resolved',
     submission_status: 'Submitted',
     submitted_by: 'LP',
     submitted_at: '2025-11-18T10:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: '2025-11-19T16:00:00Z',
     notes: null,
     structured_notes: [{ text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-11-19T16:00:00Z' }],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2025,13 +2120,17 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     in_charge: 'Daniely',
     issue_type: 'Invalid Surface Code for Carrier',
     in_vyne: true,
-    status: 'Corrected',
+    status: 'Resolved',
     submission_status: 'Submitted',
     submitted_by: 'LP',
     submitted_at: '2025-11-11T10:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: '2025-11-13T12:00:00Z',
     notes: null,
     structured_notes: [{ text: 'corrected & rebatched', source: 'stellar', author: 'LP', created_at: '2025-11-13T12:00:00Z' }],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2047,9 +2146,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: null,
     submitted_by: null,
     submitted_at: null,
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2065,9 +2168,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: null,
     submitted_by: null,
     submitted_at: null,
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2079,16 +2186,20 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     in_charge: 'Daniely',
     issue_type: 'Invalid Tooth Code for Carrier',
     in_vyne: true,
-    status: 'Corrected',
+    status: 'Resolved',
     submission_status: 'Submitted',
     submitted_by: 'BH/LP',
     submitted_at: '2026-01-08T10:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: '2026-01-10T11:00:00Z',
     notes: null,
     structured_notes: [
       { text: "it's requesting x-rays", source: 'stellar', author: 'DM', created_at: '2026-01-09T09:00:00Z' },
       { text: 'corrected & rebatched', source: 'stellar', author: 'BH', created_at: '2026-01-10T11:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2100,15 +2211,19 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     in_charge: 'DMD1',
     issue_type: 'Invalid Tooth Code for Carrier',
     in_vyne: true,
-    status: 'Corrected',
+    status: 'Resolved',
     submission_status: 'Submitted',
     submitted_by: 'BH',
     submitted_at: '2026-01-14T10:00:00Z',
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: '2026-01-16T14:00:00Z',
     notes: null,
     structured_notes: [
       { text: 'Coding was incorrect for both claims. Corrected on Vyne only. Codes need to be changed in OD, clinical note reattached and resigned. Please assist DM/Dr. Judge.', source: 'stellar', author: 'BH', created_at: '2026-01-16T14:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2124,11 +2239,15 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: null,
     submitted_by: null,
     submitted_at: null,
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [
       { text: 'Claim to be held until 01/28 - Dr. Strachan needs to provide short narrative and better PA of #18. BH/LM', source: 'stellar', author: 'BH', created_at: '2026-01-15T10:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2144,11 +2263,15 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: null,
     submitted_by: null,
     submitted_at: null,
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [
       { text: 'Notified team 01/22 to obtain correct info from Dr. S - also requested narrative for this and future treatment start for today. BH.', source: 'stellar', author: 'BH', created_at: '2026-01-22T10:00:00Z' },
     ],
+    audit_trail: [],
     is_pre_auth: false,
   },
   {
@@ -2164,9 +2287,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: null,
     submitted_by: null,
     submitted_at: null,
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: true,
   },
   {
@@ -2182,9 +2309,13 @@ export const sampleInsuranceIssues: InsuranceIssue[] = [
     submission_status: null,
     submitted_by: null,
     submitted_at: null,
+    corrected_at: null,
+    corrected_by: null,
+    correction_note: null,
     resolved_at: null,
     notes: null,
     structured_notes: [],
+    audit_trail: [],
     is_pre_auth: true,
   },
 ];

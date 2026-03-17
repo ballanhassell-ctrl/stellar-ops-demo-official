@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getMetricsForDate, getLatestMetricValues, type MetricWithValue } from '../services/metrics';
 import { getMTDMetrics } from '../services/mtdCalculator';
 import { getRealTimeActionItems } from '../services/actionItems';
 import { isStaticDataMode } from '../config/dataMode';
 import { sampleEODData } from '../data/sampleData';
+
+// Auto-refresh interval for action items (60 seconds)
+const ACTION_ITEMS_REFRESH_INTERVAL = 60_000;
 
 export interface EODData {
   reportDate: string;
@@ -54,6 +57,52 @@ export const useEODMetrics = (date: string) => {
   const [data, setData] = useState<EODData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /**
+   * Refresh ONLY the action items portion of the EOD data.
+   * This is lightweight and can be called frequently to keep
+   * resolved/completed items from appearing in the report.
+   */
+  const refreshActionItems = useCallback(async (): Promise<EODData | null> => {
+    if (isStaticDataMode()) return data;
+    try {
+      const realTimeActionItems = await getRealTimeActionItems();
+      setData((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          actionItems: {
+            claimsToSubmit: realTimeActionItems.claimsToSubmit,
+            deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+            preAuthsApproved: realTimeActionItems.preAuthsApproved,
+            accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+            missedAppointments: realTimeActionItems.missedAppointments,
+            patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
+          },
+        };
+        return updated;
+      });
+      // Return the updated data for callers that need it immediately
+      if (data) {
+        return {
+          ...data,
+          actionItems: {
+            claimsToSubmit: realTimeActionItems.claimsToSubmit,
+            deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+            preAuthsApproved: realTimeActionItems.preAuthsApproved,
+            accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+            missedAppointments: realTimeActionItems.missedAppointments,
+            patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
+          },
+        };
+      }
+      return data;
+    } catch (err) {
+      console.error('[EOD] Error refreshing action items:', err);
+      return data;
+    }
+  }, [data]);
 
   const fetchEODMetrics = async (targetDate: string) => {
     try {
@@ -202,6 +251,35 @@ export const useEODMetrics = (date: string) => {
 
   useEffect(() => {
     fetchEODMetrics(date);
+
+    // Auto-refresh action items every 60 seconds so resolved items
+    // are excluded from the report without requiring manual refresh
+    refreshIntervalRef.current = setInterval(() => {
+      if (!isStaticDataMode()) {
+        getRealTimeActionItems().then((realTimeActionItems) => {
+          setData((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              actionItems: {
+                claimsToSubmit: realTimeActionItems.claimsToSubmit,
+                deniedClaimsToResubmit: realTimeActionItems.deniedClaimsToResubmit,
+                preAuthsApproved: realTimeActionItems.preAuthsApproved,
+                accountsNeedingFollowUp: realTimeActionItems.accountsNeedingFollowUp,
+                missedAppointments: realTimeActionItems.missedAppointments,
+                patientsDueForRecall: realTimeActionItems.patientsDueForRecall,
+              },
+            };
+          });
+        }).catch((err) => console.error('[EOD] Auto-refresh action items failed:', err));
+      }
+    }, ACTION_ITEMS_REFRESH_INTERVAL);
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
@@ -209,5 +287,5 @@ export const useEODMetrics = (date: string) => {
     fetchEODMetrics(date);
   };
 
-  return { data, loading, error, refresh };
+  return { data, loading, error, refresh, refreshActionItems };
 };

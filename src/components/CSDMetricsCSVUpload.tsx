@@ -1,4 +1,5 @@
 // src/components/CSDMetricsCSVUpload.tsx
+import { getLocalDateString } from '../utils/dateUtils';
 import React, { useState } from 'react';
 import { X, Upload, FileText, AlertCircle, CheckCircle, Download } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
@@ -181,7 +182,7 @@ export const CSDMetricsCSVUpload: React.FC<CSDMetricsCSVUploadProps> = ({
   };
 
   const handleDownloadTemplate = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const csvContent = `as_of_date,field_key,value,notes
 ${today},bam_current_revenue,0,
 ${today},collection_rate,0,

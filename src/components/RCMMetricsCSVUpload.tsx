@@ -1,4 +1,5 @@
 // src/components/RCMMetricsCSVUpload.tsx
+import { getLocalDateString } from '../utils/dateUtils';
 import React, { useState } from 'react';
 import { X, Upload, FileText, AlertCircle, CheckCircle, Download } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
@@ -181,7 +182,7 @@ export const RCMMetricsCSVUpload: React.FC<RCMMetricsCSVUploadProps> = ({
   };
 
   const handleDownloadTemplate = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const csvContent = `as_of_date,field_key,value,notes
 ${today},rcm_claims_over_60_days,0,Claims aging over 60 days
 ${today},rcm_active_claims,0,Total active claims
