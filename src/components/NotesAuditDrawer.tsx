@@ -5,7 +5,7 @@
 // Used across all dashboard sections that support notes
 // =====================================================
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   X,
   MessageSquare,
@@ -16,6 +16,7 @@ import {
   FileText,
   User,
   AlertTriangle,
+  GripHorizontal,
 } from 'lucide-react';
 import type { NoteEntry, NoteSource, AuditTrailEntry } from '../types/database.types';
 
@@ -83,6 +84,53 @@ function getTimelineDotColor(action: AuditTrailEntry['action']): string {
 }
 
 // =====================================================
+// DRAG HOOK (allows the drawer to be repositioned)
+// =====================================================
+
+function useDrag(handleRef: React.RefObject<HTMLDivElement | null>, isVisible: boolean) {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const dragging = useRef(false);
+  const start = useRef({ x: 0, y: 0 });
+  const posRef = useRef(pos);
+  posRef.current = pos;
+
+  useEffect(() => {
+    const handle = handleRef.current;
+    if (!handle) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest('button')) return;
+      e.preventDefault();
+      dragging.current = true;
+      start.current = { x: e.clientX - posRef.current.x, y: e.clientY - posRef.current.y };
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragging.current) return;
+      e.preventDefault();
+      setPos({ x: e.clientX - start.current.x, y: e.clientY - start.current.y });
+    };
+
+    const onPointerUp = () => {
+      dragging.current = false;
+    };
+
+    handle.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    return () => {
+      handle.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [handleRef, isVisible]);
+
+  const resetPos = useCallback(() => setPos({ x: 0, y: 0 }), []);
+
+  return { pos, resetPos };
+}
+
+// =====================================================
 // PROPS
 // =====================================================
 
@@ -123,7 +171,9 @@ export default function NotesAuditDrawer({
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const drawerRef = useRef<HTMLDivElement>(null);
+  const dragHandleRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { pos, resetPos } = useDrag(dragHandleRef, isOpen);
 
   // Track whether the user has unsaved content in the note form
   const hasUnsavedChanges = showAddForm && (noteText.trim() !== '' || noteAuthor.trim() !== '');
@@ -171,15 +221,16 @@ export default function NotesAuditDrawer({
     }
   }, [showAddForm]);
 
-  // Reset form when drawer closes
+  // Reset form and position when drawer closes
   useEffect(() => {
     if (!isOpen) {
       setNoteText('');
       setNoteAuthor('');
       setShowAddForm(false);
       setShowCloseConfirm(false);
+      resetPos();
     }
-  }, [isOpen]);
+  }, [isOpen, resetPos]);
 
   if (!isOpen) return null;
 
@@ -232,28 +283,50 @@ export default function NotesAuditDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={attemptClose}
+      className="fixed inset-0 z-50"
       style={{ animation: 'notesPopupFadeIn 0.15s ease-out' }}
     >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60"
+        onClick={attemptClose}
+      />
+
+      {/* Draggable Drawer */}
       <div
         ref={drawerRef}
-        className={`w-full max-w-2xl mx-4 max-h-[85vh] rounded-xl shadow-2xl border flex flex-col ${bgPrimary} ${borderColor}`}
+        className={`fixed z-50 w-full max-w-2xl max-h-[85vh] rounded-xl shadow-2xl border flex flex-col ${bgPrimary} ${borderColor}`}
+        style={{
+          top: `calc(8% + ${pos.y}px)`,
+          left: `calc(50% + ${pos.x}px)`,
+          transform: 'translateX(-50%)',
+          width: 'min(672px, calc(100vw - 2rem))',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Invisible drag handle — covers header area except buttons */}
+        <div
+          ref={dragHandleRef}
+          className="absolute top-0 left-0 right-[56px] h-[60px] cursor-grab active:cursor-grabbing z-10 touch-none"
+          style={{ pointerEvents: 'auto' }}
+        />
+
         {/* ===== Header ===== */}
         <div
-          className={`flex items-center justify-between px-6 py-4 border-b flex-shrink-0 ${borderColor}`}
+          className={`flex items-center justify-between px-6 py-4 border-b flex-shrink-0 ${borderColor} select-none`}
         >
-          <div>
-            <h3 className={`text-lg font-bold ${textPrimary}`}>Notes & Audit Trail</h3>
-            <p className={`text-xs mt-0.5 ${textSecondary}`}>
-              {entityType} &mdash; {entityLabel}
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h3 className={`text-lg font-bold ${textPrimary}`}>Notes & Audit Trail</h3>
+              <p className={`text-xs mt-0.5 ${textSecondary}`}>
+                {entityType} &mdash; {entityLabel}
+              </p>
+            </div>
+            <GripHorizontal className={`w-4 h-4 ${textMuted}`} />
           </div>
           <button
             onClick={attemptClose}
-            className={`p-1.5 rounded-lg transition-colors ${
+            className={`p-1.5 rounded-lg transition-colors relative z-20 ${
               isDayMode ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
             }`}
           >
