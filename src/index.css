@@ -223,20 +223,20 @@ textarea {
     inset: 0;
     z-index: -1;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
-      url('/stellar-demo-abstract-bg.svg') center/cover no-repeat;
-    opacity: 0.42;
-    filter: saturate(1.02) contrast(1.08) blur(0.5px);
-    transform: scale(1.03);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 100%),
+      url('/glacier-background.jpg') center/cover no-repeat;
+    opacity: 0.28;
+    filter: saturate(1.1) contrast(1.05) blur(1px);
+    transform: scale(1.04);
     animation: backgroundDrift 28s ease-in-out infinite alternate;
   }
 
   .liquid-glass-photo-backdrop-dark {
     background:
-      linear-gradient(180deg, rgba(2, 6, 23, 0.18) 0%, rgba(2, 6, 23, 0.48) 100%),
-      url('/stellar-demo-abstract-bg.svg') center/cover no-repeat;
-    opacity: 0.64;
-    filter: saturate(1.04) contrast(1.12) blur(0.5px);
+      linear-gradient(180deg, rgba(2, 6, 23, 0.35) 0%, rgba(2, 6, 23, 0.72) 100%),
+      url('/glacier-background.jpg') center/cover no-repeat;
+    opacity: 0.16;
+    filter: saturate(0.95) contrast(1.12) blur(2px);
   }
 
   .liquid-glass-vignette {
