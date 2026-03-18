@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import {
   LayoutDashboard, FileText, DollarSign, Users,
   Shield, List, Award, Search, AlertCircle, Clock, XCircle, CheckCircle,
@@ -8,6 +8,7 @@ import {
   Menu, LogOut
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
+import { gsap } from 'gsap';
 import { supabase } from './lib/supabaseClient';
 import { useMetrics } from './hooks/useMetrics';
 import { useEODMetrics } from './hooks/useEODMetrics';
@@ -813,6 +814,8 @@ const StellarDentalSpaRCM = () => {
   // Archive date filter state
   const [_archiveClaimsDateFilter, _setArchiveClaimsDateFilter] = useState<string>('');
   const [archiveInsuranceChecksDateFilter, setArchiveInsuranceChecksDateFilter] = useState<string>('');
+  const headerRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Add Update modal state
   const [showAddUpdateModal, setShowAddUpdateModal] = useState(false);
@@ -885,6 +888,42 @@ const StellarDentalSpaRCM = () => {
     setInputDate(today);
     setDashboardDate(today);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return undefined;
+
+    const ctx = gsap.context(() => {
+      const revealTargets = gsap.utils.toArray<HTMLElement>('[data-gsap-reveal]');
+
+      gsap.fromTo(
+        headerRef.current,
+        { y: -28, opacity: 0, filter: 'blur(10px)' },
+        { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.75, ease: 'power3.out' }
+      );
+
+      if (revealTargets.length) {
+        gsap.fromTo(
+          revealTargets,
+          { y: 36, opacity: 0, scale: 0.985, filter: 'blur(12px)' },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            filter: 'blur(0px)',
+            duration: 0.85,
+            stagger: 0.08,
+            ease: 'power3.out',
+            clearProps: 'transform,filter,opacity'
+          }
+        );
+      }
+    }, mainContentRef);
+
+    return () => ctx.revert();
+  }, [currentView, isDayMode]);
 
   // DISABLED: Date tracking and daily reset logic (now using Supabase)
   // All data is stored in Supabase and fetched by date, no need for localStorage resets
@@ -2010,7 +2049,10 @@ const StellarDentalSpaRCM = () => {
       <LiquidGlassBackground />
 
       {/* Header - Sleek modern design */}
-      <div className={`sticky top-0 z-50 transition-all duration-300 animate-slide-down ${isDayMode ? 'header-frosted' : 'header-frosted-dark'}`}>
+      <div
+        ref={headerRef}
+        className={`sticky top-0 z-50 transition-all duration-300 animate-slide-down ${isDayMode ? 'header-frosted' : 'header-frosted-dark'}`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-4">
             {/* LEFT SIDE: Mobile Menu + Branding */}
@@ -2029,20 +2071,34 @@ const StellarDentalSpaRCM = () => {
 
               {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <img
-                  src="/stellar-dental-spa-logo.jpg"
-                  alt="Stellar Dental Spa Logo"
-                  className="h-8 sm:h-10 w-auto object-contain rounded-lg"
-                />
+                <div className={`flex items-center gap-2 rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 border shadow-sm ${
+                  isDayMode
+                    ? 'bg-white/75 border-white/70'
+                    : 'bg-slate-950/50 border-white/10'
+                }`}>
+                  <img
+                    src="/stellar-logo.jpg"
+                    alt="Stellar logo"
+                    className="h-7 sm:h-9 w-auto object-contain"
+                  />
+                  <span className={`text-sm sm:text-base font-bold ${isDayMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    ×
+                  </span>
+                  <img
+                    src="/stellar-dental-spa-logo.jpg"
+                    alt="Stellar Dental Spa logo"
+                    className="h-8 sm:h-10 w-auto object-contain rounded-lg"
+                  />
+                </div>
               </div>
 
               {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
-                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.04em', fontFamily: 'Space Grotesk, sans-serif'}}>
-                  Stellar Dental Spa <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
+                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{ letterSpacing: '-0.04em' }}>
+                  Stellar <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>×</span> Stellar Dental Spa - NYC | LA
                 </h1>
-                <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
-                  Powered by Stellar OPS
+                <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{ letterSpacing: '0.02em' }}>
+                  Practice Dashboard Demo · Powered by Stellar OPS
                 </p>
               </div>
             </div>
@@ -2184,15 +2240,18 @@ const StellarDentalSpaRCM = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
+      <div ref={mainContentRef} className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
         {currentView === 'dashboard' ? (
           <div className="space-y-10">
             {/* Dashboard Header */}
-            <div className={`rounded-3xl p-10 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} animate-slide-up`}>
+            <div
+              data-gsap-reveal
+              className={`rounded-3xl p-10 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} animate-slide-up`}
+            >
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                       {getGreeting()}, Team! 👋
                     </h2>
                     <h3 className={`text-xl font-display font-bold ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
@@ -2405,7 +2464,10 @@ const StellarDentalSpaRCM = () => {
             {/* Claims & Payments Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Claims Status */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+              <div
+                data-gsap-reveal
+                className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}
+              >
                 <h3 className={`text-xl font-display font-bold mb-5 ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
                   Claims Status
                 </h3>
@@ -2458,7 +2520,10 @@ const StellarDentalSpaRCM = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}er`}>
+              <div
+                data-gsap-reveal
+                className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}er`}
+              >
                 <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-5 bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   Quick Actions
                 </h3>
@@ -2532,7 +2597,10 @@ const StellarDentalSpaRCM = () => {
             </div>
 
             {/* Follow-Up Tracking */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+            <div
+              data-gsap-reveal
+              className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}
+            >
               <h3 className={`text-xl font-display font-extrabold mb-2 ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                 Follow-Up Tracking
               </h3>
@@ -2729,7 +2797,10 @@ const StellarDentalSpaRCM = () => {
             </div>
 
             {/* Insurance A/R Aging Summary */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+            <div
+              data-gsap-reveal
+              className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}
+            >
               <h3 className={`text-xl font-display font-bold mb-5 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent`}>
                 Insurance A/R Aging Summary
               </h3>
@@ -2744,7 +2815,10 @@ const StellarDentalSpaRCM = () => {
             </div>
 
             {/* New Patient Tracker */}
-            <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}er`}>
+            <div
+              data-gsap-reveal
+              className={`rounded-2xl p-6 ${isDayMode ? 'glass-eod-light' : 'glass-eod-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}er`}
+            >
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>
                   New Patient Tracker
