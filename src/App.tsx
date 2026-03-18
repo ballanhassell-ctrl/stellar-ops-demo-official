@@ -2029,20 +2029,34 @@ const StellarDentalSpaRCM = () => {
 
               {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <img
-                  src="/stellar-dental-spa-logo.jpg"
-                  alt="Stellar Dental Spa Logo"
-                  className="h-8 sm:h-10 w-auto object-contain rounded-lg"
-                />
+                <div className={`flex items-center gap-2 rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 border shadow-sm ${
+                  isDayMode
+                    ? 'bg-white/75 border-white/70'
+                    : 'bg-slate-950/50 border-white/10'
+                }`}>
+                  <img
+                    src="/stellar-logo.jpg"
+                    alt="Stellar logo"
+                    className="h-7 sm:h-9 w-auto object-contain"
+                  />
+                  <span className={`text-sm sm:text-base font-bold ${isDayMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    ×
+                  </span>
+                  <img
+                    src="/stellar-dental-spa-logo.jpg"
+                    alt="Stellar Dental Spa logo"
+                    className="h-8 sm:h-10 w-auto object-contain rounded-lg"
+                  />
+                </div>
               </div>
 
               {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
-                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.04em', fontFamily: 'Space Grotesk, sans-serif'}}>
-                  Stellar Dental Spa <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
+                <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{ letterSpacing: '-0.04em' }}>
+                  Stellar <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>×</span> Stellar Dental Spa - NYC | LA
                 </h1>
-                <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
-                  Powered by Stellar OPS
+                <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{ letterSpacing: '0.02em' }}>
+                  Practice Dashboard Demo · Powered by Stellar OPS
                 </p>
               </div>
             </div>
@@ -2192,7 +2206,7 @@ const StellarDentalSpaRCM = () => {
               <div className="mb-8">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3">
-                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <h2 className={`text-4xl font-display font-extrabold ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`}>
                       {getGreeting()}, Team! 👋
                     </h2>
                     <h3 className={`text-xl font-display font-bold ${isDayMode ? 'gradient-text-accent' : 'gradient-text-accent dark'}`}>
