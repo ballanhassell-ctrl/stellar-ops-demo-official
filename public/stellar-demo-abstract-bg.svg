@@ -1,0 +1,77 @@
+<svg width="2048" height="1024" viewBox="0 0 2048 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGlowTop" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1090 390) rotate(90) scale(420 680)">
+      <stop stop-color="#243746"/>
+      <stop offset="1" stop-color="#0E1821"/>
+    </radialGradient>
+    <radialGradient id="floorGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1030 890) rotate(90) scale(210 720)">
+      <stop stop-color="#7F4523" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#7F4523" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="amberGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1130 455) rotate(90) scale(90 170)">
+      <stop stop-color="#FFBF47"/>
+      <stop offset="1" stop-color="#FFBF47" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="yellowOrb" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 0) rotate(90) scale(72)">
+      <stop stop-color="#FFF98A"/>
+      <stop offset="1" stop-color="#FBF45D"/>
+    </radialGradient>
+    <linearGradient id="cubeFaceWarm" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#BB734C"/>
+      <stop offset="1" stop-color="#473333"/>
+    </linearGradient>
+    <linearGradient id="cubeFaceCool" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#32475A"/>
+      <stop offset="1" stop-color="#1B2733"/>
+    </linearGradient>
+    <linearGradient id="cubeFaceDark" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#272730"/>
+      <stop offset="1" stop-color="#0F1118"/>
+    </linearGradient>
+    <linearGradient id="cylinder" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#251E1E"/>
+      <stop offset="1" stop-color="#05070B"/>
+    </linearGradient>
+    <filter id="softBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="32"/>
+    </filter>
+  </defs>
+
+  <rect width="2048" height="1024" fill="#111C25"/>
+  <rect width="2048" height="1024" fill="url(#bgGlowTop)"/>
+  <ellipse cx="1030" cy="900" rx="760" ry="170" fill="url(#floorGlow)" filter="url(#softBlur)"/>
+
+  <g opacity="0.95">
+    <circle cx="1160" cy="306" r="44" fill="url(#yellowOrb)"/>
+    <circle cx="760" cy="610" r="39" fill="url(#yellowOrb)"/>
+  </g>
+
+  <ellipse cx="1105" cy="450" rx="150" ry="80" fill="url(#amberGlow)" filter="url(#softBlur)"/>
+
+  <g opacity="0.96">
+    <path d="M680 243L833 216L820 402L665 432L680 243Z" fill="url(#cubeFaceCool)"/>
+    <path d="M833 216L957 260L941 437L820 402L833 216Z" fill="url(#cubeFaceWarm)"/>
+    <path d="M665 432L820 402L941 437L783 469L665 432Z" fill="#774B37"/>
+  </g>
+
+  <g opacity="0.98">
+    <path d="M915 375L1103 323L1218 406L1018 462L915 375Z" fill="url(#cubeFaceWarm)"/>
+    <path d="M1018 462L1218 406L1212 625L1010 707L1018 462Z" fill="url(#cubeFaceDark)"/>
+    <path d="M915 375L1018 462L1010 707L861 593L915 375Z" fill="url(#cubeFaceWarm)"/>
+  </g>
+
+  <g opacity="0.95">
+    <path d="M1222 687L1413 778L1302 962L1115 848L1222 687Z" fill="url(#cubeFaceDark)"/>
+    <path d="M1115 848L1302 962L1154 1042L979 922L1115 848Z" fill="#1D2330"/>
+    <path d="M979 922L1115 848L1222 687L1094 764L979 922Z" fill="url(#cubeFaceWarm)"/>
+  </g>
+
+  <g opacity="0.9">
+    <ellipse cx="1240" cy="396" rx="46" ry="28" fill="#040507"/>
+    <path d="M1198 398L1285 400L1297 533L1213 545L1198 398Z" fill="url(#cylinder)"/>
+    <ellipse cx="1026" cy="862" rx="36" ry="20" transform="rotate(-27 1026 862)" fill="#5E4A3D"/>
+    <path d="M975 820L1040 776L1135 900L1075 943L975 820Z" fill="url(#cylinder)"/>
+  </g>
+
+  <ellipse cx="1100" cy="957" rx="238" ry="52" fill="#05070A" opacity="0.55" filter="url(#softBlur)"/>
+</svg>
