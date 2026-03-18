@@ -12,8 +12,11 @@ export const LiquidGlassBackground = () => {
         <div className="liquid-glass-bg" />
       )}
 
+      <div className={isDark ? 'liquid-glass-photo-backdrop liquid-glass-photo-backdrop-dark' : 'liquid-glass-photo-backdrop'} />
+
       {/* Noise + glow overlay */}
       <div className={isDark ? 'liquid-glass-overlay liquid-glass-overlay-dark' : 'liquid-glass-overlay'} />
+      <div className={isDark ? 'liquid-glass-vignette liquid-glass-vignette-dark' : 'liquid-glass-vignette'} />
 
       {isDark && (
         <>
