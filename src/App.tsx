@@ -5538,22 +5538,22 @@ const StellarDentalSpaRCM = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {showVipList ? <ChevronDown className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} /> : <ChevronRight className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} />}
-                        <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">VIP List</h3>
+                        <h3 className={`text-xl font-bold ${isDayMode ? 'bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-gold-300'}`} style={!isDayMode ? { textShadow: '0 0 12px rgba(218, 165, 50, 0.4)' } : undefined}>VIP List</h3>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="flex items-center gap-4 text-sm">
                           <span className={isDayMode ? 'text-gray-500' : 'text-gray-400'}>{vipMetrics.totalPatients} patients</span>
-                          <span className="text-red-500 font-semibold">${vipMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
-                          <span className="text-emerald-500 font-semibold">${vipMetrics.productionScheduled.toLocaleString()} scheduled</span>
+                          <span className={`font-semibold ${isDayMode ? 'text-red-600' : 'text-rose-400'}`}>${vipMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
+                          <span className={`font-semibold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${vipMetrics.productionScheduled.toLocaleString()} scheduled</span>
                         </div>
                       </div>
                     </div>
                     {/* Mini metric bar */}
                     <div className="mt-3 flex gap-3 ml-8">
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-400/10 text-amber-300 border border-amber-400/20'}`}>
                         {vipMetrics.unscheduledPatients} unscheduled
                       </span>
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/20'}`}>
                         {vipMetrics.scheduledPatients} scheduled
                       </span>
                     </div>
@@ -5671,22 +5671,22 @@ const StellarDentalSpaRCM = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {showRecareList ? <ChevronDown className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} /> : <ChevronRight className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} />}
-                        <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">Recare List</h3>
+                        <h3 className={`text-xl font-bold ${isDayMode ? 'bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-gold-300'}`} style={!isDayMode ? { textShadow: '0 0 12px rgba(218, 165, 50, 0.4)' } : undefined}>Recare List</h3>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="flex items-center gap-4 text-sm">
                           <span className={isDayMode ? 'text-gray-500' : 'text-gray-400'}>{recareMetrics.totalPatients} patients</span>
-                          <span className="text-red-500 font-semibold">${recareMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
-                          <span className="text-emerald-500 font-semibold">${recareMetrics.productionScheduled.toLocaleString()} scheduled</span>
+                          <span className={`font-semibold ${isDayMode ? 'text-red-600' : 'text-rose-400'}`}>${recareMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
+                          <span className={`font-semibold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${recareMetrics.productionScheduled.toLocaleString()} scheduled</span>
                         </div>
                       </div>
                     </div>
                     {/* Mini metric bar */}
                     <div className="mt-3 flex gap-3 ml-8">
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-400/10 text-amber-300 border border-amber-400/20'}`}>
                         {recareMetrics.unscheduledPatients} unscheduled
                       </span>
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/20'}`}>
                         {recareMetrics.scheduledPatients} scheduled
                       </span>
                     </div>
@@ -5808,22 +5808,22 @@ const StellarDentalSpaRCM = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {showTreatmentList ? <ChevronDown className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} /> : <ChevronRight className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} />}
-                        <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">Unscheduled Treatment List</h3>
+                        <h3 className={`text-xl font-bold ${isDayMode ? 'bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent' : 'text-gold-300'}`} style={!isDayMode ? { textShadow: '0 0 12px rgba(218, 165, 50, 0.4)' } : undefined}>Unscheduled Treatment List</h3>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="flex items-center gap-4 text-sm">
                           <span className={isDayMode ? 'text-gray-500' : 'text-gray-400'}>{treatmentMetrics.totalPatients} patients</span>
-                          <span className="text-red-500 font-semibold">${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
-                          <span className="text-emerald-500 font-semibold">${treatmentMetrics.productionScheduled.toLocaleString()} scheduled</span>
+                          <span className={`font-semibold ${isDayMode ? 'text-red-600' : 'text-rose-400'}`}>${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
+                          <span className={`font-semibold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${treatmentMetrics.productionScheduled.toLocaleString()} scheduled</span>
                         </div>
                       </div>
                     </div>
                     {/* Mini metric bar */}
                     <div className="mt-3 flex gap-3 ml-8">
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-400/10 text-amber-300 border border-amber-400/20'}`}>
                         {treatmentMetrics.unscheduledPatients} unscheduled
                       </span>
-                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/20'}`}>
                         {treatmentMetrics.scheduledPatients} scheduled
                       </span>
                     </div>
