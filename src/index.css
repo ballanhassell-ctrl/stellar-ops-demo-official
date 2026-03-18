@@ -218,6 +218,52 @@ textarea {
       radial-gradient(circle at 72% 76%, rgba(251, 146, 60, 0.08) 0%, transparent 52%);
   }
 
+  .liquid-glass-photo-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 100%),
+      url('/glacier-background.jpg') center/cover no-repeat;
+    opacity: 0.28;
+    filter: saturate(1.1) contrast(1.05) blur(1px);
+    transform: scale(1.04);
+    animation: backgroundDrift 28s ease-in-out infinite alternate;
+  }
+
+  .liquid-glass-photo-backdrop-dark {
+    background:
+      linear-gradient(180deg, rgba(2, 6, 23, 0.35) 0%, rgba(2, 6, 23, 0.72) 100%),
+      url('/glacier-background.jpg') center/cover no-repeat;
+    opacity: 0.16;
+    filter: saturate(0.95) contrast(1.12) blur(2px);
+  }
+
+  .liquid-glass-vignette {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.02) 38%, transparent 68%),
+      radial-gradient(circle at 50% 50%, transparent 48%, rgba(91, 101, 146, 0.16) 100%);
+  }
+
+  .liquid-glass-vignette-dark {
+    background:
+      radial-gradient(circle at 50% 32%, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0.02) 34%, transparent 62%),
+      radial-gradient(circle at 50% 50%, transparent 45%, rgba(2, 6, 23, 0.46) 100%);
+  }
+
+  @keyframes backgroundDrift {
+    0% {
+      transform: scale(1.04) translate3d(0, 0, 0);
+    }
+    100% {
+      transform: scale(1.09) translate3d(-1.5%, -1%, 0);
+    }
+  }
+
   /* Enhanced Glass Effect with Liquid Distortion */
   .glass-liquid {
     position: relative;
