@@ -889,3 +889,56 @@ body {
   border-top-color: var(--dark-accent);
   box-shadow: 0 0 20px var(--dark-glow);
 }
+
+/* ========================================
+   Video Backdrop Styles (Dark Mode)
+   ======================================== */
+.video-backdrop-container {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.video-backdrop-masked {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  mask: url(#heroMask);
+  -webkit-mask: url(#heroMask);
+}
+
+.video-backdrop-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.18;
+  filter: saturate(1.2) contrast(1.1) brightness(0.9);
+}
+
+.video-backdrop-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.video-backdrop-gradient-bottom {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25) 0%, transparent 40%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.video-backdrop-gradient-right {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.15) 30%, transparent 100%);
+}
+
+.video-backdrop-gradient-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(90% 60% at 10% 70%, rgba(0, 0, 0, 0.55) 0%, transparent 70%);
+}
