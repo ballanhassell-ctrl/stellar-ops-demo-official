@@ -36,12 +36,12 @@ textarea {
   }
 
   .glass-dark {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(17, 24, 39, 0.5) 100%);
-    backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
-    -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
-                0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.40) 0%, rgba(17, 24, 39, 0.42) 100%);
+    backdrop-filter: blur(16px) saturate(160%) brightness(1.02);
+    -webkit-backdrop-filter: blur(16px) saturate(160%) brightness(1.02);
+    border: 1px solid rgba(184, 152, 95, 0.12);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35),
+                0 1px 0 0 rgba(184, 152, 95, 0.06) inset,
                 0 -1px 0 0 rgba(0, 0, 0, 0.3) inset;
   }
 
@@ -58,14 +58,14 @@ textarea {
   }
 
   .glass-card-dark {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.55) 0%, rgba(17, 24, 39, 0.6) 100%);
-    backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
-    -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5),
-                0 4px 16px 0 rgba(0, 0, 0, 0.3),
-                0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.4) inset;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(17, 24, 39, 0.48) 100%);
+    backdrop-filter: blur(20px) saturate(160%) brightness(1.05);
+    -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(1.05);
+    border: 1px solid rgba(184, 152, 95, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
+                0 4px 16px 0 rgba(0, 0, 0, 0.2),
+                0 1px 0 0 rgba(184, 152, 95, 0.08) inset,
+                0 -1px 0 0 rgba(0, 0, 0, 0.35) inset;
   }
 
   /* Ultra-transparent glass variants for glacier background visibility */
