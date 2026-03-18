@@ -288,8 +288,7 @@ function formatDate(dateStr: string): string {
  * Generates the HTML email for the daily A/R report
  */
 export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: string, message?: string): string {
-  const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
-  const csdLogoUrl = `${logoBaseUrl}/Cris%20Dental%20Image.jpg`;
+  const sdsLogoUrl = `${logoBaseUrl}/stellar-dental-spa-logo.jpg`;
   const totalNewItems =
     data.newPatientAR.length +
     data.newNonCollectible.length +
@@ -357,7 +356,7 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily A/R Report - Court Street Dental</title>
+  <title>Daily A/R Report - Stellar Dental Spa</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${COLORS.gray100}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${COLORS.gray100};">
@@ -371,22 +370,12 @@ export function generateDailyARReportHTML(data: DailyARReportData, logoBaseUrl: 
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 20px;">
-                    <table role="presentation" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding-right: 12px;">
-                          <img src="${stellarLogoUrl}" alt="Stellar Consults" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
-                        </td>
-                        <td style="color: rgba(255,255,255,0.5); font-size: 24px; font-weight: 300; padding: 0 8px; vertical-align: middle;">&times;</td>
-                        <td style="padding-left: 12px;">
-                          <img src="${csdLogoUrl}" alt="Court Street Dental" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
-                        </td>
-                      </tr>
-                    </table>
+                    <img src="${sdsLogoUrl}" alt="Stellar Dental Spa" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-                    <h1 style="margin: 0; color: ${COLORS.white}; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">Court Street Dental | Daily RCM Activity Report</h1>
+                    <h1 style="margin: 0; color: ${COLORS.white}; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">Stellar Dental Spa | Daily RCM Activity Report</h1>
                     <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.85); font-size: 15px; font-weight: 400;">${formatDate(data.reportDate)}</p>
                   </td>
                 </tr>

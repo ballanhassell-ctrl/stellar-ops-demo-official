@@ -744,7 +744,7 @@ const insuranceCheckToRecord = (check: InsuranceCheck): InsuranceCheckRecord => 
 
 // Mock data removed — sample data is now in src/data/sampleData.ts
 
-const CourtStreetRCM = () => {
+const StellarDentalSpaRCM = () => {
   const { signOut, isAdmin } = useAuth();
   const [currentView, setCurrentViewState] = useState(() => {
     try {
@@ -2030,22 +2030,16 @@ const CourtStreetRCM = () => {
               {/* Logo Section */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <img
-                  src="/IMG_9537.PNG"
-                  alt="Stellar Consults Logo"
-                  className="hidden sm:block h-8 sm:h-10 w-auto object-contain"
-                />
-                <span className={`hidden sm:block text-xl font-bold ${isDayMode ? 'text-gray-300' : 'text-gray-600'}`}>×</span>
-                <img
-                  src="/Cris Dental Image.jpg"
-                  alt="Court Street Dental Logo"
-                  className="h-8 sm:h-10 w-auto object-contain"
+                  src="/stellar-dental-spa-logo.jpg"
+                  alt="Stellar Dental Spa Logo"
+                  className="h-8 sm:h-10 w-auto object-contain rounded-lg"
                 />
               </div>
 
               {/* Title with gradient */}
               <div className="hidden md:block min-w-0">
                 <h1 className={`text-xl lg:text-2xl font-display font-extrabold truncate ${isDayMode ? 'gradient-text-primary' : 'gradient-text-primary dark'}`} style={{letterSpacing: '-0.04em', fontFamily: 'Space Grotesk, sans-serif'}}>
-                  Court Street Dental <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
+                  Stellar Dental Spa <span className={`${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`}>|</span> Practice Dashboard
                 </h1>
                 <p className={`text-xs font-bold truncate ${isDayMode ? 'gradient-text-gold' : 'gradient-text-gold dark'}`} style={{letterSpacing: '0.02em'}}>
                   Powered by Stellar OPS
@@ -2080,7 +2074,7 @@ const CourtStreetRCM = () => {
 
               {/* Task Board */}
               <a
-                href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
+                href="#"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all min-h-[44px] border ${
@@ -2171,7 +2165,7 @@ const CourtStreetRCM = () => {
               {/* Mobile-only Quick Actions */}
               <div className={`mt-2 pt-2 border-t ${isDayMode ? 'border-gray-200' : 'border-gray-700'}`}>
                 <a
-                  href="https://trello.com/b/Jq0zcebf/court-street-dental-admin"
+                  href="#"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`flex items-center gap-3 px-4 py-3.5 rounded-lg transition-all min-h-[52px] border font-semibold ${
@@ -6469,7 +6463,7 @@ const CourtStreetRCM = () => {
             </h2>
             <div className="space-y-4">
               <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                Welcome to the Court Street Dental Practice Dashboard.
+                Welcome to the Stellar Dental Spa Practice Dashboard.
               </p>
               <p className={`${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
                 This comprehensive practice management platform includes:
@@ -8214,4 +8208,4 @@ const CourtStreetRCM = () => {
   );
 };
 
-export default CourtStreetRCM;
+export default StellarDentalSpaRCM;

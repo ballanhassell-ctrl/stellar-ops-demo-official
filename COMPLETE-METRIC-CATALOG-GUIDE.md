@@ -1,7 +1,7 @@
 # Complete CSD Metric Catalog Guide
 
 ## Overview
-This guide provides a comprehensive reference for ALL 184+ metrics tracked in the Court Street Dental RCM Dashboard. Each field uses **snake_case** naming convention and is organized by section.
+This guide provides a comprehensive reference for ALL 184+ metrics tracked in the Stellar Dental Spa RCM Dashboard. Each field uses **snake_case** naming convention and is organized by section.
 
 ---
 

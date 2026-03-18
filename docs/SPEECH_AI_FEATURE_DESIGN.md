@@ -301,7 +301,7 @@ export const thresholds = {
 - [ ] Test with real data
 
 ### Week 4: Testing & Refinement
-- [ ] User testing with Court Street Dental
+- [ ] User testing with Stellar Dental Spa
 - [ ] Adjust thresholds based on feedback
 - [ ] Refine insight messaging
 - [ ] Performance optimization

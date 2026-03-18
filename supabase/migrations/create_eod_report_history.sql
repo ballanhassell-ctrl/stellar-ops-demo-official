@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS eod_report_history (
   schedule_id UUID DEFAULT NULL,
   is_scheduled BOOLEAN DEFAULT FALSE,
   -- MSO fields (for future multi-practice support)
-  practice_id TEXT DEFAULT 'court-street-dental',
+  practice_id TEXT DEFAULT 'stellar-dental-spa',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS eod_report_schedules (
   send_day_of_week INTEGER DEFAULT NULL, -- 0=Sunday, 1=Monday, etc. (for weekly)
   send_day_of_month INTEGER DEFAULT NULL, -- 1-28 (for monthly)
   is_active BOOLEAN DEFAULT TRUE,
-  practice_id TEXT DEFAULT 'court-street-dental',
+  practice_id TEXT DEFAULT 'stellar-dental-spa',
   created_by TEXT DEFAULT 'admin',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

@@ -507,7 +507,7 @@ function ModalContent({
       <div className={`px-4 py-3 ${bgHeader} flex items-center justify-between select-none flex-shrink-0`}>
         <div className="flex items-center gap-3">
           <img
-            src="/Stellar2 copy.jpg"
+            src="/stellar-dental-spa-logo.jpg"
             alt="Stellar OPS"
             className="h-7 w-7 rounded-md object-cover pointer-events-none"
           />

@@ -25,8 +25,7 @@ interface SendEmailResult {
 let cachedLogoBaseUrl: string | null = null;
 
 const EMAIL_LOGO_FILES = [
-  { local: '/Stellar2 copy.jpg', remote: 'Stellar2 copy.jpg' },
-  { local: '/Cris Dental Image.jpg', remote: 'Cris Dental Image.jpg' },
+  { local: '/stellar-dental-spa-logo.jpg', remote: 'stellar-dental-spa-logo.jpg' },
 ];
 
 /**

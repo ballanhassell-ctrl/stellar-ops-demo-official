@@ -31,7 +31,7 @@ export default function EmailReportModal({
   onRefreshActionItems,
 }: EmailReportModalProps) {
   const [recipients, setRecipients] = useState('');
-  const [subject, setSubject] = useState('EOD Report - Court Street Dental');
+  const [subject, setSubject] = useState('EOD Report - Stellar Dental Spa');
   const [message, setMessage] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('full');
   const [scheduleEmail, setScheduleEmail] = useState(false);

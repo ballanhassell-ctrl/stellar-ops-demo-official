@@ -1,4 +1,4 @@
-# Deployment Status Report - Court Street Dental RCM Dashboard
+# Deployment Status Report - Stellar Dental Spa RCM Dashboard
 
 **Date:** November 13, 2025  
 **Current Branch:** main  
