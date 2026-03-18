@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import { isStaticDataMode } from '../config/dataMode';
 
 export interface InsuranceProvider {
   id?: string;
@@ -32,7 +33,23 @@ export interface InsuranceStats {
 /**
  * Fetch all insurance providers from Supabase
  */
+const SAMPLE_PROVIDERS: InsuranceProvider[] = [
+  { id: '1', name: 'Aetna', fee_schedule: 'Direct', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+  { id: '2', name: 'Cigna', fee_schedule: 'Connection', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+  { id: '3', name: 'Delta Dental Insurance', fee_schedule: 'Direct', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'Out', dr_novak_network: 'Out', dr_chen_network: 'Out' },
+  { id: '4', name: 'MetLife', fee_schedule: 'Connection', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+  { id: '5', name: 'Anthem BCBS', fee_schedule: 'Decare', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+  { id: '6', name: 'United Healthcare', fee_schedule: 'Connection', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'Out', dr_novak_network: 'Out', dr_chen_network: 'Out' },
+  { id: '7', name: 'Guardian', fee_schedule: 'Connection', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'Out', dr_novak_network: 'Out', dr_chen_network: 'Out' },
+  { id: '8', name: 'Humana', fee_schedule: 'Direct', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+  { id: '9', name: 'Ameritas', fee_schedule: 'Direct', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+  { id: '10', name: 'Principal', fee_schedule: 'Direct', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+  { id: '11', name: 'Beam Benefits', fee_schedule: 'Direct', portal_status: 'All Set!', eft_status: 'Enrolled', dr_patel_network: 'In', dr_novak_network: 'In', dr_chen_network: 'In' },
+];
+
 export async function getInsuranceProviders(): Promise<InsuranceProvider[]> {
+  if (isStaticDataMode()) return [...SAMPLE_PROVIDERS];
+
   try {
     const { data, error } = await supabase
       .from('insurance_providers')
@@ -116,6 +133,8 @@ export function calculateInsuranceStats(providers: InsuranceProvider[]): Insuran
  * Upsert an insurance provider
  */
 export async function upsertInsuranceProvider(provider: InsuranceProvider): Promise<boolean> {
+  if (isStaticDataMode()) return true;
+
   try {
     const { error } = await supabase
       .from('insurance_providers')
@@ -149,6 +168,8 @@ export async function upsertInsuranceProvider(provider: InsuranceProvider): Prom
  * Initialize insurance providers table with default data
  */
 export async function initializeInsuranceProviders(): Promise<boolean> {
+  if (isStaticDataMode()) return true;
+
   try {
     const defaultProviders: Omit<InsuranceProvider, 'id'>[] = [
       {

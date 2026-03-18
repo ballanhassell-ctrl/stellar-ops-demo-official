@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { getLocalDateString, toLocalDateString } from '../utils/dateUtils';
+import { isStaticDataMode } from '../config/dataMode';
 
 export interface ActionItemsData {
   claimsToSubmit: number;
@@ -22,6 +23,17 @@ export interface ActionItemsData {
  * This pulls from actual database records instead of manual entry
  */
 export async function getRealTimeActionItems(): Promise<ActionItemsData> {
+  if (isStaticDataMode()) {
+    return {
+      claimsToSubmit: 3,
+      deniedClaimsToResubmit: 1,
+      preAuthsApproved: 2,
+      accountsNeedingFollowUp: 5,
+      missedAppointments: 1,
+      patientsDueForRecall: 4,
+    };
+  }
+
   try {
     console.log('[Action Items] Fetching real-time data from RCM Management...');
 
@@ -163,6 +175,10 @@ export async function getRealTimeActionItems(): Promise<ActionItemsData> {
  * Used for badges/indicators throughout the app
  */
 export async function getFollowUpCounts() {
+  if (isStaticDataMode()) {
+    return { claims: 3, preAuths: 1, total: 4 };
+  }
+
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

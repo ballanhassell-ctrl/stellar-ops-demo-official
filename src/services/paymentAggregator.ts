@@ -6,12 +6,15 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { toLocalDateString } from '../utils/dateUtils';
+import { isStaticDataMode } from '../config/dataMode';
 
 /**
  * Calculate total insurance payments from daily data
  * Insurance payments come from: insurance checks and EFT payments
  */
 export async function calculateInsurancePayments(startDate: string, endDate: string): Promise<number> {
+  if (isStaticDataMode()) return 98500;
+
   try {
     // Insurance payment field keys
     const insuranceFields = [
@@ -50,6 +53,8 @@ export async function calculateInsurancePayments(startDate: string, endDate: str
  * Patient payments come from: credit cards (Visa, MC, Amex, Discover), cash, and other checks
  */
 export async function calculatePatientPayments(startDate: string, endDate: string): Promise<number> {
+  if (isStaticDataMode()) return 43500;
+
   try {
     // Patient payment field keys
     const patientFields = [
@@ -130,6 +135,8 @@ export async function calculateMTDPayments(date: string) {
  * Updates the insurance_payments and patient_payments fields with calculated values
  */
 export async function syncPaymentAggregates(date: string): Promise<boolean> {
+  if (isStaticDataMode()) return true;
+
   try {
     const payments = await calculateMTDPayments(date);
 

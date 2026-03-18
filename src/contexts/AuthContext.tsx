@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { isStaticDataMode } from '../config/dataMode';
 import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -17,11 +18,14 @@ const ADMIN_EMAIL = 'admin@dashboard.local';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isStaticDataMode());
 
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+  const isAdmin = isStaticDataMode() || session?.user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
+    // In demo mode, skip all Supabase auth — no login needed
+    if (isStaticDataMode()) return;
+
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -37,6 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
+    if (isStaticDataMode()) return { error: null };
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -48,7 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    if (!isStaticDataMode()) {
+      await supabase.auth.signOut();
+    }
     setSession(null);
   }, []);
 

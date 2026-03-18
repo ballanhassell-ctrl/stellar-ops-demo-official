@@ -3,11 +3,17 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { isStaticDataMode } from './config/dataMode'
 import LoginPage from './components/LoginPage'
 import './index.css'
 
 function AuthGate() {
   const { session, loading } = useAuth();
+
+  // In demo mode, skip auth entirely — go straight to the app
+  if (isStaticDataMode()) {
+    return <App />;
+  }
 
   if (loading) {
     return (
