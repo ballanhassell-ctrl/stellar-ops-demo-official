@@ -5,7 +5,7 @@ import {
   TrendingUp, Activity, CreditCard, ArrowDownCircle, ArrowUpCircle, UserCheck, ClipboardCheck,
   Calendar, Download, X, ExternalLink, Sun, Moon, RefreshCw, Upload,
   Plus, Edit, Trash2, Archive, ArchiveRestore, History, MessageSquarePlus, UserCog,
-  Menu, LogOut
+  Menu, LogOut, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './lib/supabaseClient';
@@ -5529,101 +5529,75 @@ const StellarDentalSpaRCM = () => {
             {administrationView === 'scheduling' && (
               <>
                 {/* VIP List Section */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>VIP List</h3>
-                    <div className="flex gap-2">
-                      {showVipList && (
+                <div className={`rounded-2xl overflow-hidden ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+                  {/* Header with always-visible metrics */}
+                  <button
+                    onClick={() => setShowVipList(!showVipList)}
+                    className={`w-full p-6 text-left transition-colors ${isDayMode ? 'hover:bg-black/[0.02]' : 'hover:bg-white/[0.02]'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {showVipList ? <ChevronDown className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} /> : <ChevronRight className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} />}
+                        <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">VIP List</h3>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className={isDayMode ? 'text-gray-500' : 'text-gray-400'}>{vipMetrics.totalPatients} patients</span>
+                          <span className="text-red-500 font-semibold">${vipMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
+                          <span className="text-emerald-500 font-semibold">${vipMetrics.productionScheduled.toLocaleString()} scheduled</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Mini metric bar */}
+                    <div className="mt-3 flex gap-3 ml-8">
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                        {vipMetrics.unscheduledPatients} unscheduled
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                        {vipMetrics.scheduledPatients} scheduled
+                      </span>
+                    </div>
+                  </button>
+
+                  {showVipList && (
+                    <div className={`border-t ${isDayMode ? 'border-gray-200/60' : 'border-white/10'}`}>
+                      {/* Add button */}
+                      <div className="px-6 pt-4 pb-2 flex justify-end">
                         <button
                           onClick={() => setShowAddVipModal(true)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
+                          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add VIP
                         </button>
-                      )}
-                      <button
-                        onClick={() => setShowVipList(!showVipList)}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
-                          showVipList
-                            ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                            : isDayMode
-                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                        }`}
-                      >
-                        {showVipList ? 'Hide' : 'Show'} VIP List
-                      </button>
-                    </div>
-                  </div>
-
-                  {showVipList && (
-                    <div className="mt-4 space-y-4">
-                      {/* VIP Metrics */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${vipMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${vipMetrics.productionScheduled.toLocaleString()}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{vipMetrics.totalPatients}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{vipMetrics.unscheduledPatients}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{vipMetrics.scheduledPatients}</p>
-                          </div>
-                        </div>
                       </div>
 
                       {/* VIP List Table */}
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto px-2 pb-4">
                         <table className="w-full">
-                          <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Employee</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Status</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Actions</th>
+                          <thead>
+                            <tr className={isDayMode ? 'bg-gray-50/80' : 'bg-white/[0.03]'}>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient #</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Initials</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Contacts</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Tx Value</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Follow-up</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Employee</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
                             {vipListItems.length === 0 ? (
                               <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={9} className={`px-4 py-8 text-center ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>
                                   No VIP list items yet. Click "Add VIP" to get started.
                                 </td>
                               </tr>
                             ) : (
                               vipListItems.map((item) => (
-                                <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                                <tr key={item.id} className={`border-t transition-colors ${isDayMode ? 'border-gray-100 hover:bg-gold-50/40' : 'border-gray-700/50 hover:bg-white/[0.03]'}`}>
                                   <td className="px-4 py-3 text-sm">
                                     <div className="flex items-center gap-3">
                                       {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
@@ -5634,17 +5608,19 @@ const StellarDentalSpaRCM = () => {
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-xs">
                                     <div className="flex gap-1">
-                                      {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
-                                      {item.secondContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">2nd</span>}
-                                      {item.thirdContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">3rd</span>}
+                                      {item.firstContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>1st</span>}
+                                      {item.secondContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>2nd</span>}
+                                      {item.thirdContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>3rd</span>}
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-sm font-semibold">${item.totalTxValue.toLocaleString()}</td>
                                   <td className="px-4 py-3 text-sm">{new Date(item.followUpDate).toLocaleDateString()}</td>
                                   <td className="px-4 py-3 text-sm">{item.employeeInitials}</td>
                                   <td className="px-4 py-3 text-sm">
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                      item.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                      item.status === 'scheduled'
+                                        ? isDayMode ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/15 text-emerald-400'
+                                        : isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-500/15 text-red-400'
                                     }`}>
                                       {item.status}
                                     </span>
@@ -5656,7 +5632,7 @@ const StellarDentalSpaRCM = () => {
                                           setSelectedSchedulingItem(item);
                                           setShowEditSchedulingModal(true);
                                         }}
-                                        className="text-blue-600 hover:text-blue-800"
+                                        className={`${isDayMode ? 'text-blue-600 hover:text-blue-800' : 'text-blue-400 hover:text-blue-300'}`}
                                       >
                                         <Edit className="w-4 h-4" />
                                       </button>
@@ -5669,7 +5645,7 @@ const StellarDentalSpaRCM = () => {
                                             setVipMetrics(metrics);
                                           }
                                         }}
-                                        className="text-red-600 hover:text-red-800"
+                                        className={`${isDayMode ? 'text-red-600 hover:text-red-800' : 'text-red-400 hover:text-red-300'}`}
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
@@ -5686,102 +5662,76 @@ const StellarDentalSpaRCM = () => {
                 </div>
 
                 {/* Recare List Section */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Recare List</h3>
-                    <div className="flex gap-2">
-                      {showRecareList && (
+                <div className={`rounded-2xl overflow-hidden ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+                  {/* Header with always-visible metrics */}
+                  <button
+                    onClick={() => setShowRecareList(!showRecareList)}
+                    className={`w-full p-6 text-left transition-colors ${isDayMode ? 'hover:bg-black/[0.02]' : 'hover:bg-white/[0.02]'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {showRecareList ? <ChevronDown className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} /> : <ChevronRight className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} />}
+                        <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">Recare List</h3>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className={isDayMode ? 'text-gray-500' : 'text-gray-400'}>{recareMetrics.totalPatients} patients</span>
+                          <span className="text-red-500 font-semibold">${recareMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
+                          <span className="text-emerald-500 font-semibold">${recareMetrics.productionScheduled.toLocaleString()} scheduled</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Mini metric bar */}
+                    <div className="mt-3 flex gap-3 ml-8">
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                        {recareMetrics.unscheduledPatients} unscheduled
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                        {recareMetrics.scheduledPatients} scheduled
+                      </span>
+                    </div>
+                  </button>
+
+                  {showRecareList && (
+                    <div className={`border-t ${isDayMode ? 'border-gray-200/60' : 'border-white/10'}`}>
+                      {/* Add button */}
+                      <div className="px-6 pt-4 pb-2 flex justify-end">
                         <button
                           onClick={() => setShowAddRecareModal(true)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
+                          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Recare
                         </button>
-                      )}
-                      <button
-                        onClick={() => setShowRecareList(!showRecareList)}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
-                          showRecareList
-                            ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                            : isDayMode
-                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                        }`}
-                      >
-                        {showRecareList ? 'Hide' : 'Show'} Recare List
-                      </button>
-                    </div>
-                  </div>
-
-                  {showRecareList && (
-                    <div className="mt-4 space-y-4">
-                      {/* Recare Metrics */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${recareMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${recareMetrics.productionScheduled.toLocaleString()}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{recareMetrics.totalPatients}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{recareMetrics.unscheduledPatients}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{recareMetrics.scheduledPatients}</p>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Recare List Table */}
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto px-2 pb-4">
                         <table className="w-full">
-                          <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Last Visit</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Employee</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Status</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Actions</th>
+                          <thead>
+                            <tr className={isDayMode ? 'bg-gray-50/80' : 'bg-white/[0.03]'}>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient #</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Initials</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Last Visit</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Contacts</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Tx Value</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Follow-up</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Employee</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
                             {recareListItems.length === 0 ? (
                               <tr>
-                                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={10} className={`px-4 py-8 text-center ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>
                                   No Recare list items yet. Click "Add Recare" to get started.
                                 </td>
                               </tr>
                             ) : (
                               recareListItems.map((item) => (
-                                <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                                <tr key={item.id} className={`border-t transition-colors ${isDayMode ? 'border-gray-100 hover:bg-gold-50/40' : 'border-gray-700/50 hover:bg-white/[0.03]'}`}>
                                   <td className="px-4 py-3 text-sm">
                                     <div className="flex items-center gap-3">
                                       {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
@@ -5791,21 +5741,23 @@ const StellarDentalSpaRCM = () => {
                                   <td className="px-4 py-3 text-sm font-medium">{item.patientInitials}</td>
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-sm">
-                                    {item.lastVisitDate ? new Date(item.lastVisitDate).toLocaleDateString() : <span className="text-gray-400">—</span>}
+                                    {item.lastVisitDate ? new Date(item.lastVisitDate).toLocaleDateString() : <span className={isDayMode ? 'text-gray-400' : 'text-gray-600'}>—</span>}
                                   </td>
                                   <td className="px-4 py-3 text-xs">
                                     <div className="flex gap-1">
-                                      {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
-                                      {item.secondContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">2nd</span>}
-                                      {item.thirdContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">3rd</span>}
+                                      {item.firstContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>1st</span>}
+                                      {item.secondContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>2nd</span>}
+                                      {item.thirdContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>3rd</span>}
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-sm font-semibold">${item.totalTxValue.toLocaleString()}</td>
                                   <td className="px-4 py-3 text-sm">{new Date(item.followUpDate).toLocaleDateString()}</td>
                                   <td className="px-4 py-3 text-sm">{item.employeeInitials}</td>
                                   <td className="px-4 py-3 text-sm">
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                      item.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                      item.status === 'scheduled'
+                                        ? isDayMode ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/15 text-emerald-400'
+                                        : isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-500/15 text-red-400'
                                     }`}>
                                       {item.status}
                                     </span>
@@ -5817,7 +5769,7 @@ const StellarDentalSpaRCM = () => {
                                           setSelectedSchedulingItem(item);
                                           setShowEditSchedulingModal(true);
                                         }}
-                                        className="text-blue-600 hover:text-blue-800"
+                                        className={`${isDayMode ? 'text-blue-600 hover:text-blue-800' : 'text-blue-400 hover:text-blue-300'}`}
                                       >
                                         <Edit className="w-4 h-4" />
                                       </button>
@@ -5830,7 +5782,7 @@ const StellarDentalSpaRCM = () => {
                                             setRecareMetrics(metrics);
                                           }
                                         }}
-                                        className="text-red-600 hover:text-red-800"
+                                        className={`${isDayMode ? 'text-red-600 hover:text-red-800' : 'text-red-400 hover:text-red-300'}`}
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
@@ -5847,101 +5799,75 @@ const StellarDentalSpaRCM = () => {
                 </div>
 
                 {/* Unscheduled Treatment List Section */}
-                <div className={`rounded-2xl p-6 ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className={`text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent`}>Unscheduled Treatment List</h3>
-                    <div className="flex gap-2">
-                      {showTreatmentList && (
+                <div className={`rounded-2xl overflow-hidden ${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-white/40' : 'border-white/10'}`}>
+                  {/* Header with always-visible metrics */}
+                  <button
+                    onClick={() => setShowTreatmentList(!showTreatmentList)}
+                    className={`w-full p-6 text-left transition-colors ${isDayMode ? 'hover:bg-black/[0.02]' : 'hover:bg-white/[0.02]'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {showTreatmentList ? <ChevronDown className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} /> : <ChevronRight className={`w-5 h-5 ${isDayMode ? 'text-gold-600' : 'text-gold-400'}`} />}
+                        <h3 className="text-xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">Unscheduled Treatment List</h3>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className={isDayMode ? 'text-gray-500' : 'text-gray-400'}>{treatmentMetrics.totalPatients} patients</span>
+                          <span className="text-red-500 font-semibold">${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()} unscheduled</span>
+                          <span className="text-emerald-500 font-semibold">${treatmentMetrics.productionScheduled.toLocaleString()} scheduled</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Mini metric bar */}
+                    <div className="mt-3 flex gap-3 ml-8">
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                        {treatmentMetrics.unscheduledPatients} unscheduled
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${isDayMode ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                        {treatmentMetrics.scheduledPatients} scheduled
+                      </span>
+                    </div>
+                  </button>
+
+                  {showTreatmentList && (
+                    <div className={`border-t ${isDayMode ? 'border-gray-200/60' : 'border-white/10'}`}>
+                      {/* Add button */}
+                      <div className="px-6 pt-4 pb-2 flex justify-end">
                         <button
                           onClick={() => setShowAddTreatmentModal(true)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
+                          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-semibold text-sm"
                         >
                           <Plus className="w-4 h-4" />
                           Add Treatment
                         </button>
-                      )}
-                      <button
-                        onClick={() => setShowTreatmentList(!showTreatmentList)}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
-                          showTreatmentList
-                            ? 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                            : isDayMode
-                            ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                        }`}
-                      >
-                        {showTreatmentList ? 'Hide' : 'Show'} Unscheduled Treatment List
-                      </button>
-                    </div>
-                  </div>
-
-                  {showTreatmentList && (
-                    <div className="mt-4 space-y-4">
-                      {/* Treatment Metrics */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-red-200/50' : 'border-red-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-red-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled Production</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-red-600' : 'text-red-400'}`}>${treatmentMetrics.potentialProductionUnscheduled.toLocaleString()}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-emerald-200/50' : 'border-emerald-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled Production</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>${treatmentMetrics.productionScheduled.toLocaleString()}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-primary-200/50' : 'border-primary-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-primary-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Total Patients</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-primary-600' : 'text-primary-400'}`}>{treatmentMetrics.totalPatients}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-amber-200/50' : 'border-amber-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Unscheduled</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>{treatmentMetrics.unscheduledPatients}</p>
-                          </div>
-                        </div>
-                        <div className={`${isDayMode ? 'glass-card' : 'glass-card-dark'} border ${isDayMode ? 'border-purple-200/50' : 'border-purple-400/20'} rounded-xl p-4 relative overflow-hidden group`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                          <div className="relative z-10">
-                            <p className={`text-xs mb-1 ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Scheduled</p>
-                            <p className={`text-xl font-bold ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>{treatmentMetrics.scheduledPatients}</p>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Unscheduled Treatment List Table */}
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto px-2 pb-4">
                         <table className="w-full">
-                          <thead className={isDayMode ? 'bg-gray-50' : 'bg-gray-700'}>
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Patient #</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Initials</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Treatment</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Contacts</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Tx Value</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Follow-up</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Employee</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Status</th>
-                              <th className="px-4 py-2 text-left text-xs font-semibold">Actions</th>
+                          <thead>
+                            <tr className={isDayMode ? 'bg-gray-50/80' : 'bg-white/[0.03]'}>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Patient #</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Initials</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Treatment</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Contacts</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Tx Value</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Follow-up</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Employee</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Status</th>
+                              <th className={`px-4 py-2.5 text-left text-xs font-semibold ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
                             {treatmentListItems.length === 0 ? (
                               <tr>
-                                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={9} className={`px-4 py-8 text-center ${isDayMode ? 'text-gray-500' : 'text-gray-500'}`}>
                                   No Unscheduled Treatment list items yet. Click "Add Treatment" to get started.
                                 </td>
                               </tr>
                             ) : (
                               treatmentListItems.map((item) => (
-                                <tr key={item.id} className={`border-t ${isDayMode ? 'border-gray-200 hover:bg-gray-50' : 'border-gray-700 hover:bg-gray-700/50'}`}>
+                                <tr key={item.id} className={`border-t transition-colors ${isDayMode ? 'border-gray-100 hover:bg-gold-50/40' : 'border-gray-700/50 hover:bg-white/[0.03]'}`}>
                                   <td className="px-4 py-3 text-sm">
                                     <div className="flex items-center gap-3">
                                       {isFollowUpDue(item.followUpDate) && <NotificationBadge />}
@@ -5952,17 +5878,19 @@ const StellarDentalSpaRCM = () => {
                                   <td className="px-4 py-3 text-sm">{item.treatmentNeeded}</td>
                                   <td className="px-4 py-3 text-xs">
                                     <div className="flex gap-1">
-                                      {item.firstContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">1st</span>}
-                                      {item.secondContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">2nd</span>}
-                                      {item.thirdContactDate && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">3rd</span>}
+                                      {item.firstContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>1st</span>}
+                                      {item.secondContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>2nd</span>}
+                                      {item.thirdContactDate && <span className={`px-2 py-1 rounded ${isDayMode ? 'bg-blue-100 text-blue-800' : 'bg-blue-500/15 text-blue-300'}`}>3rd</span>}
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-sm font-semibold">${item.totalTxValue.toLocaleString()}</td>
                                   <td className="px-4 py-3 text-sm">{new Date(item.followUpDate).toLocaleDateString()}</td>
                                   <td className="px-4 py-3 text-sm">{item.employeeInitials}</td>
                                   <td className="px-4 py-3 text-sm">
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                      item.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                      item.status === 'scheduled'
+                                        ? isDayMode ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/15 text-emerald-400'
+                                        : isDayMode ? 'bg-red-100 text-red-800' : 'bg-red-500/15 text-red-400'
                                     }`}>
                                       {item.status}
                                     </span>
@@ -5974,7 +5902,7 @@ const StellarDentalSpaRCM = () => {
                                           setSelectedSchedulingItem(item);
                                           setShowEditSchedulingModal(true);
                                         }}
-                                        className="text-blue-600 hover:text-blue-800"
+                                        className={`${isDayMode ? 'text-blue-600 hover:text-blue-800' : 'text-blue-400 hover:text-blue-300'}`}
                                       >
                                         <Edit className="w-4 h-4" />
                                       </button>
@@ -5987,7 +5915,7 @@ const StellarDentalSpaRCM = () => {
                                             setTreatmentMetrics(metrics);
                                           }
                                         }}
-                                        className="text-red-600 hover:text-red-800"
+                                        className={`${isDayMode ? 'text-red-600 hover:text-red-800' : 'text-red-400 hover:text-red-300'}`}
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
