@@ -891,7 +891,7 @@ body {
 }
 
 /* ========================================
-   Video Backdrop Styles (Dark Mode)
+   Video Backdrop Styles (Dark + Light Modes)
    ======================================== */
 .video-backdrop-container {
   position: fixed;
@@ -915,8 +915,8 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.18;
-  filter: saturate(1.2) contrast(1.1) brightness(0.9);
+  opacity: 0.65;
+  filter: saturate(1.2) contrast(1.1) brightness(1.6);
 }
 
 .video-backdrop-overlays {
@@ -941,4 +941,22 @@ body {
   position: absolute;
   inset: 0;
   background: radial-gradient(90% 60% at 10% 70%, rgba(0, 0, 0, 0.55) 0%, transparent 70%);
+}
+
+/* Light mode video backdrop overrides */
+.video-backdrop-light .video-backdrop-video {
+    opacity: 0.5;
+    filter: saturate(1.4) contrast(1.15) brightness(1.8);
+}
+
+.video-backdrop-light .video-backdrop-gradient-bottom {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, transparent 40%, rgba(255, 255, 255, 0.35) 100%);
+}
+
+.video-backdrop-light .video-backdrop-gradient-right {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 30%, transparent 100%);
+}
+
+.video-backdrop-light .video-backdrop-gradient-vignette {
+    background: radial-gradient(90% 60% at 10% 70%, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
 }
