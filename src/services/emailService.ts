@@ -3,6 +3,7 @@
 // Falls back to clipboard + mailto when Postmark is not configured
 
 import { supabase } from '../lib/supabaseClient';
+import { isStaticDataMode } from '../config/dataMode';
 
 interface SendEmailRequest {
   to: string[];
@@ -40,6 +41,10 @@ const EMAIL_LOGO_FILES = [
  */
 export async function getEmailLogoBaseUrl(): Promise<string> {
   if (cachedLogoBaseUrl) return cachedLogoBaseUrl;
+  if (isStaticDataMode()) {
+    cachedLogoBaseUrl = window.location.origin;
+    return cachedLogoBaseUrl;
+  }
 
   const BUCKET = 'email-assets';
 
@@ -82,6 +87,10 @@ export async function getEmailLogoBaseUrl(): Promise<string> {
  * 4. The edge function handles the actual Postmark API call
  */
 export async function sendEODReportEmail(request: SendEmailRequest): Promise<SendEmailResult> {
+  if (isStaticDataMode()) {
+    return { success: false, error: 'Email service not available in demo mode.', method: 'fallback' };
+  }
+
   try {
     // Attempt to send via Supabase Edge Function (Postmark)
     const { data, error } = await supabase.functions.invoke('send-eod-email', {

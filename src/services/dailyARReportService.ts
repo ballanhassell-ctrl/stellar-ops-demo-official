@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabaseClient';
 import { sanitizePatientName } from '../utils/sanitizePatientName';
 import { getLocalDateString, toLocalDateString, getUTCBoundariesForLocalDate } from '../utils/dateUtils';
 import { getEmailLogoBaseUrl } from './emailService';
+import { isStaticDataMode } from '../config/dataMode';
 import type { EFTReconciliationPeriod, EFTReconciliationEntry } from '../types/database.types';
 
 // Brand colors matching the EOD report template
@@ -78,6 +79,26 @@ export interface DailyARReportData {
  */
 export async function fetchDailyARReportData(reportDate?: string): Promise<DailyARReportData> {
   const today = reportDate || getLocalDateString();
+
+  if (isStaticDataMode()) {
+    return {
+      reportDate: today,
+      newPatientAR: [],
+      newNonCollectible: [],
+      newCredits: [],
+      newInsuranceIssues: [],
+      eftReconciliation: null,
+      summary: {
+        openPatientARCount: 12,
+        openPatientARBalance: 18750,
+        openInsuranceIssuesCount: 3,
+        priorDayCollected: 2450,
+        schedulingOpportunities: 2,
+        schedulingOpportunitiesAmount: 875,
+      },
+    };
+  }
+
   const { start: startOfDay, end: endOfDay } = getUTCBoundariesForLocalDate(today);
 
   // Fetch new Patient A/R records (collectible) added today
@@ -602,6 +623,10 @@ export async function sendDailyARReport(
   data: DailyARReportData,
   message?: string,
 ): Promise<{ success: boolean; error?: string }> {
+  if (isStaticDataMode()) {
+    return { success: false, error: 'Email service not available in demo mode.' };
+  }
+
   try {
     // Resolve logo URLs from Supabase Storage for email compatibility
     const logoBase = await getEmailLogoBaseUrl();

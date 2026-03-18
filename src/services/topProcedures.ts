@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import { isStaticDataMode } from '../config/dataMode';
 
 export interface TopProcedure {
   id: string;
@@ -17,7 +18,24 @@ export interface TopProcedure {
  * Fetch top procedures for a specific date
  * Returns procedures sorted by revenue (highest first)
  */
+const SAMPLE_TOP_PROCEDURES: Array<{ procedure_name: string; procedure_code: string; count: number; revenue: number }> = [
+  { procedure_name: 'Prophylaxis - Adult', procedure_code: 'D1110', count: 42, revenue: 5460 },
+  { procedure_name: 'Periodic Oral Evaluation', procedure_code: 'D0120', count: 38, revenue: 2280 },
+  { procedure_name: 'Bitewing X-rays (4 films)', procedure_code: 'D0274', count: 30, revenue: 2100 },
+  { procedure_name: 'Crown - Porcelain/Ceramic', procedure_code: 'D2740', count: 8, revenue: 9600 },
+  { procedure_name: 'Composite Filling (2 surfaces)', procedure_code: 'D2392', count: 15, revenue: 3750 },
+  { procedure_name: 'Root Canal - Molar', procedure_code: 'D3330', count: 4, revenue: 4800 },
+  { procedure_name: 'Scaling and Root Planing (per quadrant)', procedure_code: 'D4341', count: 12, revenue: 3600 },
+  { procedure_name: 'Extraction - Surgical', procedure_code: 'D7210', count: 3, revenue: 1350 },
+  { procedure_name: 'Panoramic X-ray', procedure_code: 'D0330', count: 10, revenue: 1500 },
+  { procedure_name: 'Fluoride Treatment - Adult', procedure_code: 'D1208', count: 25, revenue: 1250 },
+];
+
 export async function getTopProceduresForDate(date: string): Promise<TopProcedure[]> {
+  if (isStaticDataMode()) {
+    return SAMPLE_TOP_PROCEDURES.map((p, i) => ({ id: `sample-${i}`, ...p }));
+  }
+
   try {
     const { data, error } = await supabase
       .from('top_procedures_daily')
@@ -46,6 +64,10 @@ export async function getTopProceduresForDateRange(
   startDate: string,
   endDate: string
 ): Promise<Array<{ procedure_name: string; procedure_code: string; count: number; revenue: number }>> {
+  if (isStaticDataMode()) {
+    return [...SAMPLE_TOP_PROCEDURES];
+  }
+
   try {
     const { data, error } = await supabase
       .from('top_procedures_daily')

@@ -6,6 +6,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { toLocalDateString } from '../utils/dateUtils';
+import { isStaticDataMode } from '../config/dataMode';
 
 /**
  * Calculate MTD Production by reading the most recent eod_mtd_production value for the month.
@@ -13,6 +14,8 @@ import { toLocalDateString } from '../utils/dateUtils';
  * The stored eod_mtd_production is the authoritative source (uploaded via CSV).
  */
 export async function calculateMTDProduction(date: string): Promise<number> {
+  if (isStaticDataMode()) return 187500;
+
   try {
     const targetDate = new Date(date);
     const year = targetDate.getFullYear();
@@ -75,6 +78,8 @@ export async function calculateMTDProduction(date: string): Promise<number> {
  * The stored eod_mtd_collected is the authoritative source (uploaded via CSV).
  */
 export async function calculateMTDCollected(date: string): Promise<number> {
+  if (isStaticDataMode()) return 142000;
+
   try {
     const targetDate = new Date(date);
     const year = targetDate.getFullYear();
@@ -144,6 +149,8 @@ export function calculateCollectionRate(production: number, collected: number): 
  * Falls back to summing daily eod_new_patients if no stored MTD value exists.
  */
 export async function calculateMTDNewPatients(date: string): Promise<number> {
+  if (isStaticDataMode()) return 18;
+
   try {
     const targetDate = new Date(date);
     const year = targetDate.getFullYear();
@@ -195,6 +202,8 @@ export async function calculateMTDNewPatients(date: string): Promise<number> {
  * This ensures MTD Production matches BAM Revenue and MTD Collected is calculated from daily totals
  */
 export async function syncMTDMetrics(date: string): Promise<boolean> {
+  if (isStaticDataMode()) return true;
+
   try {
     const production = await calculateMTDProduction(date);
     const collected = await calculateMTDCollected(date);
