@@ -140,17 +140,23 @@ export async function getSchedulingListItemsDueForFollowUp(listType?: 'vip' | 'r
 // =====================================================
 
 export async function calculateSchedulingMetrics(listType: 'vip' | 'recare' | 'treatment') {
-  const { data, error } = await supabase
-    .from('scheduling_list_items')
-    .select('status, total_tx_value')
-    .eq('list_type', listType);
+  let items: SchedulingListItem[];
 
-  if (error) {
-    console.error('Error calculating scheduling metrics:', error);
-    throw error;
+  if (isStaticDataMode()) {
+    items = sampleSchedulingListItems.filter(item => item.list_type === listType);
+  } else {
+    const { data, error } = await supabase
+      .from('scheduling_list_items')
+      .select('status, total_tx_value')
+      .eq('list_type', listType);
+
+    if (error) {
+      console.error('Error calculating scheduling metrics:', error);
+      throw error;
+    }
+
+    items = data as SchedulingListItem[];
   }
-
-  const items = data as SchedulingListItem[];
 
   const unscheduledItems = items.filter(item => item.status === 'unscheduled');
   const scheduledItems = items.filter(item => item.status === 'scheduled');
