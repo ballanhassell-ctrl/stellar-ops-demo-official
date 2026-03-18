@@ -56,6 +56,8 @@ interface ScanSessionItem {
 }
 
 type SubView = 'scan-session' | 'registry' | 'analytics';
+type RegistryTimeframe = 'today' | 'week' | 'month' | 'all';
+type RegistryGroupBy = 'day' | 'week' | 'month';
 
 interface InsuranceCheckStationProps {
   isDayMode: boolean;
@@ -136,6 +138,44 @@ const getLast5BusinessDays = (): Date[] => {
   return days.reverse();
 };
 
+const parseDateOnly = (value?: string): Date | null => {
+  if (!value) return null;
+  const datePart = value.slice(0, 10);
+  const [year, month, day] = datePart.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const endOfDay = (date: Date) => {
+  const next = startOfDay(date);
+  next.setDate(next.getDate() + 1);
+  next.setMilliseconds(-1);
+  return next;
+};
+
+const startOfWeek = (date: Date) => {
+  const start = startOfDay(date);
+  const day = start.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diff);
+  return start;
+};
+
+const endOfWeek = (date: Date) => {
+  const end = startOfWeek(date);
+  end.setDate(end.getDate() + 6);
+  return endOfDay(end);
+};
+
+const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
+const endOfMonth = (date: Date) => endOfDay(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+
+const formatRangeLabel = (start: Date, end: Date) => (
+  `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+);
+
 const csdGold = '#B8985F';
 
 // ---- Component ----
@@ -156,7 +196,10 @@ export default function InsuranceCheckStation({
 }: InsuranceCheckStationProps) {
 
   // Sub-view state
-  const [activeView, setActiveView] = useState<SubView>('scan-session');
+  const [activeView, setActiveView] = useState<SubView>('registry');
+  const [registryTimeframe, setRegistryTimeframe] = useState<RegistryTimeframe>('today');
+  const [registryGroupBy, setRegistryGroupBy] = useState<RegistryGroupBy>('day');
+  const [expandedRegistryGroups, setExpandedRegistryGroups] = useState<Set<string>>(new Set());
 
   // Scan session state
   const [scanSessionItems, setScanSessionItems] = useState<ScanSessionItem[]>([]);
@@ -197,8 +240,8 @@ export default function InsuranceCheckStation({
     return () => { mounted = false; clearInterval(interval); };
   }, []);
 
-  // Filtered checks
-  const filteredInsuranceChecks = useMemo(() => {
+  // Base filtered checks (search + archive mode)
+  const baseFilteredInsuranceChecks = useMemo(() => {
     return insuranceChecks.filter((check: InsuranceCheckRecord) => {
       const matchesSearch = searchQuery === '' ||
         check.checkEftNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -217,6 +260,80 @@ export default function InsuranceCheckStation({
     });
   }, [insuranceChecks, searchQuery, showArchivedInsuranceChecks, archiveInsuranceChecksDateFilter]);
 
+  const today = useMemo(() => parseDateOnly(getLocalDateString()) ?? new Date(), []);
+
+  const scopedInsuranceChecks = useMemo(() => {
+    if (showArchivedInsuranceChecks || registryTimeframe === 'all') {
+      return baseFilteredInsuranceChecks;
+    }
+
+    return baseFilteredInsuranceChecks.filter((check) => {
+      const effectiveDate = parseDateOnly(check.dateEntered);
+      if (!effectiveDate) return false;
+
+      if (registryTimeframe === 'today') {
+        return effectiveDate >= startOfDay(today) && effectiveDate <= endOfDay(today);
+      }
+
+      if (registryTimeframe === 'week') {
+        return effectiveDate >= startOfWeek(today) && effectiveDate <= endOfWeek(today);
+      }
+
+      return effectiveDate >= startOfMonth(today) && effectiveDate <= endOfMonth(today);
+    });
+  }, [baseFilteredInsuranceChecks, registryTimeframe, showArchivedInsuranceChecks, today]);
+
+  const groupedInsuranceChecks = useMemo(() => {
+    const groups = new Map<string, { id: string; label: string; checks: InsuranceCheckRecord[]; sortDate: Date }>();
+
+    scopedInsuranceChecks.forEach((check) => {
+      const effectiveDate = parseDateOnly(
+        showArchivedInsuranceChecks ? (check.archivedAt?.slice(0, 10) || check.dateEntered) : check.dateEntered
+      ) ?? today;
+
+      let groupId = '';
+      let label = '';
+      let sortDate = effectiveDate;
+
+      if (registryGroupBy === 'day') {
+        groupId = effectiveDate.toISOString().slice(0, 10);
+        const isTodayGroup = groupId === getLocalDateString();
+        label = isTodayGroup
+          ? `Today · ${effectiveDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+          : effectiveDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      } else if (registryGroupBy === 'week') {
+        const weekStart = startOfWeek(effectiveDate);
+        const weekEnd = endOfWeek(effectiveDate);
+        groupId = `week-${weekStart.toISOString().slice(0, 10)}`;
+        label = `Week of ${formatRangeLabel(weekStart, weekEnd)}`;
+        sortDate = weekStart;
+      } else {
+        const monthStart = startOfMonth(effectiveDate);
+        groupId = `month-${monthStart.getFullYear()}-${monthStart.getMonth()}`;
+        label = monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        sortDate = monthStart;
+      }
+
+      const existing = groups.get(groupId);
+      if (existing) {
+        existing.checks.push(check);
+      } else {
+        groups.set(groupId, { id: groupId, label, checks: [check], sortDate });
+      }
+    });
+
+    return Array.from(groups.values())
+      .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
+      .map(group => ({
+        ...group,
+        totalAmount: group.checks.reduce((sum, check) => sum + check.totalAmount, 0),
+      }));
+  }, [scopedInsuranceChecks, registryGroupBy, showArchivedInsuranceChecks, today]);
+
+  useEffect(() => {
+    setExpandedRegistryGroups(new Set(groupedInsuranceChecks.map(group => group.id)));
+  }, [groupedInsuranceChecks]);
+
   // ---- Computed metrics ----
 
   const sessionTotal = useMemo(() => {
@@ -229,12 +346,12 @@ export default function InsuranceCheckStation({
   const confirmedCount = scanSessionItems.filter(i => i.status === 'confirmed').length;
 
   const checkTotal = useMemo(() =>
-    filteredInsuranceChecks.filter(c => c.paymentType === 'Check').reduce((sum, c) => sum + c.totalAmount, 0),
-    [filteredInsuranceChecks]
+    scopedInsuranceChecks.filter(c => c.paymentType === 'Check').reduce((sum, c) => sum + c.totalAmount, 0),
+    [scopedInsuranceChecks]
   );
   const eftTotal = useMemo(() =>
-    filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').reduce((sum, c) => sum + c.totalAmount, 0),
-    [filteredInsuranceChecks]
+    scopedInsuranceChecks.filter(c => c.paymentType === 'EFT').reduce((sum, c) => sum + c.totalAmount, 0),
+    [scopedInsuranceChecks]
   );
   const grandTotal = checkTotal + eftTotal;
 
@@ -511,6 +628,14 @@ export default function InsuranceCheckStation({
     { key: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, description: 'Insights & trends' },
   ];
 
+  const registryScopeLabel = useMemo(() => {
+    if (showArchivedInsuranceChecks) return 'Archived Results';
+    if (registryTimeframe === 'today') return 'Today';
+    if (registryTimeframe === 'week') return 'This Week';
+    if (registryTimeframe === 'month') return 'This Month';
+    return 'All Time';
+  }, [registryTimeframe, showArchivedInsuranceChecks]);
+
   // ---- Render ----
 
   return (
@@ -523,7 +648,7 @@ export default function InsuranceCheckStation({
               Insurance Payment Station
             </h2>
             <p className={`text-sm mt-1 ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              Scan, verify, and manage insurance checks & EFTs
+              Scan, verify, and manage insurance checks & EFTs — landing on today&apos;s registry metrics first
             </p>
           </div>
           <button
@@ -543,7 +668,7 @@ export default function InsuranceCheckStation({
               ${checkTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className={`text-xs ${isDayMode ? 'text-emerald-500' : 'text-emerald-500'}`}>
-              {filteredInsuranceChecks.filter(c => c.paymentType === 'Check').length} items
+              {scopedInsuranceChecks.filter(c => c.paymentType === 'Check').length} items
             </p>
           </div>
           <div className={`rounded-xl px-4 py-3 ${isDayMode ? 'bg-blue-50 border border-blue-100' : 'bg-blue-900/20 border border-blue-800/30'}`}>
@@ -552,7 +677,7 @@ export default function InsuranceCheckStation({
               ${eftTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className={`text-xs ${isDayMode ? 'text-blue-500' : 'text-blue-500'}`}>
-              {filteredInsuranceChecks.filter(c => c.paymentType === 'EFT').length} items
+              {scopedInsuranceChecks.filter(c => c.paymentType === 'EFT').length} items
             </p>
           </div>
           <div className={`rounded-xl px-4 py-3 ${isDayMode ? 'bg-purple-50 border border-purple-100' : 'bg-purple-900/20 border border-purple-800/30'}`}>
@@ -561,16 +686,16 @@ export default function InsuranceCheckStation({
               ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className={`text-xs ${isDayMode ? 'text-purple-500' : 'text-purple-500'}`}>
-              {filteredInsuranceChecks.length} total
+              {scopedInsuranceChecks.length} total
             </p>
           </div>
           <div className={`rounded-xl px-4 py-3 ${isDayMode ? 'bg-amber-50 border border-amber-100' : 'bg-amber-900/20 border border-amber-800/30'}`}>
             <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Awaiting Entry</p>
             <p className={`text-lg font-bold ${isDayMode ? 'text-amber-800' : 'text-amber-300'}`}>
-              ${filteredInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${scopedInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className={`text-xs ${isDayMode ? 'text-amber-500' : 'text-amber-500'}`}>
-              {filteredInsuranceChecks.filter(c => c.status !== 'Entered').length} pending
+              {scopedInsuranceChecks.filter(c => c.status !== 'Entered').length} pending
             </p>
           </div>
         </div>
@@ -1055,7 +1180,7 @@ export default function InsuranceCheckStation({
         {activeView === 'registry' && (
           <div className="space-y-4">
             {/* Search & Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col xl:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -1070,19 +1195,72 @@ export default function InsuranceCheckStation({
                   } focus:outline-none focus:ring-2 focus:ring-emerald-200`}
                 />
               </div>
-              <button
-                onClick={() => setShowArchivedInsuranceChecks(!showArchivedInsuranceChecks)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${
-                  showArchivedInsuranceChecks
-                    ? isDayMode
-                      ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                    : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
-                }`}
-              >
-                <Archive className="w-4 h-4" />
-                {showArchivedInsuranceChecks ? 'Show Active' : 'Show Archived'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { key: 'today', label: 'Today' },
+                  { key: 'week', label: 'This Week' },
+                  { key: 'month', label: 'This Month' },
+                  { key: 'all', label: 'All Time' },
+                ] as const).map(option => (
+                  <button
+                    key={option.key}
+                    onClick={() => setRegistryTimeframe(option.key)}
+                    disabled={showArchivedInsuranceChecks}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+                      registryTimeframe === option.key && !showArchivedInsuranceChecks
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                        : isDayMode
+                          ? 'bg-white text-gray-700 border border-gray-200 hover:border-emerald-300'
+                          : 'bg-white/5 text-gray-300 border border-white/10 hover:border-emerald-500/40'
+                    } ${showArchivedInsuranceChecks ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowArchivedInsuranceChecks(!showArchivedInsuranceChecks)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${
+                    showArchivedInsuranceChecks
+                      ? isDayMode
+                        ? 'bg-white/60 text-gray-700 hover:bg-white/80 border border-white/40'
+                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                      : 'bg-gradient-primary text-gold-400 shadow-glow-primary'
+                  }`}
+                >
+                  <Archive className="w-4 h-4" />
+                  {showArchivedInsuranceChecks ? 'Show Active' : 'Show Archived'}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className={`inline-flex rounded-xl p-1 ${isDayMode ? 'bg-gray-100' : 'bg-white/5 border border-white/10'}`}>
+                {([
+                  { key: 'day', label: 'Group by Day' },
+                  { key: 'week', label: 'Group by Week' },
+                  { key: 'month', label: 'Group by Month' },
+                ] as const).map(option => (
+                  <button
+                    key={option.key}
+                    onClick={() => setRegistryGroupBy(option.key)}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      registryGroupBy === option.key
+                        ? isDayMode
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'bg-emerald-500 text-white'
+                        : isDayMode
+                          ? 'text-gray-600 hover:text-gray-900'
+                          : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className={`text-sm font-medium ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                Showing <span className={`${isDayMode ? 'text-gray-900' : 'text-white'} font-bold`}>{registryScopeLabel}</span> · {scopedInsuranceChecks.length} records
+              </div>
             </div>
 
             {showArchivedInsuranceChecks && (
@@ -1111,127 +1289,185 @@ export default function InsuranceCheckStation({
               </div>
             )}
 
-            {/* Table */}
-            <div className="overflow-x-auto rounded-xl">
-              <table className={`min-w-full divide-y ${isDayMode ? 'divide-gray-200' : 'divide-white/10'}`}>
-                <thead className={isDayMode ? 'bg-gray-50' : 'bg-white/5'}>
-                  <tr>
-                    {['Check/EFT#', 'Type', 'Insurance', 'Dist.', 'Amount', 'DOS', 'Date Created', 'Aging', 'Created By', 'Handler', 'Status', 'Actions'].map(h => (
-                      <th key={h} className={`px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-700' : 'text-gray-400'}`}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${isDayMode ? 'divide-gray-100' : 'divide-white/5'}`}>
-                  {filteredInsuranceChecks.length === 0 ? (
-                    <tr>
-                      <td colSpan={12} className={`px-4 py-8 text-center ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                        No insurance checks found matching your search.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredInsuranceChecks.map((check) => (
-                      <tr
-                        key={check.id}
-                        className={`transition-colors ${
-                          check.status === 'Created'
-                            ? isDayMode ? 'bg-gray-50/50 hover:bg-gray-100/50' : 'bg-white/[0.02] hover:bg-white/[0.05]'
-                            : check.status === 'Entered'
-                            ? isDayMode ? 'bg-green-50/50 hover:bg-green-100/50' : 'bg-emerald-900/10 hover:bg-emerald-900/20'
-                            : isDayMode ? 'bg-yellow-50/50 hover:bg-yellow-100/50' : 'bg-amber-900/10 hover:bg-amber-900/20'
-                        }`}
-                      >
-                        <td className={`px-3 py-3 text-sm font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{check.checkEftNumber}</td>
-                        <td className="px-3 py-3">
-                          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
-                            check.paymentType === 'Check'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {check.paymentType}
-                          </span>
-                        </td>
-                        <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{check.insuranceCompany}</td>
-                        <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{check.distributionType}</td>
-                        <td className={`px-3 py-3 text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>${check.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.dateOfService || '-'}</td>
-                        <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.dateEntered || '-'}</td>
-                        <td className="px-3 py-3">
-                          <span className={`text-sm font-medium ${
-                            check.aging > 60 ? 'text-red-600' :
-                            check.aging > 30 ? 'text-orange-500' :
-                            'text-green-600'
-                          }`}>
-                            {check.aging}d
-                          </span>
-                        </td>
-                        <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.enteredBy}</td>
-                        <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.handler}</td>
-                        <td className="px-3 py-3">
-                          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
-                            check.status === 'Created'
-                              ? 'bg-gray-100 text-gray-800'
-                              : check.status === 'Entered'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {check.status}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3">
-                          <div className="flex items-center gap-1">
-                            <button
-                              className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              onClick={() => onEditCheck(check)}
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
-                              onClick={() => onAddUpdate('insurance-check', check.id, check.checkEftNumber, check.status)}
-                              title="Add Update"
-                            >
-                              <MessageSquarePlus className="w-4 h-4" />
-                            </button>
-                            <button
-                              className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                              onClick={() => onViewHistory(check.id, check.checkEftNumber)}
-                              title="View History"
-                            >
-                              <History className="w-4 h-4" />
-                            </button>
-                            {check.isArchived ? (
-                              <button
-                                className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                onClick={() => handleUnarchiveCheck(check.id)}
-                                title="Unarchive"
-                              >
-                                <ArchiveRestore className="w-4 h-4" />
-                              </button>
-                            ) : (
-                              <button
-                                className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                                onClick={() => handleArchiveCheck(check.id, 'Current User')}
-                                title="Archive"
-                              >
-                                <Archive className="w-4 h-4" />
-                              </button>
-                            )}
-                            <button
-                              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              onClick={() => handleDeleteCheck(check.id, check.checkEftNumber)}
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className={`rounded-xl px-4 py-3 ${isDayMode ? 'bg-emerald-50 border border-emerald-100' : 'bg-emerald-900/20 border border-emerald-800/30'}`}>
+                <p className={`text-xs font-medium ${isDayMode ? 'text-emerald-600' : 'text-emerald-400'}`}>Checks · {registryScopeLabel}</p>
+                <p className={`text-lg font-bold ${isDayMode ? 'text-emerald-800' : 'text-emerald-300'}`}>
+                  ${checkTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className={`rounded-xl px-4 py-3 ${isDayMode ? 'bg-blue-50 border border-blue-100' : 'bg-blue-900/20 border border-blue-800/30'}`}>
+                <p className={`text-xs font-medium ${isDayMode ? 'text-blue-600' : 'text-blue-400'}`}>EFTs · {registryScopeLabel}</p>
+                <p className={`text-lg font-bold ${isDayMode ? 'text-blue-800' : 'text-blue-300'}`}>
+                  ${eftTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className={`rounded-xl px-4 py-3 ${isDayMode ? 'bg-purple-50 border border-purple-100' : 'bg-purple-900/20 border border-purple-800/30'}`}>
+                <p className={`text-xs font-medium ${isDayMode ? 'text-purple-600' : 'text-purple-400'}`}>Total · {registryScopeLabel}</p>
+                <p className={`text-lg font-bold ${isDayMode ? 'text-purple-800' : 'text-purple-300'}`}>
+                  ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className={`rounded-xl px-4 py-3 ${isDayMode ? 'bg-amber-50 border border-amber-100' : 'bg-amber-900/20 border border-amber-800/30'}`}>
+                <p className={`text-xs font-medium ${isDayMode ? 'text-amber-600' : 'text-amber-400'}`}>Awaiting Entry</p>
+                <p className={`text-lg font-bold ${isDayMode ? 'text-amber-800' : 'text-amber-300'}`}>
+                  ${scopedInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
             </div>
+
+            {groupedInsuranceChecks.length === 0 ? (
+              <div className={`rounded-xl px-4 py-10 text-center border ${isDayMode ? 'bg-white border-gray-200 text-gray-500' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+                No insurance checks found matching your current search and timeframe.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {groupedInsuranceChecks.map(group => {
+                  const isExpanded = expandedRegistryGroups.has(group.id);
+                  return (
+                    <div key={group.id} className={`rounded-xl overflow-hidden border ${isDayMode ? 'bg-white border-gray-200' : 'bg-white/5 border-white/10'}`}>
+                      <button
+                        onClick={() => setExpandedRegistryGroups(prev => {
+                          const next = new Set(prev);
+                          if (next.has(group.id)) next.delete(group.id);
+                          else next.add(group.id);
+                          return next;
+                        })}
+                        className={`w-full flex items-center justify-between px-4 py-3 text-left ${isDayMode ? 'hover:bg-gray-50' : 'hover:bg-white/5'}`}
+                      >
+                        <div>
+                          <p className={`text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-white'}`}>{group.label}</p>
+                          <p className={`text-xs ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {group.checks.length} records · ${group.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-xs font-semibold ${isDayMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {group.checks.filter(check => check.status !== 'Entered').length} pending
+                          </span>
+                          {isExpanded ? <Eye className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="overflow-x-auto">
+                          <table className={`min-w-full divide-y ${isDayMode ? 'divide-gray-200' : 'divide-white/10'}`}>
+                            <thead className={isDayMode ? 'bg-gray-50' : 'bg-white/5'}>
+                              <tr>
+                                {['Check/EFT#', 'Type', 'Insurance', 'Dist.', 'Amount', 'DOS', 'Date Created', 'Aging', 'Created By', 'Handler', 'Status', 'Actions'].map(h => (
+                                  <th key={h} className={`px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDayMode ? 'text-gray-700' : 'text-gray-400'}`}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className={`divide-y ${isDayMode ? 'divide-gray-100' : 'divide-white/5'}`}>
+                              {group.checks.map((check) => (
+                                <tr
+                                  key={check.id}
+                                  className={`transition-colors ${
+                                    check.status === 'Created'
+                                      ? isDayMode ? 'bg-gray-50/50 hover:bg-gray-100/50' : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                                      : check.status === 'Entered'
+                                        ? isDayMode ? 'bg-green-50/50 hover:bg-green-100/50' : 'bg-emerald-900/10 hover:bg-emerald-900/20'
+                                        : isDayMode ? 'bg-yellow-50/50 hover:bg-yellow-100/50' : 'bg-amber-900/10 hover:bg-amber-900/20'
+                                  }`}
+                                >
+                                  <td className={`px-3 py-3 text-sm font-medium ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{check.checkEftNumber}</td>
+                                  <td className="px-3 py-3">
+                                    <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                      check.paymentType === 'Check'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {check.paymentType}
+                                    </span>
+                                  </td>
+                                  <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{check.insuranceCompany}</td>
+                                  <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>{check.distributionType}</td>
+                                  <td className={`px-3 py-3 text-sm font-semibold ${isDayMode ? 'text-gray-900' : 'text-gray-200'}`}>${check.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                  <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.dateOfService || '-'}</td>
+                                  <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.dateEntered || '-'}</td>
+                                  <td className="px-3 py-3">
+                                    <span className={`text-sm font-medium ${
+                                      check.aging > 60 ? 'text-red-600' :
+                                        check.aging > 30 ? 'text-orange-500' :
+                                          'text-green-600'
+                                    }`}>
+                                      {check.aging}d
+                                    </span>
+                                  </td>
+                                  <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.enteredBy}</td>
+                                  <td className={`px-3 py-3 text-sm ${isDayMode ? 'text-gray-900' : 'text-gray-300'}`}>{check.handler}</td>
+                                  <td className="px-3 py-3">
+                                    <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                      check.status === 'Created'
+                                        ? 'bg-gray-100 text-gray-800'
+                                        : check.status === 'Entered'
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {check.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-3">
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                        onClick={() => onEditCheck(check)}
+                                        title="Edit"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                        onClick={() => onAddUpdate('insurance-check', check.id, check.checkEftNumber, check.status)}
+                                        title="Add Update"
+                                      >
+                                        <MessageSquarePlus className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                        onClick={() => onViewHistory(check.id, check.checkEftNumber)}
+                                        title="View History"
+                                      >
+                                        <History className="w-4 h-4" />
+                                      </button>
+                                      {check.isArchived ? (
+                                        <button
+                                          className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                          onClick={() => handleUnarchiveCheck(check.id)}
+                                          title="Unarchive"
+                                        >
+                                          <ArchiveRestore className="w-4 h-4" />
+                                        </button>
+                                      ) : (
+                                        <button
+                                          className="p-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                          onClick={() => handleArchiveCheck(check.id, 'Current User')}
+                                          title="Archive"
+                                        >
+                                          <Archive className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                      <button
+                                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                        onClick={() => handleDeleteCheck(check.id, check.checkEftNumber)}
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -1245,8 +1481,8 @@ export default function InsuranceCheckStation({
                   <div>
                     <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Avg Aging</p>
                     <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                      {filteredInsuranceChecks.length > 0
-                        ? Math.round(filteredInsuranceChecks.reduce((sum, c) => sum + c.aging, 0) / filteredInsuranceChecks.length)
+                      {scopedInsuranceChecks.length > 0
+                        ? Math.round(scopedInsuranceChecks.reduce((sum, c) => sum + c.aging, 0) / scopedInsuranceChecks.length)
                         : 0} days
                     </p>
                   </div>
@@ -1259,7 +1495,7 @@ export default function InsuranceCheckStation({
                   <div>
                     <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'}`}>Awaiting Entry</p>
                     <p className="text-2xl font-bold" style={{ color: csdGold }}>
-                      ${filteredInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${scopedInsuranceChecks.filter(c => c.status !== 'Entered').reduce((sum, c) => sum + c.totalAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <DollarSign className="w-8 h-8 text-yellow-500 opacity-50" />
@@ -1291,8 +1527,8 @@ export default function InsuranceCheckStation({
                   <p className={`text-sm ${isDayMode ? 'text-gray-600' : 'text-gray-400'} mb-2`}>Status Breakdown</p>
                   <div className="space-y-1.5">
                     {(['Created', 'Entered', 'Pending Review'] as const).map(status => {
-                      const count = filteredInsuranceChecks.filter(c => c.status === status).length;
-                      const total = filteredInsuranceChecks.length || 1;
+                      const count = scopedInsuranceChecks.filter(c => c.status === status).length;
+                      const total = scopedInsuranceChecks.length || 1;
                       const pct = Math.round((count / total) * 100);
                       const color = status === 'Created' ? 'bg-gray-400' : status === 'Entered' ? 'bg-emerald-500' : 'bg-amber-500';
                       return (
@@ -1330,7 +1566,7 @@ export default function InsuranceCheckStation({
                   </div>
                   <span className="font-bold text-lg" style={{ color: csdGold }}>
                     ${(() => {
-                      const checks = filteredInsuranceChecks.filter(c => c.paymentType === 'Check');
+                      const checks = scopedInsuranceChecks.filter(c => c.paymentType === 'Check');
                       return checks.length > 0
                         ? (checks.reduce((sum, c) => sum + c.totalAmount, 0) / checks.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                         : '0.00';
@@ -1346,7 +1582,7 @@ export default function InsuranceCheckStation({
                   </div>
                   <span className="font-bold text-lg" style={{ color: csdGold }}>
                     ${(() => {
-                      const efts = filteredInsuranceChecks.filter(c => c.paymentType === 'EFT');
+                      const efts = scopedInsuranceChecks.filter(c => c.paymentType === 'EFT');
                       return efts.length > 0
                         ? (efts.reduce((sum, c) => sum + c.totalAmount, 0) / efts.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                         : '0.00';
@@ -1364,7 +1600,7 @@ export default function InsuranceCheckStation({
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {getLast5BusinessDays().map((date, index) => {
                   const dateStr = toLocalDateString(date);
-                  const dayChecks = filteredInsuranceChecks.filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr));
+                  const dayChecks = scopedInsuranceChecks.filter(c => c.status === 'Entered' && c.dateEntered && c.dateEntered.startsWith(dateStr));
                   const dayTotal = dayChecks.reduce((sum, c) => sum + c.totalAmount, 0);
                   const isToday = dateStr === getLocalDateString();
 
@@ -1408,7 +1644,7 @@ export default function InsuranceCheckStation({
                   { label: '31-60 Days', filter: (c: InsuranceCheckRecord) => c.aging > 30 && c.aging <= 60, color: 'amber' },
                   { label: '60+ Days', filter: (c: InsuranceCheckRecord) => c.aging > 60, color: 'red' },
                 ].map(bucket => {
-                  const items = filteredInsuranceChecks.filter(bucket.filter);
+                  const items = scopedInsuranceChecks.filter(bucket.filter);
                   const amount = items.reduce((sum, c) => sum + c.totalAmount, 0);
                   return (
                     <div key={bucket.label} className={`p-4 rounded-xl border ${
