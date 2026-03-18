@@ -25,7 +25,7 @@ export const LiquidGlassBackground = () => {
         </defs>
       </svg>
 
-      {/* Video backdrop with mask — dark mode only */}
+      {/* Video backdrop with mask — dark mode only (replaces photo backdrop) */}
       {isDark && (
         <div className="video-backdrop-container">
           <div className="video-backdrop-masked">
@@ -49,7 +49,10 @@ export const LiquidGlassBackground = () => {
         </div>
       )}
 
-      <div className={isDark ? 'liquid-glass-photo-backdrop liquid-glass-photo-backdrop-dark' : 'liquid-glass-photo-backdrop'} />
+      {/* Photo backdrop — light mode only (video replaces this in dark mode) */}
+      {!isDark && (
+        <div className="liquid-glass-photo-backdrop" />
+      )}
 
       {/* Noise + glow overlay */}
       <div className={isDark ? 'liquid-glass-overlay liquid-glass-overlay-dark' : 'liquid-glass-overlay'} />
