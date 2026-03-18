@@ -3,7 +3,7 @@
 -- =====================================================
 -- This script completely rebuilds the csd_metric_catalog
 -- and csd_metric_values tables with ALL trackable metrics
--- from the Court Street Dental RCM Dashboard
+-- from the Stellar Dental Spa RCM Dashboard
 -- =====================================================
 
 -- Step 1: Drop existing tables (CASCADE will also drop csd_metric_values)

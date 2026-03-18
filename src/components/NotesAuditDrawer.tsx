@@ -422,7 +422,7 @@ export default function NotesAuditDrawer({
                         className={`w-full text-sm rounded-md border px-3 py-2 ${inputCls}`}
                       >
                         <option value="stellar">Stellar Team</option>
-                        <option value="office">Court Street Dental Team</option>
+                        <option value="office">Stellar Dental Spa Team</option>
                       </select>
                     </div>
                     <div>

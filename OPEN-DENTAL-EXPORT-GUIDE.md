@@ -1,7 +1,7 @@
 # Open Dental Data Export Guide
 
 ## Overview
-This guide will help you export patient data from Open Dental to CSV files that can be uploaded to the Court Street Dental RCM Dashboard for automatic patient lifecycle metrics calculation.
+This guide will help you export patient data from Open Dental to CSV files that can be uploaded to the Stellar Dental Spa RCM Dashboard for automatic patient lifecycle metrics calculation.
 
 ## Required Data Exports
 
@@ -201,7 +201,7 @@ Before uploading your CSV files, verify:
 
 Once you have your CSV files prepared:
 
-1. Open the Court Street Dental RCM Dashboard
+1. Open the Stellar Dental Spa RCM Dashboard
 2. Navigate to **Patient Lifecycle** tab
 3. Upload files in this order:
    - **Patients first** (establishes patient records)

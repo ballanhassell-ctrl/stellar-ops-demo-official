@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Court Street Dental RCM Dashboard now includes an **automated daily metrics reset system** that ensures all "Today" metrics reset to $0 at the beginning of each day, while preserving historical EOD (End of Day) report data.
+The Stellar Dental Spa RCM Dashboard now includes an **automated daily metrics reset system** that ensures all "Today" metrics reset to $0 at the beginning of each day, while preserving historical EOD (End of Day) report data.
 
 ## How It Works
 

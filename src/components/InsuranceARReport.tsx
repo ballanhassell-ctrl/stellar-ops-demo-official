@@ -1,5 +1,5 @@
 // src/components/InsuranceARReport.tsx
-// Insurance A/R Report - mirrors "Stellar X Court Street Dental - Insurance A/R Report" spreadsheet
+// Insurance A/R Report - mirrors "Stellar Dental Spa - Insurance A/R Report" spreadsheet
 
 import { getLocalDateString } from '../utils/dateUtils';
 import { useEffect, useState, useMemo, useCallback } from 'react';

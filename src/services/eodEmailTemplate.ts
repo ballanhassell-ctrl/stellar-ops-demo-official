@@ -71,8 +71,7 @@ function formatNumber(value: number): string {
 export function generateEODEmailHTML(options: EmailTemplateOptions): string {
   const { eodData, reportDate, message, template, logoBaseUrl, bamCycle, topProcedures } = options;
 
-  const stellarLogoUrl = `${logoBaseUrl}/Stellar2%20copy.jpg`;
-  const csdLogoUrl = `${logoBaseUrl}/Cris%20Dental%20Image.jpg`;
+  const sdsLogoUrl = `${logoBaseUrl}/stellar-dental-spa-logo.jpg`;
 
   const includeSections = getTemplateSections(template);
 
@@ -90,7 +89,7 @@ export function generateEODEmailHTML(options: EmailTemplateOptions): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EOD Report - Court Street Dental</title>
+  <title>EOD Report - Stellar Dental Spa</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${COLORS.gray100}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   <!-- Wrapper Table -->
@@ -107,17 +106,7 @@ export function generateEODEmailHTML(options: EmailTemplateOptions): string {
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 20px;">
-                    <table role="presentation" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding-right: 12px;">
-                          <img src="${stellarLogoUrl}" alt="Stellar Consults" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
-                        </td>
-                        <td style="color: rgba(255,255,255,0.5); font-size: 24px; font-weight: 300; padding: 0 8px; vertical-align: middle;">&times;</td>
-                        <td style="padding-left: 12px;">
-                          <img src="${csdLogoUrl}" alt="Court Street Dental" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
-                        </td>
-                      </tr>
-                    </table>
+                    <img src="${sdsLogoUrl}" alt="Stellar Dental Spa" height="48" style="height: 48px; width: auto; display: block; border-radius: 8px;" />
                   </td>
                 </tr>
                 <tr>
@@ -472,7 +461,7 @@ ${includeSections.importantNotes ? `
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid ${COLORS.gray200}; padding-top: 24px;">
                 <tr>
                   <td align="center">
-                    <p style="margin: 0; font-size: 13px; color: ${COLORS.gray500}; font-weight: 500;">Court Street Dental &mdash; RCM Dashboard</p>
+                    <p style="margin: 0; font-size: 13px; color: ${COLORS.gray500}; font-weight: 500;">Stellar Dental Spa &mdash; RCM Dashboard</p>
                     <p style="margin: 6px 0 0 0; font-size: 12px; color: ${COLORS.gray500};">Powered by <span style="color: ${COLORS.primary}; font-weight: 600;">Stellar Consults</span></p>
                     <p style="margin: 10px 0 0 0; font-size: 11px; color: ${COLORS.gray300};">This report was generated automatically from your practice management data.</p>
                   </td>

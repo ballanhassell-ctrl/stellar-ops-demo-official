@@ -1,4 +1,4 @@
-# Court Street Dental RCM Dashboard - Data Entry Guide
+# Stellar Dental Spa RCM Dashboard - Data Entry Guide
 
 ## Overview
 This guide explains how to use the data entry spreadsheets to populate your RCM Dashboard with real data.
@@ -91,7 +91,7 @@ Everything else (dates, days remaining, cycle calculations) is **automatic**!
 
 ## 📊 Spreadsheet Files
 
-### 1. **Court-Street-Dental-Data-Entry.csv** (Main Data File)
+### 1. **Stellar-Dental-Spa-Data-Entry.csv** (Main Data File)
 This is the primary spreadsheet containing all simple data points organized by section.
 
 **Columns:**
@@ -262,7 +262,7 @@ Historical data for the New Patient Tracker showing monthly averages with actual
 1. Enter the actual new patient count for each position (oldest to newest)
 2. The dashboard will automatically label months with actual names (e.g., "Jul 2024", "Aug 2024")
 3. Each month will show progress against the 150/month goal with color-coded indicators
-4. Goals can be customized in Court-Street-Dental-Data-Entry.csv
+4. Goals can be customized in Stellar-Dental-Spa-Data-Entry.csv
 
 **Example:**
 ```
@@ -346,21 +346,21 @@ The developer will:
 
 | What You Want to Update | Use This File |
 |------------------------|---------------|
-| Dashboard metrics (revenue, patients, etc.) | Court-Street-Dental-Data-Entry.csv |
-| Payment totals and summaries | Court-Street-Dental-Data-Entry.csv |
+| Dashboard metrics (revenue, patients, etc.) | Stellar-Dental-Spa-Data-Entry.csv |
+| Payment totals and summaries | Stellar-Dental-Spa-Data-Entry.csv |
 | Individual payment transactions | EOD-Daily-Payments.csv |
 | Most popular procedures | EOD-Top-Procedures.csv |
 | Weekly performance trends | Scorecard-Weekly-Data.csv |
 | Insurance provider info | Insurance-Providers.csv |
-| Claims and AR data | Court-Street-Dental-Data-Entry.csv |
-| New patient tracking (daily/weekly/monthly/quarterly) | Court-Street-Dental-Data-Entry.csv |
+| Claims and AR data | Stellar-Dental-Spa-Data-Entry.csv |
+| New patient tracking (daily/weekly/monthly/quarterly) | Stellar-Dental-Spa-Data-Entry.csv |
 | New patient 6-month history | New-Patient-Tracker-Monthly-Averages.csv |
-| Third party financing (Cherry/CareCredit) | Court-Street-Dental-Data-Entry.csv |
-| Daily production by provider | Court-Street-Dental-Data-Entry.csv |
-| Advanced business metrics (CAC, LTV, margins, etc.) | Court-Street-Dental-Data-Entry.csv |
-| COGS breakdown (supplies, payroll, etc.) | Court-Street-Dental-Data-Entry.csv |
-| Patient lifecycle & churn metrics | Court-Street-Dental-Data-Entry.csv |
-| NPS and employee metrics | Court-Street-Dental-Data-Entry.csv |
+| Third party financing (Cherry/CareCredit) | Stellar-Dental-Spa-Data-Entry.csv |
+| Daily production by provider | Stellar-Dental-Spa-Data-Entry.csv |
+| Advanced business metrics (CAC, LTV, margins, etc.) | Stellar-Dental-Spa-Data-Entry.csv |
+| COGS breakdown (supplies, payroll, etc.) | Stellar-Dental-Spa-Data-Entry.csv |
+| Patient lifecycle & churn metrics | Stellar-Dental-Spa-Data-Entry.csv |
+| NPS and employee metrics | Stellar-Dental-Spa-Data-Entry.csv |
 
 ---
 
@@ -379,18 +379,18 @@ For ongoing dashboard maintenance:
 
 **Daily**:
 - Update EOD-Daily-Payments.csv with new transactions
-- Update New Patient Tracker (per day) in Court-Street-Dental-Data-Entry.csv
-- Update Daily Production by Provider in Court-Street-Dental-Data-Entry.csv
+- Update New Patient Tracker (per day) in Stellar-Dental-Spa-Data-Entry.csv
+- Update Daily Production by Provider in Stellar-Dental-Spa-Data-Entry.csv
 
 **Weekly**:
 - Add new row to Scorecard-Weekly-Data.csv
-- Update New Patient Tracker (per week) in Court-Street-Dental-Data-Entry.csv
+- Update New Patient Tracker (per week) in Stellar-Dental-Spa-Data-Entry.csv
 
 **Monthly**:
-- Update all main metrics in Court-Street-Dental-Data-Entry.csv
+- Update all main metrics in Stellar-Dental-Spa-Data-Entry.csv
 - Update New Patient Tracker monthly averages in New-Patient-Tracker-Monthly-Averages.csv
-- Update Third Party Financing data (30-day rolling) in Court-Street-Dental-Data-Entry.csv
-- Update Advanced Metrics (COGS, patient lifecycle, churn, NPS, etc.) in Court-Street-Dental-Data-Entry.csv
+- Update Third Party Financing data (30-day rolling) in Stellar-Dental-Spa-Data-Entry.csv
+- Update Advanced Metrics (COGS, patient lifecycle, churn, NPS, etc.) in Stellar-Dental-Spa-Data-Entry.csv
 
 **Quarterly**:
 - Review and update financial metrics (CAC, LTV, profit margins, cash flow)
@@ -401,5 +401,5 @@ For ongoing dashboard maintenance:
 
 ---
 
-*Generated for Court Street Dental RCM Dashboard*
+*Generated for Stellar Dental Spa RCM Dashboard*
 *Powered by Stellar Consults*

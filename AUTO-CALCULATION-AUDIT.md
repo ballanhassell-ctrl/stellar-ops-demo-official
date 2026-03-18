@@ -1,5 +1,5 @@
 # Auto-Calculation & Duplicate Data Entry Audit
-## Court Street Dental Dashboard - Complete Analysis
+## Stellar Dental Spa Dashboard - Complete Analysis
 
 **Date:** December 3, 2025
 **Purpose:** Identify all auto-calculable metrics to reduce manual data entry and eliminate duplicate work
