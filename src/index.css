@@ -30,13 +30,13 @@ body {
   }
 
   .glass-dark {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.40) 0%, rgba(17, 24, 39, 0.42) 100%);
-    backdrop-filter: blur(16px) saturate(160%) brightness(1.02);
-    -webkit-backdrop-filter: blur(16px) saturate(160%) brightness(1.02);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.25) 0%, rgba(17, 24, 39, 0.28) 100%);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
     border: 1px solid rgba(184, 152, 95, 0.12);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35),
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25),
                 0 1px 0 0 rgba(184, 152, 95, 0.06) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.3) inset;
+                0 -1px 0 0 rgba(0, 0, 0, 0.2) inset;
   }
 
   .glass-card {
@@ -52,14 +52,14 @@ body {
   }
 
   .glass-card-dark {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(17, 24, 39, 0.48) 100%);
-    backdrop-filter: blur(20px) saturate(160%) brightness(1.05);
-    -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(1.05);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.28) 0%, rgba(17, 24, 39, 0.32) 100%);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
     border: 1px solid rgba(184, 152, 95, 0.15);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
-                0 4px 16px 0 rgba(0, 0, 0, 0.2),
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3),
+                0 4px 16px 0 rgba(0, 0, 0, 0.15),
                 0 1px 0 0 rgba(184, 152, 95, 0.08) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.35) inset;
+                0 -1px 0 0 rgba(0, 0, 0, 0.25) inset;
   }
 
   /* Ultra-transparent glass variants for glacier background visibility */
@@ -92,14 +92,14 @@ body {
   }
 
   .glass-eod-ultra-dark {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.18) 0%, rgba(17, 24, 39, 0.20) 100%);
-    backdrop-filter: blur(80px) saturate(180%) brightness(1.15);
-    -webkit-backdrop-filter: blur(80px) saturate(180%) brightness(1.15);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35),
-                0 4px 16px 0 rgba(0, 0, 0, 0.2),
-                0 1px 0 0 rgba(255, 255, 255, 0.18) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.25) inset;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.15) 0%, rgba(17, 24, 39, 0.18) 100%);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(184, 152, 95, 0.12);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25),
+                0 4px 16px 0 rgba(0, 0, 0, 0.15),
+                0 1px 0 0 rgba(184, 152, 95, 0.06) inset,
+                0 -1px 0 0 rgba(0, 0, 0, 0.2) inset;
   }
 
   /* Pulsing border glow animation for headers */
@@ -178,10 +178,11 @@ body {
 
   .liquid-glass-bg-dark {
     background:
-      radial-gradient(circle at 16% 16%, rgba(244, 114, 182, 0.22) 0%, transparent 38%),
-      radial-gradient(circle at 84% 18%, rgba(251, 146, 60, 0.2) 0%, transparent 35%),
-      radial-gradient(circle at 78% 78%, rgba(56, 189, 248, 0.16) 0%, transparent 42%),
-      linear-gradient(135deg, #050714 0%, #0b1020 34%, #181c3a 64%, #2a1a3a 100%);
+      radial-gradient(circle at 16% 16%, rgba(244, 114, 182, 0.28) 0%, transparent 40%),
+      radial-gradient(circle at 84% 18%, rgba(251, 146, 60, 0.25) 0%, transparent 38%),
+      radial-gradient(circle at 78% 78%, rgba(56, 189, 248, 0.22) 0%, transparent 44%),
+      radial-gradient(circle at 50% 50%, rgba(184, 152, 95, 0.08) 0%, transparent 60%),
+      linear-gradient(135deg, #080c1a 0%, #0e1428 34%, #1c2244 64%, #2e1e42 100%);
     background-size: 120% 120%;
     animation: liquidGradient 24s ease infinite;
   }
@@ -207,9 +208,9 @@ body {
 
   .liquid-glass-overlay-dark {
     background:
-      linear-gradient(155deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 45%),
-      radial-gradient(circle at 30% 20%, rgba(167, 139, 250, 0.14) 0%, transparent 50%),
-      radial-gradient(circle at 72% 76%, rgba(251, 146, 60, 0.08) 0%, transparent 52%);
+      linear-gradient(155deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 45%),
+      radial-gradient(circle at 30% 20%, rgba(167, 139, 250, 0.10) 0%, transparent 50%),
+      radial-gradient(circle at 72% 76%, rgba(251, 146, 60, 0.06) 0%, transparent 52%);
   }
 
   /* Enhanced Glass Effect with Liquid Distortion */
@@ -242,13 +243,13 @@ body {
   }
 
   .glass-liquid-dark {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.3) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6),
-                0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.5) inset;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.20) 100%);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid rgba(184, 152, 95, 0.10);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35),
+                0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+                0 -1px 0 0 rgba(0, 0, 0, 0.3) inset;
   }
 
   /* Strong Text Contrast for Headers */
@@ -319,11 +320,11 @@ body {
   }
 
   .header-frosted-dark {
-    background: linear-gradient(140deg, rgba(12, 16, 30, 0.7) 0%, rgba(8, 12, 24, 0.48) 100%);
-    backdrop-filter: blur(16px) saturate(145%);
-    -webkit-backdrop-filter: blur(16px) saturate(145%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 32px rgba(2, 6, 23, 0.52);
+    background: linear-gradient(140deg, rgba(12, 16, 30, 0.45) 0%, rgba(8, 12, 24, 0.35) 100%);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border-bottom: 1px solid rgba(184, 152, 95, 0.10);
+    box-shadow: 0 12px 32px rgba(2, 6, 23, 0.35);
   }
 
   /* Glass Card with 3D depth */
