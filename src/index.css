@@ -46,26 +46,19 @@ textarea {
   }
 
   .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.25) 100%);
-    backdrop-filter: blur(60px) saturate(180%) brightness(1.05);
-    -webkit-backdrop-filter: blur(60px) saturate(180%) brightness(1.05);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2),
-                0 20px 60px 0 rgba(31, 38, 135, 0.1),
-                0 2px 8px 0 rgba(255, 255, 255, 0.3),
-                0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.1) inset;
+        background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px) saturate(120%);
+                -webkit-backdrop-filter: blur(12px) saturate(120%);
+                    border: 1px solid rgba(255, 255, 255, 0.28);
+                        box-shadow: none;
   }
 
   .glass-card-dark {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(17, 24, 39, 0.48) 100%);
-    backdrop-filter: blur(20px) saturate(160%) brightness(1.05);
-    -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(1.05);
-    border: 1px solid rgba(184, 152, 95, 0.15);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
-                0 4px 16px 0 rgba(0, 0, 0, 0.2),
-                0 1px 0 0 rgba(184, 152, 95, 0.08) inset,
-                0 -1px 0 0 rgba(0, 0, 0, 0.35) inset;
+        background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px) saturate(120%);
+                -webkit-backdrop-filter: blur(12px) saturate(120%);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                        box-shadow: none;
   }
 
   /* Ultra-transparent glass variants for glacier background visibility */
@@ -175,10 +168,10 @@ textarea {
     z-index: -2;
     overflow: hidden;
     background:
-      radial-gradient(circle at 18% 22%, rgba(255, 210, 170, 0.45) 0%, transparent 38%),
-      radial-gradient(circle at 82% 24%, rgba(173, 213, 255, 0.34) 0%, transparent 36%),
-      radial-gradient(circle at 70% 75%, rgba(219, 184, 255, 0.28) 0%, transparent 42%),
-      linear-gradient(135deg, #ede5dc 0%, #d5c1af 32%, #9f8ea1 66%, #6a5d86 100%);
+            radial-gradient(circle at 18% 22%, rgba(255, 210, 170, 0.08) 0%, transparent 38%),
+                  radial-gradient(circle at 82% 24%, rgba(173, 213, 255, 0.06) 0%, transparent 36%),
+                        radial-gradient(circle at 70% 75%, rgba(219, 184, 255, 0.05) 0%, transparent 42%),
+                              linear-gradient(135deg, rgba(237, 229, 220, 0.06) 0%, rgba(213, 193, 175, 0.04) 32%, rgba(159, 142, 161, 0.03) 66%, rgba(106, 93, 134, 0.02) 100%);
     background-size: 110% 110%;
   }
 
@@ -206,9 +199,9 @@ textarea {
     height: 100%;
     z-index: -1;
     background:
-      linear-gradient(160deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 45%),
-      radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.16) 0%, transparent 50%),
-      radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 55%);
+            linear-gradient(160deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 45%),
+                  radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.01) 0%, transparent 55%);
   }
 
   .liquid-glass-overlay-dark {
@@ -245,8 +238,8 @@ textarea {
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.02) 38%, transparent 68%),
-      radial-gradient(circle at 50% 50%, transparent 48%, rgba(91, 101, 146, 0.16) 100%);
+            radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 38%, transparent 68%),
+                  radial-gradient(circle at 50% 50%, transparent 48%, rgba(91, 101, 146, 0.03) 100%);
   }
 
   .liquid-glass-vignette-dark {
@@ -945,18 +938,19 @@ body {
 
 /* Light mode video backdrop overrides */
 .video-backdrop-light .video-backdrop-video {
-    opacity: 0.5;
-    filter: saturate(1.4) contrast(1.15) brightness(1.8);
+        opacity: 0.75;
+        filter: saturate(1.4) contrast(1.1) brightness(1.5);
 }
 
 .video-backdrop-light .video-backdrop-gradient-bottom {
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, transparent 40%, rgba(255, 255, 255, 0.35) 100%);
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 0%, transparent 40%, rgba(255, 255, 255, 0.08) 100%);
 }
 
 .video-backdrop-light .video-backdrop-gradient-right {
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 30%, transparent 100%);
-}
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 30%, transparent 100%);
+    }
 
-.video-backdrop-light .video-backdrop-gradient-vignette {
-    background: radial-gradient(90% 60% at 10% 70%, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
-}
+    .video-backdrop-light .video-backdrop-gradient-vignette {
+        background: radial-gradient(90% 60% at 10% 70%, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+        }
+
