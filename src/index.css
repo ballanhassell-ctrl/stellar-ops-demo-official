@@ -924,19 +924,19 @@ body {
 
 /* Light mode video backdrop overrides */
 .video-backdrop-light .video-backdrop-video {
-                opacity: 1;
-                        filter: saturate(1.4) contrast(1.1) brightness(1.0);
+  opacity: 1;
+  filter: saturate(1.4) contrast(1.1) brightness(1.0);
 }
 
 .video-backdrop-light .video-backdrop-gradient-bottom {
-                background: none;
+  background: none;
 }
 
 .video-backdrop-light .video-backdrop-gradient-right {
-            background: none;
-    }
+  background: none;
+}
 
-    .video-backdrop-light .video-backdrop-gradient-vignette {
-                background: none;
-        }
+.video-backdrop-light .video-backdrop-gradient-vignette {
+  background: none;
+}
 
